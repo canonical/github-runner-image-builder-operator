@@ -73,10 +73,6 @@ def setup_builder() -> None:
         raise BuilderSetupError from exc
 
 
-class ImageBuildError(Exception):
-    """Represents an error while building the image."""
-
-
 class UnsupportedArchitectureError(Exception):
     """Raised when given machine charm architecture is unsupported.
 
@@ -96,7 +92,7 @@ class UnsupportedArchitectureError(Exception):
 SupportedCloudImageArch = Literal["amd64", "arm64"]
 
 
-def _get_supported_runner_arch(arch: str) -> SupportedCloudImageArch:
+def _get_supported_runner_arch(arch: Arch) -> SupportedCloudImageArch:
     """Validate and return supported runner architecture.
 
     The supported runner architecture takes in arch value from Github supported
@@ -128,7 +124,7 @@ NETWORK_BLOCK_DEVICE_PATH = Path("/dev/nbd0")
 NETWORK_BLOCK_DEVICE_PARTITION_PATH = Path("/dev/nbd0p1")
 
 
-def _prepare_build() -> None:
+def _clean_build_state() -> None:
     """Remove any artefacts left by previous build."""
     # The commands will fail if artefacts do not exist and hence there is no need to check the
     # output of subprocess runs.
@@ -161,9 +157,14 @@ def _download_cloud_image(arch: Arch, base_image: BaseImage) -> Path:
         CloudImageDownloadError: If there was an error downloading the image.
     """
     try:
+        bin_arch = _get_supported_runner_arch(arch)
+    except UnsupportedArchitectureError as exc:
+        raise CloudImageDownloadError from exc
+
+    try:
         image_path, _ = urllib.request.urlretrieve(
-            CLOUD_IMAGE_URL_TMPL.format(BASE_IMAGE=base_image.value, BIN_ARCH=arch.value),
-            CLOUD_IMAGE_FILE_NAME.format(BASE_IMAGE=base_image.value, BIN_ARCH=arch.value),
+            CLOUD_IMAGE_URL_TMPL.format(BASE_IMAGE=base_image.value, BIN_ARCH=bin_arch),
+            CLOUD_IMAGE_FILE_NAME.format(BASE_IMAGE=base_image.value, BIN_ARCH=bin_arch),
         )
         return Path(image_path)
     except urllib.error.ContentTooShortError as exc:
@@ -428,9 +429,10 @@ def build_image(config: BuildImageConfig) -> Path:
     Returns:
         The saved image path.
     """
-    _prepare_build()
+    _clean_build_state()
     try:
         cloud_image_path = _download_cloud_image(arch=config.arch, base_image=config.base_image)
+        _resize_cloud_img(cloud_image_path=cloud_image_path)
         _mount_image_to_network_block_device(path=cloud_image_path)
         _resize_mount_partitions()
     except (CloudImageDownloadError, ResizePartitionError, ImageMountError) as exc:
