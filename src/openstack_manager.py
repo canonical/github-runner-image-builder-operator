@@ -6,7 +6,7 @@
 import dataclasses
 import logging
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import openstack
 import openstack.connection
@@ -83,16 +83,15 @@ class OpenstackMananager:
         self.conn = openstack.connect(cloud_name)
 
     def __enter__(self) -> "OpenstackMananager":
-        """Dunder method placeholder for context management."""
-        ...
+        """Dunder method placeholder for context management.
 
-    def __exit__(self, *args, **kwargs):
-        """Dunder method to close initialized connection to openstack.
-
-        Args:
-            args: Placeholder for dunder method.
-            kwargs: Placeholder for dunder method.
+        Returns:
+            Self with established connection.
         """
+        return self
+
+    def __exit__(self, *_args: Any, **_kwargs: Any) -> None:
+        """Dunder method to close initialized connection to openstack."""
         self.conn.close()
 
     def _get_images_by_latest(self, image_name: str) -> list[Image]:

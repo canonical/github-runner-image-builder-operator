@@ -47,6 +47,10 @@ class UnsupportedArchitectureError(Exception):
         arch: The current machine architecture.
     """
 
+    def __str__(self) -> str:
+        """Represents the error in string format."""
+        return f"UnsupportedArchitectureError: {self.arch}"
+
     def __init__(self, arch: str) -> None:
         """Initialize a new instance of the CharmConfigInvalidError exception.
 
@@ -134,7 +138,7 @@ class ImageConfig:
     base_image: BaseImage
 
     @classmethod
-    def from_charm(cls, charm: CharmBase):
+    def from_charm(cls, charm: CharmBase) -> "ImageConfig":
         """Initialize image config from charm instance.
 
         Args:
@@ -150,14 +154,14 @@ class ImageConfig:
             arch = _get_supported_arch()
         except UnsupportedArchitectureError as exc:
             raise InvalidImageConfigError(
-                msg=f"Unsupported architecture {arch}, please deploy on a supported architecture."
+                f"Unsupported architecture {exc.arch}, please deploy on a supported architecture."
             ) from exc
 
         try:
             base_image = BaseImage.from_charm(charm)
         except ValueError as exc:
             raise InvalidImageConfigError(
-                msg=(
+                (
                     "Unsupported input option for base-image, please re-configure the base-image "
                     "option."
                 )
@@ -212,7 +216,7 @@ class InvalidCloudConfigError(Exception):
     """Represents an error with openstack cloud config."""
 
 
-def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any] | None:
+def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
     """Parse and validate openstack clouds yaml config value.
 
     Args:
@@ -226,7 +230,7 @@ def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any] | None:
     """
     openstack_clouds_yaml_str = charm.config.get(OPENSTACK_CLOUDS_YAML_CONFIG_NAME)
     if not openstack_clouds_yaml_str:
-        return None
+        raise InvalidCloudConfigError("No cloud config set")
 
     try:
         openstack_clouds_yaml = yaml.safe_load(openstack_clouds_yaml_str)
@@ -283,7 +287,7 @@ class CharmState:
     revision_history_limit: int
 
     @classmethod
-    def from_charm(cls, charm: CharmBase):
+    def from_charm(cls, charm: CharmBase) -> "CharmState":
         """Initialize charm state from current charm instance.
 
         Args:

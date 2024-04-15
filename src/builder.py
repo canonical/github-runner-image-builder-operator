@@ -175,7 +175,7 @@ class ImageResizeError(Exception):
     """Represents an error while resizing the image."""
 
 
-def _resize_cloud_img(cloud_image_path: Path):
+def _resize_cloud_img(cloud_image_path: Path) -> None:
     """Resize cloud image to allow space for dependency installations.
 
     Args:
@@ -349,9 +349,9 @@ def _install_external_packages(arch: Arch) -> None:
         checksum = subprocess.check_output(
             ["/usr/bin/bash", "extract-checksum.sh", "SHA-256", "yq"], encoding="utf-8", timeout=60
         ).split()[1]
-        if not _validate_checksum("yq", checksum):
-            raise ExternalPackageInstallError("Invalid checksum")
         yq = Path("yq")
+        if not _validate_checksum(yq, checksum):
+            raise ExternalPackageInstallError("Invalid checksum")
         yq.chmod(755)
         yq.rename("/usr/bin/yq")
 
@@ -433,7 +433,7 @@ def build_image(config: BuildImageConfig) -> Path:
     try:
         cloud_image_path = _download_cloud_image(arch=config.arch, base_image=config.base_image)
         _resize_cloud_img(cloud_image_path=cloud_image_path)
-        _mount_image_to_network_block_device(path=cloud_image_path)
+        _mount_image_to_network_block_device(cloud_image_path=cloud_image_path)
         _resize_mount_partitions()
     except (CloudImageDownloadError, ResizePartitionError, ImageMountError) as exc:
         raise BuildImageError from exc

@@ -4,7 +4,7 @@
 """Module for managing build intervals."""
 
 
-def setup(interval: int):
+def setup(interval: int) -> None:
     """Configure cron job to periodically build image.
 
     Args:

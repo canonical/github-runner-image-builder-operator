@@ -6,6 +6,7 @@
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 CHROOT_DEVICE_DIR = "dev"
 CHROOT_SHARED_DIRS = ["proc", "sys"]
@@ -35,7 +36,7 @@ class ChrootContextManager:
         """
         self.chroot_path = chroot_path
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Context enter for chroot.
 
         Raises:
@@ -57,12 +58,8 @@ class ChrootContextManager:
                 raise MountError from exc
         os.chroot(self.chroot_path)
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *_args: Any, **_kwargs: Any) -> None:
         """Exit and unmount system dirs.
-
-        Args:
-            args: The placeholder for exit dundermethod args.
-            kwargs: The placeholder for exit dundermethod kwargs.
 
         Raises:
             MountError: if there was an error unmounting shared directories.

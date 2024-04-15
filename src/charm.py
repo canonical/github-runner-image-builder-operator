@@ -6,6 +6,7 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
+from typing import Any
 
 import ops
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 class GithugRunnerImageBuilderCharm(ops.CharmBase):
     """Charm the service."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         """Initialize the charm.
 
         Args:
@@ -77,4 +78,4 @@ class GithugRunnerImageBuilderCharm(ops.CharmBase):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(GithugRunnerImageBuilderCharm)
+    ops.main.main(GithugRunnerImageBuilderCharm)
