@@ -4,15 +4,20 @@
 """Module for interacting with charm state and configurations."""
 
 import dataclasses
+import logging
 import platform
 from enum import Enum
+from typing import Any
 
+import yaml
 from ops import CharmBase
+
+logger = logging.getLogger(__name__)
 
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
+OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "experimental-openstack-clouds-yaml"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
-
 
 
 class Arch(str, Enum):
@@ -35,7 +40,6 @@ class Arch(str, Enum):
     X64 = "x64"
 
 
-
 class UnsupportedArchitectureError(Exception):
     """Raised when given machine charm architecture is unsupported.
 
@@ -52,9 +56,9 @@ class UnsupportedArchitectureError(Exception):
         self.arch = arch
 
 
-
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
+
 
 def _get_supported_arch() -> Arch:
     """Get current machine architecture.
@@ -76,6 +80,7 @@ def _get_supported_arch() -> Arch:
 
 
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
+
 
 class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
@@ -111,8 +116,58 @@ class BaseImage(str, Enum):
             return cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
         return cls(image_name)
 
+
+class InvalidImageConfigError(Exception):
+    """Represents an error with invalid image config."""
+
+
+@dataclasses.dataclass(frozen=True)
+class ImageConfig:
+    """The charm configuration values related to image.
+
+    Attributes:
+        arch: The underlying compute architecture, i.e. x86_64, amd64, arm64/aarch64.
+        base_image: The ubuntu base image to run the runner virtual machines on.
+    """
+
+    arch: Arch
+    base_image: BaseImage
+
+    @classmethod
+    def from_charm(cls, charm: CharmBase):
+        """Initialize image config from charm instance.
+
+        Args:
+            charm: The running charm instance.
+
+        Raises:
+            InvalidImageConfigError: If an invalid image configuration value has been set.
+
+        Returns:
+            Current charm image configuration state.
+        """
+        try:
+            arch = _get_supported_arch()
+        except UnsupportedArchitectureError as exc:
+            raise InvalidImageConfigError(
+                msg=f"Unsupported architecture {arch}, please deploy on a supported architecture."
+            ) from exc
+
+        try:
+            base_image = BaseImage.from_charm(charm)
+        except ValueError as exc:
+            raise InvalidImageConfigError(
+                msg=(
+                    "Unsupported input option for base-image, please re-configure the base-image "
+                    "option."
+                )
+            ) from exc
+
+        return cls(arch=arch, base_image=base_image)
+
+
 def _parse_build_interval(charm: CharmBase) -> int:
-    """Parses build-interval charm configuration option.
+    """Parse build-interval charm configuration option.
 
     Args:
         charm: The charm instance.
@@ -133,8 +188,8 @@ def _parse_build_interval(charm: CharmBase) -> int:
 
 
 def _parse_revision_history_limit(charm: CharmBase) -> int:
-    """Parses revision-history-limit char configuration option.
-    
+    """Parse revision-history-limit char configuration option.
+
     Args:
         charm: The charm instance.
 
@@ -148,9 +203,51 @@ def _parse_revision_history_limit(charm: CharmBase) -> int:
         revision_history = int(charm.config.get(REVISION_HISTORY_LIMIT_CONFIG_NAME, "0").strip())
     except ValueError as exc:
         raise ValueError("An integer value for revision history is expected.") from exc
-    if revision_history < 0 or revision_history > 99:
-        raise ValueError("Revision history must be greater than 0 and less than 100")
+    if revision_history < 2 or revision_history > 99:
+        raise ValueError("Revision history must be greater than 1 and less than 100")
     return revision_history
+
+
+class InvalidCloudConfigError(Exception):
+    """Represents an error with openstack cloud config."""
+
+
+def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any] | None:
+    """Parse and validate openstack clouds yaml config value.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        InvalidCloudConfigError: if an invalid Openstack config value was set.
+
+    Returns:
+        The openstack clouds yaml.
+    """
+    openstack_clouds_yaml_str = charm.config.get(OPENSTACK_CLOUDS_YAML_CONFIG_NAME)
+    if not openstack_clouds_yaml_str:
+        return None
+
+    try:
+        openstack_clouds_yaml = yaml.safe_load(openstack_clouds_yaml_str)
+    except yaml.YAMLError as exc:
+        raise InvalidCloudConfigError(
+            f"Invalid {OPENSTACK_CLOUDS_YAML_CONFIG_NAME} config. Invalid yaml."
+        ) from exc
+    if (config_type := type(openstack_clouds_yaml)) is not dict:
+        raise InvalidCloudConfigError(
+            f"Invalid openstack config format, expected dict, got {config_type}"
+        )
+    try:
+        clouds = list(openstack_clouds_yaml["clouds"].keys())
+    except KeyError as exc:
+        raise InvalidCloudConfigError(
+            "Invalid openstack config. Not able to initialize openstack integration."
+        ) from exc
+    if not clouds:
+        raise InvalidCloudConfigError("No clouds found.")
+
+    return openstack_clouds_yaml
 
 
 class CharmConfigInvalidError(Exception):
@@ -168,52 +265,59 @@ class CharmConfigInvalidError(Exception):
         """
         self.msg = msg
 
+
 @dataclasses.dataclass(frozen=True)
 class CharmState:
     """The charm state.
 
     Attributes:
-        arch: The underlying compute architecture, i.e. x86_64, amd64, arm64/aarch64.
-        base_image: The ubuntu base image to run the runner virtual machines on.
         build_interval: The interval in hours between each scheduled image builds.
+        cloud_config: The Openstack clouds.yaml passed as charm config.
+        image_config: The charm configuration values related to image.
         revision_history_limit: The number of image revisions to keep.
     """
-    arch: Arch
-    base_image: BaseImage
+
     build_interval: int
+    cloud_config: dict[str, Any]
+    image_config: ImageConfig
     revision_history_limit: int
 
     @classmethod
     def from_charm(cls, charm: CharmBase):
         """Initialize charm state from current charm instance.
-        
+
         Args:
             charm: The running charm instance.
 
         Raises:
             CharmConfigInvalidError: If there was an invalid configuration on the charm.
-        
+
         Returns:
             Current charm state.
         """
         try:
-            arch = _get_supported_arch()
-        except UnsupportedArchitectureError as exc:
-            raise CharmConfigInvalidError(msg=f"Unsupported architecture {arch}, please deploy on a supported architecture.") from exc
-    
-        try:
-            base_image = BaseImage.from_charm(charm)
-        except ValueError as exc:
-            raise CharmConfigInvalidError(msg="Unsupported input option for base-image, please re-configure the base-image option.") from exc
-        
+            image_config = ImageConfig.from_charm(charm)
+        except InvalidImageConfigError as exc:
+            raise CharmConfigInvalidError(msg=str(exc))
+
         try:
             build_interval = _parse_build_interval(charm)
         except ValueError as exc:
             raise CharmConfigInvalidError(msg=str(exc))
 
         try:
+            cloud_config = _parse_openstack_clouds_config(charm)
+        except InvalidCloudConfigError as exc:
+            raise CharmConfigInvalidError(msg=str(exc))
+
+        try:
             revision_history_limit = _parse_revision_history_limit(charm)
         except ValueError as exc:
             raise CharmConfigInvalidError(msg=str(exc))
-        
-        return cls(arch=arch, base_image=base_image, build_interval=build_interval, revision_history_limit=revision_history_limit)
+
+        return cls(
+            build_interval=build_interval,
+            cloud_config=cloud_config,
+            image_config=image_config,
+            revision_history_limit=revision_history_limit,
+        )
