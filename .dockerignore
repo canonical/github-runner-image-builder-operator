@@ -1,0 +1,5 @@
+# Uncomment to ignore everything
+# *
+
+# Include the rock files directory
+# !nginx_rock/*
