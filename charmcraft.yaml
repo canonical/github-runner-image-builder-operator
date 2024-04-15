@@ -1,11 +1,69 @@
 # This file configures Charmcraft.
-# See https://juju.is/docs/sdk/charmcraft-config for guidance.
+# See https://juju.is/docs/sdk/charmcraft-yaml for guidance.
+
+# The charm package name, no spaces (required)
+# See https://juju.is/docs/sdk/naming#heading--naming-charms for guidance.
+name: github-runner-image-builder
+title: Github runner image builder
+summary: Provide Github runners with images available to use.
+description: |
+  A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) managing
+  runner images for
+  [self-hosted runners for GitHub Actions](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
+
+  A single unit of this charm provides pre-built images for Github runner operator to spawn and
+  register the self-hosted runners on Github. The charm will periodically rebuild and provide the
+  latest version of the image.
+links:
+  contact: https://github.com/orgs/canonical/teams/is-charms
+  documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview
+  issues: https://github.com/canonical/github-runner-image-builder-operator/issues
+  source: https://github.com/canonical/github-runner-image-builder-operator
+  website: https://charmhub.io/github-runner-image-builder
 
 type: charm
 bases:
   - build-on:
-    - name: ubuntu
+    - name: "ubuntu"
       channel: "22.04"
+      architectures:
+      - amd64
     run-on:
-    - name: ubuntu
+    - name: "ubuntu"
       channel: "22.04"
+      architectures:
+      - amd64
+  - build-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
+      - arm64
+    run-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
+      - arm64
+
+config:
+  options:
+    base-image:
+      type: string
+      default: jammy
+      description: |
+        The base ubuntu OS image to use for the runners. Codename (e.g. "jammy") or version tag
+        (e.g. 22.04) is supported as input. Currently only supports LTS versions of jammy and
+        higher, i.e. jammy, noble.
+    build-interval:
+      type: int
+      default: 6
+      description: |
+        The interval in hours between each scheduled image builds. Setting this value to 0 means
+        image will not be rebuilt after the initial build.
+    revision-history-limit:
+      type: int
+      default: 5
+      description: Number of image revisions to keep before deletion.
+
+provides:
+  image:
+    interface: github_runner_image_v0
