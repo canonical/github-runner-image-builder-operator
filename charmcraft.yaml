@@ -59,10 +59,20 @@ config:
       description: |
         The interval in hours between each scheduled image builds. Setting this value to 0 means
         image will not be rebuilt after the initial build.
+    experimental-openstack-clouds-yaml:
+      type: string
+      default: ""
+      description: |
+        The clouds.yaml contents. See (https://docs.openstack.org/python-openstackclient/pike\
+          /configuration/index.html#clouds-yaml).
     revision-history-limit:
       type: int
       default: 5
       description: Number of image revisions to keep before deletion.
+
+actions:
+  build-image:
+    description: Builds a new image immediately.
 
 provides:
   image:

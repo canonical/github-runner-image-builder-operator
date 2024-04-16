@@ -31,7 +31,7 @@ def test__should_setup_no_file(monkeypatch: pytest.MonkeyPatch):
     [
         pytest.param("0 */1 * * * ubuntu /usr/bin/juju-exec", 1, False, id="same cron interval"),
         pytest.param(
-            "0 */1 * * * ubuntu /usr/bin/juju-exec", 2, True, id="differet cron interval"
+            "0 */1 * * * ubuntu /usr/bin/juju-exec", 2, True, id="different cron interval"
         ),
     ],
 )

@@ -11,7 +11,7 @@ CRON_PATH = Path("/etc/cron.d")
 BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 
 
-def _should_setup(interval: int):
+def _should_setup(interval: int) -> bool:
     """Determine whether changes to cron should be applied.
 
     Args:
