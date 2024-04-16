@@ -48,7 +48,11 @@ class UnsupportedArchitectureError(Exception):
     """
 
     def __str__(self) -> str:
-        """Represents the error in string format."""
+        """Represent the error in string format.
+        
+        Returns:
+            The error in string format.
+        """
         return f"UnsupportedArchitectureError: {self.arch}"
 
     def __init__(self, arch: str) -> None:

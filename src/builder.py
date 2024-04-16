@@ -128,6 +128,7 @@ def _clean_build_state() -> None:
     """Remove any artefacts left by previous build."""
     # The commands will fail if artefacts do not exist and hence there is no need to check the
     # output of subprocess runs.
+    print(IMAGE_MOUNT_DIR.mkdir)
     IMAGE_MOUNT_DIR.mkdir(parents=True, exist_ok=True)
     subprocess.run(["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30)
 
@@ -282,6 +283,8 @@ def _disable_unattended_upgrades() -> None:
             services.
     """
     try:
+        # use subprocess run rather than operator-libs-linux's systemd library since the library
+        # does not provide full features like mask.
         subprocess.run(["/usr/bin/systemctl", "stop", APT_TIMER], check=True, timeout=30)
         subprocess.run(["/usr/bin/systemctl", "disable", APT_TIMER], check=True, timeout=30)
         subprocess.run(["/usr/bin/systemctl", "mask", APT_SVC], check=True, timeout=30)
@@ -292,7 +295,7 @@ def _disable_unattended_upgrades() -> None:
         subprocess.run(["/usr/bin/systemctl", "mask", APT_UPGRAD_SVC], check=True, timeout=30)
         subprocess.run(["/usr/bin/systemctl", "daemon-reload"], check=True, timeout=30)
         apt.remove_package("unattended-upgrades")
-    except subprocess.SubprocessError as exc:
+    except (subprocess.SubprocessError, apt.PackageNotFoundError) as exc:
         raise UnattendedUpgradeDisableError from exc
 
 
@@ -350,12 +353,11 @@ def _install_external_packages(arch: Arch) -> None:
             ["/usr/bin/bash", "extract-checksum.sh", "SHA-256", "yq"], encoding="utf-8", timeout=60
         ).split()[1]
         yq = Path("yq")
-        if not _validate_checksum(yq, checksum):
-            raise ExternalPackageInstallError("Invalid checksum")
         yq.chmod(755)
         yq.rename("/usr/bin/yq")
-
-    except subprocess.SubprocessError as exc:
+        if not _validate_checksum(yq, checksum):
+            raise ExternalPackageInstallError("Invalid checksum")
+    except (subprocess.SubprocessError, urllib.error.ContentTooShortError) as exc:
         raise ExternalPackageInstallError from exc
 
 
