@@ -8,6 +8,7 @@ from typing import Generic, TypeVar
 from unittest.mock import MagicMock
 
 import factory
+from factory.faker import Faker
 
 from state import (
     BASE_IMAGE_CONFIG_NAME,
@@ -62,3 +63,15 @@ class MockCharmFactory(factory.Factory):
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
         }
     )
+
+
+class MockOpenstackImageFactory(factory.Factory):
+    """Mock Openstack Image."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = MagicMock
+
+    id: str  # UUID
+    created_at = Faker("date")  # Example format: 2024-04-16T04:31:12Z

@@ -29,6 +29,10 @@ class UploadImageError(Exception):
     """Represents an error when uploading image to Openstack."""
 
 
+class GetImageError(Exception):
+    """Represents an error when fetching images from Openstack."""
+
+
 class OpenstackConnectionError(Exception):
     """Represents an error while communicating with Openstack."""
 
@@ -53,7 +57,7 @@ class UploadImageConfig:
 IMAGE_NAME_TMPL = "github-runner-{IMAGE_BASE}-v1"
 
 
-class OpenstackMananager:
+class OpenstackManager:
     """Class to manage interactions with Openstack."""
 
     def __init__(self, cloud_config: dict[str, dict]):
@@ -82,7 +86,7 @@ class OpenstackMananager:
 
         self.conn = openstack.connect(cloud_name)
 
-    def __enter__(self) -> "OpenstackMananager":
+    def __enter__(self) -> "OpenstackManager":
         """Dunder method placeholder for context management.
 
         Returns:
@@ -124,9 +128,10 @@ class OpenstackMananager:
         images_to_prune = images[num_revisions:]
         for image in images_to_prune:
             try:
-                self.conn.delete_image(image.id, wait=True)
+                if not self.conn.delete_image(image.id, wait=True):
+                    logger.error("Failed to delete old image, %s", image.id)
             except openstack.exceptions.OpenStackCloudException as exc:
-                logger.error("Failed to prune old images, %s", exc)
+                logger.error("Failed to prune old image, %s", exc)
                 continue
 
     def upload_image(self, config: UploadImageConfig) -> str:
@@ -163,7 +168,10 @@ class OpenstackMananager:
             The image ID if exists, None otherwise.
         """
         image_name = IMAGE_NAME_TMPL.format(IMAGE_BASE=image_base.value)
-        images = self._get_images_by_latest(image_name=image_name)
+        try:
+            images = self._get_images_by_latest(image_name=image_name)
+        except OpenstackConnectionError as exc:
+            raise GetImageError from exc
         if not images:
             return None
         return images[0].id

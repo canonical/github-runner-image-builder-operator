@@ -69,7 +69,7 @@ class GithugRunnerImageBuilderCharm(ops.CharmBase):
             num_revisions=state.revision_history_limit,
             src_path=image_path,
         )
-        with openstack_manager.OpenstackMananager(cloud_config=state.cloud_config) as openstack:
+        with openstack_manager.OpenstackManager(cloud_config=state.cloud_config) as openstack:
             image_id = openstack.upload_image(config=upload_config)
 
         self.image_observer.update_relation_data(image_id=image_id)
