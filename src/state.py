@@ -49,7 +49,7 @@ class UnsupportedArchitectureError(Exception):
 
     def __str__(self) -> str:
         """Represent the error in string format.
-        
+
         Returns:
             The error in string format.
         """
@@ -306,22 +306,22 @@ class CharmState:
         try:
             image_config = ImageConfig.from_charm(charm)
         except InvalidImageConfigError as exc:
-            raise CharmConfigInvalidError(msg=str(exc))
+            raise CharmConfigInvalidError(msg=str(exc)) from exc
 
         try:
             build_interval = _parse_build_interval(charm)
         except ValueError as exc:
-            raise CharmConfigInvalidError(msg=str(exc))
+            raise CharmConfigInvalidError(msg=str(exc)) from exc
 
         try:
             cloud_config = _parse_openstack_clouds_config(charm)
         except InvalidCloudConfigError as exc:
-            raise CharmConfigInvalidError(msg=str(exc))
+            raise CharmConfigInvalidError(msg=str(exc)) from exc
 
         try:
             revision_history_limit = _parse_revision_history_limit(charm)
         except ValueError as exc:
-            raise CharmConfigInvalidError(msg=str(exc))
+            raise CharmConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
             build_interval=build_interval,

@@ -164,6 +164,9 @@ class OpenstackManager:
         Args:
             image_base: The image OS base to search for.
 
+        Raises:
+            GetImageError: If there was an error fetching image from Openstack.
+
         Returns:
             The image ID if exists, None otherwise.
         """

@@ -3,6 +3,9 @@
 
 """Unit tests for builder module."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -307,6 +310,8 @@ def test__disable_unattended_upgrades_subprocess_fail(monkeypatch: pytest.Monkey
     act: when _disable_unattended_upgrades is called.
     assert: the UnattendedUpgradeDisableError is raised.
     """
+    # Pylint thinks the testing mock patches are duplicate code (side effects are different).
+    # pylint: disable=duplicate-code
     monkeypatch.setattr(
         subprocess,
         "run",

@@ -3,6 +3,9 @@
 
 """Unit tests for state module."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 import platform
 from typing import Any
 from unittest.mock import MagicMock
@@ -330,6 +333,8 @@ def test__parse_openstack_clouds_config_invalid(cloud_config: str, expected_err:
     assert expected_err in str(exc)
 
 
+# pylint doesn't quite understand walrus operators
+# pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
     "cloud_config, expected",
     [

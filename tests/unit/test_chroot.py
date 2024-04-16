@@ -3,6 +3,9 @@
 
 """Unit tests for chroot module."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 from unittest.mock import MagicMock
 
 import pytest

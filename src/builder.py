@@ -128,9 +128,10 @@ def _clean_build_state() -> None:
     """Remove any artefacts left by previous build."""
     # The commands will fail if artefacts do not exist and hence there is no need to check the
     # output of subprocess runs.
-    print(IMAGE_MOUNT_DIR.mkdir)
     IMAGE_MOUNT_DIR.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30)
+    subprocess.run(
+        ["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False
+    )
 
 
 CLOUD_IMAGE_URL_TMPL = (

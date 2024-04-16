@@ -6,7 +6,7 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 CHROOT_DEVICE_DIR = "dev"
 CHROOT_SHARED_DIRS = ["proc", "sys"]
@@ -35,6 +35,7 @@ class ChrootContextManager:
             chroot_path: The path to set as new root.
         """
         self.chroot_path = chroot_path
+        self.root: None | int = None
 
     def __enter__(self) -> None:
         """Context enter for chroot.
@@ -44,10 +45,10 @@ class ChrootContextManager:
         """
         self.root = os.open("/", os.O_RDONLY)
 
-        for dir in CHROOT_EXTENDED_SHARED_DIRS:
-            chroot_shared_dir = self.chroot_path / dir
+        for shared_dir in CHROOT_EXTENDED_SHARED_DIRS:
+            chroot_shared_dir = self.chroot_path / shared_dir
             chroot_shared_dir.mkdir(parents=True, exist_ok=True)
-            root_shared_dir = Path(f"/{dir}")
+            root_shared_dir = Path(f"/{shared_dir}")
             try:
                 subprocess.run(
                     ["mount", "--bind", str(root_shared_dir), str(chroot_shared_dir)],
@@ -65,22 +66,22 @@ class ChrootContextManager:
             MountError: if there was an error unmounting shared directories.
             SyncError: if there was an error syncing data.
         """
-        for dir in CHROOT_SHARED_DIRS:
-            chroot_shared_dir = self.chroot_path / dir
+        for shared_dir in CHROOT_SHARED_DIRS:
+            chroot_shared_dir = self.chroot_path / shared_dir
             try:
-                subprocess.run(["umount", str(chroot_shared_dir)])
+                subprocess.run(["umount", str(chroot_shared_dir)], check=True)
             except subprocess.CalledProcessError as exc:
                 raise MountError from exc
 
         try:
-            subprocess.run("sync")
+            subprocess.run(["sync"], check=True)
         except subprocess.CalledProcessError as exc:
             raise SyncError from exc
-        os.fchdir(self.root)
+        os.fchdir(cast(int, self.root))
         os.chroot(".")
-        os.close(self.root)
+        os.close(cast(int, self.root))
 
         try:
-            subprocess.run(["umount", "-l", str(self.chroot_path / CHROOT_DEVICE_DIR)])
+            subprocess.run(["umount", "-l", str(self.chroot_path / CHROOT_DEVICE_DIR)], check=True)
         except subprocess.CalledProcessError as exc:
             raise MountError from exc

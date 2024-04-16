@@ -36,7 +36,7 @@ class BaseMetaFactory(Generic[T], factory.base.FactoryMetaClass):
 class MockCharmFactory(factory.Factory):
     """Mock GithubRunnerImageBuilder charm."""  # noqa: DCO060
 
-    class Meta:
+    class Meta:  # pylint: disable=too-few-public-methods
         """Configuration for factory."""  # noqa: DCO060
 
         model = MagicMock
@@ -68,7 +68,7 @@ class MockCharmFactory(factory.Factory):
 class MockOpenstackImageFactory(factory.Factory):
     """Mock Openstack Image."""  # noqa: DCO060
 
-    class Meta:
+    class Meta:  # pylint: disable=too-few-public-methods
         """Configuration for factory."""  # noqa: DCO060
 
         model = MagicMock
