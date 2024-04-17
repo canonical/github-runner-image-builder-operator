@@ -13,7 +13,7 @@ import pytest
 
 import builder
 import image
-from charm import GithubRunnerImageBuilderCharm, cron, openstack_manager
+from charm import GithubRunnerImageBuilderCharm, openstack_manager
 from state import CharmConfigInvalidError, CharmState
 
 
@@ -50,6 +50,7 @@ def test__load_state_invalid_config(
     [
         pytest.param("_on_config_changed", id="_on_config_changed"),
         pytest.param("_on_build_image_action", id="_on_build_image_action"),
+        pytest.param("_on_resurrect_timeout", id="_on_resurrect_timeout"),
     ],
 )
 def test_block_on_state_error(
@@ -70,6 +71,27 @@ def test_block_on_state_error(
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
 
 
+@pytest.mark.parametrize(
+    "resurrect",
+    [
+        pytest.param(MagicMock(), id="resurrect registered"),
+        pytest.param(None, id="resurrect not registered"),
+    ],
+)
+def test__on_start(charm: GithubRunnerImageBuilderCharm, resurrect: MagicMock):
+    """
+    arrange: given different resurrect registration status.
+    act: when _on_start is called.
+    assert: resurrect start is called if it is registered.
+    """
+    charm.resurrect = resurrect
+
+    charm._on_start(MagicMock())
+
+    if resurrect:
+        resurrect.start.assert_called_once()
+
+
 def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
     arrange: given a monekypatched builder.setup_builder function.
@@ -86,7 +108,7 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
 
 def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
-    arrange: given monkeypatched builder, openstack manager, image_observer and cron.
+    arrange: given monkeypatched builder, openstack manager, image_observer.
     act: when _on_config_changed is called.
     assert: each module functions are called appropriately.
     """
@@ -105,14 +127,12 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
         "OpenstackManager",
         MagicMock(return_value=openstack_manager_contenxt_mock),
     )
-    monkeypatch.setattr(cron, "setup", (setup_cron_mock := MagicMock()))
 
     charm._on_config_changed(MagicMock())
 
     build_image_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()
-    setup_cron_mock.assert_called_once()
 
 
 def test__on_build_image_action(
@@ -144,3 +164,20 @@ def test__on_build_image_action(
     build_image_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()
+
+
+def test__on_resurrect_timeout(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a valid state.
+    act: when _on_resurrect_timeout is called.
+    assert: build image is called.
+    """
+    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    build_image_mock = MagicMock()
+
+    charm._build_image = build_image_mock
+    charm._on_resurrect_timeout(MagicMock())
+
+    build_image_mock.assert_called_once()
