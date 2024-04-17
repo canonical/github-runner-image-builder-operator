@@ -20,7 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
-    """Charm the service."""
+    """Charm the service.
+
+    Attributes:
+        on: Represents custom events managed by cron.
+    """
+
+    on = cron.CronEvents()
 
     def __init__(self, *args: Any):
         """Initialize the charm.
@@ -33,6 +39,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.build_image_action, self._on_build_image_action)
+        self.framework.observe(self.on.trigger, self._on_cron_trigger)
 
     def _load_state(self) -> CharmState | None:
         """Load the charm state if valid, set charm to blocked if otherwise.
@@ -90,7 +97,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         self._build_image(state=state)
-        cron.setup(state.build_interval)
+        cron.setup(state.build_interval, self.model.name, self.unit.name)
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_image_action(self, event: ops.ActionEvent) -> None:
@@ -105,6 +112,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         image_id = self._build_image(state=state)
         event.set_results({"id": image_id})
+
+    def _on_cron_trigger(self, _: cron.CronEvent) -> None:
+        """Handle cron fired event."""
+        state = self._load_state()
+        if not state:
+            return
+
+        self._build_image(state=state)
 
 
 if __name__ == "__main__":  # pragma: nocover

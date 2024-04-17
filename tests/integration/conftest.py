@@ -2,26 +2,18 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
-import logging
-import random
-import secrets
-import zipfile
 from pathlib import Path
-from time import sleep
 from typing import Optional
 
 import openstack
 import openstack.connection
 import pytest
-import pytest_asyncio
 import yaml
-from juju.application import Application
-from juju.client._definitions import FullStatus, UnitStatus
 from juju.model import Model
 from pytest_operator.plugin import OpsTest
 
 
-def charm_file():
+def charm_file(pytestconfig: pytest.Config) -> str:
     """Path to the built charm."""
     charm = pytestconfig.getoption("--charm-file")
     assert charm, "Please specify the --charm-file command line option"

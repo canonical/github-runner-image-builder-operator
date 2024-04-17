@@ -57,6 +57,7 @@ def test__load_state_invalid_config(
     [
         pytest.param("_on_config_changed", id="_on_config_changed"),
         pytest.param("_on_build_image_action", id="_on_build_image_action"),
+        pytest.param("_on_cron_trigger", id="_on_cron_trigger"),
     ],
 )
 def test_block_on_state_error(
@@ -151,3 +152,17 @@ def test__on_build_image_action(
     build_image_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()
+
+
+def test__on_cron_trigger(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monkeypatched mock charm _build_image function.
+    act: when _on_cron_trigger is called.
+    assert: the mock is called once.
+    """
+    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    charm._build_image = (build_image_mock := MagicMock())
+
+    charm._on_cron_trigger(MagicMock)
+
+    build_image_mock.assert_called_once()

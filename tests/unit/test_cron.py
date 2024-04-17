@@ -61,7 +61,7 @@ def test_setup_no_setup(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(cron, "service_restart", service_restart_mock)
     monkeypatch.setattr(cron, "_should_setup", MagicMock(return_value=False))
 
-    cron.setup(interval=MagicMock())
+    cron.setup(interval=MagicMock(), model_name=MagicMock(), unit_name=MagicMock())
 
     service_restart_mock.assert_not_called()
 
@@ -78,7 +78,7 @@ def test_setup_disable_cron(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(cron, "service_restart", service_restart_mock)
     monkeypatch.setattr(cron, "_should_setup", MagicMock(return_value=True))
 
-    cron.setup(interval=0)
+    cron.setup(interval=0, model_name=MagicMock(), unit_name=MagicMock())
 
     service_restart_mock.assert_called_once()
     cron_path_mock.unlink.assert_called_once()
@@ -96,7 +96,7 @@ def test_setup(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(cron, "service_restart", service_restart_mock)
     monkeypatch.setattr(cron, "_should_setup", MagicMock(return_value=True))
 
-    cron.setup(interval=1)
+    cron.setup(interval=1, model_name=MagicMock(), unit_name=MagicMock())
 
     service_restart_mock.assert_called_once()
     cron_path_mock.write_text.assert_called_once()

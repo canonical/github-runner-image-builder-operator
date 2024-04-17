@@ -4,7 +4,9 @@
 """Context manager for chrooting."""
 
 import os
-import subprocess
+
+# The subprocess calls are from predefined inputs.
+import subprocess  # nosec: B404
 from pathlib import Path
 from typing import Any, cast
 
@@ -50,8 +52,8 @@ class ChrootContextManager:
         for shared_dir in CHROOT_EXTENDED_SHARED_DIRS:
             chroot_shared_dir = self.chroot_path / shared_dir
             try:
-                subprocess.run(
-                    ["mount", "--bind", f"/{shared_dir}", str(chroot_shared_dir)],
+                subprocess.run(  # nosec: B603
+                    ["/usr/bin/mount", "--bind", f"/{shared_dir}", str(chroot_shared_dir)],
                     check=True,
                     timeout=30,
                 )
@@ -73,18 +75,22 @@ class ChrootContextManager:
         os.close(cast(int, self.root))
 
         try:
-            subprocess.run(["sync"], check=True)
+            subprocess.run(["/usr/bin/sync"], check=True)  # nosec: B603
         except subprocess.CalledProcessError as exc:
             raise SyncError from exc
 
         for shared_dir in CHROOT_SHARED_DIRS:
             chroot_shared_dir = self.chroot_path / shared_dir
             try:
-                subprocess.run(["umount", str(chroot_shared_dir)], check=True)
+                subprocess.run(
+                    ["/usr/bin/umount", str(chroot_shared_dir)], check=True
+                )  # nosec: B603
             except subprocess.CalledProcessError as exc:
                 raise MountError from exc
 
         try:
-            subprocess.run(["umount", "-l", str(self.chroot_path / CHROOT_DEVICE_DIR)], check=True)
+            subprocess.run(  # nosec: B603
+                ["/usr/bin/umount", "-l", str(self.chroot_path / CHROOT_DEVICE_DIR)], check=True
+            )
         except subprocess.CalledProcessError as exc:
             raise MountError from exc

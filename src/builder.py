@@ -8,7 +8,9 @@ import hashlib
 import logging
 import os
 import shutil
-import subprocess
+
+# Ignore B404:blacklist since all subprocesses are run with predefined executables.
+import subprocess  # nosec
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -55,7 +57,7 @@ def _enable_nbd() -> None:
         NetworkBlockDeviceError: If there was an error enable nbd kernel.
     """
     try:
-        subprocess.run(["sudo", "modprobe", "nbd"], check=True, timeout=10)
+        subprocess.run(["/usr/bin/modprobe", "nbd"], check=True, timeout=10)  # nosec: B603
     except subprocess.CalledProcessError as exc:
         raise NetworkBlockDeviceError from exc
 
@@ -133,17 +135,31 @@ def _clean_build_state() -> None:
     # The commands will fail if artefacts do not exist and hence there is no need to check the
     # output of subprocess runs.
     IMAGE_MOUNT_DIR.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "dev")], timeout=30, check=False)
-    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "proc")], timeout=30, check=False)
-    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "sys")], timeout=30, check=False)
-    subprocess.run(["umount", str(IMAGE_MOUNT_DIR)], timeout=30, check=False)
-    subprocess.run(["umount", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False)
-    subprocess.run(["umount", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)], timeout=30, check=False)
     subprocess.run(
-        ["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False
+        ["/usr/bin/umount", str(IMAGE_MOUNT_DIR / "dev")], timeout=30, check=False
+    )  # nosec: B603
+    subprocess.run(
+        ["/usr/bin/umount", str(IMAGE_MOUNT_DIR / "proc")], timeout=30, check=False
+    )  # nosec: B603
+    subprocess.run(
+        ["/usr/bin/umount", str(IMAGE_MOUNT_DIR / "sys")], timeout=30, check=False
+    )  # nosec: B603
+    subprocess.run(
+        ["/usr/bin/umount", str(IMAGE_MOUNT_DIR)], timeout=30, check=False
+    )  # nosec: B603
+    subprocess.run(
+        ["/usr/bin/umount", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False
+    )  # nosec: B603
+    subprocess.run(  # nosec: B603
+        ["/usr/bin/umount", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)], timeout=30, check=False
     )
-    subprocess.run(
-        ["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
+    subprocess.run(  # nosec: B603
+        ["/usr/bin/qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)],
+        timeout=30,
+        check=False,
+    )
+    subprocess.run(  # nosec: B603
+        ["/usr/bin/qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
         timeout=30,
         check=False,
     )
@@ -202,8 +218,8 @@ def _resize_cloud_img(cloud_image_path: Path) -> None:
         ImageResizeError: If there was an error resizing the image.
     """
     try:
-        subprocess.run(
-            ["qemu-img", "resize", str(cloud_image_path), "+1.5G"], check=True, timeout=60
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/qemu-img", "resize", str(cloud_image_path), "+1.5G"], check=True, timeout=60
         )
     except subprocess.CalledProcessError as exc:
         raise ImageResizeError from exc
@@ -216,8 +232,14 @@ class ImageMountError(Exception):
 @retry(tries=5, delay=5, max_delay=60, backoff=2, local_logger=logger)
 def _mount_nbd_partition() -> None:
     """Mount the network block device partition."""
-    subprocess.run(
-        ["mount", "-o", "rw", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH), str(IMAGE_MOUNT_DIR)],
+    subprocess.run(  # nosec: B603
+        [
+            "/usr/bin/mount",
+            "-o",
+            "rw",
+            str(NETWORK_BLOCK_DEVICE_PARTITION_PATH),
+            str(IMAGE_MOUNT_DIR),
+        ],
         check=True,
         timeout=60,
     )
@@ -233,8 +255,8 @@ def _mount_image_to_network_block_device(cloud_image_path: Path) -> None:
         ImageMountError: If there was an error mounting the image to network block device.
     """
     try:
-        subprocess.run(
-            ["qemu-nbd", f"--connect={NETWORK_BLOCK_DEVICE_PATH}", str(cloud_image_path)],
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/qemu-nbd", f"--connect={NETWORK_BLOCK_DEVICE_PATH}", str(cloud_image_path)],
             check=True,
             timeout=60,
         )
@@ -264,13 +286,13 @@ def _resize_mount_partitions() -> None:
         ResizePartitionError: If there was an error resizing network block device partitions.
     """
     try:
-        subprocess.run(
-            ["growpart", str(NETWORK_BLOCK_DEVICE_PATH), "1"],
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/growpart", str(NETWORK_BLOCK_DEVICE_PATH), "1"],
             check=True,
             timeout=60,
         )
-        subprocess.run(
-            ["resize2fs", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/resize2fs", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
             check=True,
             timeout=60,
         )
@@ -307,16 +329,30 @@ def _disable_unattended_upgrades() -> None:
     try:
         # use subprocess run rather than operator-libs-linux's systemd library since the library
         # does not provide full features like mask.
-        subprocess.run(["/usr/bin/systemctl", "stop", APT_TIMER], check=True, timeout=30)
-        subprocess.run(["/usr/bin/systemctl", "disable", APT_TIMER], check=True, timeout=30)
-        subprocess.run(["/usr/bin/systemctl", "mask", APT_SVC], check=True, timeout=30)
-        subprocess.run(["/usr/bin/systemctl", "stop", APT_UPGRADE_TIMER], check=True, timeout=30)
         subprocess.run(
+            ["/usr/bin/systemctl", "stop", APT_TIMER], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/systemctl", "disable", APT_TIMER], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/systemctl", "mask", APT_SVC], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/systemctl", "stop", APT_UPGRADE_TIMER], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(  # nosec: B603
             ["/usr/bin/systemctl", "disable", APT_UPGRADE_TIMER], check=True, timeout=30
         )
-        subprocess.run(["/usr/bin/systemctl", "mask", APT_UPGRAD_SVC], check=True, timeout=30)
-        subprocess.run(["/usr/bin/systemctl", "daemon-reload"], check=True, timeout=30)
-        subprocess.run(["apt-get", "remove", "-y", "unattended-upgrades"], check=True, timeout=30)
+        subprocess.run(
+            ["/usr/bin/systemctl", "mask", APT_UPGRAD_SVC], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/systemctl", "daemon-reload"], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/apt-get", "remove", "-y", "unattended-upgrades"], check=True, timeout=30
+        )
     except subprocess.SubprocessError as exc:
         raise UnattendedUpgradeDisableError from exc
 
@@ -337,10 +373,18 @@ def _configure_system_users() -> None:
         SystemUserConfigurationError: If there was an error configuring ubuntu user.
     """
     try:
-        subprocess.run(["useradd", "-m", UBUNTU_USER], check=True, timeout=30)
-        subprocess.run(["groupadd", MICROK8S_GROUP], check=True, timeout=30)
-        subprocess.run(["usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30)
-        subprocess.run(["usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30)
+        subprocess.run(
+            ["/usr/bin/useradd", "-m", UBUNTU_USER], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/groupadd", MICROK8S_GROUP], check=True, timeout=30
+        )  # nosec: B603
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30
+        )
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30
+        )
     except subprocess.SubprocessError as exc:
         raise SystemUserConfigurationError from exc
 
@@ -391,16 +435,27 @@ def _install_external_packages(arch: Arch) -> None:
         ExternalPackageInstallError: If there was an error installing external package.
     """
     try:
-        subprocess.run(["npm", "install", "--global", "yarn"], check=True, timeout=60 * 5)
-        subprocess.run(["npm", "cache", "clean", "--force"], check=True, timeout=60)
+        subprocess.run(
+            ["/usr/bin/npm", "install", "--global", "yarn"], check=True, timeout=60 * 5
+        )  # nosec: B603
+        subprocess.run(
+            ["/usr/bin/npm", "cache", "clean", "--force"], check=True, timeout=60
+        )  # nosec: B603
         bin_arch = BIN_ARCH_MAP[arch]
         yq_path_str = f"yq_linux_{bin_arch}"
-        urllib.request.urlretrieve(YQ_DOWNLOAD_URL_TMPL.format(BIN_ARCH=bin_arch), yq_path_str)
-        urllib.request.urlretrieve(YQ_BINARY_CHECKSUM_URL, "checksums")
-        urllib.request.urlretrieve(YQ_CHECKSUM_HASHES_ORDER_URL, "checksums_hashes_order")
-        urllib.request.urlretrieve(YQ_EXTRACT_CHECKSUM_SCRIPT_URL, "extract-checksum.sh")
+        # The URLs are trusted
+        urllib.request.urlretrieve(
+            YQ_DOWNLOAD_URL_TMPL.format(BIN_ARCH=bin_arch), yq_path_str
+        )  # nosec: B310
+        urllib.request.urlretrieve(YQ_BINARY_CHECKSUM_URL, "checksums")  # nosec: B310
+        urllib.request.urlretrieve(
+            YQ_CHECKSUM_HASHES_ORDER_URL, "checksums_hashes_order"
+        )  # nosec: B310
+        urllib.request.urlretrieve(
+            YQ_EXTRACT_CHECKSUM_SCRIPT_URL, "extract-checksum.sh"
+        )  # nosec: B310
         # The output is <BIN_NAME> <CHECKSUM>
-        checksum = subprocess.check_output(
+        checksum = subprocess.check_output(  # nosec: B603
             ["/usr/bin/bash", "extract-checksum.sh", "SHA-256", yq_path_str],
             encoding="utf-8",
             timeout=60,
@@ -431,8 +486,8 @@ def _compress_image(image: Path) -> Path:
         The compressed image path.
     """
     try:
-        subprocess.run(
-            ["virt-sparsify", "--compress", str(image), "compressed.img"],
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/virt-sparsify", "--compress", str(image), "compressed.img"],
             check=True,
             timeout=60 * 10,
         )
@@ -496,9 +551,11 @@ def build_image(config: BuildImageConfig) -> Path:
         with ChrootContextManager(IMAGE_MOUNT_DIR):
             # operator_libs_linux apt package uses dpkg -l and that does not work well with chroot
             # env, hence use subprocess run.
-            subprocess.run(["apt-get", "update", "-y"], check=True, timeout=60 * 5)
             subprocess.run(
-                ["apt-get", "install", "-y", *IMAGE_DEFAULT_APT_PACKAGES],
+                ["/usr/bin/apt-get", "update", "-y"], check=True, timeout=60 * 5
+            )  # nosec: B603
+            subprocess.run(  # nosec: B603
+                ["/usr/bin/apt-get", "install", "-y", *IMAGE_DEFAULT_APT_PACKAGES],
                 check=True,
                 timeout=60 * 10,
             )
