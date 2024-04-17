@@ -5,6 +5,7 @@
 
 import dataclasses
 import hashlib
+import logging
 import os
 import shutil
 import subprocess
@@ -13,10 +14,13 @@ import urllib.request
 from pathlib import Path
 from typing import Literal
 
-from charms.operator_libs_linux.v0 import apt, passwd
+from charms.operator_libs_linux.v0 import apt
 
 from chroot import ChrootBaseError, ChrootContextManager
 from state import Arch, BaseImage
+from utils import retry
+
+logger = logging.getLogger(__name__)
 
 APT_DEPENDENCIES = [
     "qemu-utils",  # used for qemu utilities tools to build and resize image
@@ -129,8 +133,19 @@ def _clean_build_state() -> None:
     # The commands will fail if artefacts do not exist and hence there is no need to check the
     # output of subprocess runs.
     IMAGE_MOUNT_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "dev")], timeout=30, check=False)
+    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "proc")], timeout=30, check=False)
+    subprocess.run(["umount", str(IMAGE_MOUNT_DIR / "sys")], timeout=30, check=False)
+    subprocess.run(["umount", str(IMAGE_MOUNT_DIR)], timeout=30, check=False)
+    subprocess.run(["umount", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False)
+    subprocess.run(["umount", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)], timeout=30, check=False)
     subprocess.run(
         ["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PATH)], timeout=30, check=False
+    )
+    subprocess.run(
+        ["qemu-nbd", "--disconnect", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
+        timeout=30,
+        check=False,
     )
 
 
@@ -198,6 +213,16 @@ class ImageMountError(Exception):
     """Represents an error while mounting the image to network block device."""
 
 
+@retry(tries=5, delay=5, max_delay=60, backoff=2, local_logger=logger)
+def _mount_nbd_partition() -> None:
+    """Mount the network block device partition."""
+    subprocess.run(
+        ["mount", "-o", "rw", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH), str(IMAGE_MOUNT_DIR)],
+        check=True,
+        timeout=60,
+    )
+
+
 def _mount_image_to_network_block_device(cloud_image_path: Path) -> None:
     """Mount the image to network block device in preparation for chroot.
 
@@ -213,11 +238,7 @@ def _mount_image_to_network_block_device(cloud_image_path: Path) -> None:
             check=True,
             timeout=60,
         )
-        subprocess.run(
-            ["mount", "-o", "rw", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH), str(IMAGE_MOUNT_DIR)],
-            check=True,
-            timeout=60,
-        )
+        _mount_nbd_partition()
     except subprocess.CalledProcessError as exc:
         raise ImageMountError from exc
 
@@ -295,9 +316,33 @@ def _disable_unattended_upgrades() -> None:
         )
         subprocess.run(["/usr/bin/systemctl", "mask", APT_UPGRAD_SVC], check=True, timeout=30)
         subprocess.run(["/usr/bin/systemctl", "daemon-reload"], check=True, timeout=30)
-        apt.remove_package("unattended-upgrades")
-    except (subprocess.SubprocessError, apt.PackageNotFoundError) as exc:
+        subprocess.run(["apt-get", "remove", "-y", "unattended-upgrades"], check=True, timeout=30)
+    except subprocess.SubprocessError as exc:
         raise UnattendedUpgradeDisableError from exc
+
+
+class SystemUserConfigurationError(Exception):
+    """Represents an error while adding user to chroot env."""
+
+
+UBUNTU_USER = "ubuntu"
+DOCKER_GROUP = "docker"
+MICROK8S_GROUP = "microk8s"
+
+
+def _configure_system_users() -> None:
+    """Configure system users.
+
+    Raises:
+        SystemUserConfigurationError: If there was an error configuring ubuntu user.
+    """
+    try:
+        subprocess.run(["useradd", "-m", UBUNTU_USER], check=True, timeout=30)
+        subprocess.run(["groupadd", MICROK8S_GROUP], check=True, timeout=30)
+        subprocess.run(["usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30)
+        subprocess.run(["usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30)
+    except subprocess.SubprocessError as exc:
+        raise SystemUserConfigurationError from exc
 
 
 YQ_DOWNLOAD_URL_TMPL = (
@@ -331,6 +376,9 @@ def _validate_checksum(file: Path, expected_checksum: str) -> bool:
     return sha256.hexdigest() == expected_checksum
 
 
+BIN_ARCH_MAP: dict[Arch, str] = {Arch.ARM64: "arm64", Arch.X64: "amd64"}
+
+
 def _install_external_packages(arch: Arch) -> None:
     """Install packages outside of apt.
 
@@ -343,21 +391,25 @@ def _install_external_packages(arch: Arch) -> None:
         ExternalPackageInstallError: If there was an error installing external package.
     """
     try:
-        subprocess.run(["/usr/bin/npm", "install", "--global", "yarn"], check=True, timeout=60)
-        subprocess.run(["/usr/bin/npm", "cache", "clean", "--force"], check=True, timeout=60)
-        urllib.request.urlretrieve(YQ_DOWNLOAD_URL_TMPL.format(BIN_ARCH=arch.value), "yq")
+        subprocess.run(["npm", "install", "--global", "yarn"], check=True, timeout=60 * 5)
+        subprocess.run(["npm", "cache", "clean", "--force"], check=True, timeout=60)
+        bin_arch = BIN_ARCH_MAP[arch]
+        yq_path_str = f"yq_linux_{bin_arch}"
+        urllib.request.urlretrieve(YQ_DOWNLOAD_URL_TMPL.format(BIN_ARCH=bin_arch), yq_path_str)
         urllib.request.urlretrieve(YQ_BINARY_CHECKSUM_URL, "checksums")
         urllib.request.urlretrieve(YQ_CHECKSUM_HASHES_ORDER_URL, "checksums_hashes_order")
         urllib.request.urlretrieve(YQ_EXTRACT_CHECKSUM_SCRIPT_URL, "extract-checksum.sh")
         # The output is <BIN_NAME> <CHECKSUM>
         checksum = subprocess.check_output(
-            ["/usr/bin/bash", "extract-checksum.sh", "SHA-256", "yq"], encoding="utf-8", timeout=60
+            ["/usr/bin/bash", "extract-checksum.sh", "SHA-256", yq_path_str],
+            encoding="utf-8",
+            timeout=60,
         ).split()[1]
-        yq = Path("yq")
-        yq.chmod(755)
-        yq.rename("/usr/bin/yq")
-        if not _validate_checksum(yq, checksum):
+        yq_path = Path(yq_path_str)
+        if not _validate_checksum(yq_path, checksum):
             raise ExternalPackageInstallError("Invalid checksum")
+        yq_path.chmod(755)
+        yq_path.rename("/usr/bin/yq")
     except (subprocess.SubprocessError, urllib.error.ContentTooShortError) as exc:
         raise ExternalPackageInstallError from exc
 
@@ -380,7 +432,9 @@ def _compress_image(image: Path) -> Path:
     """
     try:
         subprocess.run(
-            ["virt-sparsify", "--compress", str(image), "compressed.img"], check=True, timeout=60
+            ["virt-sparsify", "--compress", str(image), "compressed.img"],
+            check=True,
+            timeout=60 * 10,
         )
         return Path("compressed.img")
     except subprocess.CalledProcessError as exc:
@@ -397,10 +451,6 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "unzip",
     "gh",
 ]
-
-UBUNTU_USER = "ubuntu"
-DOCKER_GROUP = "docker"
-MICROK8S_GROUP = "microk8s"
 
 
 @dataclasses.dataclass
@@ -437,25 +487,36 @@ def build_image(config: BuildImageConfig) -> Path:
         cloud_image_path = _download_cloud_image(arch=config.arch, base_image=config.base_image)
         _resize_cloud_img(cloud_image_path=cloud_image_path)
         _mount_image_to_network_block_device(cloud_image_path=cloud_image_path)
+        _replace_mounted_resolv_conf()
         _resize_mount_partitions()
-    except (CloudImageDownloadError, ResizePartitionError, ImageMountError) as exc:
+    except (CloudImageDownloadError, ImageMountError, ResizePartitionError) as exc:
         raise BuildImageError from exc
 
     try:
         with ChrootContextManager(IMAGE_MOUNT_DIR):
-            _replace_mounted_resolv_conf()
-            apt.add_package(IMAGE_DEFAULT_APT_PACKAGES, update_cache=True)
+            # operator_libs_linux apt package uses dpkg -l and that does not work well with chroot
+            # env, hence use subprocess run.
+            subprocess.run(["apt-get", "update", "-y"], check=True, timeout=60 * 5)
+            subprocess.run(
+                ["apt-get", "install", "-y", *IMAGE_DEFAULT_APT_PACKAGES],
+                check=True,
+                timeout=60 * 10,
+            )
             _create_python_symlinks()
             _disable_unattended_upgrades()
-            passwd.add_user(UBUNTU_USER)
-            passwd.add_group(MICROK8S_GROUP)
-            passwd.add_user_to_group(UBUNTU_USER, MICROK8S_GROUP)
-            passwd.add_user_to_group(UBUNTU_USER, DOCKER_GROUP)
+            _configure_system_users()
             _install_external_packages(arch=config.arch)
-    except ChrootBaseError as exc:
+    except (
+        ChrootBaseError,
+        subprocess.CalledProcessError,
+        UnattendedUpgradeDisableError,
+        SystemUserConfigurationError,
+        ExternalPackageInstallError,
+    ) as exc:
         raise BuildImageError from exc
 
     try:
+        _clean_build_state()
         return _compress_image(cloud_image_path)
     except ImageCompressError as exc:
         raise BuildImageError from exc

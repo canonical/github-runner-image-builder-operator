@@ -30,7 +30,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.image_observer = image.Observer(self)
-        print(self.image_observer)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.build_image_action, self._on_build_image_action)
@@ -52,7 +51,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         Installs apt packages required to build the image.
         """
+        self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         builder.setup_builder()
+        self.unit.status = ops.ActiveStatus("")
 
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
@@ -60,6 +61,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not state:
             return
 
+        self.unit.status = ops.MaintenanceStatus("Building image.")
         build_config = builder.BuildImageConfig(
             arch=state.image_config.arch, base_image=state.image_config.base_image
         )
@@ -70,13 +72,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             num_revisions=state.revision_history_limit,
             src_path=image_path,
         )
+        self.unit.status = ops.MaintenanceStatus("Updating image.")
         with openstack_manager.OpenstackManager(cloud_config=state.cloud_config) as openstack:
             image_id = openstack.upload_image(config=upload_config)
 
         self.image_observer.update_relation_data(image_id=image_id)
+        self.unit.status = ops.MaintenanceStatus("Setting up cron.")
         cron.setup(
             interval=state.build_interval, unit_name=self.unit.name, action_name="build-image"
         )
+        self.unit.status = ops.ActiveStatus()
 
     def _on_build_image_action(self, event: ops.ActionEvent) -> None:
         """Handle build image action.

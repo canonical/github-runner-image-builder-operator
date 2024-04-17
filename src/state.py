@@ -187,7 +187,7 @@ def _parse_build_interval(charm: CharmBase) -> int:
         Build interval in hours.
     """
     try:
-        build_interval = int(charm.config.get(BUILD_INTERVAL_CONFIG_NAME, "0").strip())
+        build_interval = int(charm.config.get(BUILD_INTERVAL_CONFIG_NAME, 6))
     except ValueError as exc:
         raise ValueError("An integer value for build-interval is expected.") from exc
     if build_interval < 0 or build_interval > 24:
@@ -208,7 +208,7 @@ def _parse_revision_history_limit(charm: CharmBase) -> int:
         Number of revisions to keep before deletion.
     """
     try:
-        revision_history = int(charm.config.get(REVISION_HISTORY_LIMIT_CONFIG_NAME, "0").strip())
+        revision_history = int(charm.config.get(REVISION_HISTORY_LIMIT_CONFIG_NAME, 5))
     except ValueError as exc:
         raise ValueError("An integer value for revision history is expected.") from exc
     if revision_history < 2 or revision_history > 99:

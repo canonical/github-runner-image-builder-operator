@@ -27,6 +27,7 @@ from builder import (
     NetworkBlockDeviceError,
     ResizePartitionError,
     SupportedCloudImageArch,
+    SystemUserConfigurationError,
     UnattendedUpgradeDisableError,
     UnsupportedArchitectureError,
     apt,
@@ -153,7 +154,7 @@ def test__clean_build_state(monkeypatch: pytest.MonkeyPatch):
     builder._clean_build_state()
 
     mock_mount_dir.mkdir.assert_called_once()
-    mock_subprocess_run.assert_called_once()
+    mock_subprocess_run.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -237,6 +238,19 @@ def test__resize_cloud_img_fail(monkeypatch: pytest.MonkeyPatch):
     assert "resize error" in str(exc.getrepr())
 
 
+def test__mount_nbd_partition(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched mock subprocess run.
+    act: when _mount_nbd_partition is called.
+    assert: subprocess run call is made.
+    """
+    monkeypatch.setattr(subprocess, "run", (mock_run_call := MagicMock()))
+
+    builder._mount_nbd_partition()
+
+    mock_run_call.assert_called_once()
+
+
 def test__mount_image_to_network_block_device_fail(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched process calls that fails.
@@ -246,13 +260,28 @@ def test__mount_image_to_network_block_device_fail(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(
         subprocess,
         "run",
-        MagicMock(side_effect=[None, subprocess.CalledProcessError(1, [], "", "error mounting")]),
+        MagicMock(side_effect=subprocess.CalledProcessError(1, [], "", "error mounting")),
     )
 
     with pytest.raises(ImageMountError) as exc:
         builder._mount_image_to_network_block_device(cloud_image_path=MagicMock())
 
     assert "error mounting" in str(exc.getrepr())
+
+
+def test__mount_image_to_network_block_device(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched mock process run calls and _mount_nbd_partition call.
+    act: when _mount_image_to_network_block_device is called.
+    assert: expected calls are made.
+    """
+    monkeypatch.setattr(subprocess, "run", (run_mock := MagicMock()))
+    monkeypatch.setattr(builder, "_mount_nbd_partition", (mount_mock := MagicMock()))
+
+    builder._mount_image_to_network_block_device(cloud_image_path=MagicMock())
+
+    run_mock.assert_called_once()
+    mount_mock.assert_called_once()
 
 
 def test__replace_mounted_resolv_conf(monkeypatch: pytest.MonkeyPatch):
@@ -317,7 +346,7 @@ def test__disable_unattended_upgrades_subprocess_fail(monkeypatch: pytest.Monkey
         "run",
         MagicMock(
             side_effect=[
-                *([None] * 6),
+                *([None] * 7),
                 subprocess.SubprocessError("Failed to disable unattended upgrades"),
             ]
         ),
@@ -329,21 +358,22 @@ def test__disable_unattended_upgrades_subprocess_fail(monkeypatch: pytest.Monkey
     assert "Failed to disable unattended upgrades" in str(exc.getrepr())
 
 
-def test__disable_unattended_upgrades_apt_fail(monkeypatch: pytest.MonkeyPatch):
+def test__configure_system_users(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: given a monkeypatched apt remove_package that raises PackageNotFoundError.
-    act: when _disable_unattended_upgrades is called.
-    assert: the UnattendedUpgradeDisableError is raised.
+    arrange: given a monkeypatched subprocess run calls that raises an exception.
+    act: when _configure_system_users is called.
+    assert: SystemUserConfigurationError is raised.
     """
-    monkeypatch.setattr(subprocess, "run", MagicMock())
     monkeypatch.setattr(
-        apt, "remove_package", MagicMock(side_effect=apt.PackageNotFoundError("Package not found"))
+        builder.subprocess,
+        "run",
+        MagicMock(side_effect=[*([None] * 3), subprocess.SubprocessError("Failed to add group.")]),
     )
 
-    with pytest.raises(UnattendedUpgradeDisableError) as exc:
-        builder._disable_unattended_upgrades()
+    with pytest.raises(SystemUserConfigurationError) as exc:
+        builder._configure_system_users()
 
-    assert "Package not found" in str(exc.getrepr())
+    assert "Failed to add group." in str(exc.getrepr())
 
 
 def test__validate_checksum(tmp_path: Path):
@@ -413,7 +443,7 @@ def test__install_external_packages_error(
     monkeypatch.setattr(patch_obj, sub_func, mock)
 
     with pytest.raises(ExternalPackageInstallError) as exc:
-        builder._install_external_packages(arch=MagicMock())
+        builder._install_external_packages(arch=Arch.ARM64)
 
     assert expected_message in str(exc.getrepr())
 
@@ -430,7 +460,7 @@ def test__install_external_packages(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_validate_checksum", MagicMock())
     monkeypatch.setattr(builder, "Path", MagicMock())
 
-    assert builder._install_external_packages(arch=MagicMock()) is None
+    assert builder._install_external_packages(arch=Arch.ARM64) is None
 
 
 def test__compress_image_fail(monkeypatch: pytest.MonkeyPatch):
@@ -505,14 +535,12 @@ def test_build_image_error(
     monkeypatch.setattr(builder, "_resize_cloud_img", MagicMock())
     monkeypatch.setattr(builder, "_mount_image_to_network_block_device", MagicMock())
     monkeypatch.setattr(builder, "_resize_mount_partitions", MagicMock())
-    monkeypatch.setattr(builder, "ChrootContextManager", MagicMock())
     monkeypatch.setattr(builder, "_replace_mounted_resolv_conf", MagicMock())
-    monkeypatch.setattr(builder.apt, "add_package", MagicMock())
+    monkeypatch.setattr(builder, "ChrootContextManager", MagicMock())
+    monkeypatch.setattr(builder.subprocess, "run", MagicMock())
     monkeypatch.setattr(builder, "_create_python_symlinks", MagicMock())
     monkeypatch.setattr(builder, "_disable_unattended_upgrades", MagicMock())
-    monkeypatch.setattr(builder.passwd, "add_user", MagicMock())
-    monkeypatch.setattr(builder.passwd, "add_group", MagicMock())
-    monkeypatch.setattr(builder.passwd, "add_user_to_group", MagicMock())
+    monkeypatch.setattr(builder, "_configure_system_users", MagicMock())
     monkeypatch.setattr(builder, "_install_external_packages", MagicMock())
     monkeypatch.setattr(builder, "_compress_image", MagicMock())
     monkeypatch.setattr(patch_obj, sub_func, mock)

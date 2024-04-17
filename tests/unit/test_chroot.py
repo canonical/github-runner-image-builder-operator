@@ -42,12 +42,13 @@ def test_chroot_unmount_fail(monkeypatch: pytest.MonkeyPatch):
     assert: MoutError is raised.
     """
     monkeypatch.setattr(os, "chroot", MagicMock())
+    monkeypatch.setattr(os, "chdir", MagicMock())
     monkeypatch.setattr(
         subprocess,
         "run",
         MagicMock(
             side_effect=[
-                *([None] * 3),
+                *([None] * 5),
                 subprocess.CalledProcessError(
                     returncode=1, cmd=[], output="", stderr="Failed to unmount dirs"
                 ),
@@ -68,12 +69,13 @@ def test_chroot_sync_fail(monkeypatch: pytest.MonkeyPatch):
     assert: SyncError is raised.
     """
     monkeypatch.setattr(os, "chroot", MagicMock())
+    monkeypatch.setattr(os, "chdir", MagicMock())
     monkeypatch.setattr(
         subprocess,
         "run",
         MagicMock(
             side_effect=[
-                *([None] * 5),
+                *([None] * 3),
                 subprocess.CalledProcessError(
                     returncode=1, cmd=[], output="", stderr="Failed to sync dirs"
                 ),
@@ -94,6 +96,7 @@ def test_chroot_umount_dev_fail(monkeypatch: pytest.MonkeyPatch):
     assert: SyncError is raised.
     """
     monkeypatch.setattr(os, "chroot", MagicMock())
+    monkeypatch.setattr(os, "chdir", MagicMock())
     monkeypatch.setattr(os, "fchdir", MagicMock())
     monkeypatch.setattr(os, "close", MagicMock())
     monkeypatch.setattr(
