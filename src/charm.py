@@ -68,6 +68,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         image_path = builder.build_image(config=build_config)
         upload_config = openstack_manager.UploadImageConfig(
             arch=state.image_config.arch,
+            app_name=self.app.name,
             base=state.image_config.base_image,
             num_revisions=state.revision_history_limit,
             src_path=image_path,
@@ -99,6 +100,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         image_path = builder.build_image(config=build_config)
         upload_config = openstack_manager.UploadImageConfig(
             arch=state.image_config.arch,
+            app_name=self.app.name,
             base=state.image_config.base_image,
             num_revisions=state.revision_history_limit,
             src_path=image_path,

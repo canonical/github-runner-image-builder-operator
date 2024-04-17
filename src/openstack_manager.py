@@ -43,18 +43,20 @@ class UploadImageConfig:
 
     Attributes:
         arch: The architecture the image was built for.
+        app_name: The application name as a part of image naming.
         base: The ubuntu OS base the image was created with.
         num_revisions: The number of revisions to keep for an image.
         src_path: The path to image to upload.
     """
 
     arch: Arch
+    app_name: str
     base: BaseImage
     num_revisions: int
     src_path: Path
 
 
-IMAGE_NAME_TMPL = "github-runner-{IMAGE_BASE}-v1"
+IMAGE_NAME_TMPL = "{IMAGE_BASE}-{APP_NAME}-{ARCH}"
 
 
 class OpenstackManager:
@@ -147,22 +149,27 @@ class OpenstackManager:
             The created image ID.
         """
         try:
-            image_name = IMAGE_NAME_TMPL.format(IMAGE_BASE=config.base.value)
+            image_name = IMAGE_NAME_TMPL.format(
+                IMAGE_BASE=config.base.value, APP_NAME=config.app_name, ARCH=config.arch.value
+            )
             self._prune_old_images(image_name=image_name, num_revisions=config.num_revisions)
             image: Image = self.conn.create_image(
                 name=image_name,
                 filename=str(config.src_path),
+                allow_duplicates=True,
                 wait=True,
             )
             return image.id
         except openstack.exceptions.OpenStackCloudException as exc:
             raise UploadImageError from exc
 
-    def get_latest_image_id(self, image_base: BaseImage) -> str | None:
+    def get_latest_image_id(self, image_base: BaseImage, app_name: str, arch: Arch) -> str | None:
         """Fetch the latest image id.
 
         Args:
             image_base: The image OS base to search for.
+            app_name: The name of the application responsible for managing the image.
+            arch: The architecture used to build the image name.
 
         Raises:
             GetImageError: If there was an error fetching image from Openstack.
@@ -170,7 +177,9 @@ class OpenstackManager:
         Returns:
             The image ID if exists, None otherwise.
         """
-        image_name = IMAGE_NAME_TMPL.format(IMAGE_BASE=image_base.value)
+        image_name = IMAGE_NAME_TMPL.format(
+            IMAGE_BASE=image_base.value, APP_NAME=app_name, ARCH=arch.value
+        )
         try:
             images = self._get_images_by_latest(image_name=image_name)
         except OpenstackConnectionError as exc:

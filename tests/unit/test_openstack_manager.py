@@ -12,6 +12,8 @@ import pytest
 
 import openstack_manager
 from openstack_manager import (
+    Arch,
+    BaseImage,
     GetImageError,
     Image,
     OpenstackConnectionError,
@@ -220,7 +222,7 @@ def test_get_latest_image_id_error(manager: OpenstackManager):
     manager._get_images_by_latest = MagicMock(side_effect=OpenstackConnectionError("Unauthorized"))
 
     with pytest.raises(GetImageError) as exc:
-        manager.get_latest_image_id(image_base=MagicMock())
+        manager.get_latest_image_id(image_base=MagicMock(), app_name="app", arch=Arch.ARM64)
 
     assert "Unauthorized" in str(exc.getrepr())
 
@@ -249,4 +251,9 @@ def test_get_latest_image_id(
     """
     manager._get_images_by_latest = MagicMock(return_value=images)
 
-    assert manager.get_latest_image_id(image_base=MagicMock()) == expected_id
+    assert (
+        manager.get_latest_image_id(
+            image_base=BaseImage.JAMMY, app_name="app-name", arch=Arch.ARM64
+        )
+        == expected_id
+    )

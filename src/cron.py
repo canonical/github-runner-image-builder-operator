@@ -47,7 +47,7 @@ def setup(interval: int, unit_name: str, action_name: str) -> None:
 
     cron_text = (
         f"0 */{interval} * * * ubuntu /usr/bin/juju-exec {unit_name} "
-        f"JUJU_DISPATCH_PATH={action_name} ./dispatch"
+        f"JUJU_DISPATCH_PATH=actions/{action_name} JUJU_ACTION_NAME={action_name} ./dispatch\n"
     )
     BUILD_SCHEDULE_PATH.write_text(cron_text, encoding="utf-8")
     service_restart("cron")

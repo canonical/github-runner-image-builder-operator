@@ -61,7 +61,11 @@ class Observer(ops.Object):
             return
 
         with OpenstackManager(cloud_config=state.cloud_config) as openstack:
-            image_id = openstack.get_latest_image_id(image_base=state.image_config.base_image)
+            image_id = openstack.get_latest_image_id(
+                image_base=state.image_config.base_image,
+                app_name=self.charm.app.name,
+                arch=state.image_config.arch,
+            )
             if not image_id:
                 logger.warning("Image not yet ready.")
                 return
