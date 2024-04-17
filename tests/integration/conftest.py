@@ -20,8 +20,8 @@ def charm_file(pytestconfig: pytest.Config) -> str:
     return f"./{charm}"
 
 
-@pytest.fixture(scope="module")
-def openstack_clouds_yaml(pytestconfig: pytest.Config) -> Optional[str]:
+@pytest.fixture(scope="module", name="openstack_clouds_yaml")
+def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optional[str]:
     """Configured clouds-yaml setting."""
     clouds_yaml = pytestconfig.getoption("--openstack-clouds-yaml")
     return Path(clouds_yaml).read_text(encoding="utf-8") if clouds_yaml else None

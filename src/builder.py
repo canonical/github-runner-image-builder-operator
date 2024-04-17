@@ -30,6 +30,7 @@ APT_DEPENDENCIES = [
 ]
 
 
+# nosec: B603: All subprocess runs are run with trusted executables.
 class DependencyInstallError(Exception):
     """Represents an error while installing required dependencies."""
 
@@ -195,7 +196,8 @@ def _download_cloud_image(arch: Arch, base_image: BaseImage) -> Path:
         raise CloudImageDownloadError from exc
 
     try:
-        image_path, _ = urllib.request.urlretrieve(
+        # The ubuntu-cloud-images is a trusted source
+        image_path, _ = urllib.request.urlretrieve(  # nosec: B310
             CLOUD_IMAGE_URL_TMPL.format(BASE_IMAGE=base_image.value, BIN_ARCH=bin_arch),
             CLOUD_IMAGE_FILE_NAME.format(BASE_IMAGE=base_image.value, BIN_ARCH=bin_arch),
         )
