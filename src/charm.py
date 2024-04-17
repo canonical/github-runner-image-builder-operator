@@ -6,13 +6,12 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
-from datetime import timedelta
 from typing import Any
 
 import ops
-from charms.resurrect.v0.resurrect import Resurrect, ResurrectEvent
 
 import builder
+import cron
 import image
 import openstack_manager
 from state import CharmConfigInvalidError, CharmState
@@ -31,20 +30,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.image_observer = image.Observer(self)
-        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.build_image_action, self._on_build_image_action)
-
-        state = self._load_state()
-        if not state:
-            return
-        # only register resurrect if state is valid.
-        # this line cannot be tested due to framework's singleton registration that does not
-        # allow multiple charm to be instantiated during testing.
-        self.resurrect: Resurrect | None = Resurrect(  # pragma: nocover
-            self, every=timedelta(hours=state.build_interval)
-        )
 
     def _load_state(self) -> CharmState | None:
         """Load the charm state if valid, set charm to blocked if otherwise.
@@ -57,12 +45,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.unit.status = ops.BlockedStatus(str(exc))
             return None
-
-    def _on_start(self, _: ops.StartEvent) -> None:
-        """Handle the start event."""
-        if not self.resurrect:
-            return
-        self.resurrect.start()
 
     def _on_install(self, _: ops.InstallEvent) -> None:
         """Handle installation of the charm.
@@ -108,6 +90,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         self._build_image(state=state)
+        cron.setup(state.build_interval)
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_image_action(self, event: ops.ActionEvent) -> None:
@@ -122,14 +105,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         image_id = self._build_image(state=state)
         event.set_results({"id": image_id})
-
-    def _on_resurrect_timeout(self, _: ResurrectEvent) -> None:
-        """Handle the resurrect event."""
-        state = self._load_state()
-        if not state:
-            return
-
-        self._build_image(state=state)
 
 
 if __name__ == "__main__":  # pragma: nocover
