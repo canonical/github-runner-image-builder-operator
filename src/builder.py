@@ -294,7 +294,7 @@ def _resize_mount_partitions() -> None:
             timeout=60,
         )
         subprocess.run(  # nosec: B603
-            ["/usr/bin/resize2fs", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
+            ["/usr/sbin/resize2fs", str(NETWORK_BLOCK_DEVICE_PARTITION_PATH)],
             check=True,
             timeout=60,
         )
@@ -376,13 +376,13 @@ def _configure_system_users() -> None:
     """
     try:
         subprocess.run(
-            ["/usr/bin/useradd", "-m", UBUNTU_USER], check=True, timeout=30
+            ["/usr/sbin/useradd", "-m", UBUNTU_USER], check=True, timeout=30
         )  # nosec: B603
         subprocess.run(
-            ["/usr/bin/groupadd", MICROK8S_GROUP], check=True, timeout=30
+            ["/usr/sbin/groupadd", MICROK8S_GROUP], check=True, timeout=30
         )  # nosec: B603
         subprocess.run(  # nosec: B603
-            ["/usr/bin/usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30
+            ["/usr/sbin/usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30
         )
         subprocess.run(  # nosec: B603
             ["/usr/bin/usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30
