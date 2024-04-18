@@ -44,7 +44,7 @@ async def test_image_cron(app: Application, openstack_connection: Connection):
     }
     env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
     action: Action = await unit.run(
-        f"/usr/bin/juju-exec {unit.name} {env} /var/lib/juju/agent/unit-{unit.name.replace('/','-')}/charm/dispatch",
+        f"/usr/bin/juju-exec {unit.name} {env} /var/lib/juju/agents/unit-{unit.name.replace('/','-')}/charm/dispatch",
         timeout=20 * 60,
     )
     await action.wait()
