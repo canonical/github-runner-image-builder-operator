@@ -385,7 +385,7 @@ def _configure_system_users() -> None:
             ["/usr/sbin/usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30
         )
         subprocess.run(  # nosec: B603
-            ["/usr/bin/usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30
+            ["/usr/sbin/usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30
         )
     except subprocess.SubprocessError as exc:
         raise SystemUserConfigurationError from exc
