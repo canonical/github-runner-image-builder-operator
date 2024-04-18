@@ -35,7 +35,7 @@ class Observer(ops.Object):
         Args:
             charm: The parent charm to attach the observer to.
         """
-        super().__init__(charm, "agent-observer")
+        super().__init__(charm, "image-observer")
         self.charm = charm
 
         charm.framework.observe(
