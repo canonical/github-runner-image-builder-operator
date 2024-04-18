@@ -15,15 +15,16 @@ from juju.model import Model
 from pytest_operator.plugin import OpsTest
 
 
-def charm_file(pytestconfig: pytest.Config) -> str:
+@pytest.fixture(name="charm_file")
+def charm_file_fixture(pytestconfig: pytest.Config) -> str:
     """Path to the built charm."""
     charm = pytestconfig.getoption("--charm-file")
     assert charm, "Please specify the --charm-file command line option"
     return f"./{charm}"
 
 
-@pytest.fixture(scope="module")
-def model(ops_test: OpsTest) -> Model:
+@pytest.fixture(scope="module", name="model")
+def model_fixture(ops_test: OpsTest) -> Model:
     """Juju model used in the test."""
     assert ops_test.model is not None
     return ops_test.model
