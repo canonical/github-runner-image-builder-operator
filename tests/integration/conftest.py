@@ -8,7 +8,9 @@ from typing import Optional
 import openstack
 import openstack.connection
 import pytest
+import pytest_asyncio
 import yaml
+from juju.application import Application
 from juju.model import Model
 from pytest_operator.plugin import OpsTest
 
@@ -18,6 +20,23 @@ def charm_file(pytestconfig: pytest.Config) -> str:
     charm = pytestconfig.getoption("--charm-file")
     assert charm, "Please specify the --charm-file command line option"
     return f"./{charm}"
+
+
+@pytest.fixture(scope="module")
+def model(ops_test: OpsTest) -> Model:
+    """Juju model used in the test."""
+    assert ops_test.model is not None
+    return ops_test.model
+
+
+@pytest_asyncio.fixture(scope="module", name="app")
+async def app_fixture(model: Model, charm_file: str) -> Application:
+    """The deployed application fixture."""
+    app: Application = await model.deploy(
+        charm_file, constraints="cores=2 mem=4G root-disk=10G virt-type=virtual-machine"
+    )
+    await model.wait_for_idle(apps=[app.name], timeout=30 * 60)
+    return app
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -39,10 +58,3 @@ def openstack_connection_fixture(
     clouds_yaml_path.write_text(data=openstack_clouds_yaml, encoding="utf-8")
     first_cloud = next(iter(openstack_clouds_yaml_yaml["clouds"].keys()))
     return openstack.connect(first_cloud)
-
-
-@pytest.fixture(scope="module")
-def model(ops_test: OpsTest) -> Model:
-    """Juju model used in the test."""
-    assert ops_test.model is not None
-    return ops_test.model
