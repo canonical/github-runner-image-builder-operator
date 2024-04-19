@@ -302,6 +302,34 @@ def _resize_mount_partitions() -> None:
         raise ResizePartitionError from exc
 
 
+APROXY_ARM_REVISION = 9
+APROXY_AMD_REVISION = 8
+
+
+class AproxyInstallError(Exception):
+    """Represents an error while installing Aproxy."""
+
+
+def _install_aproxy(arch: Arch) -> None:
+    """Installs aproxy snap.
+
+    Args:
+        arch: The architecture for aproxy to download.
+
+    Raises:
+        AproxyInstallError: If there was an error installing aproxy snap.
+    """
+    revision = APROXY_ARM_REVISION if arch == Arch.ARM64 else APROXY_AMD_REVISION
+    try:
+        subprocess.run(
+            ["/usr/bin/snap", "install", "aproxy", "--revision", str(revision)],
+            check=True,
+            timeout=60 * 5,
+        )  # nosec: B603
+    except subprocess.CalledProcessError as exc:
+        raise AproxyInstallError from exc
+
+
 DEFAULT_PYTHON_PATH = Path("/usr/bin/python3")
 SYM_LINK_PYTHON_PATH = Path("/usr/bin/python")
 
@@ -475,6 +503,7 @@ class ImageCompressError(Exception):
     """Represents an error while compressing cloud-img."""
 
 
+@retry(tries=5, delay=5, max_delay=60, backoff=2, local_logger=logger)
 def _compress_image(image: Path) -> Path:
     """Compress the cloud image.
 
@@ -561,6 +590,7 @@ def build_image(config: BuildImageConfig) -> Path:
                 check=True,
                 timeout=60 * 10,
             )
+            _install_aproxy(arch=config.arch)
             _create_python_symlinks()
             _disable_unattended_upgrades()
             _configure_system_users()

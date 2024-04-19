@@ -60,7 +60,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         builder.setup_builder()
-        self.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.WaitingStatus("Waiting for first image build.")
 
     def _build_image(self, state: CharmState) -> str:
         """Build image and propagate the new image.
@@ -71,7 +71,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Returns:
             The built image ID.
         """
-        self.unit.status = ops.MaintenanceStatus("Building image.")
+        self.unit.status = ops.StatusBase.from_name(self.unit.status.name, "Building image.")
         build_config = builder.BuildImageConfig(
             arch=state.image_config.arch, base_image=state.image_config.base_image
         )
@@ -83,7 +83,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             num_revisions=state.revision_history_limit,
             src_path=image_path,
         )
-        self.unit.status = ops.MaintenanceStatus("Updating image.")
+        self.unit.status = ops.StatusBase.from_name(self.unit.status.name, "Updating image.")
         with openstack_manager.OpenstackManager(cloud_config=state.cloud_config) as openstack:
             image_id = openstack.upload_image(config=upload_config)
 
@@ -112,6 +112,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         image_id = self._build_image(state=state)
         event.set_results({"id": image_id})
+        self.unit.status = ops.ActiveStatus()
 
     def _on_cron_trigger(self, _: cron.CronEvent) -> None:
         """Handle cron fired event."""
@@ -120,6 +121,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         self._build_image(state=state)
+        self.unit.status = ops.ActiveStatus()
 
 
 if __name__ == "__main__":  # pragma: nocover

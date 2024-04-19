@@ -152,7 +152,7 @@ class OpenstackManager:
             image_name = IMAGE_NAME_TMPL.format(
                 IMAGE_BASE=config.base.value, APP_NAME=config.app_name, ARCH=config.arch.value
             )
-            self._prune_old_images(image_name=image_name, num_revisions=config.num_revisions)
+            self._prune_old_images(image_name=image_name, num_revisions=config.num_revisions - 1)
             image: Image = self.conn.create_image(
                 name=image_name,
                 filename=str(config.src_path),

@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import time
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -14,6 +15,7 @@ import pytest
 
 import builder
 from builder import (
+    AproxyInstallError,
     Arch,
     BuilderSetupError,
     BuildImageError,
@@ -319,6 +321,23 @@ def test__resize_mount_partitions(monkeypatch: pytest.MonkeyPatch):
     assert "resize error" in str(exc.getrepr())
 
 
+def test__install_aproxy_fail(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched subprocess run function.
+    act: when _install_aproxy is called.
+    assert: AproxyInstallError is raised.
+    """
+    mock_symlink_call = MagicMock(
+        side_effect=subprocess.CalledProcessError(1, [], "", "snap error")
+    )
+    monkeypatch.setattr(subprocess, "run", mock_symlink_call)
+
+    with pytest.raises(AproxyInstallError) as exc:
+        builder._install_aproxy(arch=MagicMock())
+
+    assert "snap error" in str(exc.getrepr())
+
+
 def test__create_python_symlinks(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched os.symlink function.
@@ -469,6 +488,8 @@ def test__compress_image_fail(monkeypatch: pytest.MonkeyPatch):
     act: when _compress_image is called.
     assert: ImageCompressError is raised.
     """
+    # Bypass decorated retry sleep
+    monkeypatch.setattr(time, "sleep", MagicMock())
     monkeypatch.setattr(
         subprocess,
         "run",

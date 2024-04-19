@@ -9,7 +9,7 @@ jobs:
     secrets: inherit
     with:
       juju-channel: 3.2/stable
-      pre-run-script: scripts/setup-microstack.sh
+      pre-run-script: tests/integration/pre-run.sh
       provider: microk8s
       channel: 1.26-strict/stable
       modules: '["test_charm"]'
