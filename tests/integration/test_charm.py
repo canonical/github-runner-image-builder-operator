@@ -9,17 +9,15 @@ import logging
 from datetime import datetime
 from typing import NamedTuple
 
+from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
-from openstack.compute.v2.keypair import Keypair
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
-from openstack_manager import IMAGE_NAME_TMPL
-from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
-from tests.integration.helpers import wait_for, wait_for_valid_connection
+from tests.integration.helpers import wait_for
 
 logger = logging.getLogger(__name__)
 
@@ -158,49 +156,12 @@ TEST_RUNNER_COMMANDS = (
 )
 
 
-# The local
-async def test_image(  # pylint: disable=too-many-locals
-    model: Model, app: Application, openstack_connection: Connection, ssh_key: Keypair
-):
+async def test_image(ssh_connection: SSHConnection):
     """
     arrange: given a latest image build, a ssh-key and a server.
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=30 * 60)
-    network_name = "demo-network"
-    key_name = "test-image-builder-keys"
-    server_name = "test-server"
-
-    # the config is the entire config info dict, weird.
-    # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
-    config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
-
-    images: list[Image] = openstack_connection.search_images(
-        IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
-        )
-    )
-    assert images, "No built image found."
-    openstack_connection.create_server(
-        name=server_name,
-        image=images[0],
-        key_name=key_name,
-        # these are provided by sunbeam setup in pre-run.sh
-        flavor="m1.small",
-        network=network_name,
-        timeout=120,
-        wait=True,
-    )
-
-    ssh_connection = wait_for_valid_connection(
-        connection=openstack_connection,
-        server_name=server_name,
-        network=network_name,
-        ssh_key=ssh_key.name,
-    )
-
     for command in TEST_RUNNER_COMMANDS:
         logger.info("Running test: %s", command.name)
         result: Result = ssh_connection.run(command.command)
