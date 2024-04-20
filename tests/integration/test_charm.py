@@ -66,9 +66,10 @@ async def test_image_cron(model: Model, app: Application, openstack_connection: 
             Whether there exists an image that has been created after dispatch time.
         """
         images: list[Image] = openstack_connection.list_images()
-        logger.info("Images: %s", images)
+        logger.info("Images: %s, dispatch time: %s", images, dispatch_time)
         return any(
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ") >= dispatch_time
+            # .now() is required for timezone aware date comparison.
+            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").now() >= dispatch_time.now()
             for image in images
         )
 
@@ -171,19 +172,20 @@ async def test_image(  # pylint: disable=too-many-locals
     key_name = "test-image-builder-keys"
     server_name = "test-server"
 
+    # the config is the entire config info dict, weird.
+    # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
     config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]
+    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
-    image: Image | None = openstack_connection.get_image(
+    images: list[Image] = openstack_connection.search_images(
         IMAGE_NAME_TMPL.format(
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
     )
-    logger.info("Image: %s", image)
-    assert image, "No built image found."
+    assert images, "No built image found."
     openstack_connection.create_server(
         name=server_name,
-        image=image,
+        image=images[0],
         key_name=key_name,
         # these are provided by sunbeam setup in pre-run.sh
         flavor="m1.small",

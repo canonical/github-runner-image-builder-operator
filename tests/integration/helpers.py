@@ -34,7 +34,10 @@ def wait_for_valid_connection(
     """
     start_time = time.time()
     while time.time() - start_time <= timeout:
-        server: Server = connection.get_server(name_or_id=server_name)
+        server: Server | None = connection.get_server(name_or_id=server_name)
+        if not server or server.networks:
+            time.sleep(10)
+            continue
         for address in server.networks[network]:
             ip = address["addr"]
             ssh_connection = SSHConnection(
@@ -46,6 +49,7 @@ def wait_for_valid_connection(
             result: Result = ssh_connection.run("echo 'hello world'")
             if result.ok:
                 return ssh_connection
+        time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
 
 
