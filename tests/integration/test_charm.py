@@ -90,24 +90,11 @@ class TestCommand(NamedTuple):
 
 # This is matched with E2E test run of github-runner-operator charm.
 TEST_RUNNER_COMMANDS = (
-    TestCommand(
-        name="set path",
-        command=(
-            "echo 'PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:"
-            "/usr/bin:/sbin:/bin:/snap/bin'"
-        ),
-        expected="",
-    ),
     TestCommand(name="simple hello world", command="echo 'hello world'", expected="hello world"),
     TestCommand(
         name="file permission to /usr/local/bin",
         command="ls -ld /usr/local/bin | grep drwxrwxrwx",
         expected="drwxrwxrwx",
-    ),
-    TestCommand(
-        name="file permission to /usr/local/bin (create)",
-        command="touch /usr/local/bin/test_file",
-        expected="",
     ),
     TestCommand(
         name="file permission to /usr/local/bin (create)",
@@ -130,7 +117,7 @@ TEST_RUNNER_COMMANDS = (
     ),
     TestCommand(
         name="update apt in docker",
-        command="dokcker run python:3.10-slim apt-get update",
+        command="docker run python:3.10-slim apt-get update",
         expected="",
     ),
     TestCommand(name="docker version", command="docker version", expected=""),

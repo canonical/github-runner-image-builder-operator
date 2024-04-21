@@ -366,6 +366,7 @@ class SystemUserConfigurationError(Exception):
 UBUNTU_USER = "ubuntu"
 DOCKER_GROUP = "docker"
 MICROK8S_GROUP = "microk8s"
+UBUNUT_HOME_PATH = Path("/home/ubuntu")
 
 
 def _configure_system_users() -> None:
@@ -375,18 +376,24 @@ def _configure_system_users() -> None:
         SystemUserConfigurationError: If there was an error configuring ubuntu user.
     """
     try:
-        subprocess.run(
+        subprocess.run(  # nosec: B603
             ["/usr/sbin/useradd", "-m", UBUNTU_USER], check=True, timeout=30
-        )  # nosec: B603
-        subprocess.run(
+        )
+        subprocess.run(  # nosec: B603
             ["/usr/sbin/groupadd", MICROK8S_GROUP], check=True, timeout=30
-        )  # nosec: B603
+        )
         subprocess.run(  # nosec: B603
             ["/usr/sbin/usermod", "-aG", DOCKER_GROUP, UBUNTU_USER], check=True, timeout=30
         )
         subprocess.run(  # nosec: B603
             ["/usr/sbin/usermod", "-aG", MICROK8S_GROUP, UBUNTU_USER], check=True, timeout=30
         )
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/chmod", "777", "/usr/local/bin"], check=True, timeout=30
+        )
+
+        with (UBUNUT_HOME_PATH / ".profile").open("a") as profile_file:
+            profile_file.write("PATH=$PATH:/home/ubuntu/.local/bin\n")
     except subprocess.SubprocessError as exc:
         raise SystemUserConfigurationError from exc
 
@@ -540,12 +547,18 @@ def build_image(config: BuildImageConfig) -> Path:
     Returns:
         The saved image path.
     """
+    logger.info("Clean build state.")
     _clean_build_state()
     try:
+        logger.info("Downloading cloud image.")
         cloud_image_path = _download_cloud_image(arch=config.arch, base_image=config.base_image)
+        logger.info("Resizing cloud image.")
         _resize_cloud_img(cloud_image_path=cloud_image_path)
+        logger.info("Mounting network block device.")
         _mount_image_to_network_block_device(cloud_image_path=cloud_image_path)
+        logger.info("Replacing resolv.conf.")
         _replace_mounted_resolv_conf()
+        logger.info("Resizing partitions.")
         _resize_mount_partitions()
     except (CloudImageDownloadError, ImageMountError, ResizePartitionError) as exc:
         raise BuildImageError from exc
@@ -554,6 +567,7 @@ def build_image(config: BuildImageConfig) -> Path:
         with ChrootContextManager(IMAGE_MOUNT_DIR):
             # operator_libs_linux apt package uses dpkg -l and that does not work well with chroot
             # env, hence use subprocess run.
+            logger.info("Installing apt packages")
             subprocess.run(
                 ["/usr/bin/apt-get", "update", "-y"], check=True, timeout=60 * 5
             )  # nosec: B603
@@ -562,10 +576,15 @@ def build_image(config: BuildImageConfig) -> Path:
                 check=True,
                 timeout=60 * 10,
             )
+            logger.info("Creating python symlinks")
             _create_python_symlinks()
+            logger.info("Disabling unattended upgrades")
             _disable_unattended_upgrades()
+            logger.info("Configuring system users")
             _configure_system_users()
+            logger.info("Installing external packages")
             _install_external_packages(arch=config.arch)
+            logger.info("")
     except (
         ChrootBaseError,
         subprocess.CalledProcessError,
@@ -577,6 +596,7 @@ def build_image(config: BuildImageConfig) -> Path:
 
     try:
         _clean_build_state()
+        logger.info("Compressing image")
         return _compress_image(cloud_image_path)
     except ImageCompressError as exc:
         raise BuildImageError from exc

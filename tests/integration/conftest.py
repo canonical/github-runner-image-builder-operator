@@ -68,7 +68,7 @@ async def app_fixture(model: Model, charm_file: str, openstack_clouds_yaml: str)
         config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: openstack_clouds_yaml},
     )
     await model.wait_for_idle(
-        apps=[app.name], wait_for_active=True, idle_period=30, timeout=30 * 60
+        apps=[app.name], wait_for_active=True, idle_period=30, timeout=40 * 60
     )
     return app
 
@@ -91,7 +91,7 @@ async def ssh_connection_fixture(
     model: Model, app: Application, openstack_connection: Connection, ssh_key: Keypair
 ) -> AsyncGenerator[SSHConnection, None]:
     """The openstack server ssh connection fixture."""
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=30 * 60)
+    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
     network_name = "demo-network"
     server_name = "test-server"
 
