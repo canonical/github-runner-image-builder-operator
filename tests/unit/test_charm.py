@@ -78,17 +78,35 @@ def test_block_on_state_error(
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
 
 
+def test__on_install_invalid_state(charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monkeypatched _load_state internal method that returns false.
+    act: when on_install is called.
+    assert: the event is deferred.
+    """
+    original_load_state = charm._load_state
+    charm._load_state = MagicMock(return_value=False)
+
+    charm._on_install(event=(mock_event := MagicMock()))
+
+    mock_event.defer.assert_called_once()
+    charm._load_state = original_load_state
+
+
 def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
-    arrange: given a monekypatched builder.setup_builder function.
+    arrange: given a monekypatched builder.setup_builder and builder.configure_proxy function.
     act: when _on_install is called.
-    assert: setup_builder is called.
+    assert: setup_builder and configure_proxy is called.
     """
+    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
+    monkeypatch.setattr(builder, "configure_proxy", (configure_mock := MagicMock()))
     monkeypatch.setattr(builder, "setup_builder", (setup_mock := MagicMock()))
 
     charm._on_install(MagicMock())
 
+    configure_mock.assert_called_once()
     setup_mock.assert_called_once()
 
 
@@ -104,6 +122,7 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
     )
     monkeypatch.setattr(cron, "setup", (cron_mock := MagicMock()))
     charm.image_observer = image_observer_mock
+    monkeypatch.setattr(builder, "configure_proxy", (configure_proxy_mock := MagicMock()))
     monkeypatch.setattr(builder, "build_image", (build_image_mock := MagicMock()))
     openstack_manager_contenxt_mock = MagicMock()
     openstack_manager_contenxt_mock.__enter__.return_value = (
@@ -117,6 +136,7 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
 
     charm._on_config_changed(MagicMock())
 
+    configure_proxy_mock.assert_called_once()
     build_image_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()

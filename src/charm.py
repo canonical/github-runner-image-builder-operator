@@ -53,12 +53,24 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(str(exc))
             return None
 
-    def _on_install(self, _: ops.InstallEvent) -> None:
+    def _on_install(self, event: ops.InstallEvent) -> None:
         """Handle installation of the charm.
 
         Installs apt packages required to build the image.
+
+        Args:
+            event: The event fired on install hook.
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
+        state = self._load_state()
+        if not state:
+            # Defer this event since on install should be re-triggered to setup dependencies for
+            # the charm. Since the charm goes into blocked state and the user reconfigures the
+            # state, config_changed event should be queued after the deferred on_install.
+            event.defer()
+            return
+
+        builder.configure_proxy(proxy=state.proxy_config)
         builder.setup_builder()
         self.unit.status = ops.WaitingStatus("Waiting for first image build.")
 
@@ -96,6 +108,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not state:
             return
 
+        builder.configure_proxy(proxy=state.proxy_config)
         self._build_image(state=state)
         cron.setup(state.build_interval, self.model.name, self.unit.name)
         self.unit.status = ops.ActiveStatus()

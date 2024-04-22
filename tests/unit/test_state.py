@@ -25,7 +25,9 @@ from state import (
     ImageConfig,
     InvalidCloudConfigError,
     InvalidImageConfigError,
+    ProxyConfig,
     UnsupportedArchitectureError,
+    os,
 )
 from tests.unit.factories import MockCharmFactory
 
@@ -362,6 +364,17 @@ def test__parse_openstack_clouds_config(cloud_config: str, expected: dict):
     assert state._parse_openstack_clouds_config(charm) == expected
 
 
+def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched os.environ with juju proxy values.
+    act: when ProxyConfig.from_env is called.
+    assert: expected proxy config is returned.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value="test"))
+
+    assert ProxyConfig.from_env() == ProxyConfig(http="test", https="test", no_proxy="test")
+
+
 @pytest.mark.parametrize(
     "patch_obj, sub_func, exception, expected_message",
     [
@@ -424,6 +437,7 @@ def test_charm_state(monkeypatch: pytest.MonkeyPatch):
     assert: charm state is returned.
     """
     monkeypatch.setattr(platform, "machine", lambda: "x86_64")
+    monkeypatch.setattr(os, "environ", {})
 
     charm = MockCharmFactory()
     assert state.CharmState.from_charm(charm) == state.CharmState(
@@ -432,5 +446,6 @@ def test_charm_state(monkeypatch: pytest.MonkeyPatch):
         image_config=ImageConfig(
             arch=Arch.X64, base_image=BaseImage(charm.config[BASE_IMAGE_CONFIG_NAME])
         ),
+        proxy_config=None,
         revision_history_limit=int(charm.config[REVISION_HISTORY_LIMIT_CONFIG_NAME]),
     )

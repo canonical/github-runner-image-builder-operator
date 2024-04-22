@@ -19,10 +19,84 @@ from typing import Literal
 from charms.operator_libs_linux.v0 import apt
 
 from chroot import ChrootBaseError, ChrootContextManager
-from state import Arch, BaseImage
+from state import Arch, BaseImage, ProxyConfig
 from utils import retry
 
 logger = logging.getLogger(__name__)
+
+APT_CONF = Path("/etc/apt/apt.conf")
+APT_HTTP_PROXY = "Acquire::http::Proxy"
+APT_HTTPS_PROXY = "Acquire::https::Proxy"
+
+
+def _configure_apt_proxy(proxy: ProxyConfig | None) -> None:
+    """Configure apt proxy by writing to apt.conf.
+
+    Args:
+        proxy: The charm proxy configuration.
+    """
+    apt_conf_contents = APT_CONF.read_text(encoding="utf-8")
+    contains_proxy_lines = (
+        APT_HTTP_PROXY in apt_conf_contents and APT_HTTPS_PROXY in apt_conf_contents
+    )
+    lines_without_proxy = tuple(
+        line
+        for line in apt_conf_contents.split("\n")
+        if APT_HTTP_PROXY not in line and APT_HTTPS_PROXY not in line
+    )
+
+    if not proxy:
+        if not contains_proxy_lines:
+            return
+        APT_CONF.write_text("\n".join(lines_without_proxy), encoding="utf-8")
+        return
+
+    apt_conf_contents = "\n".join(
+        (
+            *lines_without_proxy,
+            f"{APT_HTTP_PROXY} {proxy.http};",
+            f"{APT_HTTPS_PROXY} {proxy.https};",
+        )
+    )
+    APT_CONF.write_text(apt_conf_contents, encoding="utf-8")
+
+
+HTTP_PROXY = "HTTP_PROXY"
+HTTPS_PROXY = "HTTPS_PROXY"
+NO_PROXY = "NO_PROXY"
+
+
+def _configure_proxy_env(proxy: ProxyConfig | None) -> None:
+    """Set/Unset proxy environment variables.
+
+    Args:
+        proxy: The charm proxy configuration.
+    """
+    if not proxy:
+        if HTTP_PROXY in os.environ:
+            os.environ.pop(HTTP_PROXY)
+        if HTTPS_PROXY in os.environ:
+            os.environ.pop(HTTPS_PROXY)
+        if NO_PROXY in os.environ:
+            os.environ.pop(NO_PROXY)
+        return
+    os.environ[HTTP_PROXY] = proxy.http
+    os.environ[HTTPS_PROXY] = proxy.https
+    os.environ[NO_PROXY] = proxy.no_proxy
+
+
+def configure_proxy(proxy: ProxyConfig | None) -> None:
+    """Enable proxy configurations on the charm environment.
+
+    Sets up proxy for apt.
+    Sets up HTTP(S)_PROXY environment variable.
+
+    Args:
+        proxy: The charm proxy configuration.
+    """
+    _configure_apt_proxy(proxy)
+    _configure_proxy_env(proxy)
+
 
 APT_DEPENDENCIES = [
     "qemu-utils",  # used for qemu utilities tools to build and resize image
@@ -376,6 +450,8 @@ def _configure_system_users() -> None:
         SystemUserConfigurationError: If there was an error configuring ubuntu user.
     """
     try:
+        with (UBUNUT_HOME_PATH / ".profile").open("a") as profile_file:
+            profile_file.write("PATH=$PATH:/home/ubuntu/.local/bin\n")
         subprocess.run(  # nosec: B603
             ["/usr/sbin/useradd", "-m", UBUNTU_USER], check=True, timeout=30
         )
@@ -391,9 +467,6 @@ def _configure_system_users() -> None:
         subprocess.run(  # nosec: B603
             ["/usr/bin/chmod", "777", "/usr/local/bin"], check=True, timeout=30
         )
-
-        with (UBUNUT_HOME_PATH / ".profile").open("a") as profile_file:
-            profile_file.write("PATH=$PATH:/home/ubuntu/.local/bin\n")
     except subprocess.SubprocessError as exc:
         raise SystemUserConfigurationError from exc
 

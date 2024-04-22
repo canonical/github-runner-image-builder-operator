@@ -26,6 +26,7 @@ from builder import (
     ImageMountError,
     ImageResizeError,
     NetworkBlockDeviceError,
+    ProxyConfig,
     ResizePartitionError,
     SupportedCloudImageArch,
     SystemUserConfigurationError,
@@ -36,6 +37,126 @@ from builder import (
     subprocess,
     urllib,
 )
+
+
+@pytest.mark.parametrize(
+    "existing_contents, proxy, expected_contents",
+    [
+        pytest.param("", None, "", id="no proxy and no incoming change"),
+        pytest.param(
+            "",
+            ProxyConfig(http="hello", https="world", no_proxy=""),
+            "\nAcquire::http::Proxy hello;\nAcquire::https::Proxy world;",
+            id="no proxy and incoming change",
+        ),
+        pytest.param(
+            "Acquire::http::Proxy hello;\nAcquire::https::Proxy world;",
+            None,
+            "",
+            id="no proxy and incoming change no proxy",
+        ),
+        pytest.param(
+            "Acquire::http::Proxy hello;\nAcquire::https::Proxy world;",
+            ProxyConfig(http="hello", https="world", no_proxy=""),
+            "Acquire::http::Proxy hello;\nAcquire::https::Proxy world;",
+            id="proxy and no incoming change",
+        ),
+        pytest.param(
+            "Acquire::http::Proxy hello;\nAcquire::https::Proxy world;",
+            ProxyConfig(http="goodbye", https="world", no_proxy=""),
+            "Acquire::http::Proxy goodbye;\nAcquire::https::Proxy world;",
+            id="proxy and incoming change",
+        ),
+    ],
+)
+def test__configure_apt_proxy(
+    existing_contents: str,
+    proxy: ProxyConfig | None,
+    expected_contents: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: given a test temporary apt conf path and proxy state.
+    act: when _configure_apt_proxy is called.
+    assert: expected proxy contents are written.
+    """
+    tmp_apt_conf = tmp_path / "apt.conf"
+    tmp_apt_conf.touch()
+    tmp_apt_conf.write_text(existing_contents, encoding="utf-8")
+    monkeypatch.setattr(builder, "APT_CONF", tmp_apt_conf)
+
+    builder._configure_apt_proxy(proxy=proxy)
+
+    assert tmp_apt_conf.read_text(encoding="utf-8") == expected_contents
+
+
+@pytest.mark.parametrize(
+    "existing_os_env, proxy, expected_os_env",
+    [
+        pytest.param(
+            {"HTTP_PROXY": "test", "HTTPS_PROXY": "test", "NO_PROXY": "test"},
+            None,
+            {},
+            id="no incoming proxy, existing env proxy",
+        ),
+        pytest.param(
+            {"HTTP_PROXY": "test"},
+            None,
+            {},
+            id="no incoming proxy, partial env proxy (http)",
+        ),
+        pytest.param(
+            {"HTTPS_PROXY": "test"},
+            None,
+            {},
+            id="no incoming proxy, partial env proxy (https)",
+        ),
+        pytest.param(
+            {"NO_PROXY": "test"},
+            None,
+            {},
+            id="no incoming proxy, partial env proxy (no_proxy)",
+        ),
+        pytest.param(
+            {},
+            ProxyConfig(http="hello", https="world", no_proxy="test"),
+            {"HTTP_PROXY": "hello", "HTTPS_PROXY": "world", "NO_PROXY": "test"},
+            id="incoming proxy, existing env proxy",
+        ),
+    ],
+)
+def test__configure_proxy_env(
+    existing_os_env: dict[str, str],
+    proxy: ProxyConfig | None,
+    expected_os_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: given os.environ state and incoming proxy state.
+    act: when _configure_proxy_env is called.
+    assert: expected os.environ remains.
+    """
+    monkeypatch.setattr(os, "environ", existing_os_env)
+
+    builder._configure_proxy_env(proxy=proxy)
+
+    assert existing_os_env == expected_os_env
+
+
+def test_configure_proxy(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given mock _configure_apt_proxy, _configure_proxy_env internal functions.
+    act: when configure_proxy is called.
+    assert: internal functions are called.
+    """
+    monkeypatch.setattr(builder, "_configure_apt_proxy", (mock_configure_apt_proxy := MagicMock()))
+    monkeypatch.setattr(builder, "_configure_proxy_env", (mock_configure_proxy_env := MagicMock()))
+
+    builder.configure_proxy(MagicMock())
+
+    mock_configure_apt_proxy.assert_called_once()
+    mock_configure_proxy_env.assert_called_once()
 
 
 def test__install_dependencies_package_not_found(monkeypatch: pytest.MonkeyPatch):
@@ -365,10 +486,11 @@ def test__configure_system_users(monkeypatch: pytest.MonkeyPatch):
     act: when _configure_system_users is called.
     assert: SystemUserConfigurationError is raised.
     """
+    monkeypatch.setattr(builder, "UBUNUT_HOME_PATH", MagicMock())
     monkeypatch.setattr(
         builder.subprocess,
         "run",
-        MagicMock(side_effect=[*([None] * 3), subprocess.SubprocessError("Failed to add group.")]),
+        MagicMock(side_effect=[*([None] * 4), subprocess.SubprocessError("Failed to add group.")]),
     )
 
     with pytest.raises(SystemUserConfigurationError) as exc:

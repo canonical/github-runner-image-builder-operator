@@ -5,9 +5,10 @@
 
 import dataclasses
 import logging
+import os
 import platform
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from ops import CharmBase
@@ -258,6 +259,38 @@ def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
     return openstack_clouds_yaml
 
 
+@dataclasses.dataclass
+class ProxyConfig:
+    """Proxy configuration.
+
+    Attributes:
+        http: HTTP proxy address.
+        https: HTTPS proxy address.
+        no_proxy: Comma-separated list of hosts that should not be proxied.
+    """
+
+    http: str
+    https: str
+    no_proxy: str
+
+    @classmethod
+    # Use optional instead of | operator due to unsupported str | None operand.
+    def from_env(cls) -> Optional["ProxyConfig"]:
+        """Initialize the proxy config from charm.
+
+        Returns:
+            Current proxy config of the charm.
+        """
+        http_proxy = os.getenv("JUJU_CHARM_HTTP_PROXY", "")
+        https_proxy = os.getenv("JUJU_CHARM_HTTPS_PROXY", "")
+        no_proxy = os.getenv("JUJU_CHARM_NO_PROXY", "")
+
+        if not (https_proxy and http_proxy):
+            return None
+
+        return cls(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
+
+
 class CharmConfigInvalidError(Exception):
     """Raised when charm config is invalid.
 
@@ -282,12 +315,14 @@ class CharmState:
         build_interval: The interval in hours between each scheduled image builds.
         cloud_config: The Openstack clouds.yaml passed as charm config.
         image_config: The charm configuration values related to image.
+        proxy_config: The charm proxy configuration variables.
         revision_history_limit: The number of image revisions to keep.
     """
 
     build_interval: int
     cloud_config: dict[str, Any]
     image_config: ImageConfig
+    proxy_config: ProxyConfig | None
     revision_history_limit: int
 
     @classmethod
@@ -327,5 +362,6 @@ class CharmState:
             build_interval=build_interval,
             cloud_config=cloud_config,
             image_config=image_config,
+            proxy_config=ProxyConfig.from_env(),
             revision_history_limit=revision_history_limit,
         )
