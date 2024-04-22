@@ -564,10 +564,10 @@ def build_image(config: BuildImageConfig) -> Path:
         raise BuildImageError from exc
 
     try:
+        logger.info("Setting up chroot environment.")
         with ChrootContextManager(IMAGE_MOUNT_DIR):
             # operator_libs_linux apt package uses dpkg -l and that does not work well with chroot
             # env, hence use subprocess run.
-            logger.info("Installing apt packages")
             subprocess.run(
                 ["/usr/bin/apt-get", "update", "-y"], check=True, timeout=60 * 5
             )  # nosec: B603
@@ -576,15 +576,10 @@ def build_image(config: BuildImageConfig) -> Path:
                 check=True,
                 timeout=60 * 10,
             )
-            logger.info("Creating python symlinks")
             _create_python_symlinks()
-            logger.info("Disabling unattended upgrades")
             _disable_unattended_upgrades()
-            logger.info("Configuring system users")
             _configure_system_users()
-            logger.info("Installing external packages")
             _install_external_packages(arch=config.arch)
-            logger.info("")
     except (
         ChrootBaseError,
         subprocess.CalledProcessError,
