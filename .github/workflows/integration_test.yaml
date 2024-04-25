@@ -12,7 +12,7 @@ jobs:
       pre-run-script: tests/integration/pre-run.sh
       provider: microk8s
       channel: 1.26-strict/stable
-      modules: '["test_charm"]'
+      modules: '["test_charm", "test_charm"]'
       self-hosted-runner: true
       self-hosted-runner-label: two-xlarge
       tmate-debug: true
