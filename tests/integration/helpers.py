@@ -35,7 +35,7 @@ def wait_for_valid_connection(
     start_time = time.time()
     while time.time() - start_time <= timeout:
         server: Server | None = connection.get_server(name_or_id=server_name)
-        if not server or server.networks:
+        if not server or not server.networks:
             time.sleep(10)
             continue
         for address in server.networks[network]:
