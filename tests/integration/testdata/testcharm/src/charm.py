@@ -3,7 +3,13 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Entrypoint for Test charm."""
+"""Charm the service.
+
+Refer to the following tutorial that will help you
+develop a new k8s charm using the Operator Framework:
+
+https://juju.is/docs/sdk/create-a-minimal-kubernetes-charm
+"""
 
 from typing import Any
 

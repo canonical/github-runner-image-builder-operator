@@ -8,9 +8,10 @@
 # The charm package name, no spaces (required)
 # See https://juju.is/docs/sdk/naming#heading--naming-charms for guidance.
 name: test
-title: test
-summary: test charm.
-description: test charm.
+title: Test charm for github runner image builder
+summary: Test charm for github runner image builder
+description: |
+  Test charm for github runner image builder.
 links:
   contact: https://github.com/orgs/canonical/teams/is-charms
   documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview
@@ -33,6 +34,13 @@ bases:
       - amd64
       - arm64
 
-requires:
+config:
+  options:
+    test:
+      type: string
+      default: test
+      description: test config option to satisfy charmcraft linter.
+
+provides:
   image:
     interface: github_runner_image_v0
