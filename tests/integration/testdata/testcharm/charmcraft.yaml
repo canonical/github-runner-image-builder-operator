@@ -41,6 +41,6 @@ config:
       default: test
       description: test config option to satisfy charmcraft linter.
 
-provides:
+requires:
   image:
     interface: github_runner_image_v0
