@@ -49,7 +49,7 @@ class Observer(ops.Object):
             Initialized charm state if valid charm state. None if invalid charm state was found.
         """
         try:
-            return CharmState.from_charm(self)
+            return CharmState.from_charm(self.charm)
         except CharmConfigInvalidError as exc:
             self.charm.unit.status = ops.BlockedStatus(str(exc))
             return None
