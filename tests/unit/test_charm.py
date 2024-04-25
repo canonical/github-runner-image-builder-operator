@@ -13,7 +13,7 @@ import pytest
 
 import builder
 import image
-from charm import GithubRunnerImageBuilderCharm, cron, openstack_manager
+from charm import GithubRunnerImageBuilderCharm, cron
 from state import CharmConfigInvalidError, CharmState
 
 
@@ -56,7 +56,6 @@ def test__load_state_invalid_config(
     "hook",
     [
         pytest.param("_on_config_changed", id="_on_config_changed"),
-        pytest.param("_on_build_image_action", id="_on_build_image_action"),
         pytest.param("_on_cron_trigger", id="_on_cron_trigger"),
     ],
 )
@@ -123,55 +122,23 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
     monkeypatch.setattr(cron, "setup", (cron_mock := MagicMock()))
     charm.image_observer = image_observer_mock
     monkeypatch.setattr(builder, "configure_proxy", (configure_proxy_mock := MagicMock()))
-    monkeypatch.setattr(builder, "build_image", (build_image_mock := MagicMock()))
+    monkeypatch.setattr(builder, "run_builder", (run_builder_mock := MagicMock()))
     openstack_manager_contenxt_mock = MagicMock()
     openstack_manager_contenxt_mock.__enter__.return_value = (
         openstack_manager_mock := MagicMock()
     )
     monkeypatch.setattr(
-        openstack_manager,
-        "OpenstackManager",
+        "charm.OpenstackManager",
         MagicMock(return_value=openstack_manager_contenxt_mock),
     )
 
     charm._on_config_changed(MagicMock())
 
     configure_proxy_mock.assert_called_once()
-    build_image_mock.assert_called_once()
+    run_builder_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()
     cron_mock.assert_called_once()
-
-
-def test__on_build_image_action(
-    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given monkeypatched builder, openstack manager, image_observer.
-    act: when _on_build_image_action is called.
-    assert: each module functions are called appropriately.
-    """
-    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
-    monkeypatch.setattr(
-        image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
-    )
-    charm.image_observer = image_observer_mock
-    monkeypatch.setattr(builder, "build_image", (build_image_mock := MagicMock()))
-    openstack_manager_contenxt_mock = MagicMock()
-    openstack_manager_contenxt_mock.__enter__.return_value = (
-        openstack_manager_mock := MagicMock()
-    )
-    monkeypatch.setattr(
-        openstack_manager,
-        "OpenstackManager",
-        MagicMock(return_value=openstack_manager_contenxt_mock),
-    )
-
-    charm._on_build_image_action(MagicMock())
-
-    build_image_mock.assert_called_once()
-    openstack_manager_mock.upload_image.assert_called_once()
-    image_observer_mock.update_relation_data.assert_called_once()
 
 
 def test__on_cron_trigger(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):

@@ -33,6 +33,18 @@ async def test_build_image(app: Application, openstack_connection: Connection):
     assert any(app.name in image.name for image in images)
 
 
+async def test_image_relation(model: Model, app: Application, test_charm: Application):
+    """
+    arrange: An active charm and a test charm that becomes active when valid relation data is set.
+    act: When the relation is joined.
+    assert: The test charm becomes active due to proper relation data.
+    """
+    await app.relate("image", f"{test_charm.name}:image")
+    await model.wait_for_idle(
+        apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
+    )
+
+
 async def test_image_cron(model: Model, app: Application, openstack_connection: Connection):
     """
     arrange: A deployed active charm.
