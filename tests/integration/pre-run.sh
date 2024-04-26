@@ -27,6 +27,10 @@ retry() {
         juju controllers || echo "Failed to list controllers"
         juju switch openstack || echo "Failed to switch to openstack"
         juju status --color || echo "Failed to get status"
+        juju trust nova-cell-mysql-router --scope=cluster || echo "failed to trust nova cell mysql"
+        juju trust nova-api-mysql-router --scope=cluster || echo "failed to trust nova api mysql"
+        juju resolved nova-cell-mysql-router/0 || echo "failed to resolve nova cell mysql unit"
+        juju resolved nova-api-mysql-router/0 || echo "failed to resolve nova api mysql unit"
         echo "$wait_message"
         sleep 10
     done
@@ -35,7 +39,8 @@ retry() {
 cat <<EOF > preseed.yaml
 bootstrap:
   # Management networks shared by hosts (CIDRs, separated by comma)
-  management_cidr: 10.232.48.0/24
+  # take gateway address, and turn it into 0/24 cidr block
+  management_cidr: $(ip -o -4 route show to default | awk '{gsub(/\.1/,".0/24"); print $3}')
 addons:
   # MetalLB address allocation range (supports multiple ranges, comma separated)
   metallb: 10.20.21.10-10.20.21.20
@@ -97,6 +102,7 @@ sunbeam prepare-node-script | bash -x
 sleep 10
 # The following can take a while....
 retry 'sudo -g snap_daemon sunbeam cluster bootstrap --accept-defaults' 'Waiting for cluster bootstrap to complete' 3
+# juju trust nova-cell-mysql-router --scope=cluster && juju trust nova-api-mysql-router --scope=cluster
 # 2024/03/11 Demo user setup should be removed after openstack server creation PR.
 retry 'sudo -g snap_daemon sunbeam configure --accept-defaults --openrc demo-openrc' 'Configuring sunbeam cluster' 3
 retry 'sudo -g snap_daemon sunbeam generate-preseed' 'Configuring sunbeam cluster' 3
