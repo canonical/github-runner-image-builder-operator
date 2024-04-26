@@ -38,7 +38,7 @@ def wait_for_valid_connection(
         if not server or not server.networks:
             time.sleep(10)
             continue
-        for address in server.networks[network]:
+        for address in server.addresses[network]:
             ip = address["addr"]
             ssh_connection = SSHConnection(
                 host=ip,
