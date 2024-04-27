@@ -14,5 +14,5 @@ jobs:
       channel: 1.26-strict/stable
       modules: '["test_charm"]'
       self-hosted-runner: true
-      self-hosted-runner-label: two-xlarge
+      self-hosted-runner-label: xlarge
       tmate-debug: true

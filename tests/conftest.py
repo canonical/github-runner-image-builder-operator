@@ -20,4 +20,5 @@ def pytest_addoption(parser: Parser):
         "--openstack-clouds-yaml",
         action="store",
         help="The OpenStack clouds yaml file for the charm to use.",
+        default="./clouds.yaml",
     )

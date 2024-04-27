@@ -101,11 +101,9 @@ sudo snap install openstack --channel 2023.1 --devmode
 sunbeam prepare-node-script | bash -x
 sleep 10
 # The following can take a while....
-retry 'sudo -g snap_daemon sunbeam cluster bootstrap --accept-defaults' 'Waiting for cluster bootstrap to complete' 3
-# juju trust nova-cell-mysql-router --scope=cluster && juju trust nova-api-mysql-router --scope=cluster
+retry 'sudo -g snap_daemon sunbeam cluster bootstrap -p preseed.yaml' 'Waiting for cluster bootstrap to complete' 3
 # 2024/03/11 Demo user setup should be removed after openstack server creation PR.
-retry 'sudo -g snap_daemon sunbeam configure --accept-defaults --openrc demo-openrc' 'Configuring sunbeam cluster' 3
-retry 'sudo -g snap_daemon sunbeam generate-preseed' 'Configuring sunbeam cluster' 3
+retry 'sudo -g snap_daemon sunbeam configure -p preseed.yaml --openrc demo-openrc' 'Configuring sunbeam cluster' 3
 cat preseed.yaml
 clouds_yaml="${PWD}/clouds.yaml"
 sg snap_daemon -c "sunbeam cloud-config" | tee "$clouds_yaml"
