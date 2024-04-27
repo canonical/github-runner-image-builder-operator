@@ -40,7 +40,7 @@ cat <<EOF > preseed.yaml
 bootstrap:
   # Management networks shared by hosts (CIDRs, separated by comma)
   # take gateway address, and turn it into 0/24 cidr block
-  management_cidr: $(ip -o -4 route show to default | awk '{gsub(/\.1/,".0/24"); print $3}')
+  management_cidr: $(ip -o -4 route show to default | awk '{print $3}' | sed -E 's/\(.*\)\.1/.0\/24/')
 addons:
   # MetalLB address allocation range (supports multiple ranges, comma separated)
   metallb: 10.20.21.10-10.20.21.20
