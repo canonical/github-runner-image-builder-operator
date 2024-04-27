@@ -101,7 +101,7 @@ sudo snap install openstack --channel 2023.1 --devmode
 sunbeam prepare-node-script | bash -x
 sleep 10
 # The following can take a while...., timeout in 10 mins and retry for frequent checks
-retry 'sudo -g snap_daemon timeout 1200 sunbeam cluster bootstrap -p preseed.yaml' 'Waiting for cluster bootstrap to complete' 5
+retry 'sudo -g snap_daemon timeout 600 sunbeam cluster bootstrap -p preseed.yaml' 'Waiting for cluster bootstrap to complete' 5
 # 2024/03/11 Demo user setup should be removed after openstack server creation PR.
 retry 'sudo -g snap_daemon sunbeam configure -p preseed.yaml --openrc demo-openrc' 'Configuring sunbeam cluster' 3
 cat preseed.yaml
