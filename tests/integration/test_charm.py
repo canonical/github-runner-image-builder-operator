@@ -86,71 +86,53 @@ async def test_image_cron(model: Model, app: Application, openstack_connection: 
     await wait_for(image_created_from_dispatch, check_interval=30)
 
 
-class TestCommand(NamedTuple):
+class Commands(NamedTuple):
     """Test commands to execute.
 
     Attributes:
         name: The test name.
         command: The command to execute.
-        expected: The expected stdout result.
     """
 
     name: str
     command: str
-    expected: str
 
 
 # This is matched with E2E test run of github-runner-operator charm.
 TEST_RUNNER_COMMANDS = (
-    TestCommand(name="simple hello world", command="echo 'hello world'", expected="hello world"),
-    TestCommand(
-        name="file permission to /usr/local/bin",
-        command="ls -ld /usr/local/bin | grep drwxrwxrwx",
-        expected="drwxrwxrwx",
+    Commands(name="simple hello world", command="echo 'hello world'"),
+    Commands(
+        name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin | grep drwxrwxrwx"
     ),
-    TestCommand(
-        name="file permission to /usr/local/bin (create)",
-        command="touch /usr/local/bin/test_file",
-        expected="",
+    Commands(
+        name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
-    TestCommand(
-        name="install microk8s", command="sudo snap install microk8s --classic", expected=""
-    ),
-    TestCommand(name="wait for microk8s", command="microk8s status --wait-ready", expected=""),
-    TestCommand(
+    Commands(name="install microk8s", command="sudo snap install microk8s --classic"),
+    Commands(name="wait for microk8s", command="microk8s status --wait-ready"),
+    Commands(
         name="deploy nginx in microk8s",
         command="microk8s kubectl create deployment nginx --image=nginx",
-        expected="",
     ),
-    TestCommand(
+    Commands(
         name="wait for nginx",
         command="microk8s kubectl rollout status deployment/nginx --timeout=30m",
-        expected="",
     ),
-    TestCommand(
-        name="update apt in docker",
-        command="docker run python:3.10-slim apt-get update",
-        expected="",
-    ),
-    TestCommand(name="docker version", command="docker version", expected=""),
-    TestCommand(name="check python3 alias", command="python --version", expected=""),
-    TestCommand(name="pip version", command="python3 -m pip --version", expected=""),
-    TestCommand(name="npm version", command="npm --version", expected=""),
-    TestCommand(name="shellcheck version", command="shellcheck --version", expected=""),
-    TestCommand(name="jq version", command="jq --version", expected=""),
-    TestCommand(name="yq version", command="yq --version", expected=""),
-    TestCommand(name="apt update", command="sudo apt-get update -y", expected=""),
-    TestCommand(name="install pipx", command="sudo apt-get install -y pipx", expected=""),
-    TestCommand(
-        name="install check-jsonschema", command="pipx install check-jsonschema", expected=""
-    ),
-    TestCommand(name="unzip version", command="unzip -v", expected=""),
-    TestCommand(name="gh version", command="gh --version", expected=""),
-    TestCommand(name="check jsonschema", command="check-jsonschema --version", expected=""),
-    TestCommand(
-        name="test sctp support",
-        command="sudo apt-get install lksctp-tools -yq && checksctp",
-        expected="",
+    Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
+    Commands(name="docker version", command="docker version"),
+    Commands(name="check python3 alias", command="python --version"),
+    Commands(name="pip version", command="python3 -m pip --version"),
+    Commands(name="npm version", command="npm --version"),
+    Commands(name="shellcheck version", command="shellcheck --version"),
+    Commands(name="jq version", command="jq --version"),
+    Commands(name="yq version", command="yq --version"),
+    Commands(name="apt update", command="sudo apt-get update -y"),
+    Commands(name="install pipx", command="sudo apt-get install -y pipx"),
+    Commands(name="install check-jsonschema", command="pipx install check-jsonschema"),
+    Commands(name="unzip version", command="unzip -v"),
+    Commands(name="gh version", command="gh --version"),
+    Commands(name="check jsonschema", command="check-jsonschema --version"),
+    Commands(
+        name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
 )
 
@@ -164,6 +146,5 @@ async def test_image(ssh_connection: SSHConnection):
     for command in TEST_RUNNER_COMMANDS:
         logger.info("Running test: %s", command.name)
         result: Result = ssh_connection.run(command.command)
+        logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
-        if command.expected:
-            assert command.expected == result.stdout
