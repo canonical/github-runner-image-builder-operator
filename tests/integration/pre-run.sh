@@ -31,6 +31,9 @@ retry() {
         juju trust nova-api-mysql-router --scope=cluster || echo "failed to trust nova api mysql"
         juju resolved nova-cell-mysql-router/0 || echo "failed to resolve nova cell mysql unit"
         juju resolved nova-api-mysql-router/0 || echo "failed to resolve nova api mysql unit"
+        juju status --color || echo "Failed to get status"
+        juju wait-for unit nova-cell-mysql-router/0
+        juju wait-for unit nova-api-mysql-router/0
         echo "$wait_message"
         sleep 10
     done

@@ -14,7 +14,9 @@ def pytest_addoption(parser: Parser):
         parser: The pytest argument parser.
     """
     parser.addoption(
-        "--charm-file", action="store", help="The prebuilt github-runner-operator charm file."
+        "--charm-file",
+        action="store",
+        help="The prebuilt github-runner-image-builder-operator charm file.",
     )
     parser.addoption(
         "--openstack-clouds-yaml",
