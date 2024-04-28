@@ -40,7 +40,7 @@ def model_fixture(ops_test: OpsTest) -> Model:
 @pytest_asyncio.fixture(scope="function", name="test_charm")
 async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    charm_file = await ops_test.build_charm("tests/integration/testdata/testcharm")
+    charm_file = await ops_test.build_charm("tests/integration/data/charm")
     app = await model.deploy(charm_file)
     await model.wait_for_idle(apps=[app.name])
 
