@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from typing import NamedTuple
 
+import pytest
 from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
@@ -22,7 +23,7 @@ from tests.integration.helpers import wait_for
 logger = logging.getLogger(__name__)
 
 
-async def test_build_image(app: Application, openstack_connection: Connection):
+def test_build_image(app: Application, openstack_connection: Connection):
     """
     arrange: A deployed active charm.
     act: When openstack images are listed.
@@ -33,6 +34,7 @@ async def test_build_image(app: Application, openstack_connection: Connection):
     assert any(app.name in image.name for image in images)
 
 
+@pytest.mark.asyncio
 async def test_image_relation(model: Model, app: Application, test_charm: Application):
     """
     arrange: An active charm and a test charm that becomes active when valid relation data is set.
@@ -45,6 +47,7 @@ async def test_image_relation(model: Model, app: Application, test_charm: Applic
     )
 
 
+@pytest.mark.asyncio
 async def test_image_cron(model: Model, app: Application, openstack_connection: Connection):
     """
     arrange: A deployed active charm.
@@ -137,6 +140,7 @@ TEST_RUNNER_COMMANDS = (
 )
 
 
+@pytest.mark.asyncio
 async def test_image(ssh_connection: SSHConnection):
     """
     arrange: given a latest image build, a ssh-key and a server.

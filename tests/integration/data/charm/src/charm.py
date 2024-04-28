@@ -18,7 +18,7 @@ import ops
 IMAGE_RELATION = "image"
 
 
-class TestCharm(ops.CharmBase):
+class RelationCharm(ops.CharmBase):
     """Charm the service."""
 
     def __init__(self, *args: Any):
@@ -44,4 +44,4 @@ class TestCharm(ops.CharmBase):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main.main(TestCharm)
+    ops.main.main(RelationCharm)
