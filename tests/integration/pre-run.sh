@@ -35,7 +35,7 @@ retry() {
 bootstrap () {
   sudo -g snap_daemon timeout 1200 sunbeam cluster bootstrap -p preseed.yaml
   juju switch openstack
-  nova_cell_deployed=$(juju show unit nova-cell-mysql-router/0)
+  nova_cell_deployed=$(juju show-unit nova-cell-mysql-router/0)
   if [$? -eq 0]; then
     juju trust nova-cell-mysql-router --scope=cluster || echo "failed to trust nova cell mysql"
     juju trust nova-api-mysql-router --scope=cluster || echo "failed to trust nova api mysql"
