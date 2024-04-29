@@ -26,10 +26,29 @@ retry() {
         juju models || echo "Failed to list models"
         juju controllers || echo "Failed to list controllers"
         juju switch openstack || echo "Failed to switch to openstack"
-        juju status --color || echo "Failed to get status"
+        juju status --color || echo "Failed to get status" 
         echo "$wait_message"
         sleep 10
     done
+}
+
+bootstrap () {
+  sudo -g snap_daemon timeout 1200 sunbeam cluster bootstrap -p preseed.yaml
+  juju switch openstack
+  nova_cell_deployed=$(juju show unit nova-cell-mysql-router/0)
+  if [$? -eq 0]; then
+    juju trust nova-cell-mysql-router --scope=cluster || echo "failed to trust nova cell mysql"
+    juju trust nova-api-mysql-router --scope=cluster || echo "failed to trust nova api mysql"
+    juju resolved nova-cell-mysql-router/0 || echo "failed to resolve nova cell mysql unit"
+    juju resolved nova-api-mysql-router/0 || echo "failed to resolve nova api mysql unit"
+    juju status --color || echo "Failed to get status"
+    juju wait-for unit nova-cell-mysql-router/0
+    juju wait-for unit nova-api-mysql-router/0
+    return 0
+  else
+    echo "openstack not yet fully deployed"
+    return 1
+  fi
 }
 
 cat <<EOF > preseed.yaml
@@ -96,15 +115,8 @@ sudo snap remove kubectl
 sudo snap install openstack --channel 2023.1 --devmode
 sunbeam prepare-node-script | bash -x
 sleep 10
-# The following can take a while...., timeout in 18 mins and retry for frequent checks
-retry 'sudo -g snap_daemon timeout 1080 sunbeam cluster bootstrap -p preseed.yaml' 'Waiting for cluster bootstrap to complete' 1
-juju trust nova-cell-mysql-router --scope=cluster || echo "failed to trust nova cell mysql"
-juju trust nova-api-mysql-router --scope=cluster || echo "failed to trust nova api mysql"
-juju resolved nova-cell-mysql-router/0 || echo "failed to resolve nova cell mysql unit"
-juju resolved nova-api-mysql-router/0 || echo "failed to resolve nova api mysql unit"
-juju status --color || echo "Failed to get status"
-juju wait-for unit nova-cell-mysql-router/0
-juju wait-for unit nova-api-mysql-router/0
+# The following can take a while....
+retry 'bootstrap' 'Bootstrap sunbeam cluster' 3
 # 2024/03/11 Demo user setup should be removed after openstack server creation PR.
 retry 'sudo -g snap_daemon sunbeam configure -p preseed.yaml --openrc demo-openrc' 'Configuring sunbeam cluster' 3
 cat preseed.yaml
