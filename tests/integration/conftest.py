@@ -14,7 +14,9 @@ from juju.application import Application
 from juju.model import Model
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.keypair import Keypair
+from openstack.compute.v2.server import Server
 from openstack.connection import Connection
+from openstack.network.v2.floating_ip import FloatingIP
 from pytest_operator.plugin import OpsTest
 
 from openstack_manager import IMAGE_NAME_TMPL
@@ -118,7 +120,10 @@ async def ssh_connection_fixture(
         )
     )
     assert images, "No built image found."
-    openstack_connection.create_server(
+    floating_ip: FloatingIP = openstack_connection.create_floating_ip(
+        network="external-network", wait=True
+    )
+    server: Server = openstack_connection.create_server(
         name=server_name,
         image=images[0],
         key_name=ssh_key.name,
@@ -127,6 +132,9 @@ async def ssh_connection_fixture(
         network=network_name,
         timeout=120,
         wait=True,
+    )
+    openstack_connection.add_ips_to_server(
+        server, ips=[floating_ip.floating_ip_address], wait=True
     )
 
     ssh_connection = wait_for_valid_connection(
