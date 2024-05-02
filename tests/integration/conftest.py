@@ -3,7 +3,7 @@
 
 """Fixtures for github runner charm integration tests."""
 from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, NamedTuple, Optional
 
 import openstack
 import pytest
@@ -14,9 +14,7 @@ from juju.application import Application
 from juju.model import Model
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.keypair import Keypair
-from openstack.compute.v2.server import Server
 from openstack.connection import Connection
-from openstack.network.v2.floating_ip import FloatingIP
 from pytest_operator.plugin import OpsTest
 
 from openstack_manager import IMAGE_NAME_TMPL
@@ -116,14 +114,37 @@ def ssh_key_fixture(openstack_connection: Connection, tmp_path: Path):
     openstack_connection.delete_keypair(name=keypair.name)
 
 
+class OpenstackMeta(NamedTuple):
+    """A wrapper around Openstack related info.
+
+    Attributes:
+        connection: The connection instance to Openstack.
+        ssh_key: The SSH-Key created to connect to Openstack instance.
+        network: The Openstack network to create instances under.
+        flavor: The flavor to create instances with.
+    """
+
+    connection: Connection
+    ssh_key: Keypair
+    network: str
+    flavor: str
+
+
+@pytest.fixture(scope="function", name="openstack_metadata")
+def openstack_metadata_fixture(
+    openstack_connection: Connection, ssh_key: Keypair, network_name: str, flavor_name: str
+) -> OpenstackMeta:
+    """A wrapper around openstack related info."""
+    return OpenstackMeta(
+        connection=openstack_connection, ssh_key=ssh_key, network=network_name, flavor=flavor_name
+    )
+
+
 @pytest_asyncio.fixture(scope="function", name="ssh_connection")
 async def ssh_connection_fixture(
     model: Model,
     app: Application,
-    openstack_connection: Connection,
-    ssh_key: Keypair,
-    network_name: str,
-    flavor_name: str,
+    openstack_metadata: OpenstackMeta,
 ) -> AsyncGenerator[SSHConnection, None]:
     """The openstack server ssh connection fixture."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
@@ -134,36 +155,30 @@ async def ssh_connection_fixture(
     config: dict = await app.get_config()
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
-    images: list[Image] = openstack_connection.search_images(
+    images: list[Image] = openstack_metadata.connection.search_images(
         IMAGE_NAME_TMPL.format(
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
     )
     assert images, "No built image found."
-    floating_ip: FloatingIP = openstack_connection.create_floating_ip(
-        network="external-network", wait=True
-    )
-    server: Server = openstack_connection.create_server(
+    openstack_metadata.connection.create_server(
         name=server_name,
         image=images[0],
-        key_name=ssh_key.name,
+        key_name=openstack_metadata.ssh_key.name,
         # these are pre-configured values on private endpoint.
-        flavor=flavor_name,
-        network=network_name,
+        flavor=openstack_metadata.flavor,
+        network=openstack_metadata.network,
         timeout=120,
         wait=True,
     )
-    openstack_connection.add_ips_to_server(
-        server, ips=[floating_ip.floating_ip_address], wait=True
-    )
 
     ssh_connection = wait_for_valid_connection(
-        connection=openstack_connection,
+        connection=openstack_metadata.connection,
         server_name=server_name,
-        network=network_name,
-        ssh_key=ssh_key.name,
+        network=openstack_metadata.network,
+        ssh_key=openstack_metadata.ssh_key.name,
     )
 
     yield ssh_connection
 
-    openstack_connection.delete_server(server_name)
+    openstack_metadata.connection.delete_server(server_name)
