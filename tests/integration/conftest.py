@@ -56,7 +56,23 @@ def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
     """Configured clouds-yaml setting."""
     clouds_yaml = pytestconfig.getoption("--openstack-clouds-yaml")
     assert clouds_yaml, "Please specify the --openstack-clouds-yaml command line option"
-    return Path(clouds_yaml).read_text(encoding="utf-8")
+    return clouds_yaml
+
+
+@pytest.fixture(scope="module", name="network_name")
+def network_name_fixture(pytestconfig: pytest.Config) -> str:
+    """Network to use to spawn test instances under."""
+    network_name = pytestconfig.getoption("--openstack-network-name")
+    assert network_name, "Please specify the --openstack-network-name command line option"
+    return network_name
+
+
+@pytest.fixture(scope="module", name="flavor_name")
+def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
+    """Flavor to create testing instances with."""
+    flavor_name = pytestconfig.getoption("--openstack-flavor-name")
+    assert flavor_name, "Please specify the --openstack-flavor-name command line option"
+    return flavor_name
 
 
 @pytest.fixture(scope="module", name="openstack_connection")
@@ -78,7 +94,7 @@ async def app_fixture(model: Model, charm_file: str, openstack_clouds_yaml: str)
     """The deployed application fixture."""
     app: Application = await model.deploy(
         charm_file,
-        constraints="cores=2 mem=6G root-disk=15G virt-type=virtual-machine",
+        constraints="cores=2 mem=18G root-disk=15G virt-type=virtual-machine",
         config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: openstack_clouds_yaml},
     )
     await model.wait_for_idle(
@@ -102,11 +118,15 @@ def ssh_key_fixture(openstack_connection: Connection, tmp_path: Path):
 
 @pytest_asyncio.fixture(scope="function", name="ssh_connection")
 async def ssh_connection_fixture(
-    model: Model, app: Application, openstack_connection: Connection, ssh_key: Keypair
+    model: Model,
+    app: Application,
+    openstack_connection: Connection,
+    ssh_key: Keypair,
+    network_name: str,
+    flavor_name: str,
 ) -> AsyncGenerator[SSHConnection, None]:
     """The openstack server ssh connection fixture."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    network_name = "demo-network"
     server_name = "test-server"
 
     # the config is the entire config info dict, weird.
@@ -127,8 +147,8 @@ async def ssh_connection_fixture(
         name=server_name,
         image=images[0],
         key_name=ssh_key.name,
-        # these are provided by sunbeam setup in pre-run.sh
-        flavor="m1.small",
+        # these are pre-configured values on private endpoint.
+        flavor=flavor_name,
         network=network_name,
         timeout=120,
         wait=True,

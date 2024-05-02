@@ -9,11 +9,7 @@ jobs:
     secrets: inherit
     with:
       juju-channel: 3.2/stable
-      pre-run-script: tests/integration/pre-run.sh
-      provider: microk8s
-      channel: 1.26-strict/stable
+      provider: lxd
       modules: '["test_charm"]'
       self-hosted-runner: true
-      self-hosted-runner-label: xlarge
-      tmate-debug: true
-      tmate-timeout: 120
+      self-hosted-runner-label: stg-gh-deploy-image-builder

@@ -21,6 +21,15 @@ def pytest_addoption(parser: Parser):
     parser.addoption(
         "--openstack-clouds-yaml",
         action="store",
-        help="The OpenStack clouds yaml file for the charm to use.",
-        default="./clouds.yaml",
+        help="The OpenStack clouds yaml contents the charm uses to connect to Openstack.",
+    )
+    parser.addoption(
+        "--openstack-network-name",
+        action="store",
+        help="The Openstack network to create testing instances under.",
+    )
+    parser.addoption(
+        "--openstack-flavor-name",
+        action="store",
+        help="The Openstack flavor to create testing instances with.",
     )
