@@ -21,6 +21,8 @@ HTTP_PROXY = "HTTP_PROXY"
 HTTPS_PROXY = "HTTPS_PROXY"
 NO_PROXY = "NO_PROXY"
 
+UBUNTU_USER = "ubuntu"
+
 
 def configure_proxy(proxy: ProxyConfig | None) -> None:
     """Enable proxy configurations on the charm environment.
@@ -70,13 +72,15 @@ def _install_dependencies() -> None:
             ],
             timeout=5 * 60,
             check=True,
+            user=UBUNTU_USER,
         )
     except (apt.PackageNotFoundError, subprocess.CalledProcessError) as exc:
         raise DependencyInstallError from exc
 
 
-# or /root/.local/pipx/venvs/github-runner-image-builder
-GITHUB_RUNNER_IMAGE_BUILDER = Path(Path.home() / ".local/bin/github-runner-image-builder")
+GITHUB_RUNNER_IMAGE_BUILDER = Path(
+    Path(f"/home/{UBUNTU_USER}") / ".local/bin/github-runner-image-builder"
+)
 
 
 class ImageBuilderInstallError(Exception):
@@ -91,7 +95,10 @@ def _install_image_builder() -> None:
     """
     try:
         subprocess.run(
-            [str(GITHUB_RUNNER_IMAGE_BUILDER), "install"], check=True, timeout=10 * 60
+            ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER), "install"],
+            check=True,
+            user=UBUNTU_USER,
+            timeout=10 * 60,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
         raise ImageBuilderInstallError from exc
@@ -146,6 +153,7 @@ def run_builder(config: RunBuilderConfig) -> None:
     try:
         subprocess.run(  # nosec: B603
             [
+                "/usr/bin/sudo",
                 str(GITHUB_RUNNER_IMAGE_BUILDER),
                 "build",
                 "--image-base",
@@ -155,6 +163,7 @@ def run_builder(config: RunBuilderConfig) -> None:
             ],
             encoding="utf-8",
             check=True,
+            user=UBUNTU_USER,
             timeout=60 * 60,
         )
     except subprocess.CalledProcessError as exc:
