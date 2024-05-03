@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
-import logging
 import os
 from pathlib import Path
 from typing import AsyncGenerator, NamedTuple, Optional
@@ -22,8 +21,6 @@ from pytest_operator.plugin import OpsTest
 from openstack_manager import IMAGE_NAME_TMPL
 from state import BASE_IMAGE_CONFIG_NAME, OPENSTACK_CLOUDS_YAML_CONFIG_NAME, _get_supported_arch
 from tests.integration.helpers import wait_for_valid_connection
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -56,7 +53,6 @@ async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
 def openstack_clouds_yaml_fixture() -> str:
     """Configured clouds-yaml setting."""
-    logger.info("%s", os.environ)
     # This secret is moved from INTEGRATION_TEST_ARGS secrets since GitHub does not mask
     # multiline secrets well and prints them on the log output.
     clouds_yaml = os.getenv("OPENSTACK_CLOUDS_YAML")
