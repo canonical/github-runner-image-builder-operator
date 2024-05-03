@@ -111,11 +111,11 @@ def private_endpoint_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optiona
     )
 
 
-@pytest.fixture(scope="module", name="openstack_connection")
-def openstack_connection_fixture(
+@pytest.fixture(scope="module", name="clouds_yaml_contents")
+def clouds_yaml_contents_fixture(
     openstack_clouds_yaml: Optional[str], private_endpoint_clouds_yaml: Optional[str]
-) -> Connection:
-    """The openstack connection instance."""
+):
+    """The Openstack clouds yaml or private endpoint cloud yaml contents."""
     clouds_yaml_contents = openstack_clouds_yaml or private_endpoint_clouds_yaml
     assert clouds_yaml_contents, (
         "Please specify --openstack-clouds-yaml or all of private endpoint arguments "
@@ -123,6 +123,12 @@ def openstack_connection_fixture(
         "--openstack-project-name, --openstack-user-domain-name, --openstack-user-name, "
         "--openstack-region-name)"
     )
+    return clouds_yaml_contents
+
+
+@pytest.fixture(scope="module", name="openstack_connection")
+def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
+    """The openstack connection instance."""
     clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
     clouds_yaml_path.write_text(data=clouds_yaml, encoding="utf-8")
@@ -131,12 +137,12 @@ def openstack_connection_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(model: Model, charm_file: str, openstack_clouds_yaml: str) -> Application:
+async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) -> Application:
     """The deployed application fixture."""
     app: Application = await model.deploy(
         charm_file,
         constraints="cores=2 mem=18G root-disk=15G virt-type=virtual-machine",
-        config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: openstack_clouds_yaml},
+        config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents},
     )
     await model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=40 * 60
