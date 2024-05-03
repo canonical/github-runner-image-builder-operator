@@ -11,12 +11,9 @@ develop a new k8s charm using the Operator Framework:
 https://juju.is/docs/sdk/create-a-minimal-kubernetes-charm
 """
 
-import logging
 from typing import Any
 
 import ops
-
-logger = logging.getLogger(__name__)
 
 IMAGE_RELATION = "image"
 
@@ -41,9 +38,7 @@ class RelationCharm(ops.CharmBase):
         Args:
             event: The event fired when relation has changed.
         """
-        logger.info("Image relation changed.")
         if not event.unit or event.relation.data[event.unit].get("id", None):
-            logger.warning("Relation data not yet set.")
             return
         self.unit.status = ops.ActiveStatus()
 
