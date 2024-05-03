@@ -83,14 +83,17 @@ def private_endpoint_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optiona
     user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
     user_name = pytestconfig.getoption("--openstack-user-name")
     region_name = pytestconfig.getoption("--openstack-region-name")
-    if (
-        not auth_url
-        or not password
-        or not project_domain_name
-        or not project_name
-        or not user_domain_name
-        or not user_name
-        or not region_name
+    if any(
+        not val
+        for val in (
+            auth_url,
+            password,
+            project_domain_name,
+            project_name,
+            user_domain_name,
+            user_name,
+            region_name,
+        )
     ):
         return None
     return string.Template(
