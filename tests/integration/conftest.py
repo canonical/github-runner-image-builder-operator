@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
+import os
 import string
 import time
 from pathlib import Path
@@ -32,10 +33,17 @@ def charm_file_fixture(pytestconfig: pytest.Config) -> str:
     return f"./{charm}"
 
 
-@pytest.fixture(scope="module", name="model")
-def model_fixture(ops_test: OpsTest) -> Model:
+@pytest_asyncio.fixture(scope="module", name="model")
+async def model_fixture(ops_test: OpsTest) -> Model:
     """Juju model used in the test."""
     assert ops_test.model is not None
+
+    # Set model proxy for the runners
+    http_proxy = os.getenv("HTTP_PROXY", "")
+    https_proxy = os.getenv("HTTPS_PROXY", "")
+    await ops_test.model.set_config(
+        {"juju-http-proxy": http_proxy, "juju-https-proxy": https_proxy}
+    )
     return ops_test.model
 
 
