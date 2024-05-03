@@ -122,7 +122,7 @@ def openstack_connection_fixture(
     )
     clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
-    clouds_yaml_path.write_text(data=openstack_clouds_yaml, encoding="utf-8")
+    clouds_yaml_path.write_text(data=clouds_yaml, encoding="utf-8")
     first_cloud = next(iter(clouds_yaml["clouds"].keys()))
     return openstack.connect(first_cloud)
 
