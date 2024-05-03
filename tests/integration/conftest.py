@@ -51,27 +51,32 @@ async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
-def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
+def openstack_clouds_yaml_fixture() -> str:
     """Configured clouds-yaml setting."""
-    clouds_yaml = pytestconfig.getoption("--openstack-clouds-yaml")
-    assert clouds_yaml, "Please specify the --openstack-clouds-yaml command line option"
+    # This secret is moved from INTEGRATION_TEST_ARGS secrets since GitHub does not mask
+    # multiline secrets well and prints them on the log output.
+    clouds_yaml = os.getenv("OPENSTACK_CLOUDS_YAML")
+    assert clouds_yaml, "Please specify the OPENSTACK_CLOUDS_YAML environment variable."
     return clouds_yaml
 
 
 @pytest.fixture(scope="module", name="network_name")
-def network_name_fixture(pytestconfig: pytest.Config) -> str:
+def network_name_fixture() -> str:
     """Network to use to spawn test instances under."""
-    assert os.environ.get("TESTING_SECRET") == "testing value"
-    network_name = pytestconfig.getoption("--openstack-network-name")
-    assert network_name, "Please specify the --openstack-network-name command line option"
+    # This secret is moved from INTEGRATION_TEST_ARGS secrets since GitHub does not mask
+    # multiline secrets well and prints them on the log output.
+    network_name = os.getenv("OPENSTACK_NETWORK_NAME")
+    assert network_name, "Please specify the OPENSTACK_NETWORK_NAME environment variable."
     return network_name
 
 
 @pytest.fixture(scope="module", name="flavor_name")
-def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
+def flavor_name_fixture() -> str:
     """Flavor to create testing instances with."""
-    flavor_name = pytestconfig.getoption("--openstack-flavor-name")
-    assert flavor_name, "Please specify the --openstack-flavor-name command line option"
+    # This secret is moved from INTEGRATION_TEST_ARGS secrets since GitHub does not mask
+    # multiline secrets well and prints them on the log output.
+    flavor_name = os.getenv("OPENSTACK_FLAVOR_NAME")
+    assert flavor_name, "Please specify the OPENSTACK_FLAVOR_NAME environment variable."
     return flavor_name
 
 

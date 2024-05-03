@@ -18,18 +18,3 @@ def pytest_addoption(parser: Parser):
         action="store",
         help="The prebuilt github-runner-image-builder-operator charm file.",
     )
-    parser.addoption(
-        "--openstack-clouds-yaml",
-        action="store",
-        help="The OpenStack clouds yaml contents the charm uses to connect to Openstack.",
-    )
-    parser.addoption(
-        "--openstack-network-name",
-        action="store",
-        help="The Openstack network to create testing instances under.",
-    )
-    parser.addoption(
-        "--openstack-flavor-name",
-        action="store",
-        help="The Openstack flavor to create testing instances with.",
-    )
