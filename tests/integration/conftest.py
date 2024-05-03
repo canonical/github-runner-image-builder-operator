@@ -145,7 +145,7 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
         constraints="cores=2 mem=18G root-disk=15G virt-type=virtual-machine",
         config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents},
     )
-    time.sleep(60 * 10)
+    time.sleep(60 * 30)
     await model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=40 * 60
     )
