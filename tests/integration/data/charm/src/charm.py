@@ -45,7 +45,6 @@ class RelationCharm(ops.CharmBase):
         if not event.unit or event.relation.data[event.unit].get("id", None):
             logger.warning("Relation data not yet set.")
             return
-        logger.info("Image relation changed.")
         self.unit.status = ops.ActiveStatus()
 
 
