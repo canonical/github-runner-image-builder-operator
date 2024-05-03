@@ -113,14 +113,13 @@ def openstack_connection_fixture(
     openstack_clouds_yaml: Optional[str], private_endpoint_clouds_yaml: Optional[str]
 ) -> Connection:
     """The openstack connection instance."""
-    if not openstack_clouds_yaml and not private_endpoint_clouds_yaml:
-        raise ValueError(
-            "Please specify --openstack-clouds-yaml or all of private endpoint arguments "
-            "(--openstack-auth-url, --openstack-password, --openstack-project-domain-name, "
-            "--openstack-project-name, --openstack-user-domain-name, --openstack-user-name, "
-            "--openstack-region-name)"
-        )
     clouds_yaml_contents = openstack_clouds_yaml or private_endpoint_clouds_yaml
+    assert clouds_yaml_contents, (
+        "Please specify --openstack-clouds-yaml or all of private endpoint arguments "
+        "(--openstack-auth-url, --openstack-password, --openstack-project-domain-name, "
+        "--openstack-project-name, --openstack-user-domain-name, --openstack-user-name, "
+        "--openstack-region-name)"
+    )
     clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
     clouds_yaml_path.write_text(data=openstack_clouds_yaml, encoding="utf-8")
