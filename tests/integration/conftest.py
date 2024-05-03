@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
+import os
 from pathlib import Path
 from typing import AsyncGenerator, NamedTuple, Optional
 
@@ -60,6 +61,7 @@ def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
 @pytest.fixture(scope="module", name="network_name")
 def network_name_fixture(pytestconfig: pytest.Config) -> str:
     """Network to use to spawn test instances under."""
+    assert os.environ.get("TESTING_SECRET") == "testing value"
     network_name = pytestconfig.getoption("--openstack-network-name")
     assert network_name, "Please specify the --openstack-network-name command line option"
     return network_name
