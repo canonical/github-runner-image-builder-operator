@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
-import os
+import string
 from pathlib import Path
 from typing import AsyncGenerator, NamedTuple, Optional
 
@@ -54,14 +54,12 @@ async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[
 def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
     """Configured clouds-yaml setting."""
     clouds_yaml = pytestconfig.getoption("--openstack-clouds-yaml")
-    assert clouds_yaml, "Please specify the --openstack-clouds-yaml command line option"
     return clouds_yaml
 
 
 @pytest.fixture(scope="module", name="network_name")
 def network_name_fixture(pytestconfig: pytest.Config) -> str:
     """Network to use to spawn test instances under."""
-    assert os.environ.get("TESTING_SECRET") == "testing value"
     network_name = pytestconfig.getoption("--openstack-network-name")
     assert network_name, "Please specify the --openstack-network-name command line option"
     return network_name
@@ -75,17 +73,58 @@ def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
     return flavor_name
 
 
+@pytest.fixture(scope="module", name="private_endpoint_clouds_yaml")
+def private_endpoint_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optional[str]:
+    """The openstack private endpoint clouds yaml."""
+    auth_url = pytestconfig.getoption("--openstack-auth-url")
+    password = pytestconfig.getoption("--openstack-password")
+    project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
+    project_name = pytestconfig.getoption("--openstack-project-name")
+    user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
+    user_name = pytestconfig.getoption("--openstack-user-name")
+    region_name = pytestconfig.getoption("--openstack-region-name")
+    if (
+        not auth_url
+        or not password
+        or not project_domain_name
+        or not project_name
+        or not user_domain_name
+        or not user_name
+        or not region_name
+    ):
+        return None
+    return string.Template(
+        Path("tests/integration/data/clouds.yaml.tmpl").read_text(encoding="utf-8")
+    ).substitute(
+        {
+            "auth_url": auth_url,
+            "password": password,
+            "project_domain_name": project_domain_name,
+            "project_name": project_name,
+            "user_domain_name": user_domain_name,
+            "username": user_name,
+            "region_name": region_name,
+        }
+    )
+
+
 @pytest.fixture(scope="module", name="openstack_connection")
 def openstack_connection_fixture(
-    openstack_clouds_yaml: Optional[str],
+    openstack_clouds_yaml: Optional[str], private_endpoint_clouds_yaml: Optional[str]
 ) -> Connection:
     """The openstack connection instance."""
-    assert openstack_clouds_yaml, "Openstack clouds yaml was not provided."
-
-    openstack_clouds_yaml_yaml = yaml.safe_load(openstack_clouds_yaml)
+    if not openstack_clouds_yaml and not private_endpoint_clouds_yaml:
+        raise ValueError(
+            "Please specify --openstack-clouds-yaml or all of private endpoint arguments "
+            "(--openstack-auth-url, --openstack-password, --openstack-project-domain-name, "
+            "--openstack-project-name, --openstack-user-domain-name, --openstack-user-name, "
+            "--openstack-region-name)"
+        )
+    clouds_yaml_contents = openstack_clouds_yaml or private_endpoint_clouds_yaml
+    clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
     clouds_yaml_path.write_text(data=openstack_clouds_yaml, encoding="utf-8")
-    first_cloud = next(iter(openstack_clouds_yaml_yaml["clouds"].keys()))
+    first_cloud = next(iter(clouds_yaml["clouds"].keys()))
     return openstack.connect(first_cloud)
 
 
