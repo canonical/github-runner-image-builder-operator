@@ -44,22 +44,26 @@ def _configure_git_proxy(proxy: ProxyConfig | None) -> None:
                 ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "--unset", "http.proxy"],
                 check=False,
                 timeout=60,
+                user=UBUNTU_USER,
             )
             subprocess.run(  # nosec: B603
                 ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "--unset", "https.proxy"],
                 check=False,
                 timeout=60,
+                user=UBUNTU_USER,
             )
             return
         subprocess.run(  # nosec: B603
             ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "http.proxy", proxy.http],
             check=True,
             timeout=60,
+            user=UBUNTU_USER,
         )
         subprocess.run(  # nosec: B603
             ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "https.proxy", proxy.https],
             check=True,
             timeout=60,
+            user=UBUNTU_USER,
         )
     except subprocess.CalledProcessError as exc:
         raise GitProxyConfigError from exc
