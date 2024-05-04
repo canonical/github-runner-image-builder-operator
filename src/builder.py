@@ -41,26 +41,26 @@ def _configure_git_proxy(proxy: ProxyConfig | None) -> None:
         if not proxy:
             # Git config unset call is not idempotent, hence check=False
             subprocess.run(  # nosec: B603
-                ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "--unset", "http.proxy"],
+                ["/usr/bin/git", "config", "--global", "--unset", "http.proxy"],
                 check=False,
                 timeout=60,
                 user=UBUNTU_USER,
             )
             subprocess.run(  # nosec: B603
-                ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "--unset", "https.proxy"],
+                ["/usr/bin/git", "config", "--global", "--unset", "https.proxy"],
                 check=False,
                 timeout=60,
                 user=UBUNTU_USER,
             )
             return
         subprocess.run(  # nosec: B603
-            ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "http.proxy", proxy.http],
+            ["/usr/bin/git", "config", "--global", "http.proxy", proxy.http],
             check=True,
             timeout=60,
             user=UBUNTU_USER,
         )
         subprocess.run(  # nosec: B603
-            ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "https.proxy", proxy.https],
+            ["/usr/bin/git", "config", "--global", "https.proxy", proxy.https],
             check=True,
             timeout=60,
             user=UBUNTU_USER,
@@ -83,10 +83,17 @@ def configure_proxy(proxy: ProxyConfig | None) -> None:
         os.environ.pop(HTTP_PROXY, None)
         os.environ.pop(HTTPS_PROXY, None)
         os.environ.pop(NO_PROXY, None)
+        # go proxy variables are in lowercase
+        os.environ.pop(HTTP_PROXY.lower(), None)
+        os.environ.pop(HTTPS_PROXY.lower(), None)
+        os.environ.pop(NO_PROXY.lower(), None)
         return
     os.environ[HTTP_PROXY] = proxy.http
     os.environ[HTTPS_PROXY] = proxy.https
     os.environ[NO_PROXY] = proxy.no_proxy
+    os.environ[HTTP_PROXY.lower()] = proxy.http
+    os.environ[HTTPS_PROXY.lower()] = proxy.https
+    os.environ[NO_PROXY.lower()] = proxy.no_proxy
 
 
 APT_DEPENDENCIES = [
