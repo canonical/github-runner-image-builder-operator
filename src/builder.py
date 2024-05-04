@@ -152,7 +152,6 @@ def _install_image_builder() -> None:
             check=True,
             user=UBUNTU_USER,
             timeout=10 * 60,
-            env=os.environ,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
         raise ImageBuilderInstallError from exc
@@ -205,6 +204,7 @@ def run_builder(config: RunBuilderConfig) -> None:
         BuildImageError: if there was an error running the github-runner-image-builder.
     """
     try:
+        subprocess.run(["env"], encoding="utf-8", user=UBUNTU_USER)
         subprocess.run(  # nosec: B603
             [
                 "/usr/bin/sudo",
@@ -219,7 +219,6 @@ def run_builder(config: RunBuilderConfig) -> None:
             check=True,
             user=UBUNTU_USER,
             timeout=60 * 60,
-            env=os.environ,
         )
     except subprocess.CalledProcessError as exc:
         raise BuildImageError from exc
