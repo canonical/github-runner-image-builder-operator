@@ -121,7 +121,7 @@ def _install_dependencies() -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                "git+https://github.com/canonical/github-runner-image-builder@feat/app",
+                "git+https://github.com/canonical/github-runner-image-builder@snap/proxy",
             ],
             timeout=5 * 60,
             check=True,
