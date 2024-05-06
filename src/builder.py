@@ -182,10 +182,12 @@ class RunBuilderConfig:
     Attributes:
         base: Ubuntu OS image to build from.
         output: The Image output Path.
+        proxy: The proxy to use when building image.
     """
 
     base: BaseImage
     output: Path
+    proxy: str
 
 
 IMAGE_NAME_TMPL = "{IMAGE_BASE}-{APP_NAME}-{ARCH}"
@@ -213,6 +215,8 @@ def run_builder(config: RunBuilderConfig) -> None:
             [
                 "/usr/bin/sudo",
                 str(GITHUB_RUNNER_IMAGE_BUILDER),
+                "--proxy",
+                config.proxy,
                 "build",
                 "--image-base",
                 config.base.value,

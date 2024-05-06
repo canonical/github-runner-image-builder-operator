@@ -86,7 +86,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus("Building image.")
         output_path = Path("compressed.img")
         build_config = builder.RunBuilderConfig(
-            base=state.image_config.base_image, output=output_path
+            base=state.image_config.base_image,
+            output=output_path,
+            proxy=state.proxy_config.http if state.proxy_config else "",
         )
         builder.run_builder(config=build_config)
         with OpenstackManager(cloud_config=state.cloud_config) as manager:
