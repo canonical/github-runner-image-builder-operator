@@ -15,7 +15,7 @@ def pytest_addoption(parser: Parser):
     """
     parser.addoption(
         "--charm-file",
-        action="store",
+        action="append",
         help="The prebuilt github-runner-image-builder-operator charm file.",
     )
     parser.addoption(

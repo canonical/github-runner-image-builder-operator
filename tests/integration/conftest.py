@@ -28,7 +28,7 @@ from tests.integration.helpers import wait_for_valid_connection
 @pytest.fixture(scope="module", name="charm_file")
 def charm_file_fixture(pytestconfig: pytest.Config) -> str:
     """Path to the built charm."""
-    charm = pytestconfig.getoption("--charm-file")
+    charm = pytestconfig.getoption("--charm-file")[0]
     assert charm, "Please specify the --charm-file command line option"
     return f"./{charm}"
 
