@@ -214,9 +214,8 @@ def run_builder(config: RunBuilderConfig) -> None:
         subprocess.run(  # nosec: B603
             [
                 "/usr/bin/sudo",
+                "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER),
-                "--proxy",
-                config.proxy,
                 "build",
                 "--image-base",
                 config.base.value,
@@ -227,7 +226,6 @@ def run_builder(config: RunBuilderConfig) -> None:
             check=True,
             user=UBUNTU_USER,
             timeout=60 * 60,
-            env=os.environ,
         )
     except subprocess.CalledProcessError as exc:
         raise BuildImageError from exc
