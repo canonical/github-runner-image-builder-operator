@@ -204,7 +204,10 @@ def run_builder(config: RunBuilderConfig) -> None:
         BuildImageError: if there was an error running the github-runner-image-builder.
     """
     try:
+        subprocess.run(["echo", "charmenv"])
         subprocess.run(["env"], encoding="utf-8", user=UBUNTU_USER)
+        subprocess.run(["echo", "charmosenv"])
+        subprocess.run(["echo", str(os.environ)])
         subprocess.run(  # nosec: B603
             [
                 "/usr/bin/sudo",
