@@ -150,7 +150,7 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
     """The deployed application fixture."""
     app: Application = await model.deploy(
         charm_file,
-        constraints="cores=2 mem=18G root-disk=15G virt-type=virtual-machine",
+        constraints="cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
         config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents},
     )
     time.sleep(60 * 30)
