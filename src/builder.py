@@ -121,7 +121,7 @@ def _install_dependencies() -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                "git+https://github.com/canonical/github-runner-image-builder@snap/proxy",
+                "git+https://github.com/canonical/github-runner-image-builder",
             ],
             timeout=5 * 60,
             check=True,
@@ -207,10 +207,7 @@ def run_builder(config: RunBuilderConfig) -> None:
         BuildImageError: if there was an error running the github-runner-image-builder.
     """
     try:
-        subprocess.run(["echo", "charmenv"])
-        subprocess.run(["env"], encoding="utf-8", user=UBUNTU_USER)
-        subprocess.run(["echo", "charmosenv"])
-        subprocess.run(["echo", str(os.environ)])
+        # Go mod requires HOME env var to locate GOPATH and GOMODCACHE
         subprocess.run(  # nosec: B603
             [
                 "/usr/bin/sudo",
@@ -226,6 +223,7 @@ def run_builder(config: RunBuilderConfig) -> None:
             check=True,
             user=UBUNTU_USER,
             timeout=60 * 60,
+            env={**os.environ, "HOME": f"/home/{UBUNTU_USER}"},
         )
     except subprocess.CalledProcessError as exc:
         raise BuildImageError from exc
