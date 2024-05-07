@@ -5,7 +5,7 @@
 import os
 import string
 from pathlib import Path
-from typing import AsyncGenerator, NamedTuple, Optional
+from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
 import openstack
 import pytest
@@ -27,7 +27,7 @@ from state import (
     _get_supported_arch,
 )
 from tests.integration.helpers import wait_for_valid_connection
-from tests.integration.types import ProxyConfig
+from tests.integration.types import ProxyConfig, SSHKey
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -181,14 +181,16 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
 
 
 @pytest.fixture(scope="function", name="ssh_key")
-def ssh_key_fixture(openstack_connection: Connection, tmp_path: Path):
+def ssh_key_fixture(
+    openstack_connection: Connection, tmp_path: Path
+) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
     keypair: Keypair = openstack_connection.create_keypair("test-image-builder-keys")
     ssh_key_path = tmp_path / "tmp_key"
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
 
-    yield keypair
+    yield SSHKey(keypair=keypair, private_key=ssh_key_path)
 
     openstack_connection.delete_keypair(name=keypair.name)
 
@@ -204,14 +206,14 @@ class OpenstackMeta(NamedTuple):
     """
 
     connection: Connection
-    ssh_key: Keypair
+    ssh_key: SSHKey
     network: str
     flavor: str
 
 
 @pytest.fixture(scope="function", name="openstack_metadata")
 def openstack_metadata_fixture(
-    openstack_connection: Connection, ssh_key: Keypair, network_name: str, flavor_name: str
+    openstack_connection: Connection, ssh_key: SSHKey, network_name: str, flavor_name: str
 ) -> OpenstackMeta:
     """A wrapper around openstack related info."""
     return OpenstackMeta(
@@ -244,7 +246,7 @@ async def ssh_connection_fixture(
         name=server_name,
         image=images[0],
         auto_ip=False,
-        key_name=openstack_metadata.ssh_key.name,
+        key_name=openstack_metadata.ssh_key.keypair.name,
         # these are pre-configured values on private endpoint.
         flavor=openstack_metadata.flavor,
         network=openstack_metadata.network,
@@ -256,7 +258,7 @@ async def ssh_connection_fixture(
         connection=openstack_metadata.connection,
         server_name=server_name,
         network=openstack_metadata.network,
-        ssh_key=openstack_metadata.ssh_key.name,
+        ssh_key=openstack_metadata.ssh_key.private_key,
     )
 
     yield ssh_connection
