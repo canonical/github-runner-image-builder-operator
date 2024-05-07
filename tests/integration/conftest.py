@@ -4,7 +4,6 @@
 """Fixtures for github runner charm integration tests."""
 import os
 import string
-import time
 from pathlib import Path
 from typing import AsyncGenerator, NamedTuple, Optional
 
@@ -21,8 +20,14 @@ from openstack.connection import Connection
 from pytest_operator.plugin import OpsTest
 
 from openstack_manager import IMAGE_NAME_TMPL
-from state import BASE_IMAGE_CONFIG_NAME, OPENSTACK_CLOUDS_YAML_CONFIG_NAME, _get_supported_arch
+from state import (
+    BASE_IMAGE_CONFIG_NAME,
+    BUILD_INTERVAL_CONFIG_NAME,
+    OPENSTACK_CLOUDS_YAML_CONFIG_NAME,
+    _get_supported_arch,
+)
 from tests.integration.helpers import wait_for_valid_connection
+from tests.integration.types import ProxyConfig
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -33,17 +38,28 @@ def charm_file_fixture(pytestconfig: pytest.Config) -> str:
     return f"./{charm}"
 
 
+@pytest.fixture(scope="module", name="proxy")
+def proxy_fixture() -> ProxyConfig:
+    """The environment proxy to pass on to the charm/testing model."""
+    http_proxy = os.getenv("HTTP_PROXY", "")
+    https_proxy = os.getenv("HTTPS_PROXY", "")
+    no_proxy = os.getenv("no_proxy", "")
+    return ProxyConfig(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
-async def model_fixture(ops_test: OpsTest) -> Model:
+async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
     """Juju model used in the test."""
     assert ops_test.model is not None
 
     # Set model proxy for the runners
-    http_proxy = os.getenv("HTTP_PROXY", "")
-    https_proxy = os.getenv("HTTPS_PROXY", "")
-    no_proxy = os.getenv("no_proxy", "")
+
     await ops_test.model.set_config(
-        {"juju-http-proxy": http_proxy, "juju-https-proxy": https_proxy, "juju-no-proxy": no_proxy}
+        {
+            "juju-http-proxy": proxy.http,
+            "juju-https-proxy": proxy.https,
+            "juju-no-proxy": proxy.no_proxy,
+        }
     )
     return ops_test.model
 
@@ -152,9 +168,11 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
     app: Application = await model.deploy(
         charm_file,
         constraints="cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
-        config={OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents},
+        config={
+            OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents,
+            BUILD_INTERVAL_CONFIG_NAME: 12,
+        },
     )
-    time.sleep(60 * 30)
     await model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=40 * 60
     )
@@ -224,6 +242,7 @@ async def ssh_connection_fixture(
     openstack_metadata.connection.create_server(
         name=server_name,
         image=images[0],
+        auto_ip=False,
         key_name=openstack_metadata.ssh_key.name,
         # these are pre-configured values on private endpoint.
         flavor=openstack_metadata.flavor,

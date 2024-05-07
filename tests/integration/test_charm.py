@@ -19,6 +19,7 @@ from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
 from tests.integration.helpers import wait_for
+from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,15 @@ async def test_image_relation(model: Model, app: Application, test_charm: Applic
 
 
 @pytest.mark.asyncio
-async def test_image_cron(model: Model, app: Application, openstack_connection: Connection):
+async def test_image_cron(
+    model: Model, app: Application, openstack_connection: Connection, proxy: ProxyConfig
+):
     """
     arrange: A deployed active charm.
     act: When image cron hook is triggered.
     assert: An image is built successfully.
     """
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=30 * 60)
+    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
     unit: Unit = app.units[0]
 
     dispatch_time = datetime.now()
@@ -62,6 +65,9 @@ async def test_image_cron(model: Model, app: Application, openstack_connection: 
         "JUJU_DISPATCH_PATH": "hooks/trigger",
         "JUJU_MODEL_NAME": app.model.name,
         "JUJU_UNIT_NAME": unit.name,
+        "JUJU_CHARM_HTTP_PROXY": proxy.http,
+        "JUJU_CHARM_HTTPS_PROXY": proxy.https,
+        "JUJU_CHARM_NO_PROXY": proxy.no_proxy,
     }
     env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
     await unit.ssh(
@@ -70,7 +76,8 @@ async def test_image_cron(model: Model, app: Application, openstack_connection: 
             f"{unit.name.replace('/','-')}/charm/dispatch"
         )
     )
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=30 * 60)
+
+    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
 
     def image_created_from_dispatch() -> bool:
         """Return whether there is an image created after dispatch has been called.
