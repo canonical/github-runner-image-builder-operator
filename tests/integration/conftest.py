@@ -41,8 +41,9 @@ async def model_fixture(ops_test: OpsTest) -> Model:
     # Set model proxy for the runners
     http_proxy = os.getenv("HTTP_PROXY", "")
     https_proxy = os.getenv("HTTPS_PROXY", "")
+    no_proxy = os.getenv("no_proxy", "")
     await ops_test.model.set_config(
-        {"juju-http-proxy": http_proxy, "juju-https-proxy": https_proxy}
+        {"juju-http-proxy": http_proxy, "juju-https-proxy": https_proxy, "juju-no-proxy": no_proxy}
     )
     return ops_test.model
 
