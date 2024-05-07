@@ -84,6 +84,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             The built image ID.
         """
         self.unit.status = ops.ActiveStatus("Building image.")
+        builder.configure_proxy(proxy=state.proxy_config)
         output_path = Path("compressed.img")
         build_config = builder.RunBuilderConfig(
             base=state.image_config.base_image,
@@ -109,7 +110,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not state:
             return
 
-        builder.configure_proxy(proxy=state.proxy_config)
         self._build_image(state=state)
         cron.setup(state.build_interval, self.model.name, self.unit.name)
         self.unit.status = ops.ActiveStatus()

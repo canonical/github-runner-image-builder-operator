@@ -61,6 +61,7 @@ def test__configure_git_proxy_error(monkeypatch: pytest.MonkeyPatch):
                     ],
                     check=False,
                     timeout=60,
+                    user="ubuntu",
                 ),
                 call(
                     [
@@ -73,6 +74,7 @@ def test__configure_git_proxy_error(monkeypatch: pytest.MonkeyPatch):
                     ],
                     check=False,
                     timeout=60,
+                    user="ubuntu",
                 ),
             ],
             id="Unset proxy",
@@ -84,11 +86,13 @@ def test__configure_git_proxy_error(monkeypatch: pytest.MonkeyPatch):
                     ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "http.proxy", "test"],
                     check=True,
                     timeout=60,
+                    user="ubuntu",
                 ),
                 call(
                     ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "https.proxy", "test"],
                     check=True,
                     timeout=60,
+                    user="ubuntu",
                 ),
             ],
             id="Configure proxy",
@@ -122,8 +126,15 @@ def test__configure_git_proxy(
         pytest.param(
             ProxyConfig(http="test", https="test", no_proxy="test"),
             {},
-            {"HTTP_PROXY": "test", "HTTPS_PROXY": "test", "NO_PROXY": "test"},
-            id="No proxy",
+            {
+                "HTTP_PROXY": "test",
+                "HTTPS_PROXY": "test",
+                "NO_PROXY": "test",
+                "http_proxy": "test",
+                "https_proxy": "test",
+                "no_proxy": "test",
+            },
+            id="Set proxy",
         ),
     ],
 )
