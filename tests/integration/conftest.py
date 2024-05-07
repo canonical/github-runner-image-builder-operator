@@ -173,8 +173,9 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
             BUILD_INTERVAL_CONFIG_NAME: 12,
         },
     )
+    # This takes long due to having to wait for the machine to come up.
     await model.wait_for_idle(
-        apps=[app.name], wait_for_active=True, idle_period=30, timeout=40 * 60
+        apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 60
     )
     return app
 
