@@ -286,6 +286,7 @@ async def openstack_server_fixture(
         name=server_name,
         image=images[0],
         key_name=openstack_metadata.ssh_key.keypair.name,
+        auto_ip=False,
         # these are pre-configured values on private endpoint.
         flavor=openstack_metadata.flavor,
         network=openstack_metadata.network,
