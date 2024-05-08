@@ -26,6 +26,7 @@ from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     OPENSTACK_CLOUDS_YAML_CONFIG_NAME,
+    REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
 from tests.integration.helpers import wait_for_valid_connection
@@ -173,6 +174,7 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
         config={
             OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents,
             BUILD_INTERVAL_CONFIG_NAME: 12,
+            REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
         },
     )
     # This takes long due to having to wait for the machine to come up.
