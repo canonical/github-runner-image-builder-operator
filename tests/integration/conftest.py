@@ -16,7 +16,9 @@ from juju.application import Application
 from juju.model import Model
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.keypair import Keypair
+from openstack.compute.v2.server import Server
 from openstack.connection import Connection
+from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
 from openstack_manager import IMAGE_NAME_TMPL
@@ -64,7 +66,7 @@ async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
     return ops_test.model
 
 
-@pytest_asyncio.fixture(scope="function", name="test_charm")
+@pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     charm_file = await ops_test.build_charm("tests/integration/data/charm")
@@ -180,7 +182,7 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
     return app
 
 
-@pytest.fixture(scope="function", name="ssh_key")
+@pytest.fixture(scope="module", name="ssh_key")
 def ssh_key_fixture(
     openstack_connection: Connection, tmp_path: Path
 ) -> Generator[SSHKey, None, None]:
@@ -211,7 +213,7 @@ class OpenstackMeta(NamedTuple):
     flavor: str
 
 
-@pytest.fixture(scope="function", name="openstack_metadata")
+@pytest.fixture(scope="module", name="openstack_metadata")
 def openstack_metadata_fixture(
     openstack_connection: Connection, ssh_key: SSHKey, network_name: str, flavor_name: str
 ) -> OpenstackMeta:
@@ -221,13 +223,50 @@ def openstack_metadata_fixture(
     )
 
 
-@pytest_asyncio.fixture(scope="function", name="ssh_connection")
-async def ssh_connection_fixture(
-    model: Model,
-    app: Application,
-    openstack_metadata: OpenstackMeta,
-) -> AsyncGenerator[SSHConnection, None]:
-    """The openstack server ssh connection fixture."""
+@pytest.fixture(scope="module", name="openstack_security_group")
+def openstack_security_group_fixture(openstack_connection: Connection):
+    """An ssh-connectable security group."""
+    security_group_name = "github-runner-image-builder-operator-test-security-group"
+    security_group: SecurityGroup = openstack_connection.create_security_group(
+        name=security_group_name,
+        description="For servers managed by the github-runner charm.",
+    )
+    # For ping
+    openstack_connection.create_security_group_rule(
+        secgroup_name_or_id=security_group_name,
+        protocol="icmp",
+        direction="ingress",
+        ethertype="IPv4",
+    )
+    # For SSH
+    openstack_connection.create_security_group_rule(
+        secgroup_name_or_id=security_group_name,
+        port_range_min="22",
+        port_range_max="22",
+        protocol="tcp",
+        direction="ingress",
+        ethertype="IPv4",
+    )
+    # For tmate
+    openstack_connection.create_security_group_rule(
+        secgroup_name_or_id=security_group_name,
+        port_range_min="10022",
+        port_range_max="10022",
+        protocol="tcp",
+        direction="egress",
+        ethertype="IPv4",
+    )
+
+    yield security_group
+
+    openstack_connection.delete_security_group(security_group_name)
+
+
+@pytest_asyncio.fixture(scope="module", name="openstack_server")
+async def openstack_server_fixture(
+    model: Model, app: Application, openstack_metadata: OpenstackMeta
+):
+    """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
     server_name = "test-server"
 
@@ -242,7 +281,7 @@ async def ssh_connection_fixture(
         )
     )
     assert images, "No built image found."
-    openstack_metadata.connection.create_server(
+    server: Server = openstack_metadata.connection.create_server(
         name=server_name,
         image=images[0],
         auto_ip=False,
@@ -254,13 +293,21 @@ async def ssh_connection_fixture(
         wait=True,
     )
 
+    yield server
+
+    openstack_metadata.connection.delete_server(server_name, wait=True)
+
+
+@pytest_asyncio.fixture(scope="module", name="ssh_connection")
+async def ssh_connection_fixture(
+    openstack_server: Server, openstack_metadata: OpenstackMeta
+) -> SSHConnection:
+    """The openstack server ssh connection fixture."""
     ssh_connection = wait_for_valid_connection(
         connection=openstack_metadata.connection,
-        server_name=server_name,
+        server_name=openstack_server.name,
         network=openstack_metadata.network,
         ssh_key=openstack_metadata.ssh_key.private_key,
     )
 
-    yield ssh_connection
-
-    openstack_metadata.connection.delete_server(server_name)
+    return ssh_connection
