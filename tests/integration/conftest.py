@@ -267,7 +267,10 @@ def openstack_security_group_fixture(openstack_connection: Connection):
 
 @pytest_asyncio.fixture(scope="function", name="openstack_server")
 async def openstack_server_fixture(
-    model: Model, app: Application, openstack_metadata: OpenstackMeta
+    model: Model,
+    app: Application,
+    openstack_metadata: OpenstackMeta,
+    openstack_security_group: SecurityGroup,
 ):
     """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
@@ -290,6 +293,7 @@ async def openstack_server_fixture(
         key_name=openstack_metadata.ssh_key.keypair.name,
         auto_ip=False,
         # these are pre-configured values on private endpoint.
+        security_groups=[openstack_security_group.name],
         flavor=openstack_metadata.flavor,
         network=openstack_metadata.network,
         timeout=120,
