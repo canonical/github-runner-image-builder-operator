@@ -187,14 +187,11 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
     return app
 
 
-# tmp_path is function scoped, any dependent fixtures are functions scoped.
-@pytest.fixture(scope="function", name="ssh_key")
-def ssh_key_fixture(
-    openstack_connection: Connection, tmp_path: Path
-) -> Generator[SSHKey, None, None]:
+@pytest.fixture(scope="module", name="ssh_key")
+def ssh_key_fixture(openstack_connection: Connection) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
     keypair: Keypair = openstack_connection.create_keypair("test-image-builder-keys")
-    ssh_key_path = tmp_path / "tmp_key"
+    ssh_key_path = Path("tmp_key")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
 
@@ -219,7 +216,7 @@ class OpenstackMeta(NamedTuple):
     flavor: str
 
 
-@pytest.fixture(scope="function", name="openstack_metadata")
+@pytest.fixture(scope="module", name="openstack_metadata")
 def openstack_metadata_fixture(
     openstack_connection: Connection, ssh_key: SSHKey, network_name: str, flavor_name: str
 ) -> OpenstackMeta:
@@ -229,7 +226,7 @@ def openstack_metadata_fixture(
     )
 
 
-@pytest.fixture(scope="function", name="openstack_security_group")
+@pytest.fixture(scope="module", name="openstack_security_group")
 def openstack_security_group_fixture(openstack_connection: Connection):
     """An ssh-connectable security group."""
     security_group_name = "github-runner-image-builder-operator-test-security-group"
@@ -268,7 +265,7 @@ def openstack_security_group_fixture(openstack_connection: Connection):
     openstack_connection.delete_security_group(security_group_name)
 
 
-@pytest_asyncio.fixture(scope="function", name="openstack_server")
+@pytest_asyncio.fixture(scope="module", name="openstack_server")
 async def openstack_server_fixture(
     model: Model,
     app: Application,
@@ -308,7 +305,7 @@ async def openstack_server_fixture(
     openstack_metadata.connection.delete_server(server_name, wait=True)
 
 
-@pytest_asyncio.fixture(scope="function", name="ssh_connection")
+@pytest_asyncio.fixture(scope="module", name="ssh_connection")
 async def ssh_connection_fixture(
     openstack_server: Server, openstack_metadata: OpenstackMeta
 ) -> SSHConnection:
