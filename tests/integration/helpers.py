@@ -4,7 +4,9 @@
 """Helper utilities for integration tests."""
 
 import inspect
+import json
 import logging
+import textwrap
 import time
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
@@ -18,6 +20,86 @@ from paramiko.ssh_exception import NoValidConnectionsError
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
+    """Run commands to install proxy.
+
+    Args:
+        conn: The SSH connection instance.
+        proxy: The proxy to apply if available.
+    """
+    if not proxy or not proxy.http:
+        return
+    # required to setup microk8s
+    no_proxy = ",".join(
+        [
+            proxy.no_proxy,
+            "10.0.0.0/8" "192.168.0.0/16",
+            "127.0.0.1",
+            "172.16.0.0/16",
+        ]
+    )
+    proxy_envs = textwrap.dedent(
+        f"""
+            HTTP_PROXY={proxy.http}
+            HTTPS_PROXY={proxy.https}
+            NO_PROXY={no_proxy}
+            http_proxy={proxy.http}
+            https_proxy={proxy.https}
+            no_proxy={no_proxy}
+        """.strip()
+    )
+    command = f"echo '{proxy_envs}' | sudo tee -a /etc/environment"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to append proxy to /etc/environment"
+
+    # required for docker command execute
+    docker_systemd_path = Path("/etc/systemd/system/docker.service.d")
+    docker_systemd_proxy_path = docker_systemd_path / "http-proxy.conf"
+    result: Result = conn.run(f"sudo mkdir -p {docker_systemd_path}")
+    assert result.ok, "Failed to create docker service systemd path"
+
+    docker_systemd_svc = textwrap.dedent(
+        f"""
+            [Service]
+            Environment="HTTP_PROXY={proxy.http}"
+            Environment="HTTPS_PROXY={proxy.https}"
+            Environment="NO_PROXY={proxy.no_proxy}"
+        """.strip()
+    )
+    command = f"echo '{docker_systemd_svc}' | sudo tee {docker_systemd_proxy_path}"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to create docker service unit file"
+    command = "sudo systemctl daemon-reload"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to reload daemon"
+    command = "sudo systemctl restart docker"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to restart docker svc"
+
+    docker_client_proxy = {
+        "proxies": {
+            "default": {
+                key: value
+                for key, value in (
+                    ("httpProxy", proxy.http),
+                    ("httpsProxy", proxy.https),
+                    ("noProxy", proxy.no_proxy),
+                )
+            }
+        }
+    }
+    docker_proxy_content = json.dumps(docker_client_proxy)
+    docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
+    command = f"echo '{docker_proxy_content}' | tee {docker_client_proxy_path}"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to write docker user config"
+
+    docker_client_proxy_root_path = Path("/root/.docker/config.json")
+    command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to write docker root config"
 
 
 def wait_for_valid_connection(
@@ -60,26 +142,9 @@ def wait_for_valid_connection(
                 connect_timeout=10,
             )
             try:
-                if proxy and proxy.http:
-                    # required to setup microk8s
-                    no_proxy = ",".join(
-                        [
-                            proxy.no_proxy,
-                            "10.0.0.0/8" "192.168.0.0/16",
-                            "127.0.0.1",
-                            "172.16.0.0/16",
-                        ]
-                    )
-                    command = (
-                        f"echo 'HTTP_PROXY={proxy.http}\nHTTPS_PROXY={proxy.https}\n"
-                        f"NO_PROXY={no_proxy}\n"
-                        f"http_proxy={proxy.http}\nhttps_proxy={proxy.https}\n"
-                        f"no_proxy={no_proxy}\n' | sudo tee -a /etc/environment"
-                    )
-                else:
-                    command = "echo 'hello world'"
-                result: Result = ssh_connection.run(command)
+                result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
+                    _install_proxy(conn=ssh_connection, proxy=proxy)
                     return ssh_connection
             except NoValidConnectionsError as exc:
                 logger.warn("Connection not yet ready, %s.", str(exc))
