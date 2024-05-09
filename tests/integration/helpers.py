@@ -78,6 +78,8 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     result: Result = conn.run(command)
     assert result.ok, "Failed to restart docker svc"
 
+    docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
+    result: Result = conn.run(f"mkdir -p {docker_client_proxy_path}")
     docker_client_proxy = {
         "proxies": {
             "default": {
@@ -91,12 +93,12 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
         }
     }
     docker_proxy_content = json.dumps(docker_client_proxy)
-    docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
     command = f"echo '{docker_proxy_content}' | tee {docker_client_proxy_path}"
     result: Result = conn.run(command)
     assert result.ok, "Failed to write docker user config"
 
     docker_client_proxy_root_path = Path("/root/.docker/config.json")
+    result: Result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path}")
     command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
     result: Result = conn.run(command)
     assert result.ok, "Failed to write docker root config"
