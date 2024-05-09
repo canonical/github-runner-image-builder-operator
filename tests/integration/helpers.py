@@ -80,8 +80,8 @@ Environment="NO_PROXY={proxy.no_proxy}"
     assert result.ok, "Failed to restart docker svc"
 
     docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
-    docker_path_result = conn.run(f"mkdir -p {docker_client_proxy_path}")
-    assert docker_path_result.ok, "Failed to make docker config path"
+    result = conn.run(f"mkdir -p {docker_client_proxy_path}")
+    assert result.ok, "Failed to make docker config path"
     docker_client_proxy = {
         "proxies": {
             "default": dict(
@@ -104,6 +104,15 @@ Environment="NO_PROXY={proxy.no_proxy}"
     command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
     result = conn.run(command)
     assert result.ok, "Failed to write docker root config"
+
+    apt_config_path = Path("/etc/apt/apt.conf")
+    apt_proxy_content = textwrap.dedent(
+        f"""
+Acquire::http::Proxy {proxy.http};
+Acquire::https::Proxy {proxy.https};
+        """.strip()
+    )
+    result = conn.run(f"echo '{apt_proxy_content}' | sudo tee -a {apt_config_path}")
 
 
 # All the arguments are necessary
