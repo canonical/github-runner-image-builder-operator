@@ -113,6 +113,7 @@ Acquire::https::Proxy {proxy.https};
         """.strip()
     )
     result = conn.run(f"echo '{apt_proxy_content}' | sudo tee -a {apt_config_path}")
+    assert result.ok, "Failed to write apt proxy config"
 
 
 # All the arguments are necessary
