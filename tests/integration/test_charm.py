@@ -148,14 +148,26 @@ TEST_RUNNER_COMMANDS = (
 
 
 @pytest.mark.asyncio
-async def test_image(ssh_connection: SSHConnection):
+async def test_image(ssh_connection: SSHConnection, proxy: ProxyConfig):
     """
     arrange: given a latest image build, a ssh-key and a server.
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
+    env = (
+        None
+        if not proxy.http
+        else {
+            "HTTP_PROXY": proxy.http,
+            "HTTPS_PROXY": proxy.https,
+            "NO_PROXY": proxy.no_proxy,
+            "http_proxy": proxy.http,
+            "https_proxy": proxy.https,
+            "no_proxy": proxy.no_proxy,
+        }
+    )
     for command in TEST_RUNNER_COMMANDS:
         logger.info("Running test: %s", command.name)
-        result: Result = ssh_connection.run(command.command)
+        result: Result = ssh_connection.run(command.command, env=env)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
