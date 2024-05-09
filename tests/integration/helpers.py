@@ -42,12 +42,12 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     )
     proxy_envs = textwrap.dedent(
         f"""
-            HTTP_PROXY={proxy.http}
-            HTTPS_PROXY={proxy.https}
-            NO_PROXY={no_proxy}
-            http_proxy={proxy.http}
-            https_proxy={proxy.https}
-            no_proxy={no_proxy}
+HTTP_PROXY={proxy.http}
+HTTPS_PROXY={proxy.https}
+NO_PROXY={no_proxy}
+http_proxy={proxy.http}
+https_proxy={proxy.https}
+no_proxy={no_proxy}
         """.strip()
     )
     command = f"echo '{proxy_envs}' | sudo tee -a /etc/environment"
@@ -62,10 +62,10 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
 
     docker_systemd_svc = textwrap.dedent(
         f"""
-            [Service]
-            Environment="HTTP_PROXY={proxy.http}"
-            Environment="HTTPS_PROXY={proxy.https}"
-            Environment="NO_PROXY={proxy.no_proxy}"
+[Service]
+Environment="HTTP_PROXY={proxy.http}"
+Environment="HTTPS_PROXY={proxy.https}"
+Environment="NO_PROXY={proxy.no_proxy}"
         """.strip()
     )
     command = f"echo '{docker_systemd_svc}' | sudo tee {docker_systemd_proxy_path}"
