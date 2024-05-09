@@ -80,7 +80,7 @@ Environment="NO_PROXY={proxy.no_proxy}"
     assert result.ok, "Failed to restart docker svc"
 
     docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
-    result = conn.run(f"mkdir -p {docker_client_proxy_path}")
+    result = conn.run(f"mkdir -p {docker_client_proxy_path.parent}")
     assert result.ok, "Failed to make docker config path"
     docker_client_proxy = {
         "proxies": {
@@ -99,7 +99,7 @@ Environment="NO_PROXY={proxy.no_proxy}"
     assert result.ok, "Failed to write docker user config"
 
     docker_client_proxy_root_path = Path("/root/.docker/config.json")
-    result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path}")
+    result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path.parent}")
     assert result.ok, "Failed to make docker config path"
     command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
     result = conn.run(command)
