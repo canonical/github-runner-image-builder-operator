@@ -39,7 +39,7 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
             "127.0.0.1",
             "172.16.0.0/16",
         ]
-    )
+    ).strip()
     proxy_envs = textwrap.dedent(
         f"""
 HTTP_PROXY={proxy.http}
