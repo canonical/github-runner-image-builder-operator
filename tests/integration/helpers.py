@@ -4,6 +4,7 @@
 """Helper utilities for integration tests."""
 
 import inspect
+import logging
 import time
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
@@ -12,6 +13,8 @@ from fabric import Connection as SSHConnection
 from fabric import Result
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 
 def wait_for_valid_connection(
@@ -40,6 +43,7 @@ def wait_for_valid_connection(
             continue
         for address in server.addresses[network]:
             ip = address["addr"]
+            logger.info("Trying SSH into %s using key: %s...", ip, str(ssh_key.absolute()))
             ssh_connection = SSHConnection(
                 host=ip,
                 user="ubuntu",

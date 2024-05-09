@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
+import logging
 import os
 import string
 from pathlib import Path
@@ -31,6 +32,8 @@ from state import (
 )
 from tests.integration.helpers import wait_for_valid_connection
 from tests.integration.types import ProxyConfig, SSHKey
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -310,6 +313,7 @@ async def ssh_connection_fixture(
     openstack_server: Server, openstack_metadata: OpenstackMeta
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
+    logger.info("Setting up SSH connection.")
     ssh_connection = wait_for_valid_connection(
         connection=openstack_metadata.connection,
         server_name=openstack_server.name,
