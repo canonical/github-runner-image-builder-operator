@@ -35,7 +35,8 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     no_proxy = ",".join(
         [
             proxy.no_proxy,
-            "10.0.0.0/8" "192.168.0.0/16",
+            "10.0.0.0/8",
+            "192.168.0.0/16",
             "127.0.0.1",
             "172.16.0.0/16",
         ]
@@ -57,7 +58,7 @@ no_proxy={no_proxy}
     # required for docker command execute
     docker_systemd_path = Path("/etc/systemd/system/docker.service.d")
     docker_systemd_proxy_path = docker_systemd_path / "http-proxy.conf"
-    result: Result = conn.run(f"sudo mkdir -p {docker_systemd_path}")
+    result = conn.run(f"sudo mkdir -p {docker_systemd_path}")
     assert result.ok, "Failed to create docker service systemd path"
 
     docker_systemd_svc = textwrap.dedent(
@@ -69,42 +70,44 @@ Environment="NO_PROXY={proxy.no_proxy}"
         """.strip()
     )
     command = f"echo '{docker_systemd_svc}' | sudo tee {docker_systemd_proxy_path}"
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to create docker service unit file"
     command = "sudo systemctl daemon-reload"
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to reload daemon"
     command = "sudo systemctl restart docker"
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to restart docker svc"
 
     docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
-    result: Result = conn.run(f"mkdir -p {docker_client_proxy_path}")
+    docker_path_result = conn.run(f"mkdir -p {docker_client_proxy_path}")
+    assert docker_path_result.ok, "Failed to make docker config path"
     docker_client_proxy = {
         "proxies": {
-            "default": {
-                key: value
-                for key, value in (
+            "default": dict(
+                (
                     ("httpProxy", proxy.http),
                     ("httpsProxy", proxy.https),
                     ("noProxy", proxy.no_proxy),
                 )
-            }
+            )
         }
     }
     docker_proxy_content = json.dumps(docker_client_proxy)
     command = f"echo '{docker_proxy_content}' | tee {docker_client_proxy_path}"
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to write docker user config"
 
     docker_client_proxy_root_path = Path("/root/.docker/config.json")
-    result: Result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path}")
+    result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path}")
+    assert result.ok, "Failed to make docker config path"
     command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to write docker root config"
 
 
-def wait_for_valid_connection(
+# All the arguments are necessary
+def wait_for_valid_connection(  # pylint: disable=too-many-arguments
     connection: Connection,
     server_name: str,
     network: str,
@@ -149,7 +152,7 @@ def wait_for_valid_connection(
                     _install_proxy(conn=ssh_connection, proxy=proxy)
                     return ssh_connection
             except NoValidConnectionsError as exc:
-                logger.warn("Connection not yet ready, %s.", str(exc))
+                logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
 
