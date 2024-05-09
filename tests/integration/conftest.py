@@ -307,7 +307,7 @@ async def openstack_server_fixture(
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
 async def ssh_connection_fixture(
-    openstack_server: Server, openstack_metadata: OpenstackMeta
+    openstack_server: Server, openstack_metadata: OpenstackMeta, proxy: ProxyConfig
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
@@ -316,6 +316,7 @@ async def ssh_connection_fixture(
         server_name=openstack_server.name,
         network=openstack_metadata.network,
         ssh_key=openstack_metadata.ssh_key.private_key,
+        proxy=proxy,
     )
 
     return ssh_connection

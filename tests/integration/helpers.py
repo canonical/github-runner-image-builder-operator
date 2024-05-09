@@ -15,11 +15,18 @@ from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from paramiko.ssh_exception import NoValidConnectionsError
 
+from tests.integration.types import ProxyConfig
+
 logger = logging.getLogger(__name__)
 
 
 def wait_for_valid_connection(
-    connection: Connection, server_name: str, network: str, ssh_key: Path, timeout: int = 30 * 60
+    connection: Connection,
+    server_name: str,
+    network: str,
+    ssh_key: Path,
+    timeout: int = 30 * 60,
+    proxy: ProxyConfig | None = None,
 ) -> SSHConnection:
     """Wait for a valid SSH connection from Openstack server.
 
@@ -29,6 +36,7 @@ def wait_for_valid_connection(
         network: The network to find valid connection from.
         ssh_key: The path to public ssh_key to create connection with.
         timeout: Number of seconds to wait before raising a timeout error.
+        proxy: The proxy to configure on host runner.
 
     Raises:
         TimeoutError: If no valid connections were found.
@@ -52,7 +60,25 @@ def wait_for_valid_connection(
                 connect_timeout=10,
             )
             try:
-                result: Result = ssh_connection.run("echo 'hello world'")
+                if proxy and proxy.http:
+                    # required to setup microk8s
+                    no_proxy = ",".join(
+                        [
+                            proxy.no_proxy,
+                            "10.0.0.0/8" "192.168.0.0/16",
+                            "127.0.0.1",
+                            "172.16.0.0/16",
+                        ]
+                    )
+                    command = (
+                        f"echo 'HTTP_PROXY={proxy.http}\nHTTPS_PROXY={proxy.https}\n"
+                        f"NO_PROXY={no_proxy}\n"
+                        f"http_proxy={proxy.http}\nhttps_proxy={proxy.https}\n"
+                        f"no_proxy={no_proxy}\n' | sudo tee -a /etc/environment"
+                    )
+                else:
+                    command = "echo 'hello world'"
+                result: Result = ssh_connection.run(command)
                 if result.ok:
                     return ssh_connection
             except NoValidConnectionsError as exc:
