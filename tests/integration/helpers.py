@@ -88,7 +88,7 @@ Environment="NO_PROXY={proxy.no_proxy}"
                 (
                     ("httpProxy", proxy.http),
                     ("httpsProxy", proxy.https),
-                    ("noProxy", proxy.no_proxy),
+                    ("noProxy", no_proxy),
                 )
             )
         }
