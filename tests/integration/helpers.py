@@ -13,6 +13,7 @@ from fabric import Connection as SSHConnection
 from fabric import Result
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
+from paramiko.ssh_exception import NoValidConnectionsError
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,12 @@ def wait_for_valid_connection(
                 connect_kwargs={"key_filename": str(ssh_key.absolute())},
                 connect_timeout=10,
             )
-            result: Result = ssh_connection.run("echo 'hello world'")
-            if result.ok:
-                return ssh_connection
+            try:
+                result: Result = ssh_connection.run("echo 'hello world'")
+                if result.ok:
+                    return ssh_connection
+            except NoValidConnectionsError as exc:
+                logger.warn("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
 
