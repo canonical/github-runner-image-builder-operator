@@ -140,7 +140,7 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="install check-jsonschema", command="pipx install check-jsonschema"),
     Commands(name="unzip version", command="unzip -v"),
     Commands(name="gh version", command="gh --version"),
-    Commands(name="check jsonschema", command="check-jsonschema --version"),
+    Commands(name="check jsonschema", command="~/.local/bin/check-jsonschema --version"),
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
