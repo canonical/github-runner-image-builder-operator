@@ -106,12 +106,9 @@ Environment="NO_PROXY={proxy.no_proxy}"
     assert result.ok, "Failed to write docker root config"
 
     apt_config_path = Path("/etc/apt/apt.conf")
-    apt_proxy_content = textwrap.dedent(
-        f"""
-Acquire::http::Proxy {proxy.http};
-Acquire::https::Proxy {proxy.https};
-        """.strip()
-    )
+    apt_proxy_content = f"""Acquire::http::Proxy "{proxy.http}";
+Acquire::https::Proxy "{proxy.https}";
+"""
     result = conn.run(f"echo '{apt_proxy_content}' | sudo tee -a {apt_config_path}")
     assert result.ok, "Failed to write apt proxy config"
 
