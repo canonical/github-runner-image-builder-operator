@@ -52,6 +52,7 @@ no_proxy={no_proxy}
         """.strip()
     )
     command = f"echo '{proxy_envs}' | sudo tee -a /etc/environment"
+    logger.info("Running command: %s", command)
     result: Result = conn.run(command)
     assert result.ok, "Failed to append proxy to /etc/environment"
 
@@ -70,12 +71,15 @@ Environment="NO_PROXY={proxy.no_proxy}"
         """.strip()
     )
     command = f"echo '{docker_systemd_svc}' | sudo tee {docker_systemd_proxy_path}"
+    logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to create docker service unit file"
     command = "sudo systemctl daemon-reload"
+    logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to reload daemon"
     command = "sudo systemctl restart docker"
+    logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to restart docker svc"
 
@@ -95,6 +99,7 @@ Environment="NO_PROXY={proxy.no_proxy}"
     }
     docker_proxy_content = json.dumps(docker_client_proxy)
     command = f"echo '{docker_proxy_content}' | tee {docker_client_proxy_path}"
+    logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to write docker user config"
 
@@ -102,6 +107,7 @@ Environment="NO_PROXY={proxy.no_proxy}"
     result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path.parent}")
     assert result.ok, "Failed to make docker config path"
     command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
+    logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to write docker root config"
 
