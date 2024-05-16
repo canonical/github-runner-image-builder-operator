@@ -4,9 +4,7 @@
 """Helper utilities for integration tests."""
 
 import inspect
-import json
 import logging
-import textwrap
 import time
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
@@ -31,92 +29,37 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     """
     if not proxy or not proxy.http:
         return
-    # required to setup microk8s
-    no_proxy = ",".join(
-        [
-            proxy.no_proxy,
-            "10.0.0.0/8",
-            "192.168.0.0/16",
-            "127.0.0.1",
-            "172.16.0.0/16",
-        ]
-    ).strip()
-    proxy_envs = textwrap.dedent(
-        f"""
-HTTP_PROXY={proxy.http}
-HTTPS_PROXY={proxy.https}
-NO_PROXY={no_proxy}
-http_proxy={proxy.http}
-https_proxy={proxy.https}
-no_proxy={no_proxy}
-        """.strip()
-    )
-    command = f"echo '{proxy_envs}' | sudo tee -a /etc/environment"
+    command = "sudo snap install aproxy --edge"
     logger.info("Running command: %s", command)
     result: Result = conn.run(command)
-    assert result.ok, "Failed to append proxy to /etc/environment"
+    assert result.ok, "Failed to install aproxy"
 
-    # required for docker command execute
-    docker_systemd_path = Path("/etc/systemd/system/docker.service.d")
-    docker_systemd_proxy_path = docker_systemd_path / "http-proxy.conf"
-    result = conn.run(f"sudo mkdir -p {docker_systemd_path}")
-    assert result.ok, "Failed to create docker service systemd path"
-
-    docker_systemd_svc = textwrap.dedent(
-        f"""
-[Service]
-Environment="HTTP_PROXY={proxy.http}"
-Environment="HTTPS_PROXY={proxy.https}"
-Environment="NO_PROXY={proxy.no_proxy}"
-        """.strip()
-    )
-    command = f"echo '{docker_systemd_svc}' | sudo tee {docker_systemd_proxy_path}"
+    command = f"sudo snap set aproxy proxy={proxy.http}"
     logger.info("Running command: %s", command)
     result = conn.run(command)
-    assert result.ok, "Failed to create docker service unit file"
-    command = "sudo systemctl daemon-reload"
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to reload daemon"
-    command = "sudo systemctl restart docker"
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to restart docker svc"
+    assert result.ok, "Failed to setup aproxy"
 
-    docker_client_proxy_path = Path("/home/ubuntu/.docker/config.json")
-    result = conn.run(f"mkdir -p {docker_client_proxy_path.parent}")
-    assert result.ok, "Failed to make docker config path"
-    docker_client_proxy = {
-        "proxies": {
-            "default": dict(
-                (
-                    ("httpProxy", proxy.http),
-                    ("httpsProxy", proxy.https),
-                    ("noProxy", no_proxy),
-                )
-            )
+    # ignore line too long
+    command = """sudo nft -f - << EOF
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
+define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+table ip aproxy
+flush table ip aproxy
+table ip aproxy {
+        chain prerouting {
+                type nat hook prerouting priority dstnat; policy accept;
+                ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
         }
-    }
-    docker_proxy_content = json.dumps(docker_client_proxy)
-    command = f"echo '{docker_proxy_content}' | tee {docker_client_proxy_path}"
+
+        chain output {
+                type nat hook output priority -100; policy accept;
+                ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
+        }
+}
+EOF"""  # noqa: E501
     logger.info("Running command: %s", command)
     result = conn.run(command)
-    assert result.ok, "Failed to write docker user config"
-
-    docker_client_proxy_root_path = Path("/root/.docker/config.json")
-    result = conn.run(f"sudo mkdir -p {docker_client_proxy_root_path.parent}")
-    assert result.ok, "Failed to make docker config path"
-    command = f"echo '{docker_proxy_content}' | sudo tee {docker_client_proxy_root_path}"
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to write docker root config"
-
-    apt_config_path = Path("/etc/apt/apt.conf")
-    apt_proxy_content = f"""Acquire::http::Proxy "{proxy.http}";
-Acquire::https::Proxy "{proxy.https}";
-"""
-    result = conn.run(f"echo '{apt_proxy_content}' | sudo tee -a {apt_config_path}")
-    assert result.ok, "Failed to write apt proxy config"
+    assert result.ok, "Failed to configure iptable rules"
 
 
 # All the arguments are necessary
