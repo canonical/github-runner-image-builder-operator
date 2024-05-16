@@ -72,9 +72,10 @@ def configure_aproxy(proxy: ProxyConfig | None) -> None:
     """
     if not proxy:
         return
+    proxy_str = proxy.http.replace("http://", "").replace("https://", "")
     try:
         subprocess.run(  # nosec: B603
-            ["/usr/bin/sudo", "snap", "set", "aproxy", f"proxy={proxy.http}"],
+            ["/usr/bin/sudo", "snap", "set", "aproxy", f"proxy={proxy_str}"],
             timeout=5 * 60,
             check=True,
             user=UBUNTU_USER,
