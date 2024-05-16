@@ -119,7 +119,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         state = self._load_state()
         if not state:
             return
-        print("hello")
         self._build_image(state=state)
         self.unit.status = ops.ActiveStatus()
 
