@@ -14,6 +14,7 @@ import ops
 import builder
 import cron
 import image
+import proxy
 from openstack_manager import OpenstackManager, UploadImageConfig
 from state import CharmConfigInvalidError, CharmState
 
@@ -70,7 +71,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event.defer()
             return
 
-        builder.configure_proxy(proxy=state.proxy_config)
+        proxy.setup(proxy=state.proxy_config)
         builder.setup_builder()
         self.unit.status = ops.ActiveStatus("Waiting for first image build.")
 
@@ -84,12 +85,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             The built image ID.
         """
         self.unit.status = ops.ActiveStatus("Building image.")
-        builder.configure_proxy(proxy=state.proxy_config)
         output_path = Path("compressed.img")
         build_config = builder.RunBuilderConfig(
-            base=state.image_config.base_image,
-            output=output_path,
-            proxy=state.proxy_config.http if state.proxy_config else "",
+            base=state.image_config.base_image, output=output_path
         )
         builder.run_builder(config=build_config)
         with OpenstackManager(cloud_config=state.cloud_config) as manager:
@@ -110,6 +108,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not state:
             return
 
+        proxy.configure_aproxy(proxy=state.proxy_config)
         self._build_image(state=state)
         cron.setup(state.build_interval, self.model.name, self.unit.name)
         self.unit.status = ops.ActiveStatus()

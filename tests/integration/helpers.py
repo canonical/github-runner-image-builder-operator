@@ -39,7 +39,7 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     result = conn.run(command)
     assert result.ok, "Failed to setup aproxy"
 
-    # ignore line too long
+    # ignore line too long since it is better read without line breaks
     command = """sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
 define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
