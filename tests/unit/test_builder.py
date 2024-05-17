@@ -6,7 +6,7 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-from unittest.mock import MagicMock, _Call, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,146 +15,10 @@ from builder import (
     BuilderSetupError,
     BuildImageError,
     DependencyInstallError,
-    GitProxyConfigError,
     ImageBuilderInstallError,
-    ProxyConfig,
     apt,
-    os,
     subprocess,
 )
-
-
-def test__configure_git_proxy_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a monkeypatched subprocess.run that raises CalledProcessError.
-    act: when _configure_git_proxy is called.
-    assert: GitProxyConfigError is raised.
-    """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(
-            side_effect=subprocess.CalledProcessError(1, [], "", "error configuring git proxy")
-        ),
-    )
-
-    with pytest.raises(GitProxyConfigError) as exc:
-        builder._configure_git_proxy(proxy=MagicMock())
-
-    assert "error configuring git proxy" in str(exc.getrepr())
-
-
-@pytest.mark.parametrize(
-    "proxy, expected",
-    [
-        pytest.param(
-            None,
-            [
-                call(
-                    [
-                        "/usr/bin/sudo",
-                        "/usr/bin/git",
-                        "config",
-                        "--global",
-                        "--unset",
-                        "http.proxy",
-                    ],
-                    check=False,
-                    timeout=60,
-                    user="ubuntu",
-                ),
-                call(
-                    [
-                        "/usr/bin/sudo",
-                        "/usr/bin/git",
-                        "config",
-                        "--global",
-                        "--unset",
-                        "https.proxy",
-                    ],
-                    check=False,
-                    timeout=60,
-                    user="ubuntu",
-                ),
-            ],
-            id="Unset proxy",
-        ),
-        pytest.param(
-            ProxyConfig(http="test", https="test", no_proxy="test"),
-            [
-                call(
-                    ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "http.proxy", "test"],
-                    check=True,
-                    timeout=60,
-                    user="ubuntu",
-                ),
-                call(
-                    ["/usr/bin/sudo", "/usr/bin/git", "config", "--global", "https.proxy", "test"],
-                    check=True,
-                    timeout=60,
-                    user="ubuntu",
-                ),
-            ],
-            id="Configure proxy",
-        ),
-    ],
-)
-def test__configure_git_proxy(
-    monkeypatch: pytest.MonkeyPatch, proxy: ProxyConfig | None, expected: list[_Call]
-):
-    """
-    arrange: given proxy configuration to apply.
-    act: when _configure_git_proxy is called.
-    assert: expected calls are made.
-    """
-    monkeypatch.setattr(subprocess, "run", (run_mock := MagicMock()))
-
-    builder._configure_git_proxy(proxy=proxy)
-
-    run_mock.assert_has_calls(expected)
-
-
-@pytest.mark.parametrize(
-    "proxy, env, expected",
-    [
-        pytest.param(
-            None,
-            {"HTTP_PROXY": "test", "HTTPS_PROXY": "test", "NO_PROXY": "test"},
-            {},
-            id="No proxy",
-        ),
-        pytest.param(
-            ProxyConfig(http="test", https="test", no_proxy="test"),
-            {},
-            {
-                "HTTP_PROXY": "test",
-                "HTTPS_PROXY": "test",
-                "NO_PROXY": "test",
-                "http_proxy": "test",
-                "https_proxy": "test",
-                "no_proxy": "test",
-            },
-            id="Set proxy",
-        ),
-    ],
-)
-def test_configure_proxy(
-    monkeypatch: pytest.MonkeyPatch,
-    proxy: ProxyConfig | None,
-    env: dict[str, str],
-    expected: dict[str, str],
-):
-    """
-    arrange: given different proxy configurations.
-    act: when configure proxy is called.
-    assert: proxy environment variables are set/unset.
-    """
-    monkeypatch.setattr(builder, "_configure_git_proxy", MagicMock())
-    monkeypatch.setattr(os, "environ", env)
-
-    builder.configure_proxy(proxy)
-
-    assert env == expected
 
 
 def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):

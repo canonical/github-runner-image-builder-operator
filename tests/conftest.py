@@ -69,3 +69,15 @@ def pytest_addoption(parser: Parser):
         action="store",
         help="The Openstack region to authenticate to.",
     )
+    parser.addoption(
+        "--proxy",
+        action="store",
+        help="The HTTP proxy URL to apply on the Openstack runners.",
+        default=None,
+    )
+    parser.addoption(
+        "--no-proxy",
+        action="store",
+        help="The no proxy URL(s) to apply on the Openstack runners.",
+        default=None,
+    )

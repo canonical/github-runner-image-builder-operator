@@ -3,7 +3,6 @@
 
 """Fixtures for github runner charm integration tests."""
 import logging
-import os
 import string
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
@@ -45,12 +44,11 @@ def charm_file_fixture(pytestconfig: pytest.Config) -> str:
 
 
 @pytest.fixture(scope="module", name="proxy")
-def proxy_fixture() -> ProxyConfig:
+def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     """The environment proxy to pass on to the charm/testing model."""
-    http_proxy = os.getenv("HTTP_PROXY", "")
-    https_proxy = os.getenv("HTTPS_PROXY", "")
-    no_proxy = os.getenv("no_proxy", "")
-    return ProxyConfig(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
+    proxy = pytestconfig.getoption("--proxy")
+    no_proxy = pytestconfig.getoption("--no-proxy")
+    return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
