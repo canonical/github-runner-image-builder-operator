@@ -5,14 +5,11 @@
 
 # Ignore B404:blacklist since all subprocesses are run with predefined executables.
 import subprocess  # nosec
-from pathlib import Path
 
 from exceptions import ProxyInstallError
 from state import ProxyConfig
 
 UBUNTU_USER = "ubuntu"
-
-APROXY_RULE = Path("aproxy_rule")
 
 
 def setup(proxy: ProxyConfig | None) -> None:
@@ -74,7 +71,7 @@ def configure_aproxy(proxy: ProxyConfig | None) -> None:
     """
     if not proxy:
         return
-    proxy_str = proxy.http.replace("http://", "").replace("https://", "")
+    proxy_str = (proxy.http or proxy.https).replace("http://", "").replace("https://", "")
     try:
         subprocess.run(  # nosec: B603
             ["/usr/bin/sudo", "snap", "set", "aproxy", f"proxy={proxy_str}"],
