@@ -69,6 +69,7 @@ def test__on_image_relation_joined_no_image(
     assert: image not ready warning is logged.
     """
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value=""))
 
     observer = Observer(MagicMock())
     observer._on_image_relation_joined(MagicMock())
@@ -83,6 +84,7 @@ def test__on_image_relation_joined(monkeypatch: pytest.MonkeyPatch):
     assert: update_relation_data is called.
     """
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value="test-id"))
 
     observer = Observer(MagicMock())
     observer.update_relation_data = (update_relation_data_mock := MagicMock())

@@ -14,7 +14,7 @@ import pytest
 import builder
 import image
 import proxy
-from charm import GithubRunnerImageBuilderCharm
+from charm import GithubRunnerImageBuilderCharm, os
 from state import CharmConfigInvalidError, CharmState
 
 
@@ -57,7 +57,6 @@ def test__load_state_invalid_config(
     "hook",
     [
         pytest.param("_on_config_changed", id="_on_config_changed"),
-        pytest.param("_on_cron_trigger", id="_on_cron_trigger"),
     ],
 )
 def test_block_on_state_error(
@@ -114,41 +113,43 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
     """
     arrange: given monkeypatched builder, openstack manager, image_observer.
     act: when _on_config_changed is called.
-    assert: each module functions are called appropriately.
+    assert: charm is in active status.
     """
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
-    monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_cron", MagicMock())
     charm.image_observer = image_observer_mock
-    monkeypatch.setattr(builder, "run_builder", (run_builder_mock := MagicMock()))
-    openstack_manager_contenxt_mock = MagicMock()
-    openstack_manager_contenxt_mock.__enter__.return_value = (
-        openstack_manager_mock := MagicMock()
-    )
-    monkeypatch.setattr(
-        "charm.OpenstackManager",
-        MagicMock(return_value=openstack_manager_contenxt_mock),
-    )
 
     charm._on_config_changed(MagicMock())
 
-    run_builder_mock.assert_called_once()
-    openstack_manager_mock.upload_image.assert_called_once()
-    image_observer_mock.update_relation_data.assert_called_once()
+    assert charm.unit.status == ops.ActiveStatus()
 
 
-def test__on_cron_trigger(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+def test__on_build_success_error(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
     """
-    arrange: given a monkeypatched mock charm _build_image function.
-    act: when _on_cron_trigger is called.
-    assert: the mock is called once.
+    arrange: given a monkeypatched mock os.getenv function that returns no value.
+    act: when _on_build_success is called.
+    assert: the charm raises an error.
     """
-    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
-    charm._build_image = (build_image_mock := MagicMock())
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
+
+    with pytest.raises(ValueError):
+        charm._on_build_success(MagicMock)
+
+
+def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monkeypatched mock os.getenv function.
+    act: when _on_build_success is called.
+    assert: the charm is in active status.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock())
 
     charm._on_build_success(MagicMock)
 
-    build_image_mock.assert_called_once()
+    assert charm.unit.status == ops.ActiveStatus()

@@ -92,14 +92,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 hook_name="build_success",
             ),
             cron_config=builder.RunCronConfig(
-                app_name=self.app.name,
                 arch=state.image_config.arch,
                 base=state.image_config.base_image,
-                cloud_name=list(state.cloud_config["clouds"].keys())[0],
+                charm_meta=builder.CharmMeta(
+                    app_name=self.app.name,
+                    model_name=self.model.name,
+                    unit_name=self.unit.name,
+                ),
+                cloud_name=state.cloud_name,
                 interval=state.build_interval,
-                model_name=self.model.name,
                 num_revisions=state.revision_history_limit,
-                unit_name=self.unit.name,
             ),
         )
         self.unit.status = ops.ActiveStatus("Waiting for first image build.")
@@ -111,7 +113,18 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         proxy.configure_aproxy(proxy=state.proxy_config)
-        builder.install_cron(config=builder.RunCronConfig())
+        builder.install_cron(
+            config=builder.RunCronConfig(
+                arch=state.image_config.arch,
+                base=state.image_config.base_image,
+                charm_meta=builder.CharmMeta(
+                    app_name=self.app.name, model_name=self.model.name, unit_name=self.unit.name
+                ),
+                cloud_name=state.cloud_name,
+                interval=state.build_interval,
+                num_revisions=state.revision_history_limit,
+            )
+        )
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_success(self, _: BuildSuccessEvent) -> None:
@@ -120,9 +133,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Raises:
             ValueError: If the environment variable was not set by the image builder.
         """
-        state = self._load_state()
-        if not state:
-            return
         image_id = os.getenv(builder.OPENSTACK_IMAGE_ID_ENV, "")
         if not image_id:
             raise ValueError("Image ID not found.")

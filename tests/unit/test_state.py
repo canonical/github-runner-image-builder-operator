@@ -440,7 +440,8 @@ def test_charm_state(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(os, "environ", {})
 
     charm = MockCharmFactory()
-    assert state.CharmState.from_charm(charm) == state.CharmState(
+    result = state.CharmState.from_charm(charm)
+    assert result == state.CharmState(
         build_interval=int(charm.config[BUILD_INTERVAL_CONFIG_NAME]),
         cloud_config=yaml.safe_load(charm.config[OPENSTACK_CLOUDS_YAML_CONFIG_NAME]),
         image_config=ImageConfig(
@@ -449,3 +450,4 @@ def test_charm_state(monkeypatch: pytest.MonkeyPatch):
         proxy_config=None,
         revision_history_limit=int(charm.config[REVISION_HISTORY_LIMIT_CONFIG_NAME]),
     )
+    assert result.cloud_name == "sunbeam"

@@ -65,28 +65,39 @@ class CallbackConfig:
 
 
 @dataclass
-class RunCronConfig:
-    """Configurations for running builder peridocally.
+class CharmMeta:
+    """Charm metadata used to create callback script to Juju custom event hook.
 
     Attributes:
         app_name: The charm application name, used to name Openstack image.
-        arch: The machine architecture of the image to build with.
-        base: Ubuntu OS image to build from.
-        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
-        interval: The frequency in which the image builder should be triggered.
         model_name: The Juju model name, used to trigger juju image build success event.
-        num_revisions: Number of images to keep before deletion.
         unit_name: The juju unit name, used to trigger juju image build success event.
     """
 
     app_name: str
+    model_name: str
+    unit_name: str
+
+
+@dataclass
+class RunCronConfig:
+    """Configurations for running builder peridocally.
+
+    Attributes:
+        arch: The machine architecture of the image to build with.
+        base: Ubuntu OS image to build from.
+        charm_meta: The charm metadata used to call callback hook.
+        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        interval: The frequency in which the image builder should be triggered.
+        num_revisions: Number of images to keep before deletion.
+    """
+
     arch: Arch
     base: BaseImage
+    charm_meta: CharmMeta
     cloud_name: str
     interval: int
-    model_name: str
     num_revisions: int
-    unit_name: str
 
 
 def setup_builder(callback_config: CallbackConfig, cron_config: RunCronConfig) -> None:
@@ -140,13 +151,13 @@ def _create_callback_script(config: CallbackConfig) -> None:
         "JUJU_DISPATCH_PATH": f"hooks/{config.hook_name}",
         "JUJU_MODEL_NAME": config.model_name,
         "JUJU_UNIT_NAME": config.unit_name,
+        OPENSTACK_IMAGE_ID_ENV: "$OPENSTACK_IMAGE_ID",
     }
     env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
     script_contents = f"""#! /bin/bash
 OPENSTACK_IMAGE_ID="$1"
 
-/usr/bin/juju-exec {config.unit_name} {env} {OPENSTACK_IMAGE_ID_ENV}="$OPENSTACK_IMAGE_ID" \
-{config.charm_dir}/dispatch
+/usr/bin/juju-exec {config.unit_name} {env} {config.charm_dir}/dispatch
 """
     CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
 
@@ -175,12 +186,12 @@ def install_cron(config: RunCronConfig) -> None:
     Args:
         config: The configuration required to setup cron job to run builder periodically.
     """
-    if not _should_configure_cron(interval=config.interval):
-        return
-
-    if config.interval == 0:
-        CRON_BUILD_SCHEDULE_PATH.unlink(missing_ok=True)
-        service_restart("cron")
+    if not _should_configure_cron(
+        interval=config.interval,
+        image_base=config.base,
+        cloud_name=config.cloud_name,
+        num_revisions=config.num_revisions,
+    ):
         return
 
     builder_exec_command: str = " ".join(
@@ -196,12 +207,14 @@ def install_cron(config: RunCronConfig) -> None:
             "--cloud-name",
             config.cloud_name,
             "--num-revisions",
-            config.num_revisions,
+            str(config.num_revisions),
             "--callback-script-path",
             str(CALLBACK_SCRIPT_PATH),
             "--output-image-name",
             IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=config.base.value, APP_NAME=config.app_name, ARCH=config.arch.value
+                IMAGE_BASE=config.base.value,
+                APP_NAME=config.charm_meta.app_name,
+                ARCH=config.arch.value,
             ),
         ]
     )

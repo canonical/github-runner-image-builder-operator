@@ -64,9 +64,10 @@ class Observer(ops.Object):
             base=state.image_config.base_image,
             app_name=self.charm.app.name,
             arch=state.image_config.arch,
-            cloud_name=list(state.cloud_config["clouds"].keys())[0],
+            cloud_name=state.cloud_name,
         )
         if not image_id:
+            logger.warning("Image not yet ready.")
             return
         self.update_relation_data(image_id=image_id)
 

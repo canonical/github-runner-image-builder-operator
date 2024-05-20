@@ -314,6 +314,7 @@ class CharmState:
     Attributes:
         build_interval: The interval in hours between each scheduled image builds.
         cloud_config: The Openstack clouds.yaml passed as charm config.
+        cloud_name: The cloud name to use from cloud_config.
         image_config: The charm configuration values related to image.
         proxy_config: The charm proxy configuration variables.
         revision_history_limit: The number of image revisions to keep.
@@ -324,6 +325,11 @@ class CharmState:
     image_config: ImageConfig
     proxy_config: ProxyConfig | None
     revision_history_limit: int
+
+    @property
+    def cloud_name(self) -> str:
+        """The cloud name from cloud_config."""
+        return list(self.cloud_config["clouds"].keys())[0]
 
     @classmethod
     def from_charm(cls, charm: CharmBase) -> "CharmState":
