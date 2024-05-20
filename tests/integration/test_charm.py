@@ -14,25 +14,47 @@ from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
 from juju.model import Model
-from juju.unit import Unit
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
+from builder import IMAGE_NAME_TMPL
+from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
 from tests.integration.helpers import wait_for
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
 
 
-def test_build_image(app: Application, openstack_connection: Connection):
+@pytest.mark.asyncio
+async def test_build_image(app: Application, openstack_connection: Connection):
     """
     arrange: A deployed active charm.
     act: When openstack images are listed.
     assert: An image is built successfully.
     """
-    images: list[Image] = openstack_connection.list_images()
+    dispatch_time = datetime.now()
+    config: dict = await app.get_config()
+    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
-    assert any(app.name in image.name for image in images)
+    def image_created_from_dispatch() -> bool:
+        """Return whether there is an image created after dispatch has been called.
+
+        Returns:
+            Whether there exists an image that has been created after dispatch time.
+        """
+        images: list[Image] = openstack_connection.search_images(
+            IMAGE_NAME_TMPL.format(
+                IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
+            )
+        )
+        logger.info("Images: %s, dispatch time: %s", images, dispatch_time)
+        return any(
+            # .now() is required for timezone aware date comparison.
+            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").now() >= dispatch_time.now()
+            for image in images
+        )
+
+    await wait_for(image_created_from_dispatch, check_interval=30)
 
 
 @pytest.mark.asyncio
@@ -46,54 +68,6 @@ async def test_image_relation(model: Model, app: Application, test_charm: Applic
     await model.wait_for_idle(
         apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
     )
-
-
-@pytest.mark.asyncio
-async def test_image_cron(
-    model: Model, app: Application, openstack_connection: Connection, proxy: ProxyConfig
-):
-    """
-    arrange: A deployed active charm.
-    act: When image cron hook is triggered.
-    assert: An image is built successfully.
-    """
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    unit: Unit = app.units[0]
-
-    dispatch_time = datetime.now()
-    cur_env = {
-        "JUJU_DISPATCH_PATH": "hooks/build_success",
-        "JUJU_MODEL_NAME": app.model.name,
-        "JUJU_UNIT_NAME": unit.name,
-        "JUJU_CHARM_HTTP_PROXY": proxy.http,
-        "JUJU_CHARM_HTTPS_PROXY": proxy.https,
-        "JUJU_CHARM_NO_PROXY": proxy.no_proxy,
-    }
-    env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
-    await unit.ssh(
-        (
-            f"sudo /usr/bin/juju-exec {unit.name} {env} /var/lib/juju/agents/unit-"
-            f"{unit.name.replace('/','-')}/charm/dispatch"
-        )
-    )
-
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-
-    def image_created_from_dispatch() -> bool:
-        """Return whether there is an image created after dispatch has been called.
-
-        Returns:
-            Whether there exists an image that has been created after dispatch time.
-        """
-        images: list[Image] = openstack_connection.list_images()
-        logger.info("Images: %s, dispatch time: %s", images, dispatch_time)
-        return any(
-            # .now() is required for timezone aware date comparison.
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").now() >= dispatch_time.now()
-            for image in images
-        )
-
-    await wait_for(image_created_from_dispatch, check_interval=30)
 
 
 class Commands(NamedTuple):

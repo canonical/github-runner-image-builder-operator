@@ -272,6 +272,7 @@ def get_latest_image(base: BaseImage, app_name: str, arch: Arch, cloud_name: str
         proc = subprocess.run(
             [
                 "/usr/bin/sudo",
+                "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER),
                 "get",
                 "--cloud-name",

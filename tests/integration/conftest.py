@@ -3,6 +3,7 @@
 
 """Fixtures for github runner charm integration tests."""
 import logging
+import secrets
 import string
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
@@ -72,7 +73,7 @@ async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
 async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     charm_file = await ops_test.build_charm("tests/integration/data/charm")
-    app = await model.deploy(charm_file)
+    app = await model.deploy(charm_file, application_name=f"image-builder-{secrets.token_hex(4)}")
     await model.wait_for_idle(apps=[app.name])
 
     yield app
@@ -301,6 +302,8 @@ async def openstack_server_fixture(
     yield server
 
     openstack_metadata.connection.delete_server(server_name, wait=True)
+    for image in images:
+        openstack_metadata.connection.delete_image(image.id)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
