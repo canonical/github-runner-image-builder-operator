@@ -16,9 +16,13 @@ class ImageBuilderInstallError(BuilderBaseError):
     """Represents an error while installing github-runner-image-builder app."""
 
 
-class BuilderSetupError(Exception):
+class BuilderSetupError(BuilderBaseError):
     """Represents an error while setting up host machine as builder."""
 
 
-class ProxyInstallError(Exception):
+class ProxyInstallError(BuilderBaseError):
     """Represents an error while installing proxy."""
+
+
+class GetLatestImageError(BuilderBaseError):
+    """Represents an error while fetching the latest image."""

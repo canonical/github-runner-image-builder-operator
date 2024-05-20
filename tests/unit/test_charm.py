@@ -14,7 +14,7 @@ import pytest
 import builder
 import image
 import proxy
-from charm import GithubRunnerImageBuilderCharm, cron
+from charm import GithubRunnerImageBuilderCharm
 from state import CharmConfigInvalidError, CharmState
 
 
@@ -122,7 +122,6 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
     )
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
-    monkeypatch.setattr(cron, "setup", (cron_mock := MagicMock()))
     charm.image_observer = image_observer_mock
     monkeypatch.setattr(builder, "run_builder", (run_builder_mock := MagicMock()))
     openstack_manager_contenxt_mock = MagicMock()
@@ -139,7 +138,6 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
     run_builder_mock.assert_called_once()
     openstack_manager_mock.upload_image.assert_called_once()
     image_observer_mock.update_relation_data.assert_called_once()
-    cron_mock.assert_called_once()
 
 
 def test__on_cron_trigger(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):

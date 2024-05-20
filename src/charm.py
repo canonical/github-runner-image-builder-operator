@@ -7,16 +7,13 @@
 
 import logging
 import os
-from pathlib import Path
 from typing import Any
 
 import ops
 
 import builder
-import cron
 import image
 import proxy
-from openstack_manager import OpenstackManager, UploadImageConfig
 from state import CharmConfigInvalidError, CharmState
 
 logger = logging.getLogger(__name__)
@@ -117,8 +114,12 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_cron(config=builder.RunCronConfig())
         self.unit.status = ops.ActiveStatus()
 
-    def _on_build_success(self, _: cron.CronEvent) -> None:
-        """Handle cron fired event."""
+    def _on_build_success(self, _: BuildSuccessEvent) -> None:
+        """Handle cron fired event.
+
+        Raises:
+            ValueError: If the environment variable was not set by the image builder.
+        """
         state = self._load_state()
         if not state:
             return

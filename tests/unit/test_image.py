@@ -12,14 +12,7 @@ import ops
 import pytest
 
 import image
-from image import (
-    IMAGE_RELATION,
-    CharmConfigInvalidError,
-    CharmState,
-    ImageRelationData,
-    Observer,
-    OpenstackManager,
-)
+from image import IMAGE_RELATION, CharmConfigInvalidError, CharmState, ImageRelationData, Observer
 
 
 @pytest.fixture(name="openstack_manager")
@@ -68,7 +61,6 @@ def test_block_on_state_error(monkeypatch: pytest.MonkeyPatch, hook: str):
 
 def test__on_image_relation_joined_no_image(
     monkeypatch: pytest.MonkeyPatch,
-    openstack_manager: OpenstackManager,
     caplog: pytest.LogCaptureFixture,
 ):
     """
@@ -77,7 +69,6 @@ def test__on_image_relation_joined_no_image(
     assert: image not ready warning is logged.
     """
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
-    openstack_manager.get_latest_image_id.return_value = None
 
     observer = Observer(MagicMock())
     observer._on_image_relation_joined(MagicMock())
@@ -85,16 +76,13 @@ def test__on_image_relation_joined_no_image(
     assert all("Image not yet ready." in log for log in caplog.messages)
 
 
-def test__on_image_relation_joined(
-    monkeypatch: pytest.MonkeyPatch, openstack_manager: OpenstackManager
-):
+def test__on_image_relation_joined(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched OpenstackManager.get_latest_image_id that returns an image ID.
     act: when _on_image_relation_joined hook is fired.
     assert: update_relation_data is called.
     """
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
-    openstack_manager.get_latest_image_id.return_value = MagicMock()
 
     observer = Observer(MagicMock())
     observer.update_relation_data = (update_relation_data_mock := MagicMock())

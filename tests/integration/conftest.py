@@ -21,7 +21,7 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
-from openstack_manager import IMAGE_NAME_TMPL
+from builder import IMAGE_NAME_TMPL
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,

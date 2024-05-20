@@ -8,7 +8,7 @@ from typing import TypedDict
 
 import ops
 
-from openstack_manager import OpenstackManager
+import builder
 from state import CharmConfigInvalidError, CharmState
 
 logger = logging.getLogger(__name__)
@@ -60,16 +60,14 @@ class Observer(ops.Object):
         if not state:
             return
 
-        with OpenstackManager(cloud_config=state.cloud_config) as openstack:
-            image_id = openstack.get_latest_image_id(
-                image_base=state.image_config.base_image,
-                app_name=self.charm.app.name,
-                arch=state.image_config.arch,
-            )
-            if not image_id:
-                logger.warning("Image not yet ready.")
-                return
-
+        image_id = builder.get_latest_image(
+            base=state.image_config.base_image,
+            app_name=self.charm.app.name,
+            arch=state.image_config.arch,
+            cloud_name=list(state.cloud_config["clouds"].keys())[0],
+        )
+        if not image_id:
+            return
         self.update_relation_data(image_id=image_id)
 
     def update_relation_data(self, image_id: str) -> None:

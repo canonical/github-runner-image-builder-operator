@@ -62,7 +62,7 @@ async def test_image_cron(
 
     dispatch_time = datetime.now()
     cur_env = {
-        "JUJU_DISPATCH_PATH": "hooks/trigger",
+        "JUJU_DISPATCH_PATH": "hooks/build_success",
         "JUJU_MODEL_NAME": app.model.name,
         "JUJU_UNIT_NAME": unit.name,
         "JUJU_CHARM_HTTP_PROXY": proxy.http,

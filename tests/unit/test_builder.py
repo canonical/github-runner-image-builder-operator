@@ -13,7 +13,6 @@ import pytest
 import builder
 from builder import (
     BuilderSetupError,
-    BuildImageError,
     DependencyInstallError,
     ImageBuilderInstallError,
     apt,
@@ -116,21 +115,3 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
 
     deps_mock.assert_called_once()
     image_mock.assert_called_once()
-
-
-def test_run_builder_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given monkeypatched subprocess.run function that raises an error.
-    act: when run_builder is called.
-    assert: BuildImageError is raised.
-    """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(side_effect=subprocess.CalledProcessError(1, [], "", "Error building image.")),
-    )
-
-    with pytest.raises(BuildImageError) as exc:
-        builder.run_builder(MagicMock())
-
-    assert "Error building image." in str(exc.getrepr())

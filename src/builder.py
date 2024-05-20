@@ -14,7 +14,12 @@ from pathlib import Path
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1.systemd import service_restart
 
-from exceptions import BuilderSetupError, DependencyInstallError, ImageBuilderInstallError
+from exceptions import (
+    BuilderSetupError,
+    DependencyInstallError,
+    GetLatestImageError,
+    ImageBuilderInstallError,
+)
 from state import Arch, BaseImage
 
 logger = logging.getLogger(__name__)
@@ -32,15 +37,14 @@ APT_DEPENDENCIES = [
     "python3-dev",
     "gcc",
 ]
-
 CALLBACK_SCRIPT_PATH = Path("propagate_image_id")
-
+CRON_PATH = Path("/etc/cron.d")
+CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER = Path(
     Path(f"/home/{UBUNTU_USER}") / ".local/bin/github-runner-image-builder"
 )
-CRON_PATH = Path("/etc/cron.d")
-CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
+IMAGE_NAME_TMPL = "{IMAGE_BASE}-{APP_NAME}-{ARCH}"
 
 
 @dataclass
@@ -51,6 +55,7 @@ class CallbackConfig:
         model_name: Juju model name.
         unit_name: Current juju application unit name.
         charm_dir: Charm directory to trigger the juju hooks.
+        hook_name: The Juju hook to call after building image.
     """
 
     model_name: str
@@ -65,7 +70,7 @@ class RunCronConfig:
 
     Attributes:
         app_name: The charm application name, used to name Openstack image.
-        arcg: The machine architecture of the image to build with.
+        arch: The machine architecture of the image to build with.
         base: Ubuntu OS image to build from.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         interval: The frequency in which the image builder should be triggered.
@@ -115,7 +120,7 @@ def _install_dependencies() -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                "git+https://github.com/canonical/github-runner-image-builder@chore/timeout",
+                "git+https://github.com/canonical/github-runner-image-builder@feat/app_openstack",
             ],
             timeout=5 * 60,
             check=True,
@@ -140,13 +145,14 @@ def _create_callback_script(config: CallbackConfig) -> None:
     script_contents = f"""#! /bin/bash
 OPENSTACK_IMAGE_ID="$1"
 
-/usr/bin/juju-exec {config.unit_name} {env} {OPENSTACK_IMAGE_ID_ENV}="$OPENSTACK_IMAGE_ID" {config.charm_dir}/dispatch
+/usr/bin/juju-exec {config.unit_name} {env} {OPENSTACK_IMAGE_ID_ENV}="$OPENSTACK_IMAGE_ID" \
+{config.charm_dir}/dispatch
 """
     CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
 
 
 def _install_image_builder() -> None:
-    """Install github-runner-image-builder app..
+    """Install github-runner-image-builder app.
 
     Raises:
         ImageBuilderInstallError: If there was an error installing the app.
@@ -168,9 +174,6 @@ def install_cron(config: RunCronConfig) -> None:
 
     Args:
         config: The configuration required to setup cron job to run builder periodically.
-
-    Raises:
-        BuildImageError: if there was an error running the github-runner-image-builder.
     """
     if not _should_configure_cron(interval=config.interval):
         return
@@ -197,7 +200,9 @@ def install_cron(config: RunCronConfig) -> None:
             "--callback-script-path",
             str(CALLBACK_SCRIPT_PATH),
             "--output-image-name",
-            f"{config.base.value}-{config.app_name}-{config.arch.value}",
+            IMAGE_NAME_TMPL.format(
+                IMAGE_BASE=config.base.value, APP_NAME=config.app_name, ARCH=config.arch.value
+            ),
         ]
     )
     cron_text = f"0 */{config.interval} * * * {UBUNTU_USER} {builder_exec_command}\n"
@@ -233,3 +238,39 @@ def _should_configure_cron(
         or installed_cloud_name != cloud_name
         or num_revisions != installed_num_revisions
     )
+
+
+def get_latest_image(base: BaseImage, app_name: str, arch: Arch, cloud_name: str) -> str:
+    """Fetch the latest image build ID.
+
+    Args:
+        app_name: The current charm application name.
+        arch: The machine architecture the image was built with.
+        base: Ubuntu OS image to build from.
+        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+
+    Raises:
+        GetLatestImageError: If there was an error fetching the latest image.
+
+    Returns:
+        The latest successful image build ID.
+    """
+    try:
+        proc = subprocess.run(
+            [
+                "/usr/bin/sudo",
+                str(GITHUB_RUNNER_IMAGE_BUILDER),
+                "get",
+                "--cloud-name",
+                cloud_name,
+                "--output-image-name",
+                IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, APP_NAME=app_name, ARCH=arch.value),
+            ],
+            check=True,
+            user=UBUNTU_USER,
+            timeout=10 * 60,
+            env=os.environ,
+        )  # nosec: B603
+        return str(proc.stdout)
+    except subprocess.SubprocessError as exc:
+        raise GetLatestImageError from exc
