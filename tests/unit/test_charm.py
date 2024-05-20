@@ -120,6 +120,7 @@ def test__on_config_changed(monkeypatch: pytest.MonkeyPatch, charm: GithubRunner
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "install_cron", MagicMock())
     charm.image_observer = image_observer_mock
 

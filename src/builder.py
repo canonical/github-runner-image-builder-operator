@@ -193,10 +193,10 @@ def install_clouds_yaml(cloud_config: dict) -> None:
         cloud_config: The contents of clouds.yaml parsed as dict.
     """
     if not OPENSTACK_CLOUDS_YAML_PATH.exists():
-        OPENSTACK_CLOUDS_YAML_PATH.write_text(cloud_config, encoding="utf-8")
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
         return
     if yaml.safe_load(OPENSTACK_CLOUDS_YAML_PATH.read_text(encoding="utf-8")) != cloud_config:
-        OPENSTACK_CLOUDS_YAML_PATH.write_text(cloud_config, encoding="utf-8")
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
 
 
 def install_cron(config: RunCronConfig) -> None:

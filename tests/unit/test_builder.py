@@ -11,6 +11,7 @@ from typing import NamedTuple
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 
 import builder
 from builder import (
@@ -38,7 +39,9 @@ def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(BuilderSetupError) as exc:
-        builder.setup_builder(callback_config=MagicMock(), cron_config=MagicMock())
+        builder.setup_builder(
+            callback_config=MagicMock(), cron_config=MagicMock(), cloud_config=MagicMock()
+        )
 
     assert "Failed to install image builder." in str(exc.getrepr())
 
@@ -66,15 +69,23 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(
         builder,
+        "install_clouds_yaml",
+        (install_clouds_yaml_mock := MagicMock()),
+    )
+    monkeypatch.setattr(
+        builder,
         "install_cron",
         (install_cron_mock := MagicMock()),
     )
 
-    builder.setup_builder(callback_config=MagicMock(), cron_config=MagicMock())
+    builder.setup_builder(
+        callback_config=MagicMock(), cron_config=MagicMock(), cloud_config=MagicMock()
+    )
 
     deps_mock.assert_called_once()
     create_callback_script_mock.assert_called_once()
     image_mock.assert_called_once()
+    install_clouds_yaml_mock.assert_called_once()
     install_cron_mock.assert_called_once()
 
 
@@ -165,6 +176,46 @@ def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
         builder._install_image_builder()
 
     assert "error running image builder install" in str(exc.getrepr())
+
+
+def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """
+    arrange: given mocked empty OPENSTACK_CLOUDS_YAML_PATH.
+    act: when install_clouds_yaml is called.
+    assert: contents of cloud_config are written.
+    """
+    test_path = tmp_path / "not-exists"
+    monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_path)
+
+    builder.install_clouds_yaml({"a": "b"})
+
+    contents = test_path.read_text(encoding="utf-8")
+    assert contents == "a: b\n"
+
+
+@pytest.mark.parametrize(
+    "original_contents, cloud_config",
+    [
+        pytest.param("", {"a": "b"}, id="changed"),
+        pytest.param("a: b\n", {"a": "b"}, id="not changed"),
+    ],
+)
+def test_install_clouds_yaml(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, original_contents: str, cloud_config: dict
+):
+    """
+    arrange: given mocked empty OPENSTACK_CLOUDS_YAML_PATH.
+    act: when install_clouds_yaml is called.
+    assert: contents of cloud_config are written.
+    """
+    test_path = tmp_path / "exists"
+    test_path.write_text(original_contents, encoding="utf-8")
+    monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_path)
+
+    builder.install_clouds_yaml(cloud_config=cloud_config)
+
+    contents = yaml.safe_load(test_path.read_text(encoding="utf-8"))
+    assert contents == cloud_config
 
 
 def test_install_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
