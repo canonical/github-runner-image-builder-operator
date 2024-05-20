@@ -6,6 +6,7 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,20 @@ from state import CharmConfigInvalidError, CharmState
 logger = logging.getLogger(__name__)
 
 
+class BuildSuccessEvent(ops.EventBase):
+    """Represents a successful image build event."""
+
+
+class ImageEvents(ops.CharmEvents):
+    """Represents events triggered by image builder callback.
+
+    Attributes:
+        build_success: Represents a successful image build event.
+    """
+
+    build_success = ops.EventSource(BuildSuccessEvent)
+
+
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
     """Charm the service.
 
@@ -28,7 +43,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         on: Represents custom events managed by cron.
     """
 
-    on = cron.CronEvents()
+    on = ImageEvents()
 
     def __init__(self, *args: Any):
         """Initialize the charm.
@@ -40,7 +55,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.image_observer = image.Observer(self)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.trigger, self._on_cron_trigger)
+        self.framework.observe(self.on.build_success, self._on_build_success)
 
     def _load_state(self) -> CharmState | None:
         """Load the charm state if valid, set charm to blocked if otherwise.
@@ -72,35 +87,25 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         proxy.setup(proxy=state.proxy_config)
-        builder.setup_builder()
-        self.unit.status = ops.ActiveStatus("Waiting for first image build.")
-
-    def _build_image(self, state: CharmState) -> str:
-        """Build image and propagate the new image.
-
-        Args:
-            state: The charm state.
-
-        Returns:
-            The built image ID.
-        """
-        self.unit.status = ops.ActiveStatus("Building image.")
-        output_path = Path("compressed.img")
-        build_config = builder.RunBuilderConfig(
-            base=state.image_config.base_image, output=output_path
-        )
-        builder.run_builder(config=build_config)
-        with OpenstackManager(cloud_config=state.cloud_config) as manager:
-            upload_config = UploadImageConfig(
-                arch=state.image_config.arch,
+        builder.setup_builder(
+            callback_config=builder.CallbackConfig(
+                model_name=self.model.name,
+                unit_name=self.unit.name,
+                charm_dir=os.getenv("JUJU_CHARM_DIR"),
+                hook_name="build_success",
+            ),
+            cron_config=builder.RunCronConfig(
                 app_name=self.app.name,
+                arch=state.image_config.arch,
                 base=state.image_config.base_image,
+                cloud_name=list(state.cloud_config["clouds"].keys())[0],
+                interval=state.build_interval,
+                model_name=self.model.name,
                 num_revisions=state.revision_history_limit,
-                src_path=output_path,
-            )
-            image_id = manager.upload_image(config=upload_config)
-            self.image_observer.update_relation_data(image_id=image_id)
-        return image_id
+                unit_name=self.unit.name,
+            ),
+        )
+        self.unit.status = ops.ActiveStatus("Waiting for first image build.")
 
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
@@ -109,16 +114,18 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         proxy.configure_aproxy(proxy=state.proxy_config)
-        self._build_image(state=state)
-        cron.setup(state.build_interval, self.model.name, self.unit.name)
+        builder.install_cron(config=builder.RunCronConfig())
         self.unit.status = ops.ActiveStatus()
 
-    def _on_cron_trigger(self, _: cron.CronEvent) -> None:
+    def _on_build_success(self, _: cron.CronEvent) -> None:
         """Handle cron fired event."""
         state = self._load_state()
         if not state:
             return
-        self._build_image(state=state)
+        image_id = os.getenv(builder.OPENSTACK_IMAGE_ID_ENV, "")
+        if not image_id:
+            raise ValueError("Image ID not found.")
+        self.image_observer.update_relation_data(image_id=image_id)
         self.unit.status = ops.ActiveStatus()
 
 

@@ -151,6 +151,6 @@ def test__on_cron_trigger(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerIm
     monkeypatch.setattr(CharmState, "from_charm", MagicMock())
     charm._build_image = (build_image_mock := MagicMock())
 
-    charm._on_cron_trigger(MagicMock)
+    charm._on_build_success(MagicMock)
 
     build_image_mock.assert_called_once()
