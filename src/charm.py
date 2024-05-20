@@ -103,6 +103,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 interval=state.build_interval,
                 num_revisions=state.revision_history_limit,
             ),
+            cloud_config=state.cloud_config,
         )
         self.unit.status = ops.ActiveStatus("Waiting for first image build.")
 
@@ -113,6 +114,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         proxy.configure_aproxy(proxy=state.proxy_config)
+        builder.install_clouds_yaml(cloud_config=state.cloud_config)
         builder.install_cron(
             config=builder.RunCronConfig(
                 arch=state.image_config.arch,

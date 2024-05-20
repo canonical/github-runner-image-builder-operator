@@ -11,6 +11,7 @@ import subprocess  # nosec
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1.systemd import service_restart
 
@@ -43,6 +44,7 @@ CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER = Path(
     Path(f"/home/{UBUNTU_USER}") / ".local/bin/github-runner-image-builder"
 )
+OPENSTACK_CLOUDS_YAML_PATH = Path("clouds.yaml")
 OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
 IMAGE_NAME_TMPL = "{IMAGE_BASE}-{APP_NAME}-{ARCH}"
 
@@ -100,12 +102,15 @@ class RunCronConfig:
     num_revisions: int
 
 
-def setup_builder(callback_config: CallbackConfig, cron_config: RunCronConfig) -> None:
+def setup_builder(
+    callback_config: CallbackConfig, cron_config: RunCronConfig, cloud_config: dict
+) -> None:
     """Configure the host machine to build images.
 
     Args:
         callback_config: Configuration values to create callbacks script.
         cron_config: Configuration values to register cron to build images periodically.
+        cloud_config: The openstack clouds.yaml contents
 
     Raises:
         BuilderSetupError: If there was an error setting up the host device for building images.
@@ -114,6 +119,7 @@ def setup_builder(callback_config: CallbackConfig, cron_config: RunCronConfig) -
         _install_dependencies()
         _create_callback_script(config=callback_config)
         _install_image_builder()
+        install_clouds_yaml(cloud_config=cloud_config)
         install_cron(config=cron_config)
     except (DependencyInstallError, ImageBuilderInstallError) as exc:
         raise BuilderSetupError from exc
@@ -178,6 +184,19 @@ def _install_image_builder() -> None:
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
         raise ImageBuilderInstallError from exc
+
+
+def install_clouds_yaml(cloud_config: dict) -> None:
+    """Install clouds.yaml for Openstack used by the image builder.
+
+    Args:
+        cloud_config: The contents of clouds.yaml parsed as dict.
+    """
+    if not OPENSTACK_CLOUDS_YAML_PATH.exists():
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(cloud_config, encoding="utf-8")
+        return
+    if yaml.safe_load(OPENSTACK_CLOUDS_YAML_PATH.read_text(encoding="utf-8")) != cloud_config:
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(cloud_config, encoding="utf-8")
 
 
 def install_cron(config: RunCronConfig) -> None:
