@@ -8,7 +8,7 @@ import logging
 import os
 import platform
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import yaml
 from ops import CharmBase
@@ -120,7 +120,7 @@ class BaseImage(str, Enum):
         Returns:
             The base image configuration of the charm.
         """
-        image_name = charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy").lower().strip()
+        image_name = cast(str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")).lower().strip()
         if image_name in LTS_IMAGE_VERSION_TAG_MAP:
             return cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
         return cls(image_name)
@@ -238,7 +238,7 @@ def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
         raise InvalidCloudConfigError("No cloud config set")
 
     try:
-        openstack_clouds_yaml = yaml.safe_load(openstack_clouds_yaml_str)
+        openstack_clouds_yaml = yaml.safe_load(cast(str, openstack_clouds_yaml_str))
     except yaml.YAMLError as exc:
         raise InvalidCloudConfigError(
             f"Invalid {OPENSTACK_CLOUDS_YAML_CONFIG_NAME} config. Invalid yaml."

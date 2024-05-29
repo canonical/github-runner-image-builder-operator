@@ -109,7 +109,7 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
 
     setup_mock.assert_called_once()
     run_mock.assert_called_once()
-    assert charm.unit.status == ops.ActiveStatus()
+    assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
 
 
 @pytest.mark.parametrize(

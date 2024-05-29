@@ -213,11 +213,15 @@ def test_image_config(
             "test", "An integer value for build-interval is expected.", id="not an integer"
         ),
         pytest.param(
-            "-1", "Build interval must not be negative or greater than 24", id="negative"
+            "-1", "Build interval must not be smaller than 1 or greater than 24", id="negative"
         ),
-        pytest.param("0", "Build interval must not be negative or greater than 24", id="zero"),
         pytest.param(
-            "25", "Build interval must not be negative or greater than 24", id="more than a day"
+            "0", "Build interval must not be smaller than 1 or greater than 24", id="zero"
+        ),
+        pytest.param(
+            "25",
+            "Build interval must not be smaller than 1 or greater than 24",
+            id="more than a day",
         ),
     ],
 )
@@ -239,7 +243,6 @@ def test__parse_build_interval_invalid(interval: str, expected_message: str):
 @pytest.mark.parametrize(
     "interval, expected",
     [
-        pytest.param("0", 0, id="don't build"),
         pytest.param("1", 1, id="valid interval (1)"),
         pytest.param("12", 12, id="valid interval (12)"),
         pytest.param("20", 20, id="valid interval (20)"),
