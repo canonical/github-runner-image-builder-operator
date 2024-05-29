@@ -69,9 +69,9 @@ class Observer(ops.Object):
         if not image_id:
             logger.warning("Image not yet ready.")
             return
-        self.update_relation_data(image_id=image_id)
+        self.update_image_id(image_id=image_id)
 
-    def update_relation_data(self, image_id: str) -> None:
+    def update_image_id(self, image_id: str) -> None:
         """Update the relation data if exists.
 
         Args:

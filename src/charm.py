@@ -34,7 +34,7 @@ class ImageEvents(ops.CharmEvents):
 
 
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
-    """Charm the service.
+    """Charm GitHubRunner image builder application.
 
     Attributes:
         on: Represents custom events managed by cron.
@@ -55,7 +55,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.build_success, self._on_build_success)
 
     def _load_state(self) -> CharmState | None:
-        """Load the charm state if valid, set charm to blocked if otherwise.
+        """Load the charm state if valid, set charm to blocked otherwise.
 
         Returns:
             Initialized charm state if valid charm state. None if invalid charm state was found.
@@ -103,7 +103,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             cloud_config=state.cloud_config,
         )
         builder.build_immediate(config=build_config)
-        self.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
@@ -122,7 +122,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             num_revisions=state.revision_history_limit,
         )
         if builder.configure_cron(config=build_config):
-            self.unit.status = ops.ActiveStatus("Building image.")
             builder.build_immediate(config=build_config)
         self.unit.status = ops.ActiveStatus()
 
@@ -134,7 +133,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
             )
             return
-        self.image_observer.update_relation_data(image_id=image_id)
+        self.image_observer.update_image_id(image_id=image_id)
         self.unit.status = ops.ActiveStatus()
 
 

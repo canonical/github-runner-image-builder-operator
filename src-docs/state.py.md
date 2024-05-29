@@ -59,7 +59,7 @@ Raised when charm config is invalid.
  
  - <b>`msg`</b>:  Explanation of the error. 
 
-<a href="../src/state.py#L268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -90,15 +90,23 @@ The charm state.
  
  - <b>`build_interval`</b>:  The interval in hours between each scheduled image builds. 
  - <b>`cloud_config`</b>:  The Openstack clouds.yaml passed as charm config. 
+ - <b>`cloud_name`</b>:  The cloud name to use from cloud_config. 
  - <b>`image_config`</b>:  The charm configuration values related to image. 
+ - <b>`proxy_config`</b>:  The charm proxy configuration variables. 
  - <b>`revision_history_limit`</b>:  The number of image revisions to keep. 
 
+
+---
+
+#### <kbd>property</kbd> cloud_name
+
+The cloud name from cloud_config. 
 
 
 
 ---
 
-<a href="../src/state.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -143,7 +151,7 @@ The charm configuration values related to image.
 
 ---
 
-<a href="../src/state.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -191,6 +199,40 @@ Represents an error with invalid image config.
 
 ---
 
+## <kbd>class</kbd> `ProxyConfig`
+Proxy configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`http`</b>:  HTTP proxy address. 
+ - <b>`https`</b>:  HTTPS proxy address. 
+ - <b>`no_proxy`</b>:  Comma-separated list of hosts that should not be proxied. 
+
+
+
+
+---
+
+<a href="../src/state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `from_env`
+
+```python
+from_env() → Optional[ForwardRef('ProxyConfig')]
+```
+
+Initialize the proxy config from charm. 
+
+
+
+**Returns:**
+  Current proxy config of the charm. 
+
+
+---
+
 ## <kbd>class</kbd> `UnsupportedArchitectureError`
 Raised when given machine charm architecture is unsupported. 
 
@@ -200,7 +242,7 @@ Raised when given machine charm architecture is unsupported.
  
  - <b>`arch`</b>:  The current machine architecture. 
 
-<a href="../src/state.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

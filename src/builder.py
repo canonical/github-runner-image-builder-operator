@@ -69,7 +69,7 @@ class CallbackConfig:
 
 @dataclass
 class CronConfig:
-    """Configurations for running builder peridocally.
+    """Configurations for running builder periodically.
 
     Attributes:
         arch: The machine architecture of the image to build with.
@@ -299,6 +299,9 @@ def build_immediate(config: CronConfig) -> None:
             ),
         ]
     )
+    # Or use "| logging -t github-runner-image-builder" to output to syslog as
+    # github-runner-image-builder
+    # and do "|| /usr/bin/bash CALLBACK_SCRIPT_PATH" with no args to represent failed build.
     cron_text = (
         f"* * * * * {UBUNTU_USER} {builder_exec_command} "
         f">> {OUTPUT_LOG_PATH} 2>&1; sudo rm {CRON_BUILD_IMMEDIATE_PATH}\n"

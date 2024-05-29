@@ -9,8 +9,17 @@ Entrypoint for GithubRunnerImageBuilder charm.
 
 ---
 
+## <kbd>class</kbd> `BuildSuccessEvent`
+Represents a successful image build event. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `GithubRunnerImageBuilderCharm`
-Charm the service. 
+Charm GitHubRunner image builder application. 
 
 
 
@@ -18,7 +27,7 @@ Charm the service.
  
  - <b>`on`</b>:  Represents custom events managed by cron. 
 
-<a href="../src/charm.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -70,6 +79,31 @@ Shortcut for more simple access the model.
 #### <kbd>property</kbd> unit
 
 Unit that this execution is responsible for. 
+
+
+---
+
+#### <kbd>handler</kbd> on
+
+
+
+---
+
+## <kbd>class</kbd> `ImageEvents`
+Represents events triggered by image builder callback. 
+
+
+
+**Attributes:**
+ 
+ - <b>`build_success`</b>:  Represents a successful image build event. 
+
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
 
 
 

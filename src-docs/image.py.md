@@ -57,12 +57,12 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `update_relation_data`
+### <kbd>function</kbd> `update_image_id`
 
 ```python
-update_relation_data(image_id: str) → None
+update_image_id(image_id: str) → None
 ```
 
 Update the relation data if exists. 

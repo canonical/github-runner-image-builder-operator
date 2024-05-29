@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "experimental-openstack-clouds-yaml"
+OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "openstack-clouds-yaml"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
 
@@ -191,8 +191,8 @@ def _parse_build_interval(charm: CharmBase) -> int:
         build_interval = int(charm.config.get(BUILD_INTERVAL_CONFIG_NAME, 6))
     except ValueError as exc:
         raise ValueError("An integer value for build-interval is expected.") from exc
-    if build_interval < 0 or build_interval > 24:
-        raise ValueError("Build interval must not be negative or greater than 24")
+    if build_interval < 1 or build_interval > 24:
+        raise ValueError("Build interval must not be smaller than 1 or greater than 24")
     return build_interval
 
 

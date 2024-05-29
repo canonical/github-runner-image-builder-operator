@@ -7,34 +7,34 @@ Module for interacting with qemu image builder.
 
 **Global Variables**
 ---------------
-- **APT_DEPENDENCIES**
-- **CLOUD_IMAGE_URL_TMPL**
-- **CLOUD_IMAGE_FILE_NAME**
-- **APT_TIMER**
-- **APT_SVC**
-- **APT_UPGRADE_TIMER**
-- **APT_UPGRAD_SVC**
 - **UBUNTU_USER**
-- **DOCKER_GROUP**
-- **MICROK8S_GROUP**
-- **YQ_DOWNLOAD_URL_TMPL**
-- **YQ_BINARY_CHECKSUM_URL**
-- **YQ_CHECKSUM_HASHES_ORDER_URL**
-- **YQ_EXTRACT_CHECKSUM_SCRIPT_URL**
-- **BIN_ARCH_MAP**
-- **IMAGE_DEFAULT_APT_PACKAGES**
+- **APT_DEPENDENCIES**
+- **OPENSTACK_IMAGE_ID_ENV**
+- **IMAGE_NAME_TMPL**
 
 ---
 
-<a href="../src/builder.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `setup_builder`
 
 ```python
-setup_builder() → None
+setup_builder(
+    callback_config: CallbackConfig,
+    cron_config: CronConfig,
+    cloud_config: dict
+) → None
 ```
 
 Configure the host machine to build images. 
+
+
+
+**Args:**
+ 
+ - <b>`callback_config`</b>:  Configuration values to create callbacks script. 
+ - <b>`cron_config`</b>:  Configuration values to register cron to build images periodically. 
+ - <b>`cloud_config`</b>:  The openstack clouds.yaml contents 
 
 
 
@@ -45,45 +45,117 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L530"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `build_image`
+## <kbd>function</kbd> `install_clouds_yaml`
 
 ```python
-build_image(config: BuildImageConfig) → Path
+install_clouds_yaml(cloud_config: dict) → None
 ```
 
-Build and save the image locally. 
+Install clouds.yaml for Openstack used by the image builder. 
 
 
 
 **Args:**
  
- - <b>`config`</b>:  The configuration values to build the image with. 
+ - <b>`cloud_config`</b>:  The contents of clouds.yaml parsed as dict. 
+
+
+---
+
+<a href="../src/builder.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `configure_cron`
+
+```python
+configure_cron(config: CronConfig) → bool
+```
+
+Configure cron to run builder. 
+
+
+
+**Args:**
+ 
+ - <b>`config`</b>:  The configuration required to setup cron job to run builder periodically. 
+
+
+
+**Returns:**
+ True if cron is reconfigured. False otherwise. 
+
+
+---
+
+<a href="../src/builder.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `build_immediate`
+
+```python
+build_immediate(config: CronConfig) → None
+```
+
+Run a build immediately. 
+
+
+
+**Args:**
+ 
+ - <b>`config`</b>:  The configuration values for running image builder. 
+
+
+---
+
+<a href="../src/builder.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_latest_image`
+
+```python
+get_latest_image(
+    base: BaseImage,
+    app_name: str,
+    arch: Arch,
+    cloud_name: str
+) → str
+```
+
+Fetch the latest image build ID. 
+
+
+
+**Args:**
+ 
+ - <b>`app_name`</b>:  The current charm application name. 
+ - <b>`arch`</b>:  The machine architecture the image was built with. 
+ - <b>`base`</b>:  Ubuntu OS image to build from. 
+ - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
 
 
 
 **Raises:**
  
- - <b>`BuildImageError`</b>:  If there was an error building the image. 
+ - <b>`GetLatestImageError`</b>:  If there was an error fetching the latest image. 
 
 
 
 **Returns:**
- The saved image path. 
+ The latest successful image build ID. 
 
 
 ---
 
-## <kbd>class</kbd> `BuildImageConfig`
-Configuration for building the image. 
+## <kbd>class</kbd> `CallbackConfig`
+Configuration for callback scripts. 
 
 
 
 **Attributes:**
  
- - <b>`arch`</b>:  The CPU architecture to build the image for. 
- - <b>`base_image`</b>:  The ubuntu image to use as build base. 
+ - <b>`model_name`</b>:  Juju model name. 
+ - <b>`unit_name`</b>:  Current juju application unit name. 
+ - <b>`charm_dir`</b>:  Charm directory to trigger the juju hooks. 
+ - <b>`hook_name`</b>:  The Juju hook to call after building image. 
 
 
 
@@ -91,138 +163,19 @@ Configuration for building the image.
 
 ---
 
-## <kbd>class</kbd> `BuildImageError`
-Represents an error while building the image. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `BuilderSetupError`
-Represents an error while setting up host machine as builder. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `CloudImageDownloadError`
-Represents an error downloading cloud image. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `DependencyInstallError`
-Represents an error while installing required dependencies. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `ExternalPackageInstallError`
-Represents an error installilng external packages. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `ImageCompressError`
-Represents an error while compressing cloud-img. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `ImageMountError`
-Represents an error while mounting the image to network block device. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `ImageResizeError`
-Represents an error while resizing the image. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `NetworkBlockDeviceError`
-Represents an error while enabling network block device. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `ResizePartitionError`
-Represents an error while resizing network block device partitions. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `SystemUserConfigurationError`
-Represents an error while adding user to chroot env. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `UnattendedUpgradeDisableError`
-Represents an error while disabling unattended-upgrade related services. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `UnsupportedArchitectureError`
-Raised when given machine charm architecture is unsupported. 
+## <kbd>class</kbd> `CronConfig`
+Configurations for running builder periodically. 
 
 
 
 **Attributes:**
  
- - <b>`arch`</b>:  The current machine architecture. 
-
-<a href="../src/builder.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
-
-```python
-__init__(arch: str) → None
-```
-
-Initialize a new instance of the CharmConfigInvalidError exception. 
-
-
-
-**Args:**
- 
- - <b>`arch`</b>:  The current machine architecture. 
+ - <b>`arch`</b>:  The machine architecture of the image to build with. 
+ - <b>`app_name`</b>:  The charm application name, used to name Openstack image. 
+ - <b>`base`</b>:  Ubuntu OS image to build from. 
+ - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
+ - <b>`interval`</b>:  The frequency in which the image builder should be triggered. 
+ - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
 
 
 

@@ -1,0 +1,63 @@
+<!-- markdownlint-disable -->
+
+<a href="../src/exceptions.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+# <kbd>module</kbd> `exceptions.py`
+Exception raised by the builder. 
+
+
+
+---
+
+## <kbd>class</kbd> `BuilderBaseError`
+Base exceptions for builder application. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `BuilderSetupError`
+Represents an error while setting up host machine as builder. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `DependencyInstallError`
+Represents an error while installing required dependencies. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `GetLatestImageError`
+Represents an error while fetching the latest image. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `ImageBuilderInstallError`
+Represents an error while installing github-runner-image-builder app. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `ProxyInstallError`
+Represents an error while installing proxy. 
+
+
+
+
+

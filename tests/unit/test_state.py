@@ -215,6 +215,7 @@ def test_image_config(
         pytest.param(
             "-1", "Build interval must not be negative or greater than 24", id="negative"
         ),
+        pytest.param("0", "Build interval must not be negative or greater than 24", id="zero"),
         pytest.param(
             "25", "Build interval must not be negative or greater than 24", id="more than a day"
         ),
@@ -262,7 +263,7 @@ def test__parse_build_interval(interval: str, expected: int):
     [
         pytest.param("test", "An integer value for revision history is expected", id="non-int"),
         pytest.param(
-            "-1", "Revision history must be greater than 1 and less than 100", id="netative"
+            "-1", "Revision history must be greater than 1 and less than 100", id="negative"
         ),
         pytest.param("0", "Revision history must be greater than 1 and less than 100", id="zero"),
         pytest.param(

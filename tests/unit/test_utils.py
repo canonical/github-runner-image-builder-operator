@@ -13,7 +13,7 @@ from utils import retry
 
 def test_retry_with_logger():
     """
-    arrange: given a function that raises exception decorated with retry.
+    arrange: given a function that raises exception decorated with retry using a local logger.
     act: when the function is called.
     assert: the function is retried and raises eventually.
     """
