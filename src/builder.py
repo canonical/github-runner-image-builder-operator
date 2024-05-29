@@ -234,7 +234,7 @@ def configure_cron(config: CronConfig) -> bool:
         f">> {OUTPUT_LOG_PATH} 2>&1\n"
     )
     CRON_BUILD_SCHEDULE_PATH.write_text(cron_text, encoding="utf-8")
-    service_restart("cron")
+    systemd.service_restart("cron")
     return True
 
 
