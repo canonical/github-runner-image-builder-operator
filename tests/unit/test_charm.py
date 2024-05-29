@@ -148,12 +148,14 @@ def test__on_build_success_error(
     """
     arrange: given a monkeypatched mock os.getenv function that returns no value.
     act: when _on_build_success is called.
-    assert: the charm raises an error.
+    assert: the charm is in ActiveStatus with a message.
     """
     monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
 
-    with pytest.raises(ValueError):
-        charm._on_build_success(MagicMock)
+    charm._on_build_success(MagicMock)
+
+    assert isinstance(charm.unit.status, ops.ActiveStatus)
+    assert "Failed to build image." in charm.unit.status.message
 
 
 def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):

@@ -225,7 +225,7 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     assert: cron service is not restarted.
     """
     monkeypatch.setattr(builder, "_should_configure_cron", MagicMock(return_value=False))
-    monkeypatch.setattr(builder, "service_restart", (service_restart_mock := MagicMock()))
+    monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
 
     builder.configure_cron(config=MagicMock())
 
@@ -239,7 +239,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert: subfunctions are called and cron file is written with expected contents.
     """
     monkeypatch.setattr(builder, "_should_configure_cron", MagicMock())
-    monkeypatch.setattr(builder, "service_restart", (service_restart_mock := MagicMock()))
+    monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
     test_path = tmp_path / "test"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
     test_config = builder.CronConfig(
@@ -409,6 +409,7 @@ def test_build_immediate(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         builder, "CRON_BUILD_IMMEDIATE_PATH", build_immediate_path_mock := MagicMock()
     )
+    monkeypatch.setattr(builder.systemd, "service_restart", service_restart_mock := MagicMock())
     testconfig = builder.CronConfig(
         arch=Arch.ARM64,
         app_name="test",
@@ -421,6 +422,7 @@ def test_build_immediate(monkeypatch: pytest.MonkeyPatch):
     builder.build_immediate(config=testconfig)
 
     build_immediate_path_mock.write_text.assert_called_once()
+    service_restart_mock.assert_called_once()
 
 
 def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):

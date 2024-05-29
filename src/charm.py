@@ -127,11 +127,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_success(self, _: BuildSuccessEvent) -> None:
-        """Handle cron fired event.
-
-        Raises:
-            ValueError: If the environment variable was not set by the image builder.
-        """
+        """Handle cron fired event."""
         image_id = os.getenv(builder.OPENSTACK_IMAGE_ID_ENV, "")
         if not image_id:
             self.unit.status = ops.ActiveStatus(

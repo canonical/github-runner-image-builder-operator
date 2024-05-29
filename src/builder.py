@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 from charms.operator_libs_linux.v0 import apt
-from charms.operator_libs_linux.v1.systemd import service_restart
+from charms.operator_libs_linux.v1 import systemd
 
 from exceptions import (
     BuilderSetupError,
@@ -304,6 +304,7 @@ def build_immediate(config: CronConfig) -> None:
         f">> {OUTPUT_LOG_PATH} 2>&1; sudo rm {CRON_BUILD_IMMEDIATE_PATH}\n"
     )
     CRON_BUILD_IMMEDIATE_PATH.write_text(cron_text, encoding="utf-8")
+    systemd.service_restart("cron")
 
 
 def get_latest_image(base: BaseImage, app_name: str, arch: Arch, cloud_name: str) -> str:
