@@ -1,0 +1,46 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+# This file configures Charmcraft.
+
+# This file configures Charmcraft.
+# See https://juju.is/docs/sdk/charmcraft-yaml for guidance.
+
+# The charm package name, no spaces (required)
+# See https://juju.is/docs/sdk/naming#heading--naming-charms for guidance.
+name: test
+title: Test charm for github runner image builder
+summary: Test charm for github runner image builder
+description: |
+  Test charm for github runner image builder.
+links:
+  contact: https://github.com/orgs/canonical/teams/is-charms
+  documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview
+  issues: https://github.com/canonical/github-runner-image-builder-operator/issues
+  source: https://github.com/canonical/github-runner-image-builder-operator
+  website: https://charmhub.io/github-runner-image-builder
+
+type: charm
+bases:
+  - build-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
+      - amd64
+      - arm64
+    run-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
+      - amd64
+      - arm64
+
+config:
+  options:
+    test:
+      type: string
+      default: test
+      description: test config option to satisfy charmcraft linter.
+
+requires:
+  image:
+    interface: github_runner_image_v0

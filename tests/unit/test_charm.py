@@ -1,68 +1,169 @@
-# Copyright 2023 Mariyan Dimitrov
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-#
-# Learn more about testing at: https://juju.is/docs/sdk/testing
 
-import unittest
+"""Unit tests for charm module."""
+
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
+from unittest.mock import MagicMock
 
 import ops
-import ops.testing
-from charm import IsCharmsTemplateCharm
+import pytest
+
+import builder
+import image
+import proxy
+from charm import GithubRunnerImageBuilderCharm, os
+from state import CharmConfigInvalidError, CharmState
 
 
-class TestCharm(unittest.TestCase):
-    def setUp(self):
-        self.harness = ops.testing.Harness(IsCharmsTemplateCharm)
-        self.addCleanup(self.harness.cleanup)
-        self.harness.begin()
+@pytest.fixture(name="resurrect", scope="module")
+def resurrect_fixture():
+    """Mock resurrect observer."""
+    return MagicMock()
 
-    def test_httpbin_pebble_ready(self):
-        # Expected plan after Pebble ready with default config
-        expected_plan = {
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {"GUNICORN_CMD_ARGS": "--log-level info"},
-                }
-            },
-        }
-        # Simulate the container coming up and emission of pebble-ready event
-        self.harness.container_pebble_ready("httpbin")
-        # Get the plan now we've run PebbleReady
-        updated_plan = self.harness.get_container_pebble_plan("httpbin").to_dict()
-        # Check we've got the plan we expected
-        self.assertEqual(expected_plan, updated_plan)
-        # Check the service was started
-        service = self.harness.model.unit.get_container("httpbin").get_service("httpbin")
-        self.assertTrue(service.is_running())
-        # Ensure we set an ActiveStatus with no message
-        self.assertEqual(self.harness.model.unit.status, ops.ActiveStatus())
 
-    def test_config_changed_valid_can_connect(self):
-        # Ensure the simulated Pebble API is reachable
-        self.harness.set_can_connect("httpbin", True)
-        # Trigger a config-changed event with an updated value
-        self.harness.update_config({"log-level": "debug"})
-        # Get the plan now we've run PebbleReady
-        updated_plan = self.harness.get_container_pebble_plan("httpbin").to_dict()
-        updated_env = updated_plan["services"]["httpbin"]["environment"]
-        # Check the config change was effective
-        self.assertEqual(updated_env, {"GUNICORN_CMD_ARGS": "--log-level debug"})
-        self.assertEqual(self.harness.model.unit.status, ops.ActiveStatus())
+@pytest.fixture(name="charm", scope="module")
+def charm_fixture(resurrect: MagicMock):
+    """Mock charm fixture w/ framework."""
+    # this is required since current ops does not support charmcraft.yaml
+    mock_framework = MagicMock(spec=ops.framework.Framework)
+    mock_framework.meta.actions = ["build-image"]
+    mock_framework.meta.relations = ["image"]
+    charm = GithubRunnerImageBuilderCharm(mock_framework)
+    charm.resurrect = resurrect
+    return charm
 
-    def test_config_changed_valid_cannot_connect(self):
-        # Trigger a config-changed event with an updated value
-        self.harness.update_config({"log-level": "debug"})
-        # Check the charm is in WaitingStatus
-        self.assertIsInstance(self.harness.model.unit.status, ops.WaitingStatus)
 
-    def test_config_changed_invalid(self):
-        # Ensure the simulated Pebble API is reachable
-        self.harness.set_can_connect("httpbin", True)
-        # Trigger a config-changed event with an updated value
-        self.harness.update_config({"log-level": "foobar"})
-        # Check the charm is in BlockedStatus
-        self.assertIsInstance(self.harness.model.unit.status, ops.BlockedStatus)
+def test__load_state_invalid_config(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a monkeypatched CharmState.from_charm that raises CharmConfigInvalidError.
+    act: when _load_state is called.
+    assert: charm is in blocked status.
+    """
+    monkeypatch.setattr(
+        CharmState, "from_charm", MagicMock(side_effect=CharmConfigInvalidError("Invalid config"))
+    )
+    monkeypatch.setattr(image, "Observer", MagicMock())
+
+    assert charm._load_state() is None
+    assert charm.unit.status == ops.BlockedStatus("Invalid config")
+
+
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("_on_config_changed", id="_on_config_changed"),
+    ],
+)
+def test_block_on_state_error(
+    monkeypatch: pytest.MonkeyPatch, hook: str, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a monkeypatched CharmState.from_charm that raises CharmConfigInvalidError.
+    act: when _load_state is called.
+    assert: charm is in blocked status.
+    """
+    monkeypatch.setattr(image, "Observer", MagicMock())
+    monkeypatch.setattr(
+        CharmState, "from_charm", MagicMock(side_effect=CharmConfigInvalidError("Invalid config"))
+    )
+
+    getattr(charm, hook)(MagicMock())
+
+    assert charm.unit.status == ops.BlockedStatus("Invalid config")
+
+
+def test__on_install_invalid_state(charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monkeypatched _load_state internal method that returns false.
+    act: when on_install is called.
+    assert: the event is deferred.
+    """
+    original_load_state = charm._load_state
+    charm._load_state = MagicMock(return_value=False)
+
+    charm._on_install(event=(mock_event := MagicMock()))
+
+    mock_event.defer.assert_called_once()
+    charm._load_state = original_load_state
+
+
+def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monekypatched builder.setup_builder function.
+    act: when _on_install is called.
+    assert: setup_builder is called.
+    """
+    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    monkeypatch.setattr(image, "Observer", MagicMock())
+    monkeypatch.setattr(proxy, "setup", MagicMock())
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "setup_builder", (setup_mock := MagicMock()))
+    monkeypatch.setattr(builder, "build_immediate", (run_mock := MagicMock()))
+
+    charm._on_install(MagicMock())
+
+    setup_mock.assert_called_once()
+    run_mock.assert_called_once()
+    assert charm.unit.status == ops.ActiveStatus()
+
+
+@pytest.mark.parametrize(
+    "configure_cron",
+    [
+        pytest.param(False, id="No reconfiguration"),
+        pytest.param(True, id="Reconfigure"),
+    ],
+)
+def test__on_config_changed(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, configure_cron: bool
+):
+    """
+    arrange: given monkeypatched builder, openstack manager, image_observer.
+    act: when _on_config_changed is called.
+    assert: charm is in active status.
+    """
+    monkeypatch.setattr(CharmState, "from_charm", MagicMock())
+    monkeypatch.setattr(
+        image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
+    )
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=configure_cron))
+    monkeypatch.setattr(builder, "build_immediate", MagicMock())
+    charm.image_observer = image_observer_mock
+
+    charm._on_config_changed(MagicMock())
+
+    assert charm.unit.status == ops.ActiveStatus()
+
+
+def test__on_build_success_error(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a monkeypatched mock os.getenv function that returns no value.
+    act: when _on_build_success is called.
+    assert: the charm raises an error.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
+
+    with pytest.raises(ValueError):
+        charm._on_build_success(MagicMock)
+
+
+def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monkeypatched mock os.getenv function.
+    act: when _on_build_success is called.
+    assert: the charm is in active status.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock())
+
+    charm._on_build_success(MagicMock)
+
+    assert charm.unit.status == ops.ActiveStatus()

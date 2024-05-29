@@ -1,0 +1,2 @@
+fabric >=3,<4
+types-paramiko

@@ -1,103 +1,146 @@
 #!/usr/bin/env python3
-# Copyright 2023 Mariyan Dimitrov
+
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-#
-# Learn more at: https://juju.is/docs/sdk
 
-"""Charm the service.
-
-Refer to the following post for a quick-start guide that will help you
-develop a new k8s charm using the Operator Framework:
-
-https://discourse.charmhub.io/t/4208
-"""
+"""Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
+import os
+from typing import Any
 
 import ops
 
-# Log messages can be retrieved using juju debug-log
+import builder
+import image
+import proxy
+from state import CharmConfigInvalidError, CharmState
+
 logger = logging.getLogger(__name__)
 
-VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
+
+class BuildSuccessEvent(ops.EventBase):
+    """Represents a successful image build event."""
 
 
-class IsCharmsTemplateCharm(ops.CharmBase):
-    """Charm the service."""
+class ImageEvents(ops.CharmEvents):
+    """Represents events triggered by image builder callback.
 
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
+    Attributes:
+        build_success: Represents a successful image build event.
+    """
 
-    def _on_httpbin_pebble_ready(self, event: ops.PebbleReadyEvent):
-        """Define and start a workload using the Pebble API.
+    build_success = ops.EventSource(BuildSuccessEvent)
 
-        Change this example to suit your needs. You'll need to specify the right entrypoint and
-        environment configuration for your specific workload.
 
-        Learn more about interacting with Pebble at at https://juju.is/docs/sdk/pebble.
+class GithubRunnerImageBuilderCharm(ops.CharmBase):
+    """Charm the service.
+
+    Attributes:
+        on: Represents custom events managed by cron.
+    """
+
+    on = ImageEvents()
+
+    def __init__(self, *args: Any):
+        """Initialize the charm.
+
+        Args:
+            args: The CharmBase initialization arguments.
         """
-        # Get a reference the container attribute on the PebbleReadyEvent
-        container = event.workload
-        # Add initial Pebble config layer using the Pebble API
-        container.add_layer("httpbin", self._pebble_layer, combine=True)
-        # Make Pebble reevaluate its plan, ensuring any services are started if enabled.
-        container.replan()
-        # Learn more about statuses in the SDK docs:
-        # https://juju.is/docs/sdk/constructs#heading--statuses
+        super().__init__(*args)
+        self.image_observer = image.Observer(self)
+        self.framework.observe(self.on.install, self._on_install)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.build_success, self._on_build_success)
+
+    def _load_state(self) -> CharmState | None:
+        """Load the charm state if valid, set charm to blocked if otherwise.
+
+        Returns:
+            Initialized charm state if valid charm state. None if invalid charm state was found.
+        """
+        try:
+            return CharmState.from_charm(self)
+        except CharmConfigInvalidError as exc:
+            self.unit.status = ops.BlockedStatus(str(exc))
+            return None
+
+    def _on_install(self, event: ops.InstallEvent) -> None:
+        """Handle installation of the charm.
+
+        Installs apt packages required to build the image.
+
+        Args:
+            event: The event fired on install hook.
+        """
+        self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
+        state = self._load_state()
+        if not state:
+            # Defer this event since on install should be re-triggered to setup dependencies for
+            # the charm. Since the charm goes into blocked state and the user reconfigures the
+            # state, config_changed event should be queued after the deferred on_install.
+            event.defer()
+            return
+
+        proxy.setup(proxy=state.proxy_config)
+        build_config = builder.CronConfig(
+            arch=state.image_config.arch,
+            base=state.image_config.base_image,
+            app_name=self.app.name,
+            cloud_name=state.cloud_name,
+            interval=state.build_interval,
+            num_revisions=state.revision_history_limit,
+        )
+        builder.setup_builder(
+            callback_config=builder.CallbackConfig(
+                model_name=self.model.name,
+                unit_name=self.unit.name,
+                charm_dir=os.getenv("JUJU_CHARM_DIR"),
+                hook_name="build_success",
+            ),
+            cron_config=build_config,
+            cloud_config=state.cloud_config,
+        )
+        builder.build_immediate(config=build_config)
         self.unit.status = ops.ActiveStatus()
 
-    def _on_config_changed(self, event: ops.ConfigChangedEvent):
-        """Handle changed configuration.
+    def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
+        """Handle charm configuration change events."""
+        state = self._load_state()
+        if not state:
+            return
 
-        Change this example to suit your needs. If you don't need to handle config, you can remove
-        this method.
+        proxy.configure_aproxy(proxy=state.proxy_config)
+        builder.install_clouds_yaml(cloud_config=state.cloud_config)
+        build_config = builder.CronConfig(
+            arch=state.image_config.arch,
+            app_name=self.app.name,
+            base=state.image_config.base_image,
+            cloud_name=state.cloud_name,
+            interval=state.build_interval,
+            num_revisions=state.revision_history_limit,
+        )
+        if builder.configure_cron(config=build_config):
+            self.unit.status = ops.ActiveStatus("Building image.")
+            builder.build_immediate(config=build_config)
+        self.unit.status = ops.ActiveStatus()
 
-        Learn more about config at https://juju.is/docs/sdk/config
+    def _on_build_success(self, _: BuildSuccessEvent) -> None:
+        """Handle cron fired event.
+
+        Raises:
+            ValueError: If the environment variable was not set by the image builder.
         """
-        # Fetch the new config value
-        log_level = self.model.config["log-level"].lower()
-
-        # Do some validation of the configuration option
-        if log_level in VALID_LOG_LEVELS:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container("httpbin")
-            # Verify that we can connect to the Pebble API in the workload container
-            if container.can_connect():
-                # Push an updated layer with the new config
-                container.add_layer("httpbin", self._pebble_layer, combine=True)
-                container.replan()
-
-                logger.debug("Log level for gunicorn changed to '%s'", log_level)
-                self.unit.status = ops.ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API, so we defer this event
-                event.defer()
-                self.unit.status = ops.WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad, so block the charm and notify the operator.
-            self.unit.status = ops.BlockedStatus("invalid log level: '{log_level}'")
-
-    @property
-    def _pebble_layer(self):
-        """Return a dictionary representing a Pebble layer."""
-        return {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {
-                        "GUNICORN_CMD_ARGS": f"--log-level {self.model.config['log-level']}"
-                    },
-                }
-            },
-        }
+        image_id = os.getenv(builder.OPENSTACK_IMAGE_ID_ENV, "")
+        if not image_id:
+            self.unit.status = ops.ActiveStatus(
+                f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
+            )
+            return
+        self.image_observer.update_relation_data(image_id=image_id)
+        self.unit.status = ops.ActiveStatus()
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(IsCharmsTemplateCharm)
+    ops.main.main(GithubRunnerImageBuilderCharm)
