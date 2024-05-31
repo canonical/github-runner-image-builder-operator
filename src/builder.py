@@ -7,6 +7,8 @@ import logging
 import os
 
 # Ignore B404:blacklist since all subprocesses are run with predefined executables.
+# nosec: B603 is applied across subprocess.run calls since we are calling with predefined
+# inputs.
 import subprocess  # nosec
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,10 +30,6 @@ logger = logging.getLogger(__name__)
 
 UBUNTU_USER = "ubuntu"
 UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
-
-# nosec: B603 is applied across subprocess.run calls since we are calling with predefined
-# inputs.
-
 
 APT_DEPENDENCIES = [
     "pipx",
@@ -299,9 +297,6 @@ def build_immediate(config: CronConfig) -> None:
             ),
         ]
     )
-    # Or use "| logging -t github-runner-image-builder" to output to syslog as
-    # github-runner-image-builder
-    # and do "|| /usr/bin/bash CALLBACK_SCRIPT_PATH" with no args to represent failed build.
     cron_text = (
         f"* * * * * {UBUNTU_USER} {builder_exec_command} "
         f">> {OUTPUT_LOG_PATH} 2>&1; sudo rm {CRON_BUILD_IMMEDIATE_PATH}\n"
