@@ -5,6 +5,10 @@
 # <kbd>module</kbd> `charm.py`
 Entrypoint for GithubRunnerImageBuilder charm. 
 
+**Global Variables**
+---------------
+- **BUILD_SUCCESS_EVENT_NAME**
+- **OPENSTACK_IMAGE_ID_ENV**
 
 
 ---
@@ -27,7 +31,7 @@ Charm GitHubRunner image builder application.
  
  - <b>`on`</b>:  Represents custom events managed by cron. 
 
-<a href="../src/charm.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

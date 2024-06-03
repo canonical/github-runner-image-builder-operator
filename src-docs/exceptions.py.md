@@ -45,8 +45,8 @@ Represents an error while fetching the latest image.
 
 ---
 
-## <kbd>class</kbd> `ImageBuilderInstallError`
-Represents an error while installing github-runner-image-builder app. 
+## <kbd>class</kbd> `ImageBuilderInitializeError`
+Represents an error while initializing github-runner-image-builder app. 
 
 
 

@@ -6,33 +6,28 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import ops
 import pytest
 
 import builder
+import charm as charm_module
 import image
 import proxy
-from charm import GithubRunnerImageBuilderCharm, os
+from charm import BUILD_SUCCESS_EVENT_NAME, GithubRunnerImageBuilderCharm, os
 from state import CharmConfigInvalidError, CharmState
 
 
-@pytest.fixture(name="resurrect", scope="module")
-def resurrect_fixture():
-    """Mock resurrect observer."""
-    return MagicMock()
-
-
 @pytest.fixture(name="charm", scope="module")
-def charm_fixture(resurrect: MagicMock):
+def charm_fixture():
     """Mock charm fixture w/ framework."""
     # this is required since current ops does not support charmcraft.yaml
     mock_framework = MagicMock(spec=ops.framework.Framework)
     mock_framework.meta.actions = ["build-image"]
     mock_framework.meta.relations = ["image"]
     charm = GithubRunnerImageBuilderCharm(mock_framework)
-    charm.resurrect = resurrect
     return charm
 
 
@@ -77,6 +72,38 @@ def test_block_on_state_error(
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
 
 
+def test__create_callback_script(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given monkeypatched CALLBACK_SCRIPT_PATH.
+    act: when _create_callback_script is called.
+    assert: expected contents are written to path.
+    """
+    test_path = tmp_path / "test"
+    charm.unit.name = (test_unit_name := "test_unit_name")
+    charm.model.name = (test_model_name := "test_model_name")
+    monkeypatch.setattr(charm_module, "CALLBACK_SCRIPT_PATH", test_path)
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value=(test_dir := "test_charm_dir")))
+
+    charm._create_callback_script()
+
+    contents = test_path.read_text(encoding="utf-8")
+    assert (
+        contents
+        == f"""#! /bin/bash
+OPENSTACK_IMAGE_ID="$1"
+
+/usr/bin/juju-exec {test_unit_name} \
+JUJU_DISPATCH_PATH="hooks/{BUILD_SUCCESS_EVENT_NAME}" \
+JUJU_MODEL_NAME="{test_model_name}" \
+JUJU_UNIT_NAME="{test_unit_name}" \
+OPENSTACK_IMAGE_ID="$OPENSTACK_IMAGE_ID" \
+{test_dir}/dispatch
+"""
+    )
+
+
 def test__on_install_invalid_state(charm: GithubRunnerImageBuilderCharm):
     """
     arrange: given a monkeypatched _load_state internal method that returns false.
@@ -104,9 +131,11 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "setup_builder", (setup_mock := MagicMock()))
     monkeypatch.setattr(builder, "build_immediate", (run_mock := MagicMock()))
+    charm._create_callback_script = (create_callback := MagicMock())
 
     charm._on_install(MagicMock())
 
+    create_callback.assert_called_once()
     setup_mock.assert_called_once()
     run_mock.assert_called_once()
     assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")

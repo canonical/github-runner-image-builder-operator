@@ -19,7 +19,7 @@ from builder import (
     BaseImage,
     BuilderSetupError,
     DependencyInstallError,
-    ImageBuilderInstallError,
+    ImageBuilderInitializeError,
     apt,
     subprocess,
 )
@@ -31,19 +31,16 @@ def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
     act: when setup_builder is called.
     assert: BuilderSetupError is raised.
     """
-    monkeypatch.setattr(builder, "_create_callback_script", MagicMock())
     monkeypatch.setattr(
         builder,
-        "_install_image_builder",
-        MagicMock(side_effect=ImageBuilderInstallError("Failed to install image builder.")),
+        "_install_dependencies",
+        MagicMock(side_effect=DependencyInstallError("Failed to install dependencies.")),
     )
 
     with pytest.raises(BuilderSetupError) as exc:
-        builder.setup_builder(
-            callback_config=MagicMock(), cron_config=MagicMock(), cloud_config=MagicMock()
-        )
+        builder.setup_builder(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
 
-    assert "Failed to install image builder." in str(exc.getrepr())
+    assert "Failed to install dependencies." in str(exc.getrepr())
 
 
 def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
@@ -59,12 +56,7 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(
         builder,
-        "_create_callback_script",
-        (create_callback_script_mock := MagicMock()),
-    )
-    monkeypatch.setattr(
-        builder,
-        "_install_image_builder",
+        "_initialize_image_builder",
         (image_mock := MagicMock()),
     )
     monkeypatch.setattr(
@@ -78,12 +70,9 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
         (configure_cron_mock := MagicMock()),
     )
 
-    builder.setup_builder(
-        callback_config=MagicMock(), cron_config=MagicMock(), cloud_config=MagicMock()
-    )
+    builder.setup_builder(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
 
     deps_mock.assert_called_once()
-    create_callback_script_mock.assert_called_once()
     image_mock.assert_called_once()
     install_clouds_yaml_mock.assert_called_once()
     configure_cron_mock.assert_called_once()
@@ -123,39 +112,6 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     run_mock.assert_called_once()
 
 
-def test__create_callback_script(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    """
-    arrange: given monkeypatched CALLBACK_SCRIPT_PATH.
-    act: when _create_callback_script is called.
-    assert: expected contents are written to path.
-    """
-    test_path = tmp_path / "test"
-    monkeypatch.setattr(builder, "CALLBACK_SCRIPT_PATH", test_path)
-    test_config = builder.CallbackConfig(
-        model_name="test-model",
-        unit_name="test-unit/0",
-        charm_dir="test_dir",
-        hook_name="test-hook",
-    )
-
-    builder._create_callback_script(config=test_config)
-
-    contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""#! /bin/bash
-OPENSTACK_IMAGE_ID="$1"
-
-/usr/bin/juju-exec {test_config.unit_name} \
-JUJU_DISPATCH_PATH="hooks/{test_config.hook_name}" \
-JUJU_MODEL_NAME="{test_config.model_name}" \
-JUJU_UNIT_NAME="{test_config.unit_name}" \
-OPENSTACK_IMAGE_ID="$OPENSTACK_IMAGE_ID" \
-{test_config.charm_dir}/dispatch
-"""
-    )
-
-
 def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched subprocess.run function that raises an error.
@@ -172,8 +128,8 @@ def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
         ),
     )
 
-    with pytest.raises(ImageBuilderInstallError) as exc:
-        builder._install_image_builder()
+    with pytest.raises(ImageBuilderInitializeError) as exc:
+        builder._initialize_image_builder()
 
     assert "error running image builder install" in str(exc.getrepr())
 
@@ -227,7 +183,7 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_should_configure_cron", MagicMock(return_value=False))
     monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
 
-    builder.configure_cron(config=MagicMock())
+    builder.configure_cron(build_config=MagicMock(), interval=1)
 
     service_restart_mock.assert_not_called()
 
@@ -242,30 +198,31 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
     test_path = tmp_path / "test"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
-    test_config = builder.CronConfig(
+    test_interval = 1
+    test_config = builder.BuildConfig(
         arch=Arch.ARM64,
         base=BaseImage.JAMMY,
         app_name="test-app",
         cloud_name="test-cloud",
-        interval=5,
+        callback_script=test_path,
         num_revisions=5,
     )
 
-    builder.configure_cron(config=test_config)
+    builder.configure_cron(build_config=test_config, interval=test_interval)
 
     service_restart_mock.assert_called_once()
     cron_contents = test_path.read_text(encoding="utf-8")
     assert (
         cron_contents
-        == f"""0 */{test_config.interval} * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
+        == f"""0 */{test_interval} * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
 /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base {test_config.base.value} \
---cloud-name {test_config.cloud_name} \
---num-revisions {test_config.num_revisions} \
---callback-script-path /home/ubuntu/propagate_image_id \
---output-image-name {test_config.base.value}-{test_config.app_name}-\
-{test_config.arch.value} >> /home/ubuntu/github-runner-image-builder.log 2>&1
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+{test_config.cloud_name} \
+{test_config.base.value}-{test_config.app_name}-{test_config.arch.value} \
+--base-image {test_config.base.value} \
+--keep-revisions {test_config.num_revisions} \
+--callback-script {test_path} \
+>> /home/ubuntu/github-runner-image-builder.log 2>&1
 """
     )
 
@@ -308,12 +265,12 @@ class ShoudReconfigureCronInputs(NamedTuple):
     [
         pytest.param(
             """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base jammy \
---cloud-name test-cloud \
---num-revisions 5 \
---callback-script-path propagate_image_id \
---output-image-name output-image-name
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+test-cloud \
+output-image-name \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script propagate_image_id \
 """,
             ShoudReconfigureCronInputs(2, BaseImage.JAMMY, "test-cloud", 5),
             True,
@@ -321,51 +278,51 @@ class ShoudReconfigureCronInputs(NamedTuple):
         ),
         pytest.param(
             """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base noble \
---cloud-name test-cloud \
---num-revisions 5 \
---callback-script-path propagate_image_id \
---output-image-name output-image-name
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+test-cloud \
+output-image-name \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(2, BaseImage.JAMMY, "test-cloud", 5),
+            ShoudReconfigureCronInputs(2, BaseImage.NOBLE, "test-cloud", 5),
             True,
             id="image_base changed",
         ),
         pytest.param(
             """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base jammy \
---cloud-name test-cloud-changed \
---num-revisions 5 \
---callback-script-path propagate_image_id \
---output-image-name output-image-name
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+test-cloud \
+output-image-name \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 5),
+            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud-change", 5),
             True,
             id="cloud_name changed",
         ),
         pytest.param(
             """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base jammy \
---cloud-name test-cloud \
---num-revisions 2 \
---callback-script-path propagate_image_id \
---output-image-name output-image-name
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+test-cloud \
+output-image-name \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 5),
+            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 7),
             True,
             id="num_revisions changed",
         ),
         pytest.param(
             """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder build \
---image-base jammy \
---cloud-name test-cloud \
---num-revisions 5 \
---callback-script-path propagate_image_id \
---output-image-name output-image-name
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+test-cloud \
+output-image-name \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script propagate_image_id \
 """,
             ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 5),
             False,
@@ -400,29 +357,26 @@ def test__should_configure_cron(
     )
 
 
-def test_build_immediate(monkeypatch: pytest.MonkeyPatch):
+def test_build_immediate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """
     arrange: given a monkeypatched subprocess call.
     act: when build_immediate is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(
-        builder, "CRON_BUILD_IMMEDIATE_PATH", build_immediate_path_mock := MagicMock()
-    )
-    monkeypatch.setattr(builder.systemd, "service_restart", service_restart_mock := MagicMock())
-    testconfig = builder.CronConfig(
+    monkeypatch.setattr(builder.subprocess, "Popen", popen_mock := MagicMock())
+
+    testconfig = builder.BuildConfig(
         arch=Arch.ARM64,
         app_name="test",
         base=BaseImage.JAMMY,
         cloud_name="test",
-        interval=1,
         num_revisions=1,
+        callback_script=tmp_path,
     )
 
     builder.build_immediate(config=testconfig)
 
-    build_immediate_path_mock.write_text.assert_called_once()
-    service_restart_mock.assert_called_once()
+    popen_mock.assert_called_once()
 
 
 def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):

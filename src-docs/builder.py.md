@@ -9,20 +9,19 @@ Module for interacting with qemu image builder.
 ---------------
 - **UBUNTU_USER**
 - **APT_DEPENDENCIES**
-- **OPENSTACK_IMAGE_ID_ENV**
 - **IMAGE_NAME_TMPL**
 
 ---
 
-<a href="../src/builder.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `setup_builder`
 
 ```python
 setup_builder(
-    callback_config: CallbackConfig,
-    cron_config: CronConfig,
-    cloud_config: dict
+    build_config: BuildConfig,
+    cloud_config: dict,
+    interval: int
 ) → None
 ```
 
@@ -32,9 +31,9 @@ Configure the host machine to build images.
 
 **Args:**
  
- - <b>`callback_config`</b>:  Configuration values to create callbacks script. 
- - <b>`cron_config`</b>:  Configuration values to register cron to build images periodically. 
+ - <b>`build_config`</b>:  Configuration values to register cron to build images periodically. 
  - <b>`cloud_config`</b>:  The openstack clouds.yaml contents 
+ - <b>`interval`</b>:  The frequency in which the image builder should be triggered. 
 
 
 
@@ -45,7 +44,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -64,12 +63,12 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
 ```python
-configure_cron(config: CronConfig) → bool
+configure_cron(build_config: BuildConfig, interval: int) → bool
 ```
 
 Configure cron to run builder. 
@@ -78,7 +77,8 @@ Configure cron to run builder.
 
 **Args:**
  
- - <b>`config`</b>:  The configuration required to setup cron job to run builder periodically. 
+ - <b>`build_config`</b>:  The configuration required to run builder. 
+ - <b>`interval`</b>:  Number of hours in between image build runs. 
 
 
 
@@ -88,12 +88,12 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_immediate`
 
 ```python
-build_immediate(config: CronConfig) → None
+build_immediate(config: BuildConfig) → None
 ```
 
 Run a build immediately. 
@@ -107,7 +107,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -145,25 +145,7 @@ Fetch the latest image build ID.
 
 ---
 
-## <kbd>class</kbd> `CallbackConfig`
-Configuration for callback scripts. 
-
-
-
-**Attributes:**
- 
- - <b>`model_name`</b>:  Juju model name. 
- - <b>`unit_name`</b>:  Current juju application unit name. 
- - <b>`charm_dir`</b>:  Charm directory to trigger the juju hooks. 
- - <b>`hook_name`</b>:  The Juju hook to call after building image. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `CronConfig`
+## <kbd>class</kbd> `BuildConfig`
 Configurations for running builder periodically. 
 
 
@@ -173,8 +155,8 @@ Configurations for running builder periodically.
  - <b>`arch`</b>:  The machine architecture of the image to build with. 
  - <b>`app_name`</b>:  The charm application name, used to name Openstack image. 
  - <b>`base`</b>:  Ubuntu OS image to build from. 
+ - <b>`callback_script`</b>:  Path to callback script. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
- - <b>`interval`</b>:  The frequency in which the image builder should be triggered. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
 
 

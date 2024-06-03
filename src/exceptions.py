@@ -12,8 +12,8 @@ class DependencyInstallError(BuilderBaseError):
     """Represents an error while installing required dependencies."""
 
 
-class ImageBuilderInstallError(BuilderBaseError):
-    """Represents an error while installing github-runner-image-builder app."""
+class ImageBuilderInitializeError(BuilderBaseError):
+    """Represents an error while initializing github-runner-image-builder app."""
 
 
 class BuilderSetupError(BuilderBaseError):

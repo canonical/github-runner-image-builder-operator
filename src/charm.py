@@ -33,6 +33,11 @@ class ImageEvents(ops.CharmEvents):
     build_success = ops.EventSource(BuildSuccessEvent)
 
 
+BUILD_SUCCESS_EVENT_NAME = "build_success"
+CALLBACK_SCRIPT_PATH = builder.UBUNTU_HOME / "propagate_image_id"
+OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
+
+
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
     """Charm GitHubRunner image builder application.
 
@@ -66,6 +71,24 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(str(exc))
             return None
 
+    def _create_callback_script(self) -> None:
+        """Create callback script to propagate images."""
+        charm_dir = os.getenv("JUJU_CHARM_DIR")
+        cur_env = {
+            "JUJU_DISPATCH_PATH": f"hooks/{BUILD_SUCCESS_EVENT_NAME}",
+            "JUJU_MODEL_NAME": self.model.name,
+            "JUJU_UNIT_NAME": self.unit.name,
+            OPENSTACK_IMAGE_ID_ENV: "$OPENSTACK_IMAGE_ID",
+        }
+        env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
+        script_contents = f"""#! /bin/bash
+OPENSTACK_IMAGE_ID="$1"
+
+/usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
+"""
+        CALLBACK_SCRIPT_PATH.touch(exist_ok=True)
+        CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
+
     def _on_install(self, event: ops.InstallEvent) -> None:
         """Handle installation of the charm.
 
@@ -84,23 +107,19 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
 
         proxy.setup(proxy=state.proxy_config)
-        build_config = builder.CronConfig(
+        self._create_callback_script()
+        build_config = builder.BuildConfig(
             arch=state.image_config.arch,
             base=state.image_config.base_image,
             app_name=self.app.name,
+            callback_script=CALLBACK_SCRIPT_PATH,
             cloud_name=state.cloud_name,
-            interval=state.build_interval,
             num_revisions=state.revision_history_limit,
         )
         builder.setup_builder(
-            callback_config=builder.CallbackConfig(
-                model_name=self.model.name,
-                unit_name=self.unit.name,
-                charm_dir=os.getenv("JUJU_CHARM_DIR"),
-                hook_name="build_success",
-            ),
-            cron_config=build_config,
+            build_config=build_config,
             cloud_config=state.cloud_config,
+            interval=state.build_interval,
         )
         builder.build_immediate(config=build_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
@@ -113,21 +132,21 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         proxy.configure_aproxy(proxy=state.proxy_config)
         builder.install_clouds_yaml(cloud_config=state.cloud_config)
-        build_config = builder.CronConfig(
+        build_config = builder.BuildConfig(
             arch=state.image_config.arch,
             app_name=self.app.name,
             base=state.image_config.base_image,
+            callback_script=CALLBACK_SCRIPT_PATH,
             cloud_name=state.cloud_name,
-            interval=state.build_interval,
             num_revisions=state.revision_history_limit,
         )
-        if builder.configure_cron(config=build_config):
+        if builder.configure_cron(build_config=build_config, interval=state.build_interval):
             builder.build_immediate(config=build_config)
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_success(self, _: BuildSuccessEvent) -> None:
         """Handle cron fired event."""
-        image_id = os.getenv(builder.OPENSTACK_IMAGE_ID_ENV, "")
+        image_id = os.getenv(OPENSTACK_IMAGE_ID_ENV, "")
         if not image_id:
             self.unit.status = ops.ActiveStatus(
                 f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
