@@ -33,7 +33,7 @@ UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
 
 APT_DEPENDENCIES = [
     "pipx",
-    # Required to build using pipx
+    # Required to build github-runner-image-builder using pipx
     "python3-dev",
     "gcc",
 ]
