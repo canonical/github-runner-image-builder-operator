@@ -37,6 +37,7 @@ APT_DEPENDENCIES = [
     "python3-dev",
     "gcc",
 ]
+CALLBACK_SCRIPT_PATH = UBUNTU_HOME / "on_build_success_callback.sh"
 CRON_PATH = Path("/etc/cron.d")
 CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
@@ -53,17 +54,16 @@ class BuildConfig:
         arch: The machine architecture of the image to build with.
         app_name: The charm application name, used to name Openstack image.
         base: Ubuntu OS image to build from.
-        callback_script: Path to callback script.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         num_revisions: Number of images to keep before deletion.
+        callback_script: Path to callback script.
     """
 
     arch: Arch
-    app_name: str
     base: BaseImage
-    callback_script: Path
     cloud_name: str
     num_revisions: int
+    callback_script: Path = CALLBACK_SCRIPT_PATH
 
 
 def setup_builder(build_config: BuildConfig, cloud_config: dict, interval: int) -> None:

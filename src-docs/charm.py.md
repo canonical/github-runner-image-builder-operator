@@ -10,6 +10,50 @@ Entrypoint for GithubRunnerImageBuilder charm.
 - **BUILD_SUCCESS_EVENT_NAME**
 - **OPENSTACK_IMAGE_ID_ENV**
 
+---
+
+<a href="../src/charm.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `block_if_invalid_config`
+
+```python
+block_if_invalid_config(defer: bool = False)
+```
+
+Create a decorator that puts the charm in blocked state if the config is wrong. 
+
+
+
+**Args:**
+ 
+ - <b>`defer`</b>:  whether to defer the event. 
+
+
+
+**Returns:**
+ the function decorator. 
+
+
+---
+
+## <kbd>class</kbd> `BuildEvents`
+Represents events triggered by image builder callback. 
+
+
+
+**Attributes:**
+ 
+ - <b>`build_success`</b>:  Represents a successful image build event. 
+
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
+
+
+
 
 ---
 
@@ -31,7 +75,7 @@ Charm GitHubRunner image builder application.
  
  - <b>`on`</b>:  Represents custom events managed by cron. 
 
-<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -93,22 +137,28 @@ Unit that this execution is responsible for.
 
 ---
 
-## <kbd>class</kbd> `ImageEvents`
-Represents events triggered by image builder callback. 
+## <kbd>class</kbd> `GithubRunnerImageBuilderCharmProtocol`
+Protocol to use for the decorator to block if invalid. 
 
 
-
-**Attributes:**
- 
- - <b>`build_success`</b>:  Represents a successful image build event. 
 
 
 ---
 
-#### <kbd>property</kbd> model
+<a href="../src/charm.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-Shortcut for more simple access the model. 
+### <kbd>function</kbd> `update_status`
+
+```python
+update_status(status: StatusBase) → None
+```
+
+Update the application and unit status. 
 
 
+
+**Args:**
+ 
+ - <b>`status`</b>:  the desired unit status. 
 
 

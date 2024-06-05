@@ -13,7 +13,7 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `setup_builder`
 
@@ -44,7 +44,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -63,7 +63,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -88,7 +88,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_immediate`
 
@@ -107,17 +107,12 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
 ```python
-get_latest_image(
-    base: BaseImage,
-    app_name: str,
-    arch: Arch,
-    cloud_name: str
-) → str
+get_latest_image(arch: Arch, base: BaseImage, cloud_name: str) → str
 ```
 
 Fetch the latest image build ID. 
@@ -126,7 +121,6 @@ Fetch the latest image build ID.
 
 **Args:**
  
- - <b>`app_name`</b>:  The current charm application name. 
  - <b>`arch`</b>:  The machine architecture the image was built with. 
  - <b>`base`</b>:  Ubuntu OS image to build from. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
@@ -153,11 +147,10 @@ Configurations for running builder periodically.
 **Attributes:**
  
  - <b>`arch`</b>:  The machine architecture of the image to build with. 
- - <b>`app_name`</b>:  The charm application name, used to name Openstack image. 
  - <b>`base`</b>:  Ubuntu OS image to build from. 
- - <b>`callback_script`</b>:  Path to callback script. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
+ - <b>`callback_script`</b>:  Path to callback script. 
 
 
 

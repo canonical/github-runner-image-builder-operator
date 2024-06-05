@@ -86,8 +86,9 @@ OPENSTACK_IMAGE_ID="$1"
 
 /usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
 """
-        CALLBACK_SCRIPT_PATH.touch(exist_ok=True)
-        CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
+        builder.CALLBACK_SCRIPT_PATH.touch(exist_ok=True)
+        builder.CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
+        builder.CALLBACK_SCRIPT_PATH.chmod(0o755)
 
     def _on_install(self, event: ops.InstallEvent) -> None:
         """Handle installation of the charm.
@@ -111,8 +112,7 @@ OPENSTACK_IMAGE_ID="$1"
         build_config = builder.BuildConfig(
             arch=state.image_config.arch,
             base=state.image_config.base_image,
-            app_name=self.app.name,
-            callback_script=CALLBACK_SCRIPT_PATH,
+            callback_script=builder.CALLBACK_SCRIPT_PATH.relative_to(builder.UBUNTU_HOME),
             cloud_name=state.cloud_name,
             num_revisions=state.revision_history_limit,
         )
@@ -134,9 +134,8 @@ OPENSTACK_IMAGE_ID="$1"
         builder.install_clouds_yaml(cloud_config=state.cloud_config)
         build_config = builder.BuildConfig(
             arch=state.image_config.arch,
-            app_name=self.app.name,
             base=state.image_config.base_image,
-            callback_script=CALLBACK_SCRIPT_PATH,
+            callback_script=builder.CALLBACK_SCRIPT_PATH.relative_to(builder.UBUNTU_HOME),
             cloud_name=state.cloud_name,
             num_revisions=state.revision_history_limit,
         )

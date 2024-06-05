@@ -61,9 +61,8 @@ class Observer(ops.Object):
             return
 
         image_id = builder.get_latest_image(
-            base=state.image_config.base_image,
-            app_name=self.charm.app.name,
             arch=state.image_config.arch,
+            base=state.image_config.base_image,
             cloud_name=state.cloud_name,
         )
         if not image_id:
