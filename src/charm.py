@@ -20,11 +20,15 @@ from state import CharmConfigInvalidError, CharmState
 logger = logging.getLogger(__name__)
 
 
+BUILD_SUCCESS_EVENT_NAME = "build_success"
+OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
+
+
 class BuildSuccessEvent(ops.EventBase):
     """Represents a successful image build event."""
 
 
-class ImageEvents(ops.CharmEvents):
+class BuildEvents(ops.CharmEvents):
     """Represents events triggered by image builder callback.
 
     Attributes:
