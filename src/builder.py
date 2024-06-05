@@ -43,7 +43,7 @@ CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 OUTPUT_LOG_PATH = UBUNTU_HOME / "github-runner-image-builder.log"
-IMAGE_NAME_TMPL = "{IMAGE_BASE}-{APP_NAME}-{ARCH}"
+IMAGE_NAME_TMPL = "{IMAGE_BASE}-{ARCH}"
 
 
 @dataclass
@@ -52,7 +52,6 @@ class BuildConfig:
 
     Attributes:
         arch: The machine architecture of the image to build with.
-        app_name: The charm application name, used to name Openstack image.
         base: Ubuntu OS image to build from.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         num_revisions: Number of images to keep before deletion.
@@ -170,7 +169,6 @@ def configure_cron(build_config: BuildConfig, interval: int) -> bool:
             build_config.cloud_name,
             IMAGE_NAME_TMPL.format(
                 IMAGE_BASE=build_config.base.value,
-                APP_NAME=build_config.app_name,
                 ARCH=build_config.arch.value,
             ),
             "--base-image",
@@ -241,7 +239,6 @@ def build_immediate(config: BuildConfig) -> None:
                 config.cloud_name,
                 IMAGE_NAME_TMPL.format(
                     IMAGE_BASE=config.base.value,
-                    APP_NAME=config.app_name,
                     ARCH=config.arch.value,
                 ),
                 "--base-image",
@@ -253,20 +250,21 @@ def build_immediate(config: BuildConfig) -> None:
                 ">>",
                 str(OUTPUT_LOG_PATH),
                 "2>&1",
+                "&",
             ]
         ),
         # run as shell for log redirection, the command is trusted
         shell=True,  # nosec: B602
         user=UBUNTU_USER,
         cwd=UBUNTU_HOME,
+        env={},
     )
 
 
-def get_latest_image(base: BaseImage, app_name: str, arch: Arch, cloud_name: str) -> str:
+def get_latest_image(arch: Arch, base: BaseImage, cloud_name: str) -> str:
     """Fetch the latest image build ID.
 
     Args:
-        app_name: The current charm application name.
         arch: The machine architecture the image was built with.
         base: Ubuntu OS image to build from.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
@@ -283,11 +281,9 @@ def get_latest_image(base: BaseImage, app_name: str, arch: Arch, cloud_name: str
                 "/usr/bin/sudo",
                 "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER),
-                "get",
-                "--cloud-name",
+                "latest-build-id",
                 cloud_name,
-                "--output-image-name",
-                IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, APP_NAME=app_name, ARCH=arch.value),
+                IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, ARCH=arch.value),
             ],
             check=True,
             user=UBUNTU_USER,
