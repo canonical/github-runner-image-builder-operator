@@ -187,22 +187,22 @@ class RunConfig:
     Attributes:
         arch: The machine architecture of the image to build with.
         base: Ubuntu OS image to build from.
+        cloud_config: The Openstack clouds.yaml passed as charm config.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         num_revisions: Number of images to keep before deletion.
         callback_script: Path to callback script.
     """
 
-    _cloud_config: dict[str, Any]
     arch: Arch
     base: BaseImage
-    cloud_name: str
+    cloud_config: dict[str, Any]
     num_revisions: int
     callback_script: pathlib.Path = builder.CALLBACK_SCRIPT_PATH
 
     @property
     def cloud_name(self) -> str:
         """The cloud name from cloud_config."""
-        return list(self._cloud_config["clouds"].keys())[0]
+        return list(self.cloud_config["clouds"].keys())[0]
 
     @classmethod
     def from_charm(cls, charm: CharmBase) -> "RunConfig":
@@ -243,9 +243,9 @@ class RunConfig:
             raise BuildConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
-            _cloud_config=cloud_config,
             arch=arch,
             base=base_image,
+            cloud_config=cloud_config,
             num_revisions=revision_history_limit,
         )
 
@@ -344,12 +344,10 @@ class BuilderInitConfig:
 
     Attributes:
         run_config: The configuration required to build the image.
-        cloud_config: The Openstack clouds.yaml passed as charm config.
         interval: The interval in hours between each scheduled image builds.
     """
 
     run_config: RunConfig
-    cloud_config: dict[str, Any]
     interval: int
 
     @classmethod
@@ -368,7 +366,7 @@ class BuilderInitConfig:
         try:
             run_config = RunConfig.from_charm(charm=charm)
         except BuildConfigInvalidError as exc:
-            raise BuilderSetupConfigInvalidError from exc
+            raise BuilderSetupConfigInvalidError(msg="Invalid run config.") from exc
 
         try:
             build_interval = _parse_build_interval(charm)
@@ -377,6 +375,5 @@ class BuilderInitConfig:
 
         return cls(
             run_config=run_config,
-            cloud_config=run_config._cloud_config,
             interval=build_interval,
         )

@@ -31,7 +31,9 @@ C = typing.TypeVar("C", bound=GithubRunnerImageBuilderCharmProtocol)
 E = typing.TypeVar("E", bound=ops.EventBase)
 
 
-def block_if_invalid_config(defer: bool = False):
+def block_if_invalid_config(
+    defer: bool = False,
+) -> typing.Callable[[typing.Callable[[C, E], None]], typing.Callable[[C, E], None]]:
     """Create a decorator that puts the charm in blocked state if the config is wrong.
 
     Args:

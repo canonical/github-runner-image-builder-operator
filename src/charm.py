@@ -97,7 +97,7 @@ OPENSTACK_IMAGE_ID="$1"
         """Handle charm configuration change events."""
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
-        builder.install_clouds_yaml(cloud_config=init_config.cloud_config)
+        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         if builder.configure_cron(
             run_config=init_config.run_config, interval=init_config.interval
         ):
