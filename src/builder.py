@@ -10,20 +10,19 @@ import os
 # nosec: B603 is applied across subprocess.run calls since we are calling with predefined
 # inputs.
 import subprocess  # nosec
-from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1 import systemd
 
+import state
 from exceptions import (
     BuilderSetupError,
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
 )
-from state import Arch, BaseImage
 
 logger = logging.getLogger(__name__)
 
@@ -46,32 +45,11 @@ OUTPUT_LOG_PATH = UBUNTU_HOME / "github-runner-image-builder.log"
 IMAGE_NAME_TMPL = "{IMAGE_BASE}-{ARCH}"
 
 
-@dataclass
-class BuildConfig:
-    """Configurations for running builder periodically.
-
-    Attributes:
-        arch: The machine architecture of the image to build with.
-        base: Ubuntu OS image to build from.
-        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
-        num_revisions: Number of images to keep before deletion.
-        callback_script: Path to callback script.
-    """
-
-    arch: Arch
-    base: BaseImage
-    cloud_name: str
-    num_revisions: int
-    callback_script: Path = CALLBACK_SCRIPT_PATH
-
-
-def setup_builder(build_config: BuildConfig, cloud_config: dict, interval: int) -> None:
+def setup_builder(setup_config: state.BuilderSetupConfig) -> None:
     """Configure the host machine to build images.
 
     Args:
-        build_config: Configuration values to register cron to build images periodically.
-        cloud_config: The openstack clouds.yaml contents
-        interval: The frequency in which the image builder should be triggered.
+        setup_config: Configuration values required to initialize the builder.
 
     Raises:
         BuilderSetupError: If there was an error setting up the host device for building images.
@@ -79,8 +57,8 @@ def setup_builder(build_config: BuildConfig, cloud_config: dict, interval: int) 
     try:
         _install_dependencies()
         _initialize_image_builder()
-        install_clouds_yaml(cloud_config=cloud_config)
-        configure_cron(build_config=build_config, interval=interval)
+        install_clouds_yaml(cloud_config=setup_config.cloud_config)
+        configure_cron(build_config=setup_config.build_config, interval=setup_config.interval)
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
         raise BuilderSetupError from exc
 
@@ -139,7 +117,7 @@ def install_clouds_yaml(cloud_config: dict) -> None:
         OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
 
 
-def configure_cron(build_config: BuildConfig, interval: int) -> bool:
+def configure_cron(build_config: state.BuildConfig, interval: int) -> bool:
     """Configure cron to run builder.
 
     Args:
@@ -189,7 +167,7 @@ def configure_cron(build_config: BuildConfig, interval: int) -> bool:
 
 
 def _should_configure_cron(
-    interval: int, image_base: BaseImage, cloud_name: str, num_revisions: int
+    interval: int, image_base: state.BaseImage, cloud_name: str, num_revisions: int
 ) -> bool:
     """Determine whether changes to cron should be applied.
 
@@ -218,7 +196,7 @@ def _should_configure_cron(
     )
 
 
-def build_immediate(config: BuildConfig) -> None:
+def build_immediate(config: state.BuildConfig) -> None:
     """Run a build immediately.
 
     Args:
@@ -261,7 +239,7 @@ def build_immediate(config: BuildConfig) -> None:
     )
 
 
-def get_latest_image(arch: Arch, base: BaseImage, cloud_name: str) -> str:
+def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -> str:
     """Fetch the latest image build ID.
 
     Args:

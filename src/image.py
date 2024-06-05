@@ -9,7 +9,8 @@ from typing import TypedDict
 import ops
 
 import builder
-from state import CharmConfigInvalidError, CharmState
+import charm_utils
+import state
 
 logger = logging.getLogger(__name__)
 
@@ -42,28 +43,14 @@ class Observer(ops.Object):
             charm.on[IMAGE_RELATION].relation_joined, self._on_image_relation_joined
         )
 
-    def _load_state(self) -> CharmState | None:
-        """Load the charm state if valid, set charm to blocked if otherwise.
-
-        Returns:
-            Initialized charm state if valid charm state. None if invalid charm state was found.
-        """
-        try:
-            return CharmState.from_charm(self.charm)
-        except CharmConfigInvalidError as exc:
-            self.charm.unit.status = ops.BlockedStatus(str(exc))
-            return None
-
+    @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_joined(self, _: ops.RelationJoinedEvent) -> None:
         """Handle the image relation joined event."""
-        state = self._load_state()
-        if not state:
-            return
-
+        build_config = state.BuildConfig.from_charm(self)
         image_id = builder.get_latest_image(
-            arch=state.image_config.arch,
-            base=state.image_config.base_image,
-            cloud_name=state.cloud_name,
+            arch=build_config.arch,
+            base=build_config.base,
+            cloud_name=build_config.cloud_name,
         )
         if not image_id:
             logger.warning("Image not yet ready.")

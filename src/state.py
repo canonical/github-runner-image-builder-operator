@@ -6,6 +6,7 @@
 import dataclasses
 import logging
 import os
+import pathlib
 import platform
 from enum import Enum
 from typing import Any, Optional, cast
@@ -13,7 +14,13 @@ from typing import Any, Optional, cast
 import yaml
 from ops import CharmBase
 
+import builder
+
 logger = logging.getLogger(__name__)
+
+ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
+ARCHITECTURES_X86 = {"x86_64"}
+LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
@@ -21,6 +28,8 @@ OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "openstack-clouds-yaml"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
 
+# Step down formatting is not applied here since classes need to be predefined to be used as class
+# definitions of the CharmState class.
 class Arch(str, Enum):
     """Supported system architectures.
 
@@ -65,10 +74,6 @@ class UnsupportedArchitectureError(Exception):
         self.arch = arch
 
 
-ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
-ARCHITECTURES_X86 = {"x86_64"}
-
-
 def _get_supported_arch() -> Arch:
     """Get current machine architecture.
 
@@ -86,9 +91,6 @@ def _get_supported_arch() -> Arch:
             return Arch.X64
         case _:
             raise UnsupportedArchitectureError(arch=arch)
-
-
-LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 
 class BaseImage(str, Enum):
@@ -126,53 +128,126 @@ class BaseImage(str, Enum):
         return cls(image_name)
 
 
-class InvalidImageConfigError(Exception):
-    """Represents an error with invalid image config."""
-
-
-@dataclasses.dataclass(frozen=True)
-class ImageConfig:
-    """The charm configuration values related to image.
+@dataclasses.dataclass
+class ProxyConfig:
+    """Proxy configuration.
 
     Attributes:
-        arch: The underlying compute architecture, i.e. x86_64, amd64, arm64/aarch64.
-        base_image: The ubuntu base image to run the runner virtual machines on.
+        http: HTTP proxy address.
+        https: HTTPS proxy address.
+        no_proxy: Comma-separated list of hosts that should not be proxied.
     """
 
-    arch: Arch
-    base_image: BaseImage
+    http: str
+    https: str
+    no_proxy: str
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "ImageConfig":
-        """Initialize image config from charm instance.
+    # Use optional instead of | operator due to unsupported str | None operand.
+    def from_env(cls) -> Optional["ProxyConfig"]:
+        """Initialize the proxy config from charm.
+
+        Returns:
+            Current proxy config of the charm.
+        """
+        http_proxy = os.getenv("JUJU_CHARM_HTTP_PROXY", "")
+        https_proxy = os.getenv("JUJU_CHARM_HTTPS_PROXY", "")
+        no_proxy = os.getenv("JUJU_CHARM_NO_PROXY", "")
+
+        if not (https_proxy and http_proxy):
+            return None
+
+        return cls(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
+
+
+class CharmConfigInvalidError(Exception):
+    """Raised when charm config is invalid.
+
+    Attributes:
+        msg: Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the CharmConfigInvalidError exception.
+
+        Args:
+            msg: Explanation of the error.
+        """
+        self.msg = msg
+
+
+class BuildConfigInvalidError(CharmConfigInvalidError):
+    """Raised when charm config related to image build config is invalid."""
+
+
+@dataclasses.dataclass
+class BuildConfig:
+    """Configurations for running builder periodically.
+
+    Attributes:
+        arch: The machine architecture of the image to build with.
+        base: Ubuntu OS image to build from.
+        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        num_revisions: Number of images to keep before deletion.
+        callback_script: Path to callback script.
+    """
+
+    _cloud_config: dict[str, Any]
+    arch: Arch
+    base: BaseImage
+    cloud_name: str
+    num_revisions: int
+    callback_script: pathlib.Path = builder.CALLBACK_SCRIPT_PATH
+
+    @property
+    def cloud_name(self) -> str:
+        """The cloud name from cloud_config."""
+        return list(self._cloud_config["clouds"].keys())[0]
+
+    @classmethod
+    def from_charm(cls, charm: CharmBase) -> "BuildConfig":
+        """Initialize build state from current charm instance.
 
         Args:
             charm: The running charm instance.
 
         Raises:
-            InvalidImageConfigError: If an invalid image configuration value has been set.
+            BuildConfigInvalidError: If there was an invalid configuration on the charm.
 
         Returns:
-            Current charm image configuration state.
+            Current charm state.
         """
         try:
             arch = _get_supported_arch()
         except UnsupportedArchitectureError as exc:
-            raise InvalidImageConfigError(
-                f"Unsupported architecture {exc.arch}, please deploy on a supported architecture."
-            ) from exc
+            raise BuildConfigInvalidError("Unsupported architecture") from exc
 
         try:
             base_image = BaseImage.from_charm(charm)
         except ValueError as exc:
-            raise InvalidImageConfigError(
+            raise BuildConfigInvalidError(
                 (
                     "Unsupported input option for base-image, please re-configure the base-image "
                     "option."
                 )
             ) from exc
 
-        return cls(arch=arch, base_image=base_image)
+        try:
+            cloud_config = _parse_openstack_clouds_config(charm)
+        except InvalidCloudConfigError as exc:
+            raise BuildConfigInvalidError(msg=str(exc)) from exc
+
+        try:
+            revision_history_limit = _parse_revision_history_limit(charm)
+        except ValueError as exc:
+            raise BuildConfigInvalidError(msg=str(exc)) from exc
+
+        return cls(
+            _cloud_config=cloud_config,
+            arch=arch,
+            base=base_image,
+            num_revisions=revision_history_limit,
+        )
 
 
 def _parse_build_interval(charm: CharmBase) -> int:
@@ -259,115 +334,49 @@ def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
     return openstack_clouds_yaml
 
 
-@dataclasses.dataclass
-class ProxyConfig:
-    """Proxy configuration.
-
-    Attributes:
-        http: HTTP proxy address.
-        https: HTTPS proxy address.
-        no_proxy: Comma-separated list of hosts that should not be proxied.
-    """
-
-    http: str
-    https: str
-    no_proxy: str
-
-    @classmethod
-    # Use optional instead of | operator due to unsupported str | None operand.
-    def from_env(cls) -> Optional["ProxyConfig"]:
-        """Initialize the proxy config from charm.
-
-        Returns:
-            Current proxy config of the charm.
-        """
-        http_proxy = os.getenv("JUJU_CHARM_HTTP_PROXY", "")
-        https_proxy = os.getenv("JUJU_CHARM_HTTPS_PROXY", "")
-        no_proxy = os.getenv("JUJU_CHARM_NO_PROXY", "")
-
-        if not (https_proxy and http_proxy):
-            return None
-
-        return cls(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
-
-
-class CharmConfigInvalidError(Exception):
-    """Raised when charm config is invalid.
-
-    Attributes:
-        msg: Explanation of the error.
-    """
-
-    def __init__(self, msg: str):
-        """Initialize a new instance of the CharmConfigInvalidError exception.
-
-        Args:
-            msg: Explanation of the error.
-        """
-        self.msg = msg
+class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
+    """Raised when charm config related to image build setup config is invalid."""
 
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:
-    """The charm state.
+class BuilderSetupConfig:
+    """The image builder setup config.
 
     Attributes:
-        build_interval: The interval in hours between each scheduled image builds.
+        build_config: The configuration required to build the image.
         cloud_config: The Openstack clouds.yaml passed as charm config.
-        cloud_name: The cloud name to use from cloud_config.
-        image_config: The charm configuration values related to image.
-        proxy_config: The charm proxy configuration variables.
-        revision_history_limit: The number of image revisions to keep.
+        interval: The interval in hours between each scheduled image builds.
     """
 
-    build_interval: int
+    build_config: BuildConfig
     cloud_config: dict[str, Any]
-    image_config: ImageConfig
-    proxy_config: ProxyConfig | None
-    revision_history_limit: int
-
-    @property
-    def cloud_name(self) -> str:
-        """The cloud name from cloud_config."""
-        return list(self.cloud_config["clouds"].keys())[0]
+    interval: int
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "CharmState":
+    def from_charm(cls, charm: CharmBase) -> "BuilderSetupConfig":
         """Initialize charm state from current charm instance.
 
         Args:
             charm: The running charm instance.
 
         Raises:
-            CharmConfigInvalidError: If there was an invalid configuration on the charm.
+            BuilderSetupConfigInvalidError: If there was an invalid configuration on the charm.
 
         Returns:
             Current charm state.
         """
         try:
-            image_config = ImageConfig.from_charm(charm)
-        except InvalidImageConfigError as exc:
-            raise CharmConfigInvalidError(msg=str(exc)) from exc
+            build_config = BuildConfig.from_charm(charm=charm)
+        except BuildConfigInvalidError as exc:
+            raise BuilderSetupConfigInvalidError from exc
 
         try:
             build_interval = _parse_build_interval(charm)
         except ValueError as exc:
-            raise CharmConfigInvalidError(msg=str(exc)) from exc
-
-        try:
-            cloud_config = _parse_openstack_clouds_config(charm)
-        except InvalidCloudConfigError as exc:
-            raise CharmConfigInvalidError(msg=str(exc)) from exc
-
-        try:
-            revision_history_limit = _parse_revision_history_limit(charm)
-        except ValueError as exc:
-            raise CharmConfigInvalidError(msg=str(exc)) from exc
+            raise BuilderSetupConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
-            build_interval=build_interval,
-            cloud_config=cloud_config,
-            image_config=image_config,
-            proxy_config=ProxyConfig.from_env(),
-            revision_history_limit=revision_history_limit,
+            build_config=build_config,
+            cloud_config=build_config._cloud_config,
+            interval=build_interval,
         )

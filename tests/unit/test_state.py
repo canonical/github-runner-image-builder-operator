@@ -429,7 +429,7 @@ def test_charm_state_invalid(
     charm = MockCharmFactory()
 
     with pytest.raises(CharmConfigInvalidError) as exc:
-        state.CharmState.from_charm(charm)
+        state.BuilderSetupConfig.from_charm(charm)
 
     assert expected_message in str(exc.getrepr())
 
@@ -444,8 +444,8 @@ def test_charm_state(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(os, "environ", {})
 
     charm = MockCharmFactory()
-    result = state.CharmState.from_charm(charm)
-    assert result == state.CharmState(
+    result = state.BuilderSetupConfig.from_charm(charm)
+    assert result == state.BuilderSetupConfig(
         build_interval=int(charm.config[BUILD_INTERVAL_CONFIG_NAME]),
         cloud_config=yaml.safe_load(charm.config[OPENSTACK_CLOUDS_YAML_CONFIG_NAME]),
         image_config=ImageConfig(
