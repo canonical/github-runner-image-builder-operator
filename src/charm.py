@@ -5,9 +5,10 @@
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
+import functools
 import logging
 import os
-from typing import Any
+import typing
 
 import ops
 
@@ -33,9 +34,66 @@ class ImageEvents(ops.CharmEvents):
     build_success = ops.EventSource(BuildSuccessEvent)
 
 
-BUILD_SUCCESS_EVENT_NAME = "build_success"
-CALLBACK_SCRIPT_PATH = builder.UBUNTU_HOME / "propagate_image_id"
-OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
+class GithubRunnerImageBuilderCharmProtocol(
+    typing.Protocol
+):  # pylint: disable=too-few-public-methods
+    """Protocol to use for the decorator to block if invalid."""
+
+    def update_status(self, status: ops.StatusBase) -> None:
+        """Update the application and unit status.
+
+        Args:
+            status: the desired unit status.
+        """
+
+
+C = typing.TypeVar("C", bound=GithubRunnerImageBuilderCharmProtocol)
+E = typing.TypeVar("E", bound=ops.EventBase)
+
+
+def block_if_invalid_config(defer: bool = False):
+    """Create a decorator that puts the charm in blocked state if the config is wrong.
+
+    Args:
+        defer: whether to defer the event.
+
+    Returns:
+        the function decorator.
+    """
+
+    def decorator(method: typing.Callable[[C, E], None]) -> typing.Callable[[C, E], None]:
+        """Create a decorator that puts the charm in blocked state if the config is wrong.
+
+        Args:
+            method: observer method to wrap.
+
+        Returns:
+            the function wrapper.
+        """
+
+        @functools.wraps(method)
+        def wrapper(instance: C, event: E) -> None:
+            """Block the charm if the config is wrong.
+
+            Args:
+                instance: the instance of the class with the hook method.
+                event: the event for the observer
+
+            Returns:
+                The value returned from the original function. That is, None.
+            """
+            try:
+                return method(instance, event)
+            except CharmConfigInvalidError as exc:
+                if defer:
+                    event.defer()
+                logger.exception("Wrong Charm Configuration")
+                instance.update_status(ops.BlockedStatus(exc.msg))
+                return None
+
+        return wrapper
+
+    return decorator
 
 
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
@@ -45,9 +103,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         on: Represents custom events managed by cron.
     """
 
-    on = ImageEvents()
+    on = BuildEvents()
 
-    def __init__(self, *args: Any):
+    def __init__(self, *args: typing.Any):
         """Initialize the charm.
 
         Args:
@@ -65,11 +123,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Returns:
             Initialized charm state if valid charm state. None if invalid charm state was found.
         """
-        try:
-            return CharmState.from_charm(self)
-        except CharmConfigInvalidError as exc:
-            self.unit.status = ops.BlockedStatus(str(exc))
-            return None
+        return CharmState.from_charm(self)
 
     def _create_callback_script(self) -> None:
         """Create callback script to propagate images."""
@@ -90,23 +144,15 @@ OPENSTACK_IMAGE_ID="$1"
         builder.CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
         builder.CALLBACK_SCRIPT_PATH.chmod(0o755)
 
-    def _on_install(self, event: ops.InstallEvent) -> None:
+    @block_if_invalid_config(defer=True)
+    def _on_install(self, _: ops.InstallEvent) -> None:
         """Handle installation of the charm.
 
         Installs apt packages required to build the image.
 
-        Args:
-            event: The event fired on install hook.
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
-        state = self._load_state()
-        if not state:
-            # Defer this event since on install should be re-triggered to setup dependencies for
-            # the charm. Since the charm goes into blocked state and the user reconfigures the
-            # state, config_changed event should be queued after the deferred on_install.
-            event.defer()
-            return
-
+        state = CharmState.from_charm(self)
         proxy.setup(proxy=state.proxy_config)
         self._create_callback_script()
         build_config = builder.BuildConfig(
@@ -124,12 +170,10 @@ OPENSTACK_IMAGE_ID="$1"
         builder.build_immediate(config=build_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
+    @block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
-        state = self._load_state()
-        if not state:
-            return
-
+        state = CharmState.from_charm(self)
         proxy.configure_aproxy(proxy=state.proxy_config)
         builder.install_clouds_yaml(cloud_config=state.cloud_config)
         build_config = builder.BuildConfig(
