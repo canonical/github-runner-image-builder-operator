@@ -1,11 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# This file configures Charmcraft.
-# See https://juju.is/docs/sdk/charmcraft-yaml for guidance.
-
-# The charm package name, no spaces (required)
-# See https://juju.is/docs/sdk/naming#heading--naming-charms for guidance.
 name: github-runner-image-builder
 title: Github runner image builder
 summary: Provide Github runners with images available to use.
