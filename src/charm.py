@@ -74,7 +74,6 @@ OPENSTACK_IMAGE_ID="$1"
 
 /usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
 """
-        builder.CALLBACK_SCRIPT_PATH.touch(exist_ok=True)
         builder.CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
         builder.CALLBACK_SCRIPT_PATH.chmod(0o755)
 
@@ -88,21 +87,21 @@ OPENSTACK_IMAGE_ID="$1"
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
         self._create_callback_script()
-        setup_config = state.BuilderSetupConfig.from_charm(self)
-        builder.setup_builder(setup_config=setup_config)
-        builder.build_immediate(config=setup_config.build_config)
+        init_config = state.BuilderInitConfig.from_charm(self)
+        builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
+        builder.run(config=init_config.run_config)
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        setup_config = state.BuilderSetupConfig.from_charm(self)
-        builder.install_clouds_yaml(cloud_config=setup_config.cloud_config)
+        init_config = state.BuilderInitConfig.from_charm(self)
+        builder.install_clouds_yaml(cloud_config=init_config.cloud_config)
         if builder.configure_cron(
-            build_config=setup_config.build_config, interval=setup_config.interval
+            run_config=init_config.run_config, interval=init_config.interval
         ):
-            builder.build_immediate(config=setup_config.build_config)
+            builder.run(config=init_config.run_config)
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_success(self, _: BuildSuccessEvent) -> None:

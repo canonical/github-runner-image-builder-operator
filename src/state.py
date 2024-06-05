@@ -181,7 +181,7 @@ class BuildConfigInvalidError(CharmConfigInvalidError):
 
 
 @dataclasses.dataclass
-class BuildConfig:
+class RunConfig:
     """Configurations for running builder periodically.
 
     Attributes:
@@ -205,7 +205,7 @@ class BuildConfig:
         return list(self._cloud_config["clouds"].keys())[0]
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "BuildConfig":
+    def from_charm(cls, charm: CharmBase) -> "RunConfig":
         """Initialize build state from current charm instance.
 
         Args:
@@ -339,21 +339,21 @@ class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
 
 
 @dataclasses.dataclass(frozen=True)
-class BuilderSetupConfig:
+class BuilderInitConfig:
     """The image builder setup config.
 
     Attributes:
-        build_config: The configuration required to build the image.
+        run_config: The configuration required to build the image.
         cloud_config: The Openstack clouds.yaml passed as charm config.
         interval: The interval in hours between each scheduled image builds.
     """
 
-    build_config: BuildConfig
+    run_config: RunConfig
     cloud_config: dict[str, Any]
     interval: int
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "BuilderSetupConfig":
+    def from_charm(cls, charm: CharmBase) -> "BuilderInitConfig":
         """Initialize charm state from current charm instance.
 
         Args:
@@ -366,7 +366,7 @@ class BuilderSetupConfig:
             Current charm state.
         """
         try:
-            build_config = BuildConfig.from_charm(charm=charm)
+            run_config = RunConfig.from_charm(charm=charm)
         except BuildConfigInvalidError as exc:
             raise BuilderSetupConfigInvalidError from exc
 
@@ -376,7 +376,7 @@ class BuilderSetupConfig:
             raise BuilderSetupConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
-            build_config=build_config,
-            cloud_config=build_config._cloud_config,
+            run_config=run_config,
+            cloud_config=run_config._cloud_config,
             interval=build_interval,
         )

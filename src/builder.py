@@ -39,17 +39,17 @@ APT_DEPENDENCIES = [
 CALLBACK_SCRIPT_PATH = UBUNTU_HOME / "on_build_success_callback.sh"
 CRON_PATH = Path("/etc/cron.d")
 CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
-GITHUB_RUNNER_IMAGE_BUILDER = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
+GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 OUTPUT_LOG_PATH = UBUNTU_HOME / "github-runner-image-builder.log"
 IMAGE_NAME_TMPL = "{IMAGE_BASE}-{ARCH}"
 
 
-def setup_builder(setup_config: state.BuilderSetupConfig) -> None:
+def initialize(init_config: state.BuilderInitConfig) -> None:
     """Configure the host machine to build images.
 
     Args:
-        setup_config: Configuration values required to initialize the builder.
+        init_config: Configuration values required to initialize the builder.
 
     Raises:
         BuilderSetupError: If there was an error setting up the host device for building images.
@@ -57,8 +57,8 @@ def setup_builder(setup_config: state.BuilderSetupConfig) -> None:
     try:
         _install_dependencies()
         _initialize_image_builder()
-        install_clouds_yaml(cloud_config=setup_config.cloud_config)
-        configure_cron(build_config=setup_config.build_config, interval=setup_config.interval)
+        install_clouds_yaml(cloud_config=init_config.cloud_config)
+        configure_cron(run_config=init_config.run_config, interval=init_config.interval)
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
         raise BuilderSetupError from exc
 
@@ -93,7 +93,7 @@ def _initialize_image_builder() -> None:
     """
     try:
         subprocess.run(
-            ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER), "init"],
+            ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"],
             check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
@@ -117,11 +117,11 @@ def install_clouds_yaml(cloud_config: dict) -> None:
         OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
 
 
-def configure_cron(build_config: state.BuildConfig, interval: int) -> bool:
+def configure_cron(run_config: state.RunConfig, interval: int) -> bool:
     """Configure cron to run builder.
 
     Args:
-        build_config: The configuration required to run builder.
+        run_config: The configuration required to run builder.
         interval: Number of hours in between image build runs.
 
     Returns:
@@ -129,9 +129,9 @@ def configure_cron(build_config: state.BuildConfig, interval: int) -> bool:
     """
     if not _should_configure_cron(
         interval=interval,
-        image_base=build_config.base,
-        cloud_name=build_config.cloud_name,
-        num_revisions=build_config.num_revisions,
+        image_base=run_config.base,
+        cloud_name=run_config.cloud_name,
+        num_revisions=run_config.num_revisions,
     ):
         return False
 
@@ -142,19 +142,19 @@ def configure_cron(build_config: state.BuildConfig, interval: int) -> bool:
             "/usr/bin/run-one",
             "/usr/bin/sudo",
             "--preserve-env",
-            str(GITHUB_RUNNER_IMAGE_BUILDER),
+            str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
-            build_config.cloud_name,
+            run_config.cloud_name,
             IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=build_config.base.value,
-                ARCH=build_config.arch.value,
+                IMAGE_BASE=run_config.base.value,
+                ARCH=run_config.arch.value,
             ),
             "--base-image",
-            build_config.base.value,
+            run_config.base.value,
             "--keep-revisions",
-            str(build_config.num_revisions),
+            str(run_config.num_revisions),
             "--callback-script",
-            str(build_config.callback_script),
+            str(run_config.callback_script),
         ]
     )
     cron_text = (
@@ -196,7 +196,7 @@ def _should_configure_cron(
     )
 
 
-def build_immediate(config: state.BuildConfig) -> None:
+def run(config: state.RunConfig) -> None:
     """Run a build immediately.
 
     Args:
@@ -212,7 +212,7 @@ def build_immediate(config: state.BuildConfig) -> None:
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
                 "--preserve-env",
-                str(GITHUB_RUNNER_IMAGE_BUILDER),
+                str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "run",
                 config.cloud_name,
                 IMAGE_NAME_TMPL.format(
@@ -258,7 +258,7 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
             [
                 "/usr/bin/sudo",
                 "--preserve-env",
-                str(GITHUB_RUNNER_IMAGE_BUILDER),
+                str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
                 cloud_name,
                 IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, ARCH=arch.value),

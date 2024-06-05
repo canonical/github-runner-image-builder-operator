@@ -17,7 +17,7 @@ import charm as charm_module
 import image
 import proxy
 from charm import BUILD_SUCCESS_EVENT_NAME, GithubRunnerImageBuilderCharm, os
-from state import BuilderSetupConfig, CharmConfigInvalidError
+from state import BuilderInitConfig, CharmConfigInvalidError
 
 
 @pytest.fixture(name="charm", scope="module")
@@ -40,7 +40,7 @@ def test__load_state_invalid_config(
     assert: charm is in blocked status.
     """
     monkeypatch.setattr(
-        BuilderSetupConfig,
+        BuilderInitConfig,
         "from_charm",
         MagicMock(side_effect=CharmConfigInvalidError("Invalid config")),
     )
@@ -66,7 +66,7 @@ def test_block_on_state_error(
     """
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(
-        BuilderSetupConfig,
+        BuilderInitConfig,
         "from_charm",
         MagicMock(side_effect=CharmConfigInvalidError("Invalid config")),
     )
@@ -129,7 +129,7 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     act: when _on_install is called.
     assert: setup_builder is called.
     """
-    monkeypatch.setattr(BuilderSetupConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(BuilderInitConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
@@ -160,7 +160,7 @@ def test__on_config_changed(
     act: when _on_config_changed is called.
     assert: charm is in active status.
     """
-    monkeypatch.setattr(BuilderSetupConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(BuilderInitConfig, "from_charm", MagicMock())
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )

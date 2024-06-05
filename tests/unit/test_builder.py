@@ -38,7 +38,7 @@ def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(BuilderSetupError) as exc:
-        builder.setup_builder(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
+        builder.initialize(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
 
     assert "Failed to install dependencies." in str(exc.getrepr())
 
@@ -70,7 +70,7 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
         (configure_cron_mock := MagicMock()),
     )
 
-    builder.setup_builder(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
+    builder.initialize(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
 
     deps_mock.assert_called_once()
     image_mock.assert_called_once()
@@ -183,7 +183,7 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_should_configure_cron", MagicMock(return_value=False))
     monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
 
-    builder.configure_cron(build_config=MagicMock(), interval=1)
+    builder.configure_cron(run_config=MagicMock(), interval=1)
 
     service_restart_mock.assert_not_called()
 
@@ -208,7 +208,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         num_revisions=5,
     )
 
-    builder.configure_cron(build_config=test_config, interval=test_interval)
+    builder.configure_cron(run_config=test_config, interval=test_interval)
 
     service_restart_mock.assert_called_once()
     cron_contents = test_path.read_text(encoding="utf-8")
@@ -374,7 +374,7 @@ def test_build_immediate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         callback_script=tmp_path,
     )
 
-    builder.build_immediate(config=testconfig)
+    builder.run(config=testconfig)
 
     popen_mock.assert_called_once()
 
