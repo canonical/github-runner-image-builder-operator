@@ -167,12 +167,20 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
     return openstack.connect(first_cloud)
 
 
+@pytest.fixture(scope="module", name="test_id")
+def test_id() -> str:
+    """The test ID fixture."""
+    return secrets.token_hex(4)
+
+
 @pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) -> Application:
+async def app_fixture(
+    model: Model, charm_file: str, clouds_yaml_contents: str, test_id: str
+) -> Application:
     """The deployed application fixture."""
     app: Application = await model.deploy(
         charm_file,
-        application_name=f"image-builder-{secrets.token_hex(4)}",
+        application_name=f"image-builder-{test_id}",
         constraints="cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
         config={
             OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents,
@@ -188,9 +196,11 @@ async def app_fixture(model: Model, charm_file: str, clouds_yaml_contents: str) 
 
 
 @pytest.fixture(scope="module", name="ssh_key")
-def ssh_key_fixture(openstack_connection: Connection) -> Generator[SSHKey, None, None]:
+def ssh_key_fixture(
+    openstack_connection: Connection, test_id: str
+) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair("test-image-builder-keys")
+    keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
     ssh_key_path = Path("tmp_key")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
@@ -271,10 +281,11 @@ async def openstack_server_fixture(
     app: Application,
     openstack_metadata: OpenstackMeta,
     openstack_security_group: SecurityGroup,
+    test_id: str,
 ):
     """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    server_name = "test-server"
+    server_name = f"test-server-{test_id}"
 
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
@@ -282,9 +293,7 @@ async def openstack_server_fixture(
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
     images: list[Image] = openstack_metadata.connection.search_images(
-        IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
-        )
+        IMAGE_NAME_TMPL.format(IMAGE_BASE=image_base, ARCH=_get_supported_arch().value)
     )
     assert images, "No built image found."
     server: Server = openstack_metadata.connection.create_server(
