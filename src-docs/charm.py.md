@@ -8,6 +8,7 @@ Entrypoint for GithubRunnerImageBuilder charm.
 **Global Variables**
 ---------------
 - **BUILD_SUCCESS_EVENT_NAME**
+- **BUILD_FAIL_EVENT_NAME**
 - **OPENSTACK_IMAGE_ID_ENV**
 
 
@@ -21,6 +22,7 @@ Represents events triggered by image builder callback.
 **Attributes:**
  
  - <b>`build_success`</b>:  Represents a successful image build event. 
+ - <b>`build_failed`</b>:  Represents a failed image build event. 
 
 
 ---
@@ -28,6 +30,15 @@ Represents events triggered by image builder callback.
 #### <kbd>property</kbd> model
 
 Shortcut for more simple access the model. 
+
+
+
+
+---
+
+## <kbd>class</kbd> `BuildFailedEvent`
+Represents a failed image build event. 
+
 
 
 
@@ -52,7 +63,7 @@ Charm GitHubRunner image builder application.
  
  - <b>`on`</b>:  Represents custom events managed by cron. 
 
-<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -113,7 +124,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_status`
 

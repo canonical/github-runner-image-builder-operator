@@ -46,7 +46,8 @@ def test_block_on_state_error(
     assert: charm is in blocked status.
     """
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(state, "CALLBACK_SCRIPT_PATH", MagicMock())
+    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", MagicMock())
+    monkeypatch.setattr(state, "FAILED_CALLBACK_SCRIPT_PATH", MagicMock())
     monkeypatch.setattr(
         state.BuilderInitConfig,
         "from_charm",
@@ -69,10 +70,10 @@ def test__create_callback_script(
     test_path = tmp_path / "test"
     charm.unit.name = (test_unit_name := "test_unit_name")
     charm.model.name = (test_model_name := "test_model_name")
-    monkeypatch.setattr(state, "CALLBACK_SCRIPT_PATH", test_path)
+    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", test_path)
     monkeypatch.setattr(os, "getenv", MagicMock(return_value=(test_dir := "test_charm_dir")))
 
-    charm._create_callback_script()
+    charm._create_success_callback_script()
 
     contents = test_path.read_text(encoding="utf-8")
     assert (
@@ -102,11 +103,13 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
     monkeypatch.setattr(builder, "run", (run_mock := MagicMock()))
-    charm._create_callback_script = (create_callback := MagicMock())
+    charm._create_success_callback_script = (create_callback := MagicMock())
+    charm._create_failed_callback_script = (failed_callback := MagicMock())
 
     charm._on_install(MagicMock())
 
     create_callback.assert_called_once()
+    failed_callback.assert_called_once()
     setup_mock.assert_called_once()
     run_mock.assert_called_once()
     assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
@@ -169,3 +172,16 @@ def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerI
     charm._on_build_success(MagicMock)
 
     assert charm.unit.status == ops.ActiveStatus()
+
+
+def test__on_build_fail(charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: None.
+    act: when _on_build_failed is called.
+    assert: the charm is in active status.
+    """
+    charm._on_build_failed(MagicMock)
+
+    assert charm.unit.status == ops.ActiveStatus(
+        f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
+    )

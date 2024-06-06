@@ -25,7 +25,8 @@ BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "openstack-clouds-yaml"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
-CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
+SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
+FAILED_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_failed_callback.sh")
 
 
 # Step down formatting is not applied here since classes need to be predefined to be used as class
@@ -197,7 +198,7 @@ class BuilderRunConfig:
     base: BaseImage
     cloud_config: dict[str, Any]
     num_revisions: int
-    callback_script: pathlib.Path = CALLBACK_SCRIPT_PATH
+    callback_script: pathlib.Path = SUCCESS_CALLBACK_SCRIPT_PATH
 
     @property
     def cloud_name(self) -> str:

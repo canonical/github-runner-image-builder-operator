@@ -151,7 +151,7 @@ def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
     )
     cron_text = (
         f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command} "
-        f">> {OUTPUT_LOG_PATH} 2>&1\n"
+        f">> {OUTPUT_LOG_PATH} 2>&1 || {state.FAILED_CALLBACK_SCRIPT_PATH}\n"
     )
 
     if not _should_configure_cron(cron_contents=cron_text):
@@ -216,7 +216,7 @@ def run(config: state.BuilderRunConfig) -> None:
                     "||",
                     # Run the callback script without Openstack ID argument to let the charm know
                     # about the error.
-                    str(config.callback_script),
+                    str(state.FAILED_CALLBACK_SCRIPT_PATH),
                     "&",
                 ]
             ),
