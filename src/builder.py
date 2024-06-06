@@ -127,14 +127,6 @@ def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
     Returns:
         True if cron is reconfigured. False otherwise.
     """
-    if not _should_configure_cron(
-        interval=interval,
-        image_base=run_config.base,
-        cloud_name=run_config.cloud_name,
-        num_revisions=run_config.num_revisions,
-    ):
-        return False
-
     builder_exec_command: str = " ".join(
         [
             # HOME path is required for GO modules.
@@ -161,21 +153,20 @@ def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
         f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command} "
         f">> {OUTPUT_LOG_PATH} 2>&1\n"
     )
+
+    if not _should_configure_cron(cron_contents=cron_text):
+        return False
+
     CRON_BUILD_SCHEDULE_PATH.write_text(cron_text, encoding="utf-8")
     systemd.service_restart("cron")
     return True
 
 
-def _should_configure_cron(
-    interval: int, image_base: state.BaseImage, cloud_name: str, num_revisions: int
-) -> bool:
+def _should_configure_cron(cron_contents: str) -> bool:
     """Determine whether changes to cron should be applied.
 
     Args:
-        interval: Incoming interval configuration to compare with current.
-        image_base: Incoming image_base configuration to compare with current.
-        cloud_name: Incoming cloud_name configuration to compare with current.
-        num_revisions: Incoming num_revisions configuration to compare with current.
+        cron_contents: Latest cronfile contents to be applied.
 
     Returns:
         True if interval has changed. False otherwise.
@@ -183,17 +174,7 @@ def _should_configure_cron(
     if not CRON_BUILD_SCHEDULE_PATH.exists():
         return True
 
-    cron_args = CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8").split()
-    installed_interval = int(cron_args[1].split("/")[1])
-    installed_cloud_name = cron_args[12]
-    installed_image_base = cron_args[15]
-    installed_num_revisions = int(cron_args[17])
-    return (
-        installed_interval != interval
-        or installed_image_base != image_base.value
-        or installed_cloud_name != cloud_name
-        or num_revisions != installed_num_revisions
-    )
+    return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
 def run(config: state.BuilderRunConfig) -> None:

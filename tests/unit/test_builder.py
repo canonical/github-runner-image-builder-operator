@@ -8,7 +8,6 @@
 
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
-import typing
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -179,7 +178,16 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_should_configure_cron", MagicMock(return_value=False))
     monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
 
-    builder.configure_cron(run_config=MagicMock(), interval=1)
+    builder.configure_cron(
+        run_config=state.BuilderRunConfig(
+            arch=state.Arch.ARM64,
+            base=state.BaseImage.JAMMY,
+            cloud_config=factories.CloudFactory(),
+            callback_script=MagicMock(),
+            num_revisions=5,
+        ),
+        interval=1,
+    )
 
     service_restart_mock.assert_not_called()
 
@@ -231,125 +239,20 @@ def test__should_configure_cron_no_path(monkeypatch: pytest.MonkeyPatch, tmp_pat
     test_path = tmp_path / "not-exists"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
 
-    assert builder._should_configure_cron(
-        interval=MagicMock(),
-        image_base=MagicMock(),
-        cloud_name=MagicMock(),
-        num_revisions=MagicMock(),
-    )
+    assert builder._should_configure_cron(cron_contents=MagicMock())
 
 
-class ShoudReconfigureCronInputs(typing.NamedTuple):
-    """Wrapper to _should_configure_cron inputs for testing.
-
-    Attributes:
-        interval: Wrapped input value.
-        image_base: Wrapped input value.
-        cloud_name: Wrapped input value.
-        num_revisions: Wrapped input value.
-    """
-
-    interval: int
-    image_base: state.BaseImage
-    cloud_name: str
-    num_revisions: int
-
-
-@pytest.mark.parametrize(
-    "cron_contents, inputs, expected",
-    [
-        pytest.param(
-            """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-test-cloud \
-output-image-name \
---base-image jammy \
---keep-revisions 5 \
---callback-script propagate_image_id \
-""",
-            ShoudReconfigureCronInputs(2, state.BaseImage.JAMMY, "test-cloud", 5),
-            True,
-            id="interval changed",
-        ),
-        pytest.param(
-            """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-test-cloud \
-output-image-name \
---base-image jammy \
---keep-revisions 5 \
---callback-script propagate_image_id \
-""",
-            ShoudReconfigureCronInputs(2, state.BaseImage.NOBLE, "test-cloud", 5),
-            True,
-            id="image_base changed",
-        ),
-        pytest.param(
-            """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-test-cloud \
-output-image-name \
---base-image jammy \
---keep-revisions 5 \
---callback-script propagate_image_id \
-""",
-            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud-change", 5),
-            True,
-            id="cloud_name changed",
-        ),
-        pytest.param(
-            """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-test-cloud \
-output-image-name \
---base-image jammy \
---keep-revisions 5 \
---callback-script propagate_image_id \
-""",
-            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud", 7),
-            True,
-            id="num_revisions changed",
-        ),
-        pytest.param(
-            """0 */5 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one /usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-test-cloud \
-output-image-name \
---base-image jammy \
---keep-revisions 5 \
---callback-script propagate_image_id \
-""",
-            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud", 5),
-            False,
-            id="no change",
-        ),
-    ],
-)
-def test__should_configure_cron(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    cron_contents: str,
-    inputs: ShoudReconfigureCronInputs,
-    expected: bool,
-):
+def test__should_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """
     arrange: given _should_configure_cron input values and monkeypatched CRON_BUILD_SCHEDULE_PATH.
     act: when _should_configure_cron is called.
     assert: expected value is returned.
     """
     test_path = tmp_path / "test"
-    test_path.write_text(cron_contents, encoding="utf-8")
+    test_path.write_text("test contents\n", encoding="utf-8")
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
 
-    assert (
-        builder._should_configure_cron(
-            interval=inputs.interval,
-            image_base=inputs.image_base,
-            cloud_name=inputs.cloud_name,
-            num_revisions=inputs.num_revisions,
-        )
-        == expected
-    )
+    assert builder._should_configure_cron(cron_contents="mismatching contents\n")
 
 
 def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
