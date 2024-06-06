@@ -168,7 +168,7 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
 
 
 @pytest.fixture(scope="module", name="test_id")
-def test_id() -> str:
+def test_id_fixture() -> str:
     """The test ID fixture."""
     return secrets.token_hex(4)
 
