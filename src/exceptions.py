@@ -20,6 +20,10 @@ class BuilderSetupError(BuilderBaseError):
     """Represents an error while setting up host machine as builder."""
 
 
+class BuilderRunError(BuilderBaseError):
+    """Represents an error while running the image builder."""
+
+
 class ProxyInstallError(BuilderBaseError):
     """Represents an error while installing proxy."""
 

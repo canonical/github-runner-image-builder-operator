@@ -18,6 +18,7 @@ from charms.operator_libs_linux.v1 import systemd
 
 import state
 from exceptions import (
+    BuilderRunError,
     BuilderSetupError,
     DependencyInstallError,
     GetLatestImageError,
@@ -80,7 +81,7 @@ def _install_dependencies() -> None:
             check=True,
             user=UBUNTU_USER,
         )
-    except (apt.PackageNotFoundError, subprocess.CalledProcessError) as exc:
+    except (apt.PackageNotFoundError, subprocess.SubprocessError) as exc:
         raise DependencyInstallError from exc
 
 
@@ -99,7 +100,7 @@ def _initialize_image_builder() -> None:
             timeout=10 * 60,
             env=os.environ,
         )  # nosec: B603
-    except subprocess.CalledProcessError as exc:
+    except subprocess.SubprocessError as exc:
         raise ImageBuilderInitializeError from exc
 
 
@@ -200,42 +201,48 @@ def run(config: state.BuilderRunConfig) -> None:
 
     Args:
         config: The configuration values for running image builder.
+
+    Raises:
+        BuilderRunError: if there was an error while launching the subprocess.
     """
-    # The callback invotes another hook - which cannot be run when another hook is already running.
-    # Call the process as a background and exit immediately.
-    subprocess.Popen(  # pylint: disable=consider-using-with
-        " ".join(
-            [
-                # HOME path is required for GO modules.
-                f"HOME={UBUNTU_HOME}",
-                "/usr/bin/run-one",
-                "/usr/bin/sudo",
-                "--preserve-env",
-                str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-                "run",
-                config.cloud_name,
-                IMAGE_NAME_TMPL.format(
-                    IMAGE_BASE=config.base.value,
-                    ARCH=config.arch.value,
-                ),
-                "--base-image",
-                config.base.value,
-                "--keep-revisions",
-                str(config.num_revisions),
-                "--callback-script",
-                str(config.callback_script),
-                ">>",
-                str(OUTPUT_LOG_PATH),
-                "2>&1",
-                "&",
-            ]
-        ),
-        # run as shell for log redirection, the command is trusted
-        shell=True,  # nosec: B602
-        user=UBUNTU_USER,
-        cwd=UBUNTU_HOME,
-        env={},
-    )
+    try:
+        # The callback invotes another hook - which cannot be run when another hook is already
+        # running. Call the process as a background and exit immediately.
+        subprocess.Popen(  # pylint: disable=consider-using-with
+            " ".join(
+                [
+                    # HOME path is required for GO modules.
+                    f"HOME={UBUNTU_HOME}",
+                    "/usr/bin/run-one",
+                    "/usr/bin/sudo",
+                    "--preserve-env",
+                    str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+                    "run",
+                    config.cloud_name,
+                    IMAGE_NAME_TMPL.format(
+                        IMAGE_BASE=config.base.value,
+                        ARCH=config.arch.value,
+                    ),
+                    "--base-image",
+                    config.base.value,
+                    "--keep-revisions",
+                    str(config.num_revisions),
+                    "--callback-script",
+                    str(config.callback_script),
+                    ">>",
+                    str(OUTPUT_LOG_PATH),
+                    "2>&1",
+                    "&",
+                ]
+            ),
+            # run as shell for log redirection, the command is trusted
+            shell=True,  # nosec: B602
+            user=UBUNTU_USER,
+            cwd=UBUNTU_HOME,
+            env={},
+        )
+    except subprocess.SubprocessError as exc:
+        raise BuilderRunError from exc
 
 
 def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -> str:

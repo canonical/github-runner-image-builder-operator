@@ -18,6 +18,15 @@ Base exceptions for builder application.
 
 ---
 
+## <kbd>class</kbd> `BuilderRunError`
+Represents an error while running the image builder. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `BuilderSetupError`
 Represents an error while setting up host machine as builder. 
 

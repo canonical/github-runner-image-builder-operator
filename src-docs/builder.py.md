@@ -13,7 +13,7 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,7 +38,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -57,7 +57,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -82,7 +82,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -99,9 +99,15 @@ Run a build immediately.
  - <b>`config`</b>:  The configuration values for running image builder. 
 
 
+
+**Raises:**
+ 
+ - <b>`BuilderRunError`</b>:  if there was an error while launching the subprocess. 
+
+
 ---
 
-<a href="../src/builder.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 

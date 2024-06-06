@@ -352,10 +352,35 @@ def test__should_configure_cron(
     )
 
 
-def test_build_immediate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """
+    arrange: given a monkeypatched subprocess Popen that raises an error.
+    act: when run is called.
+    assert: the call to image builder is made.
+    """
+    monkeypatch.setattr(
+        builder.subprocess,
+        "Popen",
+        MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
+    )
+    testconfig = state.BuilderRunConfig(
+        arch=state.Arch.ARM64,
+        base=state.BaseImage.JAMMY,
+        cloud_config=factories.CloudFactory(),
+        num_revisions=1,
+        callback_script=tmp_path,
+    )
+
+    with pytest.raises(builder.BuilderRunError) as exc:
+        builder.run(config=testconfig)
+
+    assert "Failed to spawn process" in str(exc.getrepr())
+
+
+def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """
     arrange: given a monkeypatched subprocess call.
-    act: when build_immediate is called.
+    act: when run is called.
     assert: the call to image builder is made.
     """
     monkeypatch.setattr(builder.subprocess, "Popen", popen_mock := MagicMock())
