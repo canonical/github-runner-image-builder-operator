@@ -13,16 +13,12 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `setup_builder`
+## <kbd>function</kbd> `initialize`
 
 ```python
-setup_builder(
-    build_config: BuildConfig,
-    cloud_config: dict,
-    interval: int
-) → None
+initialize(init_config: BuilderInitConfig) → None
 ```
 
 Configure the host machine to build images. 
@@ -31,9 +27,7 @@ Configure the host machine to build images.
 
 **Args:**
  
- - <b>`build_config`</b>:  Configuration values to register cron to build images periodically. 
- - <b>`cloud_config`</b>:  The openstack clouds.yaml contents 
- - <b>`interval`</b>:  The frequency in which the image builder should be triggered. 
+ - <b>`init_config`</b>:  Configuration values required to initialize the builder. 
 
 
 
@@ -44,7 +38,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -63,12 +57,12 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
 ```python
-configure_cron(build_config: BuildConfig, interval: int) → bool
+configure_cron(run_config: BuilderRunConfig, interval: int) → bool
 ```
 
 Configure cron to run builder. 
@@ -77,7 +71,7 @@ Configure cron to run builder.
 
 **Args:**
  
- - <b>`build_config`</b>:  The configuration required to run builder. 
+ - <b>`run_config`</b>:  The configuration required to run builder. 
  - <b>`interval`</b>:  Number of hours in between image build runs. 
 
 
@@ -88,12 +82,12 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `build_immediate`
+## <kbd>function</kbd> `run`
 
 ```python
-build_immediate(config: BuildConfig) → None
+run(config: BuilderRunConfig) → None
 ```
 
 Run a build immediately. 
@@ -107,7 +101,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -135,24 +129,5 @@ Fetch the latest image build ID.
 
 **Returns:**
  The latest successful image build ID. 
-
-
----
-
-## <kbd>class</kbd> `BuildConfig`
-Configurations for running builder periodically. 
-
-
-
-**Attributes:**
- 
- - <b>`arch`</b>:  The machine architecture of the image to build with. 
- - <b>`base`</b>:  Ubuntu OS image to build from. 
- - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
- - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
- - <b>`callback_script`</b>:  Path to callback script. 
-
-
-
 
 

@@ -13,11 +13,10 @@ import ops
 import pytest
 
 import builder
-import charm as charm_module
 import image
 import proxy
+import state
 from charm import BUILD_SUCCESS_EVENT_NAME, GithubRunnerImageBuilderCharm, os
-from state import BuilderInitConfig, CharmConfigInvalidError
 
 
 @pytest.fixture(name="charm", scope="module")
@@ -31,28 +30,10 @@ def charm_fixture():
     return charm
 
 
-def test__load_state_invalid_config(
-    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given a monkeypatched CharmState.from_charm that raises CharmConfigInvalidError.
-    act: when _load_state is called.
-    assert: charm is in blocked status.
-    """
-    monkeypatch.setattr(
-        BuilderInitConfig,
-        "from_charm",
-        MagicMock(side_effect=CharmConfigInvalidError("Invalid config")),
-    )
-    monkeypatch.setattr(image, "Observer", MagicMock())
-
-    assert charm._load_state() is None
-    assert charm.unit.status == ops.BlockedStatus("Invalid config")
-
-
 @pytest.mark.parametrize(
     "hook",
     [
+        pytest.param("_on_install", id="_on_install"),
         pytest.param("_on_config_changed", id="_on_config_changed"),
     ],
 )
@@ -65,10 +46,11 @@ def test_block_on_state_error(
     assert: charm is in blocked status.
     """
     monkeypatch.setattr(image, "Observer", MagicMock())
+    monkeypatch.setattr(state, "CALLBACK_SCRIPT_PATH", MagicMock())
     monkeypatch.setattr(
-        BuilderInitConfig,
+        state.BuilderInitConfig,
         "from_charm",
-        MagicMock(side_effect=CharmConfigInvalidError("Invalid config")),
+        MagicMock(side_effect=state.CharmConfigInvalidError("Invalid config")),
     )
 
     getattr(charm, hook)(MagicMock())
@@ -87,7 +69,7 @@ def test__create_callback_script(
     test_path = tmp_path / "test"
     charm.unit.name = (test_unit_name := "test_unit_name")
     charm.model.name = (test_model_name := "test_model_name")
-    monkeypatch.setattr(charm_module, "CALLBACK_SCRIPT_PATH", test_path)
+    monkeypatch.setattr(state, "CALLBACK_SCRIPT_PATH", test_path)
     monkeypatch.setattr(os, "getenv", MagicMock(return_value=(test_dir := "test_charm_dir")))
 
     charm._create_callback_script()
@@ -108,33 +90,18 @@ OPENSTACK_IMAGE_ID="$OPENSTACK_IMAGE_ID" \
     )
 
 
-def test__on_install_invalid_state(charm: GithubRunnerImageBuilderCharm):
-    """
-    arrange: given a monkeypatched _load_state internal method that returns false.
-    act: when on_install is called.
-    assert: the event is deferred.
-    """
-    original_load_state = charm._load_state
-    charm._load_state = MagicMock(return_value=False)
-
-    charm._on_install(event=(mock_event := MagicMock()))
-
-    mock_event.defer.assert_called_once()
-    charm._load_state = original_load_state
-
-
 def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
     arrange: given a monekypatched builder.setup_builder function.
     act: when _on_install is called.
     assert: setup_builder is called.
     """
-    monkeypatch.setattr(BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
-    monkeypatch.setattr(builder, "setup_builder", (setup_mock := MagicMock()))
-    monkeypatch.setattr(builder, "build_immediate", (run_mock := MagicMock()))
+    monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
+    monkeypatch.setattr(builder, "run", (run_mock := MagicMock()))
     charm._create_callback_script = (create_callback := MagicMock())
 
     charm._on_install(MagicMock())
@@ -160,14 +127,14 @@ def test__on_config_changed(
     act: when _on_config_changed is called.
     assert: charm is in active status.
     """
-    monkeypatch.setattr(BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=configure_cron))
-    monkeypatch.setattr(builder, "build_immediate", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = image_observer_mock
 
     charm._on_config_changed(MagicMock())

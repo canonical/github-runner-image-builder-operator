@@ -3,6 +3,7 @@
 
 """Factories for generating test data."""
 
+import secrets
 import textwrap
 from typing import Generic, TypeVar
 from unittest.mock import MagicMock
@@ -62,3 +63,20 @@ class MockCharmFactory(factory.Factory):
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
         }
     )
+
+
+class CloudAuthFactory(factory.DictFactory):
+    """Mock cloud auth dict object factory."""  # noqa: DCO060
+
+    auth_url = factory.Faker("url")
+    password = secrets.token_hex(16)
+    project_domain_name = factory.Faker("name")
+    project_name = factory.Faker("name")
+    user_domain_name = factory.Faker("name")
+    username = factory.Faker("name")
+
+
+class CloudFactory(factory.DictFactory):
+    """Mock cloud dict object factory."""  # noqa: DCO060
+
+    clouds = {"testcloud": CloudAuthFactory()}

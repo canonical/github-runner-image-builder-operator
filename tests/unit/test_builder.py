@@ -6,23 +6,19 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+# The subprocess module is imported for monkeypatching.
+import subprocess  # nosec: B404
+import typing
 from pathlib import Path
-from typing import NamedTuple
 from unittest.mock import MagicMock
 
 import pytest
 import yaml
+from charms.operator_libs_linux.v0 import apt
 
 import builder
-from builder import (
-    Arch,
-    BaseImage,
-    BuilderSetupError,
-    DependencyInstallError,
-    ImageBuilderInitializeError,
-    apt,
-    subprocess,
-)
+import state
+from tests.unit import factories
 
 
 def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
@@ -34,11 +30,11 @@ def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         builder,
         "_install_dependencies",
-        MagicMock(side_effect=DependencyInstallError("Failed to install dependencies.")),
+        MagicMock(side_effect=builder.DependencyInstallError("Failed to install dependencies.")),
     )
 
-    with pytest.raises(BuilderSetupError) as exc:
-        builder.initialize(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
+    with pytest.raises(builder.BuilderSetupError) as exc:
+        builder.initialize(init_config=MagicMock())
 
     assert "Failed to install dependencies." in str(exc.getrepr())
 
@@ -70,7 +66,7 @@ def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
         (configure_cron_mock := MagicMock()),
     )
 
-    builder.initialize(build_config=MagicMock(), cloud_config=MagicMock(), interval=1)
+    builder.initialize(init_config=MagicMock())
 
     deps_mock.assert_called_once()
     image_mock.assert_called_once()
@@ -91,7 +87,7 @@ def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
         MagicMock(side_effect=subprocess.CalledProcessError(1, [], "", "error installing deps")),
     )
 
-    with pytest.raises(DependencyInstallError) as exc:
+    with pytest.raises(builder.DependencyInstallError) as exc:
         builder._install_dependencies()
 
     assert "error installing deps" in str(exc.getrepr())
@@ -128,7 +124,7 @@ def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
         ),
     )
 
-    with pytest.raises(ImageBuilderInitializeError) as exc:
+    with pytest.raises(builder.ImageBuilderInitializeError) as exc:
         builder._initialize_image_builder()
 
     assert "error running image builder install" in str(exc.getrepr())
@@ -199,11 +195,10 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     test_path = tmp_path / "test"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
     test_interval = 1
-    test_config = builder.BuildConfig(
-        arch=Arch.ARM64,
-        base=BaseImage.JAMMY,
-        app_name="test-app",
-        cloud_name="test-cloud",
+    test_config = state.BuilderRunConfig(
+        arch=state.Arch.ARM64,
+        base=state.BaseImage.JAMMY,
+        cloud_config=factories.CloudFactory(),
         callback_script=test_path,
         num_revisions=5,
     )
@@ -218,7 +213,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 /usr/bin/sudo \
 --preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
 {test_config.cloud_name} \
-{test_config.base.value}-{test_config.app_name}-{test_config.arch.value} \
+{test_config.base.value}-{test_config.arch.value} \
 --base-image {test_config.base.value} \
 --keep-revisions {test_config.num_revisions} \
 --callback-script {test_path} \
@@ -244,7 +239,7 @@ def test__should_configure_cron_no_path(monkeypatch: pytest.MonkeyPatch, tmp_pat
     )
 
 
-class ShoudReconfigureCronInputs(NamedTuple):
+class ShoudReconfigureCronInputs(typing.NamedTuple):
     """Wrapper to _should_configure_cron inputs for testing.
 
     Attributes:
@@ -255,7 +250,7 @@ class ShoudReconfigureCronInputs(NamedTuple):
     """
 
     interval: int
-    image_base: BaseImage
+    image_base: state.BaseImage
     cloud_name: str
     num_revisions: int
 
@@ -272,7 +267,7 @@ output-image-name \
 --keep-revisions 5 \
 --callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(2, BaseImage.JAMMY, "test-cloud", 5),
+            ShoudReconfigureCronInputs(2, state.BaseImage.JAMMY, "test-cloud", 5),
             True,
             id="interval changed",
         ),
@@ -285,7 +280,7 @@ output-image-name \
 --keep-revisions 5 \
 --callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(2, BaseImage.NOBLE, "test-cloud", 5),
+            ShoudReconfigureCronInputs(2, state.BaseImage.NOBLE, "test-cloud", 5),
             True,
             id="image_base changed",
         ),
@@ -298,7 +293,7 @@ output-image-name \
 --keep-revisions 5 \
 --callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud-change", 5),
+            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud-change", 5),
             True,
             id="cloud_name changed",
         ),
@@ -311,7 +306,7 @@ output-image-name \
 --keep-revisions 5 \
 --callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 7),
+            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud", 7),
             True,
             id="num_revisions changed",
         ),
@@ -324,7 +319,7 @@ output-image-name \
 --keep-revisions 5 \
 --callback-script propagate_image_id \
 """,
-            ShoudReconfigureCronInputs(5, BaseImage.JAMMY, "test-cloud", 5),
+            ShoudReconfigureCronInputs(5, state.BaseImage.JAMMY, "test-cloud", 5),
             False,
             id="no change",
         ),
@@ -364,12 +359,10 @@ def test_build_immediate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert: the call to image builder is made.
     """
     monkeypatch.setattr(builder.subprocess, "Popen", popen_mock := MagicMock())
-
-    testconfig = builder.BuildConfig(
-        arch=Arch.ARM64,
-        app_name="test",
-        base=BaseImage.JAMMY,
-        cloud_name="test",
+    testconfig = state.BuilderRunConfig(
+        arch=state.Arch.ARM64,
+        base=state.BaseImage.JAMMY,
+        cloud_config=factories.CloudFactory(),
         num_revisions=1,
         callback_script=tmp_path,
     )
@@ -386,15 +379,13 @@ def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
     assert: GetLatestImageError is raised.
     """
     monkeypatch.setattr(
-        builder.subprocess,
+        subprocess,
         "run",
         MagicMock(side_effect=subprocess.CalledProcessError(1, "", "", "openstack error")),
     )
 
     with pytest.raises(builder.GetLatestImageError) as exc:
-        builder.get_latest_image(
-            base=MagicMock(), app_name=MagicMock(), arch=MagicMock(), cloud_name=MagicMock()
-        )
+        builder.get_latest_image(arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock())
 
     assert "openstack error" in str(exc.getrepr())
 
@@ -406,7 +397,7 @@ def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
     assert: image id is returned.
     """
     monkeypatch.setattr(
-        builder.subprocess,
+        subprocess,
         "run",
         MagicMock(
             return_value=subprocess.CompletedProcess(
@@ -416,5 +407,5 @@ def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
     )
 
     assert "test-image" == builder.get_latest_image(
-        base=MagicMock(), app_name=MagicMock(), arch=MagicMock(), cloud_name=MagicMock()
+        arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock()
     )

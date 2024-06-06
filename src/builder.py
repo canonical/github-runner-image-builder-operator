@@ -36,7 +36,6 @@ APT_DEPENDENCIES = [
     "python3-dev",
     "gcc",
 ]
-CALLBACK_SCRIPT_PATH = UBUNTU_HOME / "on_build_success_callback.sh"
 CRON_PATH = Path("/etc/cron.d")
 CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
@@ -117,7 +116,7 @@ def install_clouds_yaml(cloud_config: dict) -> None:
         OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
 
 
-def configure_cron(run_config: state.RunConfig, interval: int) -> bool:
+def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
     """Configure cron to run builder.
 
     Args:
@@ -196,7 +195,7 @@ def _should_configure_cron(
     )
 
 
-def run(config: state.RunConfig) -> None:
+def run(config: state.BuilderRunConfig) -> None:
     """Run a build immediately.
 
     Args:

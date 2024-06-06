@@ -46,7 +46,7 @@ class Observer(ops.Object):
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_joined(self, _: ops.RelationJoinedEvent) -> None:
         """Handle the image relation joined event."""
-        build_config = state.RunConfig.from_charm(self)
+        build_config = state.BuilderRunConfig.from_charm(self)
         image_id = builder.get_latest_image(
             arch=build_config.arch,
             base=build_config.base,

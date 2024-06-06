@@ -14,8 +14,6 @@ from typing import Any, Optional, cast
 import yaml
 from ops import CharmBase
 
-import builder
-
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
@@ -26,6 +24,8 @@ BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "openstack-clouds-yaml"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
+
+CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
 
 
 # Step down formatting is not applied here since classes need to be predefined to be used as class
@@ -181,7 +181,7 @@ class BuildConfigInvalidError(CharmConfigInvalidError):
 
 
 @dataclasses.dataclass
-class RunConfig:
+class BuilderRunConfig:
     """Configurations for running builder periodically.
 
     Attributes:
@@ -197,7 +197,7 @@ class RunConfig:
     base: BaseImage
     cloud_config: dict[str, Any]
     num_revisions: int
-    callback_script: pathlib.Path = builder.CALLBACK_SCRIPT_PATH
+    callback_script: pathlib.Path = CALLBACK_SCRIPT_PATH
 
     @property
     def cloud_name(self) -> str:
@@ -205,7 +205,7 @@ class RunConfig:
         return list(self.cloud_config["clouds"].keys())[0]
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "RunConfig":
+    def from_charm(cls, charm: CharmBase) -> "BuilderRunConfig":
         """Initialize build state from current charm instance.
 
         Args:
@@ -347,7 +347,7 @@ class BuilderInitConfig:
         interval: The interval in hours between each scheduled image builds.
     """
 
-    run_config: RunConfig
+    run_config: BuilderRunConfig
     interval: int
 
     @classmethod
@@ -364,7 +364,7 @@ class BuilderInitConfig:
             Current charm state.
         """
         try:
-            run_config = RunConfig.from_charm(charm=charm)
+            run_config = BuilderRunConfig.from_charm(charm=charm)
         except BuildConfigInvalidError as exc:
             raise BuilderSetupConfigInvalidError(msg="Invalid run config.") from exc
 

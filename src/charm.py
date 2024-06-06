@@ -59,6 +59,21 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.build_success, self._on_build_success)
 
+    @charm_utils.block_if_invalid_config(defer=True)
+    def _on_install(self, _: ops.InstallEvent) -> None:
+        """Handle installation of the charm.
+
+        Installs apt packages required to build the image.
+
+        """
+        self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
+        proxy.setup(proxy=state.ProxyConfig.from_env())
+        self._create_callback_script()
+        init_config = state.BuilderInitConfig.from_charm(self)
+        builder.initialize(init_config=init_config)
+        self.unit.status = ops.ActiveStatus("Waiting for first image.")
+        builder.run(config=init_config.run_config)
+
     def _create_callback_script(self) -> None:
         """Create callback script to propagate images."""
         charm_dir = os.getenv("JUJU_CHARM_DIR")
@@ -74,23 +89,8 @@ OPENSTACK_IMAGE_ID="$1"
 
 /usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
 """
-        builder.CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
-        builder.CALLBACK_SCRIPT_PATH.chmod(0o755)
-
-    @charm_utils.block_if_invalid_config(defer=True)
-    def _on_install(self, _: ops.InstallEvent) -> None:
-        """Handle installation of the charm.
-
-        Installs apt packages required to build the image.
-
-        """
-        self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
-        proxy.setup(proxy=state.ProxyConfig.from_env())
-        self._create_callback_script()
-        init_config = state.BuilderInitConfig.from_charm(self)
-        builder.initialize(init_config=init_config)
-        self.unit.status = ops.ActiveStatus("Waiting for first image.")
-        builder.run(config=init_config.run_config)
+        state.CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
+        state.CALLBACK_SCRIPT_PATH.chmod(0o755)
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
@@ -114,6 +114,14 @@ OPENSTACK_IMAGE_ID="$1"
             return
         self.image_observer.update_image_id(image_id=image_id)
         self.unit.status = ops.ActiveStatus()
+
+    def update_status(self, status: ops.StatusBase) -> None:
+        """Update the charm status.
+
+        Args:
+            status: The desired status instance.
+        """
+        self.unit.status = status
 
 
 if __name__ == "__main__":  # pragma: nocover

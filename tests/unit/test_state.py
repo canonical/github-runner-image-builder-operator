@@ -6,29 +6,15 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import os
 import platform
-from typing import Any
+import typing
 from unittest.mock import MagicMock
 
 import pytest
 import yaml
 
 import state
-from state import (
-    BASE_IMAGE_CONFIG_NAME,
-    BUILD_INTERVAL_CONFIG_NAME,
-    OPENSTACK_CLOUDS_YAML_CONFIG_NAME,
-    REVISION_HISTORY_LIMIT_CONFIG_NAME,
-    Arch,
-    BaseImage,
-    CharmConfigInvalidError,
-    ImageConfig,
-    InvalidCloudConfigError,
-    InvalidImageConfigError,
-    ProxyConfig,
-    UnsupportedArchitectureError,
-    os,
-)
 from tests.unit.factories import MockCharmFactory
 
 
@@ -49,7 +35,7 @@ def test__get_supported_arch_unsupported_arch(arch: str, monkeypatch: pytest.Mon
     """
     monkeypatch.setattr(platform, "machine", lambda: arch)
 
-    with pytest.raises(UnsupportedArchitectureError) as exc:
+    with pytest.raises(state.UnsupportedArchitectureError) as exc:
         state._get_supported_arch()
 
     assert arch in str(exc.getrepr())
@@ -58,12 +44,14 @@ def test__get_supported_arch_unsupported_arch(arch: str, monkeypatch: pytest.Mon
 @pytest.mark.parametrize(
     "arch, expected_arch",
     [
-        pytest.param("aarch64", Arch.ARM64, id="aarch64"),
-        pytest.param("arm64", Arch.ARM64, id="aarch64"),
-        pytest.param("x86_64", Arch.X64, id="amd64"),
+        pytest.param("aarch64", state.Arch.ARM64, id="aarch64"),
+        pytest.param("arm64", state.Arch.ARM64, id="aarch64"),
+        pytest.param("x86_64", state.Arch.X64, id="amd64"),
     ],
 )
-def test__get_supported_arch(arch: str, expected_arch: Arch, monkeypatch: pytest.MonkeyPatch):
+def test__get_supported_arch(
+    arch: str, expected_arch: state.Arch, monkeypatch: pytest.MonkeyPatch
+):
     """
     arrange: given architectures that is supported by the charm.
     act: when _get_supported_arch is called.
@@ -77,11 +65,11 @@ def test__get_supported_arch(arch: str, expected_arch: Arch, monkeypatch: pytest
 @pytest.mark.parametrize(
     "arch, expected_str",
     [
-        pytest.param(Arch.ARM64, Arch.ARM64.value),
-        pytest.param(Arch.X64, Arch.X64.value),
+        pytest.param(state.Arch.ARM64, state.Arch.ARM64.value),
+        pytest.param(state.Arch.X64, state.Arch.X64.value),
     ],
 )
-def test_arch_str(arch: Arch, expected_str: str):
+def test_arch_str(arch: state.Arch, expected_str: str):
     """
     arrange: given arch enum.
     act: when string interpolation is called(__str__).
@@ -101,14 +89,14 @@ def test_arch_str(arch: Arch, expected_str: str):
 def test_base_image_invalid(image: str):
     """
     arrange: given invalid or unsupported base image names as config value.
-    act: when BaseImage.from_charm is called.
+    act: when state.BaseImage.from_charm is called.
     assert: ValueError is raised.
     """
     charm = MockCharmFactory()
-    charm.config[BASE_IMAGE_CONFIG_NAME] = image
+    charm.config[state.BASE_IMAGE_CONFIG_NAME] = image
 
     with pytest.raises(ValueError) as exc:
-        BaseImage.from_charm(charm)
+        state.BaseImage.from_charm(charm)
 
     assert image in str(exc)
 
@@ -116,45 +104,58 @@ def test_base_image_invalid(image: str):
 @pytest.mark.parametrize(
     "image, expected_base_image",
     [
-        pytest.param("jammy", BaseImage.JAMMY, id="jammy"),
-        pytest.param("22.04", BaseImage.JAMMY, id="22.04"),
+        pytest.param("jammy", state.BaseImage.JAMMY, id="jammy"),
+        pytest.param("22.04", state.BaseImage.JAMMY, id="22.04"),
     ],
 )
-def test_base_image(image: str, expected_base_image: BaseImage):
+def test_base_image(image: str, expected_base_image: state.BaseImage):
     """
     arrange: given supported image name or tag as config value.
-    act: when BaseImage.from_charm is called.
+    act: when state.BaseImage.from_charm is called.
     assert: expected base image is returned.
     """
     charm = MockCharmFactory()
-    charm.config[BASE_IMAGE_CONFIG_NAME] = image
+    charm.config[state.BASE_IMAGE_CONFIG_NAME] = image
 
-    assert BaseImage.from_charm(charm) == expected_base_image
+    assert state.BaseImage.from_charm(charm) == expected_base_image
 
 
 @pytest.mark.parametrize(
     "base_image, expected_str",
     [
-        pytest.param(BaseImage.JAMMY, BaseImage.JAMMY.value),
-        pytest.param(BaseImage.NOBLE, BaseImage.NOBLE.value),
+        pytest.param(state.BaseImage.JAMMY, state.BaseImage.JAMMY.value),
+        pytest.param(state.BaseImage.NOBLE, state.BaseImage.NOBLE.value),
     ],
 )
-def test_base_image_str(base_image: BaseImage, expected_str: str):
+def test_base_image_str(base_image: state.BaseImage, expected_str: str):
     """
-    arrange: given BaseImage enum.
+    arrange: given state.BaseImage enum.
     act: when string interpolation is called(__str__).
     assert: expected string representation is output.
     """
     assert str(base_image) == expected_str
 
 
+def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched os.environ with juju proxy values.
+    act: when ProxyConfig.from_env is called.
+    assert: expected proxy config is returned.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value="test"))
+
+    assert state.ProxyConfig.from_env() == state.ProxyConfig(
+        http="test", https="test", no_proxy="test"
+    )
+
+
 @pytest.mark.parametrize(
-    "patch_obj, sub_func, exception, expected_message",
+    "module, patch_func, exception, message",
     [
         pytest.param(
             state,
             "_get_supported_arch",
-            UnsupportedArchitectureError(arch=""),
+            state.UnsupportedArchitectureError(arch="test"),
             "Unsupported architecture",
             id="unsupported arch",
         ),
@@ -163,47 +164,82 @@ def test_base_image_str(base_image: BaseImage, expected_str: str):
             "from_charm",
             ValueError,
             "Unsupported input option for base-image",
-            id="unsupported base image",
+            id="invalid base image",
+        ),
+        pytest.param(
+            state,
+            "_parse_openstack_clouds_config",
+            state.InvalidCloudConfigError,
+            "",
+            id="invalid cloud config",
+        ),
+        pytest.param(
+            state,
+            "_parse_revision_history_limit",
+            ValueError,
+            "",
+            id="invalid revision history",
         ),
     ],
 )
-def test_image_config_invalid(
-    patch_obj: Any,
-    sub_func: str,
-    exception: Exception,
-    expected_message: str,
+def test_builder_run_config_invalid_configs(
     monkeypatch: pytest.MonkeyPatch,
+    module: typing.Any,
+    patch_func: typing.Any,
+    exception: typing.Type[Exception],
+    message: str,
 ):
     """
-    arrange: given a monkeypatched sub functions of ImageConfig that raises given exceptions.
-    act: when ImageConfig.from_charm is called.
-    assert: An InvalidImageConfigError is raised.
+    arrange: given a valid charm configurations.
+    act: when BuilderRunConfig.from_charm is called.
+    assert: expected BuilderRunConfig is returned.
     """
-    mock_func = MagicMock(side_effect=exception)
-    monkeypatch.setattr(patch_obj, sub_func, mock_func)
+    monkeypatch.setattr(state, "_get_supported_arch", MagicMock())
+    monkeypatch.setattr(state.BaseImage, "from_charm", MagicMock())
+    monkeypatch.setattr(state, "_parse_openstack_clouds_config", MagicMock())
+    monkeypatch.setattr(state, "_parse_revision_history_limit", MagicMock())
+    monkeypatch.setattr(module, patch_func, MagicMock(side_effect=exception))
 
-    with pytest.raises(InvalidImageConfigError) as exc:
-        ImageConfig.from_charm(MagicMock)
+    charm = MockCharmFactory()
+    with pytest.raises(state.BuildConfigInvalidError) as exc:
+        state.BuilderRunConfig.from_charm(charm)
 
-    assert expected_message in str(exc)
+    assert message in str(exc.getrepr())
 
 
-def test_image_config(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: given a monkeypatched sub functions of ImageConfig.
-    act: when ImageConfig.from_charm is called.
-    assert: valid class config is returned.
+    arrange: given a valid charm configurations.
+    act: when BuilderRunConfig.from_charm is called.
+    assert: expected BuilderRunConfig is returned.
     """
-    test_arch = MagicMock(return_value=Arch.ARM64)
-    test_image = MagicMock(return_value=BaseImage.JAMMY)
-    monkeypatch.setattr(state, "_get_supported_arch", test_arch)
-    monkeypatch.setattr(state.BaseImage, "from_charm", test_image)
+    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
+    monkeypatch.setattr(os, "environ", {})
 
-    assert ImageConfig.from_charm(MagicMock) == ImageConfig(
-        arch=test_arch.return_value, base_image=test_image.return_value
+    charm = MockCharmFactory()
+    result = state.BuilderInitConfig.from_charm(charm)
+    assert result == state.BuilderInitConfig(
+        run_config=state.BuilderRunConfig(
+            arch=state.Arch.X64,
+            base=state.BaseImage.JAMMY,
+            cloud_config={
+                "clouds": {
+                    "sunbeam": {
+                        "auth": None,
+                        "auth_url": "http://10.20.21.12/openstack-keystone",
+                        "password": "PS2GoJZUnmtK",
+                        "project_domain_name": "users",
+                        "project_name": "demo",
+                        "user_domain_name": "users",
+                        "username": "demo",
+                    }
+                }
+            },
+            num_revisions=5,
+        ),
+        interval=6,
     )
+    assert result.run_config.cloud_name == "sunbeam"
 
 
 @pytest.mark.parametrize(
@@ -232,7 +268,7 @@ def test__parse_build_interval_invalid(interval: str, expected_message: str):
     assert: ValueError is raised.
     """
     charm = MockCharmFactory()
-    charm.config[BUILD_INTERVAL_CONFIG_NAME] = interval
+    charm.config[state.BUILD_INTERVAL_CONFIG_NAME] = interval
 
     with pytest.raises(ValueError) as exc:
         state._parse_build_interval(charm)
@@ -256,7 +292,7 @@ def test__parse_build_interval(interval: str, expected: int):
     assert: expected interval is returned.
     """
     charm = MockCharmFactory()
-    charm.config[BUILD_INTERVAL_CONFIG_NAME] = interval
+    charm.config[state.BUILD_INTERVAL_CONFIG_NAME] = interval
 
     assert state._parse_build_interval(charm) == expected
 
@@ -284,7 +320,7 @@ def test__parse_revision_history_limit_invalid(revision_history: str, expected_e
     assert: ValueError is raised.
     """
     charm = MockCharmFactory()
-    charm.config[REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
+    charm.config[state.REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
 
     with pytest.raises(ValueError) as exc:
         state._parse_revision_history_limit(charm)
@@ -307,7 +343,7 @@ def test__parse_revision_history_limit(revision_history: str, expected: int):
     assert: expected value is returned.
     """
     charm = MockCharmFactory()
-    charm.config[REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
+    charm.config[state.REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
 
     assert state._parse_revision_history_limit(charm) == expected
 
@@ -331,9 +367,9 @@ def test__parse_openstack_clouds_config_invalid(cloud_config: str, expected_err:
     assert: InvalidCloudConfigError is raised.
     """
     charm = MockCharmFactory()
-    charm.config[OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
+    charm.config[state.OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
 
-    with pytest.raises(InvalidCloudConfigError) as exc:
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
         state._parse_openstack_clouds_config(charm)
 
     assert expected_err in str(exc)
@@ -363,32 +399,14 @@ def test__parse_openstack_clouds_config(cloud_config: str, expected: dict):
     assert: expected cloud config is returned.
     """
     charm = MockCharmFactory()
-    charm.config[OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
+    charm.config[state.OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
 
     assert state._parse_openstack_clouds_config(charm) == expected
-
-
-def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given monkeypatched os.environ with juju proxy values.
-    act: when ProxyConfig.from_env is called.
-    assert: expected proxy config is returned.
-    """
-    monkeypatch.setattr(os, "getenv", MagicMock(return_value="test"))
-
-    assert ProxyConfig.from_env() == ProxyConfig(http="test", https="test", no_proxy="test")
 
 
 @pytest.mark.parametrize(
     "patch_obj, sub_func, exception, expected_message",
     [
-        pytest.param(
-            state.ImageConfig,
-            "from_charm",
-            InvalidImageConfigError("Invalid image"),
-            "Invalid image",
-            id="ImageConfig error",
-        ),
         pytest.param(
             state,
             "_parse_build_interval",
@@ -399,7 +417,7 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
         pytest.param(
             state,
             "_parse_openstack_clouds_config",
-            InvalidCloudConfigError("Invalid clouds yaml"),
+            state.InvalidCloudConfigError("Invalid clouds yaml"),
             "Invalid clouds yaml",
             id="_parse_openstack_clouds_config error",
         ),
@@ -412,10 +430,10 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
         ),
     ],
 )
-def test_charm_state_invalid(
-    patch_obj: Any,
+def test_builder_init_config_invalid(
+    patch_obj: typing.Any,
     sub_func: str,
-    exception: Exception,
+    exception: typing.Type[Exception],
     expected_message: str,
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -428,30 +446,7 @@ def test_charm_state_invalid(
     monkeypatch.setattr(patch_obj, sub_func, mock_func)
     charm = MockCharmFactory()
 
-    with pytest.raises(CharmConfigInvalidError) as exc:
+    with pytest.raises(state.CharmConfigInvalidError) as exc:
         state.BuilderInitConfig.from_charm(charm)
 
     assert expected_message in str(exc.getrepr())
-
-
-def test_charm_state(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a valid charm configurations.
-    act: when CharmState.from_charm is called.
-    assert: charm state is returned.
-    """
-    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
-    monkeypatch.setattr(os, "environ", {})
-
-    charm = MockCharmFactory()
-    result = state.BuilderInitConfig.from_charm(charm)
-    assert result == state.BuilderInitConfig(
-        build_interval=int(charm.config[BUILD_INTERVAL_CONFIG_NAME]),
-        cloud_config=yaml.safe_load(charm.config[OPENSTACK_CLOUDS_YAML_CONFIG_NAME]),
-        image_config=ImageConfig(
-            arch=Arch.X64, base_image=BaseImage(charm.config[BASE_IMAGE_CONFIG_NAME])
-        ),
-        proxy_config=None,
-        revision_history_limit=int(charm.config[REVISION_HISTORY_LIMIT_CONFIG_NAME]),
-    )
-    assert result.cloud_name == "sunbeam"
