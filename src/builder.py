@@ -213,6 +213,10 @@ def run(config: state.BuilderRunConfig) -> None:
                     ">>",
                     str(OUTPUT_LOG_PATH),
                     "2>&1",
+                    "||",
+                    # Run the callback script without Openstack ID argument to let the charm know
+                    # about the error.
+                    str(config.callback_script),
                     "&",
                 ]
             ),
