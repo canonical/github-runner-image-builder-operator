@@ -12,7 +12,6 @@ import typing
 from unittest.mock import MagicMock
 
 import pytest
-import yaml
 
 import state
 from tests.unit.factories import MockCharmFactory
@@ -224,14 +223,15 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
             base=state.BaseImage.JAMMY,
             cloud_config={
                 "clouds": {
-                    "sunbeam": {
-                        "auth": None,
-                        "auth_url": "http://10.20.21.12/openstack-keystone",
-                        "password": "PS2GoJZUnmtK",
-                        "project_domain_name": "users",
-                        "project_name": "demo",
-                        "user_domain_name": "users",
-                        "username": "demo",
+                    state.CLOUD_NAME: {
+                        "auth": {
+                            "auth_url": "http://testing-auth/keystone",
+                            "password": "testingvalue",
+                            "project_domain_name": "project_domain_name",
+                            "project_name": "project_name",
+                            "user_domain_name": "user_domain_name",
+                            "username": "username",
+                        }
                     }
                 }
             },
@@ -239,7 +239,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
         ),
         interval=6,
     )
-    assert result.run_config.cloud_name == "sunbeam"
+    assert result.run_config.cloud_name == state.CLOUD_NAME
 
 
 @pytest.mark.parametrize(
@@ -349,59 +349,29 @@ def test__parse_revision_history_limit(revision_history: str, expected: int):
 
 
 @pytest.mark.parametrize(
-    "cloud_config, expected_err",
+    "missing_config",
     [
-        pytest.param("", "No cloud config set", id="Not set"),
-        pytest.param("""- not\nvalid""", "Invalid yaml", id="Not a yaml"),
-        pytest.param('- "not"\n- "a"\n- "dict"\n', "expected dict", id="Not a dict"),
-        pytest.param(
-            yaml.dump({"no-clouds-key": "test"}), "Invalid openstack config", id="No clouds key"
-        ),
-        pytest.param(yaml.dump({"clouds": {}}), "No clouds", id="No clouds"),
+        pytest.param(state.OPENSTACK_AUTH_URL_CONFIG_NAME),
+        pytest.param(state.OPENSTACK_PASSWORD_CONFIG_NAME),
+        pytest.param(state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME),
+        pytest.param(state.OPENSTACK_PROJECT_CONFIG_NAME),
+        pytest.param(state.OPENSTACK_USER_DOMAIN_CONFIG_NAME),
+        pytest.param(state.OPENSTACK_USER_CONFIG_NAME),
     ],
 )
-def test__parse_openstack_clouds_config_invalid(cloud_config: str, expected_err: str):
+def test__parse_openstack_clouds_config_invalid(missing_config: str):
     """
     arrange: given an invalid cloud config.
     act: when _parse_openstack_clouds_config is called.
     assert: InvalidCloudConfigError is raised.
     """
     charm = MockCharmFactory()
-    charm.config[state.OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
+    charm.config.pop(missing_config)
 
     with pytest.raises(state.InvalidCloudConfigError) as exc:
         state._parse_openstack_clouds_config(charm)
 
-    assert expected_err in str(exc)
-
-
-# pylint doesn't quite understand walrus operators
-# pylint: disable=unused-variable,undefined-variable
-@pytest.mark.parametrize(
-    "cloud_config, expected",
-    [
-        pytest.param(
-            yaml.dump((expected := {"clouds": {"sunbeam": {"expected": "key "}}})),
-            expected,
-            id="one cloud",
-        ),
-        pytest.param(
-            yaml.dump((expected := {"clouds": {"sunbeam": {"expected": "key "}}, "another": {}})),
-            expected,
-            id="multi clouds",
-        ),
-    ],
-)
-def test__parse_openstack_clouds_config(cloud_config: str, expected: dict):
-    """
-    arrange: given a valid cloud config.
-    act: when _parse_openstack_clouds_config is called.
-    assert: expected cloud config is returned.
-    """
-    charm = MockCharmFactory()
-    charm.config[state.OPENSTACK_CLOUDS_YAML_CONFIG_NAME] = cloud_config
-
-    assert state._parse_openstack_clouds_config(charm) == expected
+    assert "Please supply all OpenStack configurations." in str(exc)
 
 
 @pytest.mark.parametrize(
@@ -417,8 +387,8 @@ def test__parse_openstack_clouds_config(cloud_config: str, expected: dict):
         pytest.param(
             state,
             "_parse_openstack_clouds_config",
-            state.InvalidCloudConfigError("Invalid clouds yaml"),
-            "Invalid clouds yaml",
+            state.InvalidCloudConfigError("Missing configuration"),
+            "Missing configuration",
             id="_parse_openstack_clouds_config error",
         ),
         pytest.param(

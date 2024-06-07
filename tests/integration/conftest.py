@@ -26,12 +26,17 @@ from builder import IMAGE_NAME_TMPL
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
-    OPENSTACK_CLOUDS_YAML_CONFIG_NAME,
+    OPENSTACK_AUTH_URL_CONFIG_NAME,
+    OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PROJECT_CONFIG_NAME,
+    OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
+    OPENSTACK_USER_CONFIG_NAME,
+    OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
 from tests.integration.helpers import wait_for_valid_connection
-from tests.integration.types import ProxyConfig, SSHKey
+from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +109,9 @@ def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
     return flavor_name
 
 
-@pytest.fixture(scope="module", name="private_endpoint_clouds_yaml")
-def private_endpoint_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optional[str]:
-    """The openstack private endpoint clouds yaml."""
+@pytest.fixture(scope="module", name="private_endpoint_configs")
+def private_endpoint_configs_fixture(pytestconfig: pytest.Config) -> PrivateEndpointConfigs | None:
+    """The OpenStack private endpoint configurations."""
     auth_url = pytestconfig.getoption("--openstack-auth-url")
     password = pytestconfig.getoption("--openstack-password")
     project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
@@ -127,17 +132,33 @@ def private_endpoint_clouds_yaml_fixture(pytestconfig: pytest.Config) -> Optiona
         )
     ):
         return None
+    return {
+        "auth_url": auth_url,
+        "password": password,
+        "project_domain_name": project_domain_name,
+        "project_name": project_name,
+        "user_domain_name": user_domain_name,
+        "username": user_name,
+        "region_name": region_name,
+    }
+
+
+@pytest.fixture(scope="module", name="private_endpoint_clouds_yaml")
+def private_endpoint_clouds_yaml_fixture(
+    private_endpoint_configs: PrivateEndpointConfigs,
+) -> Optional[str]:
+    """The openstack private endpoint clouds yaml."""
     return string.Template(
         Path("tests/integration/data/clouds.yaml.tmpl").read_text(encoding="utf-8")
     ).substitute(
         {
-            "auth_url": auth_url,
-            "password": password,
-            "project_domain_name": project_domain_name,
-            "project_name": project_name,
-            "user_domain_name": user_domain_name,
-            "username": user_name,
-            "region_name": region_name,
+            "auth_url": private_endpoint_configs["auth_url"],
+            "password": private_endpoint_configs["password"],
+            "project_domain_name": private_endpoint_configs["project_domain_name"],
+            "project_name": private_endpoint_configs["project_name"],
+            "user_domain_name": private_endpoint_configs["user_domain_name"],
+            "username": private_endpoint_configs["username"],
+            "region_name": private_endpoint_configs["region_name"],
         }
     )
 
@@ -175,18 +196,25 @@ def test_id_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
-    model: Model, charm_file: str, clouds_yaml_contents: str, test_id: str
+    model: Model, charm_file: str, test_id: str, private_endpoint_configs: PrivateEndpointConfigs
 ) -> Application:
     """The deployed application fixture."""
+    config = {
+        BUILD_INTERVAL_CONFIG_NAME: 12,
+        REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
+        OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
+        OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
+        OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
+        OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
+        OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
+        OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
+    }
+
     app: Application = await model.deploy(
         charm_file,
         application_name=f"image-builder-{test_id}",
         constraints="cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
-        config={
-            OPENSTACK_CLOUDS_YAML_CONFIG_NAME: clouds_yaml_contents,
-            BUILD_INTERVAL_CONFIG_NAME: 12,
-            REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
-        },
+        config=config,
     )
     # This takes long due to having to wait for the machine to come up.
     await model.wait_for_idle(

@@ -9,10 +9,16 @@ Module for interacting with charm state and configurations.
 ---------------
 - **ARCHITECTURES_ARM64**
 - **ARCHITECTURES_X86**
+- **CLOUD_NAME**
 - **LTS_IMAGE_VERSION_TAG_MAP**
 - **BASE_IMAGE_CONFIG_NAME**
 - **BUILD_INTERVAL_CONFIG_NAME**
-- **OPENSTACK_CLOUDS_YAML_CONFIG_NAME**
+- **OPENSTACK_AUTH_URL_CONFIG_NAME**
+- **OPENSTACK_PASSWORD_CONFIG_NAME**
+- **OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME**
+- **OPENSTACK_PROJECT_CONFIG_NAME**
+- **OPENSTACK_USER_DOMAIN_CONFIG_NAME**
+- **OPENSTACK_USER_CONFIG_NAME**
 - **REVISION_HISTORY_LIMIT_CONFIG_NAME**
 
 
@@ -53,7 +59,7 @@ The ubuntu OS base image to build and deploy runners on.
 ## <kbd>class</kbd> `BuildConfigInvalidError`
 Raised when charm config related to image build config is invalid. 
 
-<a href="../src/state.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -90,7 +96,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -145,7 +151,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -178,7 +184,7 @@ Initialize build state from current charm instance.
 ## <kbd>class</kbd> `BuilderSetupConfigInvalidError`
 Raised when charm config related to image build setup config is invalid. 
 
-<a href="../src/state.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -209,7 +215,7 @@ Raised when charm config is invalid.
  
  - <b>`msg`</b>:  Explanation of the error. 
 
-<a href="../src/state.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -256,7 +262,7 @@ Proxy configuration.
 
 ---
 
-<a href="../src/state.py#L146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_env`
 
@@ -283,7 +289,7 @@ Raised when given machine charm architecture is unsupported.
  
  - <b>`arch`</b>:  The current machine architecture. 
 
-<a href="../src/state.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

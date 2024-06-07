@@ -8,21 +8,27 @@ import logging
 import os
 import pathlib
 import platform
+import typing
 from enum import Enum
-from typing import Any, Optional, cast
 
-import yaml
-from ops import CharmBase
+import ops
 
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
+CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-OPENSTACK_CLOUDS_YAML_CONFIG_NAME = "openstack-clouds-yaml"
+OPENSTACK_AUTH_URL_CONFIG_NAME = "os-auth-url"
+# Bandit thinks this is a hardcoded password
+OPENSTACK_PASSWORD_CONFIG_NAME = "os-password"  # nosec: B105
+OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "os-project-domain-name"
+OPENSTACK_PROJECT_CONFIG_NAME = "os-project-name"
+OPENSTACK_USER_DOMAIN_CONFIG_NAME = "os-user-domain-name"
+OPENSTACK_USER_CONFIG_NAME = "os-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
 SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
@@ -114,7 +120,7 @@ class BaseImage(str, Enum):
         return self.value
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "BaseImage":
+    def from_charm(cls, charm: ops.CharmBase) -> "BaseImage":
         """Retrieve the base image tag from charm.
 
         Args:
@@ -123,7 +129,9 @@ class BaseImage(str, Enum):
         Returns:
             The base image configuration of the charm.
         """
-        image_name = cast(str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")).lower().strip()
+        image_name = (
+            typing.cast(str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")).lower().strip()
+        )
         if image_name in LTS_IMAGE_VERSION_TAG_MAP:
             return cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
         return cls(image_name)
@@ -145,7 +153,7 @@ class ProxyConfig:
 
     @classmethod
     # Use optional instead of | operator due to unsupported str | None operand.
-    def from_env(cls) -> Optional["ProxyConfig"]:
+    def from_env(cls) -> typing.Optional["ProxyConfig"]:
         """Initialize the proxy config from charm.
 
         Returns:
@@ -196,7 +204,7 @@ class BuilderRunConfig:
 
     arch: Arch
     base: BaseImage
-    cloud_config: dict[str, Any]
+    cloud_config: dict[str, typing.Any]
     num_revisions: int
     callback_script: pathlib.Path = SUCCESS_CALLBACK_SCRIPT_PATH
 
@@ -206,7 +214,7 @@ class BuilderRunConfig:
         return list(self.cloud_config["clouds"].keys())[0]
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "BuilderRunConfig":
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
         """Initialize build state from current charm instance.
 
         Args:
@@ -251,7 +259,7 @@ class BuilderRunConfig:
         )
 
 
-def _parse_build_interval(charm: CharmBase) -> int:
+def _parse_build_interval(charm: ops.CharmBase) -> int:
     """Parse build-interval charm configuration option.
 
     Args:
@@ -272,7 +280,7 @@ def _parse_build_interval(charm: CharmBase) -> int:
     return build_interval
 
 
-def _parse_revision_history_limit(charm: CharmBase) -> int:
+def _parse_revision_history_limit(charm: ops.CharmBase) -> int:
     """Parse revision-history-limit char configuration option.
 
     Args:
@@ -297,7 +305,7 @@ class InvalidCloudConfigError(Exception):
     """Represents an error with openstack cloud config."""
 
 
-def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
+def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, typing.Any]:
     """Parse and validate openstack clouds yaml config value.
 
     Args:
@@ -309,30 +317,31 @@ def _parse_openstack_clouds_config(charm: CharmBase) -> dict[str, Any]:
     Returns:
         The openstack clouds yaml.
     """
-    openstack_clouds_yaml_str = charm.config.get(OPENSTACK_CLOUDS_YAML_CONFIG_NAME)
-    if not openstack_clouds_yaml_str:
-        raise InvalidCloudConfigError("No cloud config set")
+    auth_url = typing.cast(str, charm.config.get(OPENSTACK_AUTH_URL_CONFIG_NAME))
+    password = typing.cast(str, charm.config.get(OPENSTACK_PASSWORD_CONFIG_NAME))
+    project_domain = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME))
+    project = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_CONFIG_NAME))
+    user_domain = typing.cast(str, charm.config.get(OPENSTACK_USER_DOMAIN_CONFIG_NAME))
+    user = typing.cast(str, charm.config.get(OPENSTACK_USER_CONFIG_NAME))
+    if any(
+        not value for value in (auth_url, password, project_domain, project, user_domain, user)
+    ):
+        raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
 
-    try:
-        openstack_clouds_yaml = yaml.safe_load(cast(str, openstack_clouds_yaml_str))
-    except yaml.YAMLError as exc:
-        raise InvalidCloudConfigError(
-            f"Invalid {OPENSTACK_CLOUDS_YAML_CONFIG_NAME} config. Invalid yaml."
-        ) from exc
-    if (config_type := type(openstack_clouds_yaml)) is not dict:
-        raise InvalidCloudConfigError(
-            f"Invalid openstack config format, expected dict, got {config_type}"
-        )
-    try:
-        clouds = list(openstack_clouds_yaml["clouds"].keys())
-    except KeyError as exc:
-        raise InvalidCloudConfigError(
-            "Invalid openstack config. Not able to initialize openstack integration."
-        ) from exc
-    if not clouds:
-        raise InvalidCloudConfigError("No clouds found.")
-
-    return openstack_clouds_yaml
+    return {
+        "clouds": {
+            CLOUD_NAME: {
+                "auth": {
+                    "auth_url": auth_url,
+                    "password": password,
+                    "project_domain_name": project_domain,
+                    "project_name": project,
+                    "user_domain_name": user_domain,
+                    "username": user,
+                }
+            }
+        }
+    }
 
 
 class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
@@ -352,7 +361,7 @@ class BuilderInitConfig:
     interval: int
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "BuilderInitConfig":
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderInitConfig":
         """Initialize charm state from current charm instance.
 
         Args:

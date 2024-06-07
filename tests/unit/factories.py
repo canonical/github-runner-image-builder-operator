@@ -4,8 +4,7 @@
 """Factories for generating test data."""
 
 import secrets
-import textwrap
-from typing import Generic, TypeVar
+import typing
 from unittest.mock import MagicMock
 
 import factory
@@ -13,18 +12,23 @@ import factory
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
-    OPENSTACK_CLOUDS_YAML_CONFIG_NAME,
+    OPENSTACK_AUTH_URL_CONFIG_NAME,
+    OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PROJECT_CONFIG_NAME,
+    OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
+    OPENSTACK_USER_CONFIG_NAME,
+    OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
 )
 
-T = TypeVar("T")
+T = typing.TypeVar("T")
 
 
 # DC060: Docstrings have been abbreviated for factories, checking for docstrings on model
 # attributes can be skipped.
 
 
-class BaseMetaFactory(Generic[T], factory.base.FactoryMetaClass):
+class BaseMetaFactory(typing.Generic[T], factory.base.FactoryMetaClass):
     """Used for type hints of factories."""
 
     # No need for docstring because it is used for type hints
@@ -47,19 +51,12 @@ class MockCharmFactory(factory.Factory):
         {
             BASE_IMAGE_CONFIG_NAME: "jammy",
             BUILD_INTERVAL_CONFIG_NAME: "6",
-            OPENSTACK_CLOUDS_YAML_CONFIG_NAME: textwrap.dedent(
-                """
-            clouds:
-                sunbeam:
-                    auth:
-                    auth_url: http://10.20.21.12/openstack-keystone
-                    password: PS2GoJZUnmtK
-                    project_domain_name: users
-                    project_name: demo
-                    user_domain_name: users
-                    username: demo
-            """
-            ).strip(),
+            OPENSTACK_AUTH_URL_CONFIG_NAME: "http://testing-auth/keystone",
+            OPENSTACK_PASSWORD_CONFIG_NAME: "testingvalue",
+            OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "project_domain_name",
+            OPENSTACK_PROJECT_CONFIG_NAME: "project_name",
+            OPENSTACK_USER_DOMAIN_CONFIG_NAME: "user_domain_name",
+            OPENSTACK_USER_CONFIG_NAME: "username",
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
         }
     )

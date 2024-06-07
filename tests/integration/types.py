@@ -3,13 +3,13 @@
 
 """Types used in the integration test."""
 
+import typing
 from pathlib import Path
-from typing import NamedTuple
 
 from openstack.compute.v2.keypair import Keypair
 
 
-class ProxyConfig(NamedTuple):
+class ProxyConfig(typing.NamedTuple):
     """Proxy configuration.
 
     Attributes:
@@ -23,7 +23,7 @@ class ProxyConfig(NamedTuple):
     no_proxy: str
 
 
-class SSHKey(NamedTuple):
+class SSHKey(typing.NamedTuple):
     """Openstack SSH Keypair and private key.
 
     Attributes:
@@ -33,3 +33,25 @@ class SSHKey(NamedTuple):
 
     keypair: Keypair
     private_key: Path
+
+
+class PrivateEndpointConfigs(typing.TypedDict):
+    """The Private endpoint configuration values.
+
+    Attributes:
+        auth_url: OpenStack uthentication URL (Keystone).
+        password: OpenStack password.
+        project_domain_name: OpenStack project domain to use.
+        project_name: OpenStack project to use within the domain.
+        user_domain_name: OpenStack user domain to use.
+        username: OpenStack user to use within the domain.
+        region_name: OpenStack deployment region.
+    """
+
+    auth_url: str
+    password: str
+    project_domain_name: str
+    project_name: str
+    user_domain_name: str
+    username: str
+    region_name: str
