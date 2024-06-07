@@ -23,13 +23,13 @@ LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-OPENSTACK_AUTH_URL_CONFIG_NAME = "os-auth-url"
+OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
-OPENSTACK_PASSWORD_CONFIG_NAME = "os-password"  # nosec: B105
-OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "os-project-domain-name"
-OPENSTACK_PROJECT_CONFIG_NAME = "os-project-name"
-OPENSTACK_USER_DOMAIN_CONFIG_NAME = "os-user-domain-name"
-OPENSTACK_USER_CONFIG_NAME = "os-user-name"
+OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
+OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "openstack-project-domain-name"
+OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
+OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
+OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
 SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")

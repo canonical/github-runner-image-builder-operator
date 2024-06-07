@@ -60,42 +60,42 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
-    os-auth-url:
+    openstack-auth-url:
       type: string
       default: ""
       description: |
         The auth_url section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
         openstack.org/python-openstackclient/queens/configuration/index.html for more information.
-    os-password:
+    openstack-password:
       type: string
       default: ""
       description: |
         The password section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
         queens/configuration/index.html for more information.
-    os-project-domain-name:
+    openstack-project-domain-name:
       type: string
       default: ""
       description: |
         The project_domain_name section of the clouds.yaml contents, used to find the OpenStack
         project-domain to use to store images. See https://docs.openstack.org/python-\
         openstackclient/queens/configuration/index.html for more information.
-    os-project-name:
+    openstack-project-name:
       type: string
       default: ""
       description: |
         The project_name section of the clouds.yaml contents, used to find the OpenStack project to
         use to store images. See https://docs.openstack.org/python-openstackclient/queens/\
         configuration/index.html for more information.
-    os-user-domain-name:
+    openstack-user-domain-name:
       type: string
       default: ""
       description: |
         The user_domain_name section of the clouds.yaml contents, used to find the OpenStack
         user domain to authenticate the client. See https://docs.openstack.org/python-\
         openstackclient/queens/configuration/index.html for more information.
-    os-user-name:
+    openstack-user-name:
       type: string
       default: ""
       description: |
