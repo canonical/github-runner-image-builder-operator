@@ -24,6 +24,7 @@ from pytest_operator.plugin import OpsTest
 
 from builder import IMAGE_NAME_TMPL
 from state import (
+    APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
@@ -200,6 +201,7 @@ async def app_fixture(
 ) -> Application:
     """The deployed application fixture."""
     config = {
+        APP_CHANNEL_CONFIG_NAME: "edge",
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],

@@ -20,6 +20,7 @@ ARCHITECTURES_X86 = {"x86_64"}
 CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
+APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "os-auth-url"
@@ -33,6 +34,22 @@ REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 
 SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
 FAILED_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_failed_callback.sh")
+
+
+class CharmConfigInvalidError(Exception):
+    """Raised when charm config is invalid.
+
+    Attributes:
+        msg: Explanation of the error.
+    """
+
+    def __init__(self, msg: str | None = None):
+        """Initialize a new instance of the CharmConfigInvalidError exception.
+
+        Args:
+            msg: Explanation of the error.
+        """
+        self.msg = msg
 
 
 # Step down formatting is not applied here since classes need to be predefined to be used as class
@@ -57,28 +74,8 @@ class Arch(str, Enum):
     X64 = "x64"
 
 
-class UnsupportedArchitectureError(Exception):
-    """Raised when given machine charm architecture is unsupported.
-
-    Attributes:
-        arch: The current machine architecture.
-    """
-
-    def __str__(self) -> str:
-        """Represent the error in string format.
-
-        Returns:
-            The error in string format.
-        """
-        return f"UnsupportedArchitectureError: {self.arch}"
-
-    def __init__(self, arch: str) -> None:
-        """Initialize a new instance of the CharmConfigInvalidError exception.
-
-        Args:
-            arch: The current machine architecture.
-        """
-        self.arch = arch
+class UnsupportedArchitectureError(CharmConfigInvalidError):
+    """Raised when given machine charm architecture is unsupported."""
 
 
 def _get_supported_arch() -> Arch:
@@ -97,7 +94,7 @@ def _get_supported_arch() -> Arch:
         case arch if arch in ARCHITECTURES_X86:
             return Arch.X64
         case _:
-            raise UnsupportedArchitectureError(arch=arch)
+            raise UnsupportedArchitectureError(msg=f"Unsupported {arch=}")
 
 
 class BaseImage(str, Enum):
@@ -167,22 +164,6 @@ class ProxyConfig:
             return None
 
         return cls(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
-
-
-class CharmConfigInvalidError(Exception):
-    """Raised when charm config is invalid.
-
-    Attributes:
-        msg: Explanation of the error.
-    """
-
-    def __init__(self, msg: str):
-        """Initialize a new instance of the CharmConfigInvalidError exception.
-
-        Args:
-            msg: Explanation of the error.
-        """
-        self.msg = msg
 
 
 class BuildConfigInvalidError(CharmConfigInvalidError):
@@ -344,6 +325,42 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, typing.Any
     }
 
 
+class BuilderAppChannelInvalidError(CharmConfigInvalidError):
+    """Represents invalid builder app channel configuration."""
+
+
+class BuilderAppChannel(str, Enum):
+    """Image builder application channel.
+
+    This is managed by the application's git tag and versioning tag in pyproject.toml.
+
+    Attributes:
+        EDGE: Edge application channel.
+        STABLE: Stable application channel.
+    """
+
+    EDGE = "edge"
+    STABLE = "stable"
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
+        """Retrieve the app channel from charm.
+
+        Args:
+            charm: The charm instance.
+
+        Raises:
+            BuilderAppChannelInvalidError: If an invalid application channel was selected.
+
+        Returns:
+            The application channel to deploy.
+        """
+        try:
+            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
+        except ValueError as exc:
+            raise BuilderAppChannelInvalidError from exc
+
+
 class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
     """Raised when charm config related to image build setup config is invalid."""
 
@@ -353,10 +370,12 @@ class BuilderInitConfig:
     """The image builder setup config.
 
     Attributes:
+        channel: The application installation channel.
         run_config: The configuration required to build the image.
         interval: The interval in hours between each scheduled image builds.
     """
 
+    channel: BuilderAppChannel
     run_config: BuilderRunConfig
     interval: int
 
@@ -373,10 +392,8 @@ class BuilderInitConfig:
         Returns:
             Current charm state.
         """
-        try:
-            run_config = BuilderRunConfig.from_charm(charm=charm)
-        except BuildConfigInvalidError as exc:
-            raise BuilderSetupConfigInvalidError(msg="Invalid run config.") from exc
+        channel = BuilderAppChannel.from_charm(charm=charm)
+        run_config = BuilderRunConfig.from_charm(charm=charm)
 
         try:
             build_interval = _parse_build_interval(charm)
@@ -384,6 +401,7 @@ class BuilderInitConfig:
             raise BuilderSetupConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
+            channel=channel,
             run_config=run_config,
             interval=build_interval,
         )

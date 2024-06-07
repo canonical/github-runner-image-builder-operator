@@ -44,6 +44,11 @@ bases:
 
 config:
   options:
+    app-channel:
+      type: string
+      default: "stable"
+      dsecription: |
+        The application channel to deploy (i.e. stable, edge)
     base-image:
       type: string
       default: noble

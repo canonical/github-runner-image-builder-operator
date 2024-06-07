@@ -168,20 +168,25 @@ def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerI
     assert: the charm is in active status.
     """
     monkeypatch.setattr(os, "getenv", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
 
     charm._on_build_success(MagicMock)
 
     assert charm.unit.status == ops.ActiveStatus()
+    upgrade_mock.assert_called_once()
 
 
-def test__on_build_fail(charm: GithubRunnerImageBuilderCharm):
+def test__on_build_fail(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
-    arrange: None.
+    arrange: given monkeypatched mock builder upgrade_app function.
     act: when _on_build_failed is called.
-    assert: the charm is in active status.
+    assert: the charm is in active status and the upgrade_app is called.
     """
+    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
+
     charm._on_build_failed(MagicMock)
 
     assert charm.unit.status == ops.ActiveStatus(
         f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
     )
+    upgrade_mock.assert_called_once()

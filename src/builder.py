@@ -23,6 +23,7 @@ from exceptions import (
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
+    UpgradeApplicationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def initialize(init_config: state.BuilderInitConfig) -> None:
         BuilderSetupError: If there was an error setting up the host device for building images.
     """
     try:
-        _install_dependencies()
+        _install_dependencies(channel=init_config.channel)
         _initialize_image_builder()
         install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         configure_cron(run_config=init_config.run_config, interval=init_config.interval)
@@ -63,8 +64,11 @@ def initialize(init_config: state.BuilderInitConfig) -> None:
         raise BuilderSetupError from exc
 
 
-def _install_dependencies() -> None:
+def _install_dependencies(channel: state.BuilderAppChannel) -> None:
     """Install required dependencies to run qemu image build.
+
+    Args:
+        channel: The application channel to install.
 
     Raises:
         DependencyInstallError: If there was an error installing apt packages.
@@ -75,7 +79,7 @@ def _install_dependencies() -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                "git+https://github.com/canonical/github-runner-image-builder@feat/app",
+                f"git+https://github.com/canonical/github-runner-image-builder@{channel.value}",
             ],
             timeout=5 * 60,
             check=True,
@@ -263,3 +267,24 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
         return str(proc.stdout)
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
+
+
+def upgrade_app() -> None:
+    """Upgrade the application if newer version is available.
+
+    Raises:
+        UpgradeApplicationError: If there was an error upgrading the application.
+    """
+    try:
+        subprocess.run(  # nosec: B603
+            [
+                "/usr/bin/pipx",
+                "upgrade",
+                "github-runner-image-builder",
+            ],
+            timeout=5 * 60,
+            check=True,
+            user=UBUNTU_USER,
+        )
+    except subprocess.SubprocessError as exc:
+        raise UpgradeApplicationError from exc

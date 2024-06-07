@@ -70,3 +70,12 @@ Represents an error while installing proxy.
 
 
 
+---
+
+## <kbd>class</kbd> `UpgradeApplicationError`
+Represents an error while upgrading the application. 
+
+
+
+
+

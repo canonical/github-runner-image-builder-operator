@@ -30,3 +30,7 @@ class ProxyInstallError(BuilderBaseError):
 
 class GetLatestImageError(BuilderBaseError):
     """Represents an error while fetching the latest image."""
+
+
+class UpgradeApplicationError(BuilderBaseError):
+    """Represents an error while upgrading the application."""

@@ -154,7 +154,7 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
         pytest.param(
             state,
             "_get_supported_arch",
-            state.UnsupportedArchitectureError(arch="test"),
+            state.UnsupportedArchitectureError(),
             "Unsupported architecture",
             id="unsupported arch",
         ),
@@ -218,6 +218,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     charm = MockCharmFactory()
     result = state.BuilderInitConfig.from_charm(charm)
     assert result == state.BuilderInitConfig(
+        channel=state.BuilderAppChannel.EDGE,
         run_config=state.BuilderRunConfig(
             arch=state.Arch.X64,
             base=state.BaseImage.JAMMY,
@@ -372,6 +373,21 @@ def test__parse_openstack_clouds_config_invalid(missing_config: str):
         state._parse_openstack_clouds_config(charm)
 
     assert "Please supply all OpenStack configurations." in str(exc)
+
+
+def test_builder_app_channel_from_charm_error():
+    """
+    arrange: given an invalid charm app channel config.
+    act: when BuilderAppChannel.from_charm is called.
+    assert: BuilderAppChannelInvalidError is raised.
+    """
+    charm = MockCharmFactory()
+    charm.config[state.APP_CHANNEL_CONFIG_NAME] = "invalid"
+
+    with pytest.raises(state.BuilderAppChannelInvalidError) as exc:
+        state.BuilderAppChannel.from_charm(charm=charm)
+
+    assert "invalid" in str(exc.getrepr())
 
 
 @pytest.mark.parametrize(

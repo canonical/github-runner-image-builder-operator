@@ -147,6 +147,7 @@ OPENSTACK_IMAGE_ID="$1"
             )
             return
         self.image_observer.update_image_id(image_id=image_id)
+        builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
 
     def _on_build_failed(self, _: BuildFailedEvent) -> None:
@@ -154,6 +155,7 @@ OPENSTACK_IMAGE_ID="$1"
         self.unit.status = ops.ActiveStatus(
             f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
         )
+        builder.upgrade_app()
 
     def update_status(self, status: ops.StatusBase) -> None:
         """Update the charm status.

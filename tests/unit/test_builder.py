@@ -87,7 +87,7 @@ def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(builder.DependencyInstallError) as exc:
-        builder._install_dependencies()
+        builder._install_dependencies(channel=MagicMock())
 
     assert "error installing deps" in str(exc.getrepr())
 
@@ -101,7 +101,7 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(apt, "add_package", (apt_mock := MagicMock()))
     monkeypatch.setattr(subprocess, "run", (run_mock := MagicMock()))
 
-    builder._install_dependencies()
+    builder._install_dependencies(channel=MagicMock())
 
     apt_mock.assert_called_once()
     run_mock.assert_called_once()
@@ -338,3 +338,19 @@ def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
     assert "test-image" == builder.get_latest_image(
         arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock()
     )
+
+
+def test_upgrade_app_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched subprocess.run that raises an error.
+    act: when upgrade_app is called.
+    assert: UpgradeApplicationError is raised.
+    """
+    monkeypatch.setattr(
+        subprocess, "run", MagicMock(side_effect=subprocess.SubprocessError("Pipx error"))
+    )
+
+    with pytest.raises(builder.UpgradeApplicationError) as exc:
+        builder.upgrade_app()
+
+    assert "Pipx error" in str(exc.getrepr())
