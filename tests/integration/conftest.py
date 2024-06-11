@@ -36,7 +36,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import wait_for_valid_connection
+from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -215,7 +215,7 @@ async def app_fixture(
     app: Application = await model.deploy(
         charm_file,
         application_name=f"image-builder-{test_id}",
-        constraints="cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
+        constraints=f"arch={get_juju_arch()} cores=3 mem=18G root-disk=15G virt-type=virtual-machine",
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
