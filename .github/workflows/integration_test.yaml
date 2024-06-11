@@ -18,6 +18,7 @@ jobs:
       self-hosted-runner: true
       self-hosted-runner-arch: X64
       self-hosted-runner-label: stg-private-endpoint
+      builder-runner-label: X64
 
   integration-tests-arm:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
@@ -27,5 +28,6 @@ jobs:
       provider: lxd
       modules: '["test_charm"]'
       self-hosted-runner: true
-      self-hosted-runner-arch: X64
+      self-hosted-runner-arch: ARM64
       self-hosted-runner-label: stg-private-endpoint
+      builder-runner-label: ARM64
