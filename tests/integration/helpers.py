@@ -103,14 +103,14 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
                 host=ip,
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key.absolute())},
-                connect_timeout=10,
+                connect_timeout=60 * 10,
             )
             try:
                 result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
                     _install_proxy(conn=ssh_connection, proxy=proxy)
                     return ssh_connection
-            except NoValidConnectionsError as exc:
+            except (NoValidConnectionsError, TimeoutError) as exc:
                 logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
