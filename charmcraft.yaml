@@ -107,10 +107,6 @@ config:
       default: 5
       description: Number of image revisions to keep before deletion.
 
-actions:
-  build-image:
-    description: Builds a new image immediately.
-
 provides:
   image:
     interface: github_runner_image_v0
