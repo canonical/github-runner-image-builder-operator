@@ -79,10 +79,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self._create_success_callback_script()
         self._create_failed_callback_script()
         init_config = state.BuilderInitConfig.from_charm(self)
-        # The current CLI version only accepts relative pathing
-        init_config.run_config.callback_script = (
-            init_config.run_config.callback_script.relative_to(builder.UBUNTU_HOME)
-        )
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
         builder.run(config=init_config.run_config)
@@ -131,10 +127,6 @@ OPENSTACK_IMAGE_ID="$1"
         if builder.configure_cron(
             run_config=init_config.run_config, interval=init_config.interval
         ):
-            # The current CLI version only accepts relative pathing
-            init_config.run_config.callback_script = (
-                init_config.run_config.callback_script.relative_to(builder.UBUNTU_HOME)
-            )
             builder.run(config=init_config.run_config)
         self.unit.status = ops.ActiveStatus()
 
