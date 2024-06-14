@@ -191,7 +191,7 @@ def run(config: state.BuilderRunConfig) -> None:
         BuilderRunError: if there was an error while launching the subprocess.
     """
     try:
-        # The callback invotes another hook - which cannot be run when another hook is already
+        # The callback invokes another hook - which cannot be run when another hook is already
         # running. Call the process as a background and exit immediately.
         subprocess.Popen(  # pylint: disable=consider-using-with
             " ".join(

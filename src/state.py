@@ -149,8 +149,7 @@ class ProxyConfig:
     no_proxy: str
 
     @classmethod
-    # Use optional instead of | operator due to unsupported str | None operand.
-    def from_env(cls) -> typing.Optional["ProxyConfig"]:
+    def from_env(cls) -> "ProxyConfig | None":
         """Initialize the proxy config from charm.
 
         Returns:
@@ -286,7 +285,7 @@ class InvalidCloudConfigError(Exception):
     """Represents an error with openstack cloud config."""
 
 
-def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, typing.Any]:
+def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, dict]:
     """Parse and validate openstack clouds yaml config value.
 
     Args:
@@ -304,9 +303,7 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, typing.Any
     project = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_CONFIG_NAME))
     user_domain = typing.cast(str, charm.config.get(OPENSTACK_USER_DOMAIN_CONFIG_NAME))
     user = typing.cast(str, charm.config.get(OPENSTACK_USER_CONFIG_NAME))
-    if any(
-        not value for value in (auth_url, password, project_domain, project, user_domain, user)
-    ):
+    if not all((auth_url, password, project_domain, project, user_domain, user)):
         raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
 
     return {

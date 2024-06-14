@@ -141,7 +141,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -196,7 +196,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -312,7 +312,7 @@ Proxy configuration.
 ### <kbd>classmethod</kbd> `from_env`
 
 ```python
-from_env() → Optional[ForwardRef('ProxyConfig')]
+from_env() → ProxyConfig | None
 ```
 
 Initialize the proxy config from charm. 
