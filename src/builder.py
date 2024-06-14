@@ -196,6 +196,7 @@ def run(config: state.BuilderRunConfig) -> None:
         subprocess.Popen(  # pylint: disable=consider-using-with
             " ".join(
                 [
+                    "(",
                     # HOME path is required for GO modules.
                     f"HOME={UBUNTU_HOME}",
                     "/usr/bin/run-one",
@@ -221,6 +222,7 @@ def run(config: state.BuilderRunConfig) -> None:
                     # Run the callback script without Openstack ID argument to let the charm know
                     # about the error.
                     str(state.FAILED_CALLBACK_SCRIPT_PATH.absolute()),
+                    ")",
                     "&",
                 ]
             ),
