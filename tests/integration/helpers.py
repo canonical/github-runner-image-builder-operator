@@ -14,7 +14,7 @@ from fabric import Connection as SSHConnection
 from fabric import Result
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
-from paramiko.ssh_exception import NoValidConnectionsError
+from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 import state
 from tests.integration.types import ProxyConfig
@@ -110,7 +110,7 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
                 if result.ok:
                     _install_proxy(conn=ssh_connection, proxy=proxy)
                     return ssh_connection
-            except (NoValidConnectionsError, TimeoutError) as exc:
+            except (NoValidConnectionsError, TimeoutError, SSHException) as exc:
                 logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
