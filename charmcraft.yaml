@@ -1,11 +1,112 @@
-# This file configures Charmcraft.
-# See https://juju.is/docs/sdk/charmcraft-config for guidance.
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: github-runner-image-builder
+title: Github runner image builder
+summary: Provide Github runners with images available to use.
+description: |
+  A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) managing
+  runner images for
+  [self-hosted runners for GitHub Actions](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
+
+  A single unit of this charm provides pre-built images for Github runner operator to spawn and
+  register the self-hosted runners on Github. The charm will periodically rebuild and provide the
+  latest version of the images.
+links:
+  contact: https://github.com/orgs/canonical/teams/is-charms
+  documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview
+  issues: https://github.com/canonical/github-runner-image-builder-operator/issues
+  source: https://github.com/canonical/github-runner-image-builder-operator
+  website: https://charmhub.io/github-runner-image-builder
 
 type: charm
 bases:
   - build-on:
     - name: ubuntu
       channel: "22.04"
+      architectures:
+      - arm64
     run-on:
     - name: ubuntu
       channel: "22.04"
+      architectures:
+      - arm64
+  - build-on:
+    - name: ubuntu
+      channel: "22.04"
+      architectures:
+      - amd64
+    run-on:
+    - name: ubuntu
+      channel: "22.04"
+      architectures:
+      - amd64
+
+config:
+  options:
+    app-channel:
+      type: string
+      default: stable
+      description: The application channel to deploy (i.e. stable, edge)
+    base-image:
+      type: string
+      default: noble
+      description: |
+        The base ubuntu OS image to use for the runners. Codename (e.g. "noble") or version tag
+        (e.g. 24.04) is supported as input. Currently only supports LTS versions of noble and
+        higher, i.e. jammy, noble.
+    build-interval:
+      type: int
+      default: 6
+      description: |
+        The interval in hours between each scheduled image builds.
+    openstack-auth-url:
+      type: string
+      default: ""
+      description: |
+        The auth_url section of the clouds.yaml contents, used to authenticate the OpenStack \
+        client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
+        openstack.org/python-openstackclient/queens/configuration/index.html for more information.
+    openstack-password:
+      type: string
+      default: ""
+      description: |
+        The password section of the clouds.yaml contents, used to authenticate the OpenStack \
+        client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
+        queens/configuration/index.html for more information.
+    openstack-project-domain-name:
+      type: string
+      default: ""
+      description: |
+        The project_domain_name section of the clouds.yaml contents, used to find the OpenStack
+        project-domain to use to store images. See https://docs.openstack.org/python-\
+        openstackclient/queens/configuration/index.html for more information.
+    openstack-project-name:
+      type: string
+      default: ""
+      description: |
+        The project_name section of the clouds.yaml contents, used to find the OpenStack project to
+        use to store images. See https://docs.openstack.org/python-openstackclient/queens/\
+        configuration/index.html for more information.
+    openstack-user-domain-name:
+      type: string
+      default: ""
+      description: |
+        The user_domain_name section of the clouds.yaml contents, used to find the OpenStack
+        user domain to authenticate the client. See https://docs.openstack.org/python-\
+        openstackclient/queens/configuration/index.html for more information.
+    openstack-user-name:
+      type: string
+      default: ""
+      description: |
+        The username section of the clouds.yaml contents, used to find the OpenStack user to \
+        authenticate the client. See https://docs.openstack.org/python-openstackclient/queens/\
+        configuration/index.html for more information.
+    revision-history-limit:
+      type: int
+      default: 5
+      description: Number of image revisions to keep before deletion.
+
+provides:
+  image:
+    interface: github_runner_image_v0

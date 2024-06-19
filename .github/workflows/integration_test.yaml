@@ -3,19 +3,31 @@ name: Integration tests
 on:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-tests:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      extra-arguments: -m "not (requires_secrets)"
-      load-test-enabled: false
-      load-test-run-args: "-e LOAD_TEST_HOST=localhost"
-      zap-before-command: "curl -H \"Host: indico.local\" http://localhost/bootstrap --data-raw 'csrf_token=00000000-0000-0000-0000-000000000000&first_name=admin&last_name=admin&email=admin%40admin.com&username=admin&password=lunarlobster&confirm_password=lunarlobster&affiliation=Canonical'"
-      zap-enabled: false
-      zap-cmd-options: '-T 60 -z "-addoninstall jython" --hook "/zap/wrk/tests/zap/hook.py"'
-      zap-target: localhost
-      zap-target-port: 80
-      zap-rules-file-name: "zap_rules.tsv"
-      trivy-fs-enabled: true
-      trivy-image-config: "trivy.yaml"
+      juju-channel: 3.2/stable
+      provider: lxd
+      modules: '["test_charm"]'
+      self-hosted-runner: true
+      self-hosted-runner-arch: X64
+      self-hosted-runner-label: stg-private-endpoint
+      builder-runner-label: X64
+
+  integration-tests-arm:
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    secrets: inherit
+    with:
+      juju-channel: 3.2/stable
+      provider: lxd
+      modules: '["test_charm"]'
+      self-hosted-runner: true
+      self-hosted-runner-arch: ARM64
+      self-hosted-runner-label: stg-private-endpoint
+      builder-runner-label: ARM64
