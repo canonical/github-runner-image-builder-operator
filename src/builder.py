@@ -251,7 +251,8 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
         The latest successful image build ID.
     """
     try:
-        image_id = subprocess.check_output(
+        # the user keyword argument exists but pylint doesn't think so.
+        image_id = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg
             [
                 "/usr/bin/sudo",
                 "--preserve-env",
