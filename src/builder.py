@@ -266,7 +266,7 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
             timeout=10 * 60,
             env=os.environ,
         )  # nosec: B603
-        return str(proc.stdout)
+        return str(proc.stdout) if proc.stdout is not None else ""
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 
