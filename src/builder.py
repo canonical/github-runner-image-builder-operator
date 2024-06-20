@@ -251,7 +251,8 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
         The latest successful image build ID.
     """
     try:
-        proc = subprocess.run(
+        # the user keyword argument exists but pylint doesn't think so.
+        image_id = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg
             [
                 "/usr/bin/sudo",
                 "--preserve-env",
@@ -260,13 +261,13 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
                 cloud_name,
                 IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, ARCH=arch.value),
             ],
-            check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             timeout=10 * 60,
             env=os.environ,
+            encoding="utf-8",
         )  # nosec: B603
-        return str(proc.stdout)
+        return image_id
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 
