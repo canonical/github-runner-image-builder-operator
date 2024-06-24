@@ -51,7 +51,7 @@ def test__on_image_relation_joined(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value="test-id"))
 
     observer = image.Observer(MagicMock())
-    observer.update_image_id = (update_relation_data_mock := MagicMock())
+    observer.update_image_data = (update_relation_data_mock := MagicMock())
     observer._on_image_relation_joined(MagicMock())
 
     update_relation_data_mock.assert_called()
@@ -68,6 +68,10 @@ def test_update_relation_data(monkeypatch: pytest.MonkeyPatch):
     # Harness doesn't understand latest charmcraft.yaml, so it can't be used here.
     observer.model.relations = {image.IMAGE_RELATION: [(relation := MagicMock())]}
 
-    observer.update_image_id((test_id := "test-image-id"))
+    observer.update_image_data(
+        image_id=(test_id := "test-image-id"), arch=state.Arch.ARM64, base=state.BaseImage.JAMMY
+    )
 
-    relation.data[observer.model.unit].update.called_once_with(image.ImageRelationData(id=test_id))
+    relation.data[observer.model.unit].update.called_once_with(
+        image.ImageRelationData(id=test_id, arch=state.Arch.ARM64, base=state.BaseImage.JAMMY)
+    )
