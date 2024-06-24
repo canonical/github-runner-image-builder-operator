@@ -123,14 +123,16 @@ TEST_RUNNER_COMMANDS = (
 
 
 @pytest.mark.asyncio
-async def test_image(ssh_connection: SSHConnection, proxy: ProxyConfig):
+async def test_image(
+    ssh_connection: SSHConnection, proxy: ProxyConfig, dockerhub_mirror: str | None
+):
     """
     arrange: given a latest image build, a ssh-key and a server.
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
     env = (
-        None
+        {}
         if not proxy.http
         else {
             "HTTP_PROXY": proxy.http,
@@ -141,8 +143,11 @@ async def test_image(ssh_connection: SSHConnection, proxy: ProxyConfig):
             "no_proxy": proxy.no_proxy,
         }
     )
+    if dockerhub_mirror:
+        env.update(DOCKERHUB_MIRROR=dockerhub_mirror, CONTAINER_REGISTRY_URL=dockerhub_mirror)
+
     for command in TEST_RUNNER_COMMANDS:
         logger.info("Running test: %s", command.name)
-        result: Result = ssh_connection.run(command.command, env=env)
+        result: Result = ssh_connection.run(command.command, env=env if env else None)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
