@@ -63,15 +63,17 @@ async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
     """Juju model used in the test."""
     assert ops_test.model is not None
 
-    # Set model proxy for the runners
-
-    await ops_test.model.set_config(
-        {
-            "juju-http-proxy": proxy.http,
-            "juju-https-proxy": proxy.https,
-            "juju-no-proxy": proxy.no_proxy,
-        }
-    )
+    # Check if private endpoint Juju model is being used. If not, configure proxy.
+    # Note that "testing" is the name of the default testing model in operator-workflows.
+    if ops_test.model == "testing":
+        # Set model proxy for the runners
+        await ops_test.model.set_config(
+            {
+                "juju-http-proxy": proxy.http,
+                "juju-https-proxy": proxy.https,
+                "juju-no-proxy": proxy.no_proxy,
+            }
+        )
     return ops_test.model
 
 
