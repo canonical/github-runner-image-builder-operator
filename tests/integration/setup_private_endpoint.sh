@@ -89,6 +89,10 @@ function load_juju_account_config(){
 	EOF
 }
 
+function switch_juju_model(){
+    juju switch $(juju models --format json | jq -r '.models[0].name')
+}
+
 # Remove any existing juju config before pulling from Vault
 [ -d "${HOME}/.local/share/juju" ] && rm -rf "${HOME}"/.local/share/juju/*
 mkdir -p "${HOME}"/.local/share/juju
@@ -97,5 +101,7 @@ echo "Pulling Juju controller config from Vault"
 load_juju_controller_config
 echo "Pulling Juju account config from Vault"
 load_juju_account_config
+echo "Switching to model"
+switch_juju_model
 
 juju status
