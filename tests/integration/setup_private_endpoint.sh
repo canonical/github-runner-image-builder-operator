@@ -1,5 +1,8 @@
 #!/bin/bash --login
 
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 # These need to be set as environment variables in GitHub secrets.
 MISSING_ENV="false"
 if [ -z ${VAULT_APPROLE_ROLE_ID+x} ]; then
