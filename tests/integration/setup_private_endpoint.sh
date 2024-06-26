@@ -1,4 +1,4 @@
-#!/usr/bin/env bash --login
+#!/bin/bash --login
 
 # These need to be set as environment variables in GitHub secrets.
 MISSING_ENV="false"
@@ -34,18 +34,24 @@ fi
 export VAULT_SECRET_PATH_ROLE=secret/${PRODSTACK}/roles/${JUJU_MODEL##*/}
 export VAULT_SECRET_PATH_COMMON=secret/${PRODSTACK}/juju/common
 
+function remove_juju_config(){
+    if [ -d "${HOME}"/.local/share/juju ]; then
+        rm -rf "${HOME}"/.local/share/juju/*
+    fi
+}
+
 # Ensure we remove any juju config on any kind of exit
-trap "[ -d "${HOME}/.local/share/juju" ] && rm -rf ${HOME}/.local/share/juju/*" EXIT
+trap remove_juju_config EXIT
 
 sudo snap install juju --channel=3.1/stable
 sudo snap install vault
 
 function vault_auth(){
     if [ -z "${VAULT_TOKEN}" ] || ([ -n "${VAULT_TOKEN}" ] && ! vault token lookup > /dev/null 2>&1 ); then
-        if [ -n "$TERM" -a "$TERM" != "unknown" ]; then
+        if [ -n "$TERM" ] && [ "$TERM" != "unknown" ]; then
             echo "Authenticating to vault"
         fi
-        VAULT_TOKEN=$(vault write -f -field=token auth/approle/login role_id=${VAULT_APPROLE_ROLE_ID} secret_id=${VAULT_APPROLE_SECRET_ID})
+        VAULT_TOKEN=$(vault write -f -field=token auth/approle/login role_id="${VAULT_APPROLE_ROLE_ID}" secret_id="${VAULT_APPROLE_SECRET_ID}")
         export VAULT_TOKEN
     fi
 }
@@ -70,8 +76,8 @@ function load_juju_account_config(){
 }
 
 # Remove any existing juju config before pulling from Vault
-[ -d "${HOME}/.local/share/juju" ] && rm -rf ${HOME}/.local/share/juju/*
-mkdir -p ${HOME}/.local/share/juju
+[ -d "${HOME}/.local/share/juju" ] && rm -rf "${HOME}"/.local/share/juju/*
+mkdir -p "${HOME}"/.local/share/juju
 
 echo "Pulling Juju controller config from Vault"
 load_juju_controller_config
