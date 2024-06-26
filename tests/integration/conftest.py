@@ -214,12 +214,14 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
+    base_machine_constraint = f"arch={get_juju_arch()} cores=4 mem=16G root-disk=20G"
+    # if local LXD testing model, make the machine of VM type
+    if model == "testing":
+        base_machine_constraint += " virt-type=virtual-machine"
     app: Application = await model.deploy(
         charm_file,
-        application_name=f"image-builder-{test_id}",
-        constraints=(
-            f"arch={get_juju_arch()} cores=3 mem=18G root-disk=15G virt-type=virtual-machine"
-        ),
+        application_name=f"image-builder-operator-{test_id}",
+        constraints=base_machine_constraint,
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
@@ -234,7 +236,9 @@ def ssh_key_fixture(
     openstack_connection: Connection, test_id: str
 ) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
+    keypair: Keypair = openstack_connection.create_keypair(
+        f"test-image-builder-operator-keys-{test_id}"
+    )
     ssh_key_path = Path("tmp_key")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
@@ -319,7 +323,7 @@ async def openstack_server_fixture(
 ):
     """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    server_name = f"test-server-{test_id}"
+    server_name = f"test-image-builder-operator-server-{test_id}"
 
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
