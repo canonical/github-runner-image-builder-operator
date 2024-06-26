@@ -49,13 +49,19 @@ trap remove_juju_config EXIT
 sudo snap install juju --channel=3.1/stable
 sudo snap install vault
 
+[[ $- == *x* ]] && TRACE_ENABLED=0 || TRACE_ENABLED=1
+
 function vault_auth(){
     if [ -z "${VAULT_TOKEN}" ] || ([ -n "${VAULT_TOKEN}" ] && ! vault token lookup > /dev/null 2>&1 ); then
         if [ -n "$TERM" ] && [ "$TERM" != "unknown" ]; then
             echo "Authenticating to vault"
         fi
+        # temporarily disable trace
+        set -x
         VAULT_TOKEN=$(vault write -f -field=token auth/approle/login role_id="${VAULT_APPROLE_ROLE_ID}" secret_id="${VAULT_APPROLE_SECRET_ID}")
         export VAULT_TOKEN
+        # reset trace if it was enabled
+        [[ $TRACE_ENABLED -eq 0 ]] && set +x
     fi
 }
 
@@ -66,8 +72,13 @@ function load_juju_controller_config(){
 
 function load_juju_account_config(){
     vault_auth
+    # temporarily disable trace
+    set -x
     USERNAME=$(vault read -field=username "${VAULT_SECRET_PATH_ROLE}"/juju) || return
     PASSWORD=$(vault read -field=password "${VAULT_SECRET_PATH_ROLE}"/juju) || return
+    # reset trace if it was enabled
+    [[ $TRACE_ENABLED -eq 0 ]] && set +x
+
     # Watch out for tabs vs spaces when editing the below. First character in each line is a tab
     # which is ignored by the heredoc, to prevent script indentation affecting the written file.
     cat <<- EOF > "${HOME}/.local/share/juju/accounts.yaml"
