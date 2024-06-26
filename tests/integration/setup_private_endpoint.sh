@@ -90,6 +90,9 @@ function load_juju_account_config(){
 }
 
 function switch_juju_model(){
+    # cannot switch if these environment variables are set
+    # by default, the model is not selected and `juju status` will fail
+    unset JUJU_CONTROLLER JUJU_MODEL
     juju switch $(juju models --format json | jq -r '.models[0].name')
 }
 
