@@ -43,8 +43,8 @@ function remove_juju_config(){
     fi
 }
 
-# Ensure we remove any juju config on any kind of exit
-trap remove_juju_config EXIT
+# Ensure we remove any juju config on error
+trap remove_juju_config ERR
 
 sudo snap install juju --channel=3.1/stable
 sudo snap install vault
@@ -93,7 +93,7 @@ function switch_juju_model(){
     # cannot switch if these environment variables are set
     # by default, the model is not selected and `juju status` will fail
     unset JUJU_CONTROLLER JUJU_MODEL
-    juju switch $(juju models --format json | jq -r '.models[0].name')
+    juju switch "$(juju models --format json | jq -r '.models[0].name')"
 }
 
 # Remove any existing juju config before pulling from Vault
