@@ -58,23 +58,39 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
-@pytest_asyncio.fixture(scope="module", name="model")
-async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
-    """Juju model used in the test."""
-    assert ops_test.model is not None
+@pytest.fixture(scope="module", name="use_private_endpoint")
+def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
+    """Whether the private endpoint is used."""
+    openstack_auth_url = pytestconfig.getoption("--openstack-auth-url")
+    return bool(openstack_auth_url)
 
-    # Check if private endpoint Juju model is being used. If not, configure proxy.
-    # Note that "testing" is the name of the default testing model in operator-workflows.
-    if ops_test.model == "testing":
-        # Set model proxy for the runners
-        await ops_test.model.set_config(
-            {
-                "juju-http-proxy": proxy.http,
-                "juju-https-proxy": proxy.https,
-                "juju-no-proxy": proxy.no_proxy,
-            }
-        )
-    return ops_test.model
+
+@pytest_asyncio.fixture(scope="module", name="model")
+async def model_fixture(
+    request: pytest.FixtureRequest, proxy: ProxyConfig, use_private_endpoint: bool
+) -> AsyncGenerator[Model]:
+    """Juju model used in the test."""
+    model: Model
+    if use_private_endpoint:
+        model = Model()
+        await model.connect()
+        yield model
+        await model.disconnect()
+    else:
+        ops_test: OpsTest = request.getfixturevalue("ops_test")
+        assert ops_test.model is not None
+        # Check if private endpoint Juju model is being used. If not, configure proxy.
+        # Note that "testing" is the name of the default testing model in operator-workflows.
+        if ops_test.model.name == "testing":
+            # Set model proxy for the runners
+            await ops_test.model.set_config(
+                {
+                    "juju-http-proxy": proxy.http,
+                    "juju-https-proxy": proxy.https,
+                    "juju-no-proxy": proxy.no_proxy,
+                }
+            )
+        yield ops_test.model
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
