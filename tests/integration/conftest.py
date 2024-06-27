@@ -68,7 +68,7 @@ def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
 @pytest_asyncio.fixture(scope="module", name="model")
 async def model_fixture(
     request: pytest.FixtureRequest, proxy: ProxyConfig, use_private_endpoint: bool
-) -> AsyncGenerator[Model]:
+) -> AsyncGenerator[Model, None]:
     """Juju model used in the test."""
     model: Model
     if use_private_endpoint:
