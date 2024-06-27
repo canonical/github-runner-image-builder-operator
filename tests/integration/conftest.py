@@ -5,6 +5,7 @@
 import logging
 import secrets
 import string
+import subprocess
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
@@ -94,10 +95,11 @@ async def model_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
+async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    charm_file = await ops_test.build_charm("tests/integration/data/charm")
-    app = await model.deploy(charm_file)
+    build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm", "-o", "."]
+    subprocess.check_call(build_cmd)
+    app = await model.deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
     await model.wait_for_idle(apps=[app.name])
 
     yield app
