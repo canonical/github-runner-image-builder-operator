@@ -97,7 +97,7 @@ async def model_fixture(
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm", "-o", "."]
+    build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
     app = await model.deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
     await model.wait_for_idle(apps=[app.name])
