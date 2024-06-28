@@ -99,11 +99,14 @@ async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
+    logger.info("Deploying built test charm.")
     app = await model.deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
+    logger.info("Wait for test charm to become active/idle.")
     await model.wait_for_idle(apps=[app.name])
 
     yield app
 
+    logger.info("Cleaning up test charm.")
     await model.remove_application(app.name)
 
 
