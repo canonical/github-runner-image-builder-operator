@@ -102,7 +102,7 @@ async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
     logger.info("Deploying built test charm.")
-    await wait_juju_deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
+    await wait_juju_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm")
     app = Application(entity_id="test", model=model, connected=False)
 
     yield app
