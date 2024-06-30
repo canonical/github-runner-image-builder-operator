@@ -37,7 +37,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
+from tests.integration.helpers import get_juju_arch, wait_for_valid_connection, wait_juju_deploy
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,9 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
 def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
     """Whether the private endpoint is used."""
     openstack_auth_url = pytestconfig.getoption("--openstack-auth-url")
-    return bool(openstack_auth_url)
+    # ARM64 requires private endpoint testing because we cannot test in LXD models due to nested
+    # virtualization limitations.
+    return bool(openstack_auth_url) and get_juju_arch() == "arm64"
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
@@ -100,9 +102,8 @@ async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
     logger.info("Deploying built test charm.")
-    app = await model.deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
-    logger.info("Wait for test charm to become active/idle.")
-    await model.wait_for_idle(apps=[app.name])
+    await wait_juju_deploy(f"./test_ubuntu_22.04-{get_juju_arch()}.charm")
+    app = Application(entity_id="test", model=model, connected=False)
 
     yield app
 

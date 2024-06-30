@@ -4,8 +4,10 @@
 """Helper utilities for integration tests."""
 
 import inspect
+import json
 import logging
 import platform
+import subprocess
 import time
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
@@ -174,3 +176,23 @@ def get_juju_arch() -> str:
             return "amd64"
     logger.warning("No matching architecture found, defaulting to amd64.")
     return "amd64"
+
+
+async def wait_juju_deploy(charm: Path | str):
+    """Deploy juju via CLI and wait for condition.
+
+    Args:
+        charm: The path to charm to deploy.
+    """
+    output = subprocess.check_output(
+        ["/snap/bin/juju", "deploy", str(charm)], timeout=5 * 60, encoding="utf-8"
+    )
+    logger.info("juju deploy output: %s", output)
+    await wait_for(
+        lambda: json.loads(
+            subprocess.check_output(
+                ["/snap/bin/juju", "status", "--format", "json"], timeout=5 * 60, encoding="utf-8"
+            )
+        )["applications"]["application-status"]["current"]
+        == "active"
+    )

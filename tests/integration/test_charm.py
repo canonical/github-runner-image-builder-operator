@@ -46,9 +46,9 @@ async def test_build_image(app: Application, openstack_connection: Connection):
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
         images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info(
-            "Image name: %s, Images: %s, dispatch time: %s", image_name, images, dispatch_time
-        )
+        logger.info("Image name: %s, Images: %s", image_name, images)
+        # split logs, the image log is long and gets cut off.
+        logger.info("Dispatch time: %s", dispatch_time)
         return any(
             datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
             >= dispatch_time
