@@ -97,13 +97,14 @@ async def model_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
+async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
     logger.info("Deploying built test charm.")
-    await wait_juju_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm")
-    app = Application(entity_id="test", model=model, connected=False)
+    app_name = f"test-{test_id}"
+    await wait_juju_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm", name=app_name)
+    app = Application(entity_id=app_name, model=model, connected=False)
 
     yield app
 
