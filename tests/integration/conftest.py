@@ -37,7 +37,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, wait_for_valid_connection, wait_juju_deploy
+from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -102,8 +102,7 @@ async def test_charm_fixture(model: Model) -> AsyncGenerator[Application, None]:
     build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
     subprocess.check_call(build_cmd)
     logger.info("Deploying built test charm.")
-    await wait_juju_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm")
-    app = Application(entity_id="test", model=model, connected=False)
+    app = await model.deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm")
 
     yield app
 
