@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
+import nest_asyncio
 import openstack
 import pytest
 import pytest_asyncio
@@ -41,6 +42,9 @@ from tests.integration.helpers import get_juju_arch, wait_for_valid_connection, 
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
+
+# This is required to dynamically load async fixtures in async def model_fixture()
+nest_asyncio.apply()
 
 
 @pytest.fixture(scope="module", name="charm_file")

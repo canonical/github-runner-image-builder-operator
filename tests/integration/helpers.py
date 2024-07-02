@@ -189,11 +189,21 @@ async def wait_juju_deploy(charm: Path | str, name: str):
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
     logger.info("juju deploy output: %s", output)
-    await wait_for(
-        lambda: json.loads(
+
+    def application_status_active():
+        """Wait for application status to become active.
+
+        Returns:
+            Whether the application status is active.
+        """
+        status_output = json.loads(
             subprocess.check_output(
-                ["/snap/bin/juju", "status", "--format", "json"], timeout=5 * 60, encoding="utf-8"
+                ["/snap/bin/juju", "status", "--format", "json"],
+                timeout=5 * 60,
+                encoding="utf-8",
             )
-        )["applications"][name]["application-status"]["current"]
-        == "active"
-    )
+        )
+        logger.info("Status json out: %s", status_output)
+        return status_output["applications"][name]["application-status"]["current"] == "active"
+
+    await wait_for(application_status_active)
