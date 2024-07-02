@@ -233,7 +233,11 @@ def test_id_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
-    model: Model, charm_file: str, test_id: str, private_endpoint_configs: PrivateEndpointConfigs
+    model: Model,
+    charm_file: str,
+    test_id: str,
+    private_endpoint_configs: PrivateEndpointConfigs,
+    use_private_endpoint: bool,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -248,10 +252,9 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
-    arch = get_juju_arch()
-    base_machine_constraint = f"arch={arch} cores=4 mem=16G root-disk=20G"
+    base_machine_constraint = f"arch={get_juju_arch()} cores=4 mem=16G root-disk=20G"
     # if local LXD testing model, make the machine of VM type
-    if "test" in model.name and arch == "amd64":
+    if not use_private_endpoint:
         base_machine_constraint += " virt-type=virtual-machine"
     app: Application = await model.deploy(
         charm_file,
