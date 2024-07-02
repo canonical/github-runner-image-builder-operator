@@ -65,7 +65,7 @@ async def test_image_relation(model: Model, app: Application, test_charm: Applic
     act: When the relation is joined.
     assert: The test charm becomes active due to proper relation data.
     """
-    await app.relate("image", f"{test_charm.name}:image")
+    await model.integrate(f"{app.name}:image", f"{test_charm.name}:image")
     await model.wait_for_idle(
         apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
     )
