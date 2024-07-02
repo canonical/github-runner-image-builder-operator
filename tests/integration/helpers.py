@@ -4,7 +4,6 @@
 """Helper utilities for integration tests."""
 
 import inspect
-import json
 import logging
 import platform
 import subprocess
@@ -178,7 +177,7 @@ def get_juju_arch() -> str:
     return "amd64"
 
 
-async def wait_juju_deploy(charm: Path | str, name: str):
+def juju_cli_deploy(charm: Path | str, name: str):
     """Deploy juju via CLI and wait for condition.
 
     Args:
@@ -189,21 +188,3 @@ async def wait_juju_deploy(charm: Path | str, name: str):
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
     logger.info("juju deploy output: %s", output)
-
-    def application_status_active():
-        """Wait for application status to become active.
-
-        Returns:
-            Whether the application status is active.
-        """
-        status_output = json.loads(
-            subprocess.check_output(
-                ["/snap/bin/juju", "status", "--format", "json"],
-                timeout=5 * 60,
-                encoding="utf-8",
-            )
-        )
-        logger.info("Status json out: %s", status_output["applications"][name])
-        return status_output["applications"][name]["application-status"]["current"] == "active"
-
-    await wait_for(application_status_active)
