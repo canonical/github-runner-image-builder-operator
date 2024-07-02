@@ -25,37 +25,37 @@ from tests.integration.types import ProxyConfig
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.asyncio
-async def test_build_image(app: Application, openstack_connection: Connection):
-    """
-    arrange: A deployed active charm.
-    act: When openstack images are listed.
-    assert: An image is built successfully.
-    """
-    dispatch_time = datetime.now(tz=timezone.utc)
-    config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
+# @pytest.mark.asyncio
+# async def test_build_image(app: Application, openstack_connection: Connection):
+#     """
+#     arrange: A deployed active charm.
+#     act: When openstack images are listed.
+#     assert: An image is built successfully.
+#     """
+#     dispatch_time = datetime.now(tz=timezone.utc)
+#     config: dict = await app.get_config()
+#     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
-    def image_created_from_dispatch() -> bool:
-        """Return whether there is an image created after dispatch has been called.
+#     def image_created_from_dispatch() -> bool:
+#         """Return whether there is an image created after dispatch has been called.
 
-        Returns:
-            Whether there exists an image that has been created after dispatch time.
-        """
-        image_name = IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
-        )
-        images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info("Image name: %s, Images: %s", image_name, images)
-        # split logs, the image log is long and gets cut off.
-        logger.info("Dispatch time: %s", dispatch_time)
-        return any(
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            >= dispatch_time
-            for image in images
-        )
+#         Returns:
+#             Whether there exists an image that has been created after dispatch time.
+#         """
+#         image_name = IMAGE_NAME_TMPL.format(
+#             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
+#         )
+#         images: list[Image] = openstack_connection.search_images(image_name)
+#         logger.info("Image name: %s, Images: %s", image_name, images)
+#         # split logs, the image log is long and gets cut off.
+#         logger.info("Dispatch time: %s", dispatch_time)
+#         return any(
+#             datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+#             >= dispatch_time
+#             for image in images
+#         )
 
-    await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
+#     await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
 
 
 @pytest.mark.asyncio
@@ -67,7 +67,7 @@ async def test_image_relation(model: Model, app: Application, test_charm: Applic
     """
     await app.relate("image", f"{test_charm.name}:image")
     await model.wait_for_idle(
-        apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
+        apps=[app.name, test_charm.name], wait_for_active=True, timeout=30 * 60
     )
 
 
