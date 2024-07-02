@@ -203,7 +203,7 @@ async def wait_juju_deploy(charm: Path | str, name: str):
                 encoding="utf-8",
             )
         )
-        logger.info("Status json out: %s", status_output)
+        logger.info("Status json out: %s", status_output["applications"][name])
         return status_output["applications"][name]["application-status"]["current"] == "active"
 
     await wait_for(application_status_active)
