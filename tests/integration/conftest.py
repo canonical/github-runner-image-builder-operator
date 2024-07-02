@@ -5,9 +5,11 @@
 import logging
 import secrets
 import string
+import subprocess
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
+import nest_asyncio
 import openstack
 import pytest
 import pytest_asyncio
@@ -36,10 +38,13 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
+from tests.integration.helpers import get_juju_arch, wait_for_valid_connection, wait_juju_deploy
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
+
+# This is required to dynamically load async fixtures in async def model_fixture()
+nest_asyncio.apply()
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -58,32 +63,56 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
+@pytest.fixture(scope="module", name="use_private_endpoint")
+def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
+    """Whether the private endpoint is used."""
+    openstack_auth_url = pytestconfig.getoption("--openstack-auth-url")
+    # ARM64 requires private endpoint testing because we cannot test in LXD models due to nested
+    # virtualization limitations.
+    return bool(openstack_auth_url) and get_juju_arch() == "arm64"
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
-async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
+async def model_fixture(
+    request: pytest.FixtureRequest, proxy: ProxyConfig, use_private_endpoint: bool
+) -> AsyncGenerator[Model, None]:
     """Juju model used in the test."""
-    assert ops_test.model is not None
-
-    # Set model proxy for the runners
-
-    await ops_test.model.set_config(
-        {
-            "juju-http-proxy": proxy.http,
-            "juju-https-proxy": proxy.https,
-            "juju-no-proxy": proxy.no_proxy,
-        }
-    )
-    return ops_test.model
+    model: Model
+    if use_private_endpoint:
+        model = Model()
+        await model.connect()
+        yield model
+        await model.disconnect()
+    else:
+        ops_test: OpsTest = request.getfixturevalue("ops_test")
+        assert ops_test.model is not None
+        # Check if private endpoint Juju model is being used. If not, configure proxy.
+        # Note that "testing" is the name of the default testing model in operator-workflows.
+        if ops_test.model.name == "testing":
+            # Set model proxy for the runners
+            await ops_test.model.set_config(
+                {
+                    "juju-http-proxy": proxy.http,
+                    "juju-https-proxy": proxy.https,
+                    "juju-no-proxy": proxy.no_proxy,
+                }
+            )
+        yield ops_test.model
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
+async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    charm_file = await ops_test.build_charm("tests/integration/data/charm")
-    app = await model.deploy(charm_file)
-    await model.wait_for_idle(apps=[app.name])
+    build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    subprocess.check_call(build_cmd)
+    logger.info("Deploying built test charm.")
+    app_name = f"test-{test_id}"
+    await wait_juju_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm", name=app_name)
+    app = Application(entity_id=app_name, model=model, connected=False)
 
     yield app
 
+    logger.info("Cleaning up test charm.")
     await model.remove_application(app.name)
 
 
@@ -212,12 +241,14 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
+    base_machine_constraint = f"arch={get_juju_arch()} cores=4 mem=16G root-disk=20G"
+    # if local LXD testing model, make the machine of VM type
+    if model == "testing":
+        base_machine_constraint += " virt-type=virtual-machine"
     app: Application = await model.deploy(
         charm_file,
-        application_name=f"image-builder-{test_id}",
-        constraints=(
-            f"arch={get_juju_arch()} cores=3 mem=18G root-disk=15G virt-type=virtual-machine"
-        ),
+        application_name=f"image-builder-operator-{test_id}",
+        constraints=base_machine_constraint,
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
@@ -232,7 +263,9 @@ def ssh_key_fixture(
     openstack_connection: Connection, test_id: str
 ) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
+    keypair: Keypair = openstack_connection.create_keypair(
+        f"test-image-builder-operator-keys-{test_id}"
+    )
     ssh_key_path = Path("tmp_key")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
@@ -317,7 +350,7 @@ async def openstack_server_fixture(
 ):
     """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    server_name = f"test-server-{test_id}"
+    server_name = f"test-image-builder-operator-server-{test_id}"
 
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
