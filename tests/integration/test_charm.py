@@ -5,7 +5,9 @@
 
 """Integration testing module."""
 
+import functools
 import logging
+import subprocess
 from datetime import datetime, timezone
 from typing import NamedTuple
 
@@ -13,13 +15,12 @@ import pytest
 from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
-from juju.model import Model
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
 from builder import IMAGE_NAME_TMPL
 from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
-from tests.integration.helpers import wait_for
+from tests.integration.helpers import is_expected_app_status, wait_for
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
@@ -59,16 +60,20 @@ async def test_build_image(app: Application, openstack_connection: Connection):
 
 
 @pytest.mark.asyncio
-async def test_image_relation(model: Model, app: Application, test_charm: Application):
+async def test_image_relation(app: Application, test_charm: Application):
     """
     arrange: An active charm and a test charm that becomes active when valid relation data is set.
     act: When the relation is joined.
     assert: The test charm becomes active due to proper relation data.
     """
-    await model.integrate(f"{app.name}:image", f"{test_charm.name}:image")
-    await model.wait_for_idle(
-        apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
+    # Use CLI call since Juju model, due to ARM64 private endpoint constraints, has been imported
+    # dynamically (see conftest.py def model_fixture). This causes the model object to not work
+    # as expected (the REPL also has a different behavior) and throw KeyError or websocket
+    # disconnect error.
+    subprocess.check_call(
+        ["/snap/bin/juju", "integrate", app.name, test_charm.name], timeout=5 * 60
     )
+    await wait_for(functools.partial(is_expected_app_status, test_charm.name, "active"))
 
 
 class Commands(NamedTuple):

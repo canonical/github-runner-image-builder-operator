@@ -3,6 +3,7 @@
 
 """Helper utilities for integration tests."""
 
+import functools
 import inspect
 import json
 import logging
@@ -178,7 +179,7 @@ def get_juju_arch() -> str:
     return "amd64"
 
 
-async def juju_cli_deploy(charm: Path | str, name: str, status: str | None):
+async def juju_cli_deploy(charm: Path | str, name: str, status: str):
     """Deploy juju via CLI and wait for condition.
 
     Args:
@@ -189,26 +190,31 @@ async def juju_cli_deploy(charm: Path | str, name: str, status: str | None):
     output = subprocess.check_output(
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
+    assert "Deploying" in output, f"Invalid deploy output, {output}"
     logger.info("juju deploy output: %s", output)
 
-    def wait_app_status():
-        """Wait for application status to become the desired status.
+    await wait_for(functools.partial(is_expected_app_status, name, status))
 
-        Returns:
-            Whether the application status is matching the desired status.
-        """
-        status_output = json.loads(
-            subprocess.check_output(
-                ["/snap/bin/juju", "status", "--format", "json"],
-                timeout=5 * 60,
-                encoding="utf-8",
-            )
+
+def is_expected_app_status(name: str, status: str):
+    """Wait for application status to become the desired status.
+
+    Args:
+        name: The name of the application to deploy as.
+        status: The desired status of the application to wait for.
+
+    Returns:
+        Whether the application status is matching the desired status.
+    """
+    status_output = json.loads(
+        subprocess.check_output(
+            ["/snap/bin/juju", "status", "--format", "json"],
+            timeout=5 * 60,
+            encoding="utf-8",
         )
-        try:
-            logger.info("Status json out: %s", status_output["applications"][name])
-            return status_output["applications"][name]["application-status"]["current"] == status
-        except KeyError:
-            return False
-
-    if status:
-        await wait_for(wait_app_status)
+    )
+    try:
+        logger.info("Status json out: %s", status_output["applications"][name])
+        return status_output["applications"][name]["application-status"]["current"] == status
+    except KeyError:
+        return False

@@ -110,7 +110,11 @@ async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Appli
     subprocess.check_call(build_cmd)
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
-    await juju_cli_deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm", name=app_name, status="unknown")
+    # the test app does not set status until a proper integration is established, hence wait for
+    # unknown status
+    await juju_cli_deploy(
+        f"./test_ubuntu-22.04-{get_juju_arch()}.charm", name=app_name, status="unknown"
+    )
     app = Application(entity_id=app_name, model=model, connected=False)
 
     yield app
