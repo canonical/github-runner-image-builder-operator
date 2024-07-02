@@ -7,7 +7,10 @@
 
 import functools
 import logging
-import subprocess
+
+# subprocess module is used to call juju cli directly due to constraints with private-endpoint
+# models
+import subprocess  # nosec: B404
 from datetime import datetime, timezone
 from typing import NamedTuple
 
@@ -70,7 +73,8 @@ async def test_image_relation(app: Application, test_charm: Application):
     # dynamically (see conftest.py def model_fixture). This causes the model object to not work
     # as expected (the REPL also has a different behavior) and throw KeyError or websocket
     # disconnect error.
-    subprocess.check_call(
+    # we are using trusted input here.
+    subprocess.check_call(  # nosec: B603
         ["/snap/bin/juju", "integrate", app.name, test_charm.name], timeout=5 * 60
     )
     await wait_for(functools.partial(is_expected_app_status, test_charm.name, "active"))

@@ -8,7 +8,10 @@ import inspect
 import json
 import logging
 import platform
-import subprocess
+
+# subprocess module is used to call juju cli directly due to constraints with private-endpoint
+# models
+import subprocess  # nosec: B404
 import time
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
@@ -187,7 +190,8 @@ async def juju_cli_deploy(charm: Path | str, name: str, status: str):
         name: The name of the application to deploy as.
         status: The desired status of the application to wait for.
     """
-    output = subprocess.check_output(
+    # The Juju we are deploying a charm with trusted fixture values.
+    output = subprocess.check_output(  # nosec: B603
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
     assert "Deploying" in output, f"Invalid deploy output, {output}"
@@ -207,7 +211,8 @@ def is_expected_app_status(name: str, status: str):
         Whether the application status is matching the desired status.
     """
     status_output = json.loads(
-        subprocess.check_output(
+        # the predefined inputs can be trusted
+        subprocess.check_output(  # nosec: B603
             ["/snap/bin/juju", "status", "--format", "json"],
             timeout=5 * 60,
             encoding="utf-8",

@@ -5,7 +5,10 @@
 import logging
 import secrets
 import string
-import subprocess
+
+# subprocess module is used to call juju cli directly due to constraints with private-endpoint
+# models
+import subprocess  # nosec: B404
 from pathlib import Path
 from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
@@ -106,8 +109,10 @@ async def model_fixture(
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    build_cmd = ["charmcraft", "pack", "-p", "tests/integration/data/charm"]
-    subprocess.check_call(build_cmd)
+    # The predefine inputs here can be trusted
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    )
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
     # the test app does not set status until a proper integration is established, hence wait for
