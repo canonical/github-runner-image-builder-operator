@@ -74,10 +74,7 @@ def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
 
 @pytest_asyncio.fixture(scope="module", name="model")
 async def model_fixture(
-    request: pytest.FixtureRequest,
-    proxy: ProxyConfig,
-    use_private_endpoint: bool,
-    config: pytest.Config,
+    request: pytest.FixtureRequest, proxy: ProxyConfig, use_private_endpoint: bool
 ) -> AsyncGenerator[Model, None]:
     """Juju model used in the test."""
     model: Model
@@ -87,9 +84,9 @@ async def model_fixture(
         yield model
         await model.disconnect()
     else:
-        config.option.cloud = None
-        config.option.controller = None
-        config.option.model = None
+        request.config.option.cloud = None
+        request.config.option.controller = None
+        request.config.option.model = None
         ops_test: OpsTest = request.getfixturevalue("ops_test")
         assert ops_test.model is not None
         # Check if private endpoint Juju model is being used. If not, configure proxy.
