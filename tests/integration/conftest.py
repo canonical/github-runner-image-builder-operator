@@ -248,9 +248,10 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
-    base_machine_constraint = f"arch={get_juju_arch()} cores=4 mem=16G root-disk=20G"
+    arch = get_juju_arch()
+    base_machine_constraint = f"arch={arch} cores=4 mem=16G root-disk=20G"
     # if local LXD testing model, make the machine of VM type
-    if model == "testing":
+    if "test" in model.name and arch == "amd64":
         base_machine_constraint += " virt-type=virtual-machine"
     app: Application = await model.deploy(
         charm_file,
