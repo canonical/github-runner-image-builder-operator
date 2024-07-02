@@ -87,9 +87,9 @@ async def model_fixture(
         yield model
         await model.disconnect()
     else:
-        request.config.option.cloud = None
-        request.config.option.controller = None
-        request.config.option.model = None
+        # Dynamically use ops_test fixture - juju users on private endpoint do not have access to
+        # the controller model and will fail. See issue:
+        # https://github.com/juju/python-libjuju/issues/1064
         ops_test: OpsTest = request.getfixturevalue("ops_test")
         assert ops_test.model is not None
         # Check if private endpoint Juju model is being used. If not, configure proxy.
