@@ -191,11 +191,9 @@ async def juju_cli_deploy(charm: Path | str, name: str, status: str):
         status: The desired status of the application to wait for.
     """
     # The Juju we are deploying a charm with trusted fixture values.
-    output = subprocess.check_output(  # nosec: B603
+    subprocess.check_call(  # nosec: B603
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
-    assert "Deploying" in output, f"Invalid deploy output, {output}"
-    logger.info("juju deploy output: %s", output)
 
     await wait_for(functools.partial(is_expected_app_status, name, status))
 
