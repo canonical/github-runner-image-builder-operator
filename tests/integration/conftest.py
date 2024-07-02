@@ -41,7 +41,12 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, juju_cli_deploy, wait_for_valid_connection
+from tests.integration.helpers import (
+    get_juju_arch,
+    juju_cli_deploy,
+    juju_cli_remove,
+    wait_for_valid_connection,
+)
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -125,7 +130,7 @@ async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Appli
     yield app
 
     logger.info("Cleaning up test charm.")
-    await model.remove_application(app.name)
+    juju_cli_remove(name=app_name)
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")

@@ -195,7 +195,7 @@ async def juju_cli_deploy(charm: Path | str, name: str, status: str):
         ["/snap/bin/juju", "deploy", str(charm), name], timeout=5 * 60, encoding="utf-8"
     )
 
-    await wait_for(functools.partial(is_expected_app_status, name, status))
+    await wait_for(functools.partial(is_expected_app_status, name, status), timeout=10 * 60)
 
 
 def is_expected_app_status(name: str, status: str):
@@ -221,3 +221,15 @@ def is_expected_app_status(name: str, status: str):
         return status_output["applications"][name]["application-status"]["current"] == status
     except KeyError:
         return False
+
+
+def juju_cli_remove(name: str):
+    """Deploy juju via CLI and wait for condition.
+
+    Args:
+        name: The name of the application to deploy as.
+    """
+    # The Juju we are deploying a charm with trusted fixture values.
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/juju", "remove-application", name], timeout=5 * 60, encoding="utf-8"
+    )
