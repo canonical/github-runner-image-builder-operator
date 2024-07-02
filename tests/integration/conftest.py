@@ -41,12 +41,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import (
-    get_juju_arch,
-    juju_cli_deploy,
-    juju_cli_remove,
-    wait_for_valid_connection,
-)
+from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -120,17 +115,12 @@ async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Appli
     )
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
-    # the test app does not set status until a proper integration is established, hence wait for
-    # unknown status
-    await juju_cli_deploy(
-        f"./test_ubuntu-22.04-{get_juju_arch()}.charm", name=app_name, status="unknown"
-    )
-    app = Application(entity_id=app_name, model=model, connected=False)
+    app: Application = await model.deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm", app_name)
 
     yield app
 
     logger.info("Cleaning up test charm.")
-    juju_cli_remove(name=app_name)
+    await model.remove_application(app_name=app_name)
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -244,7 +234,7 @@ def test_id_fixture() -> str:
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
     model: Model, charm_file: str, test_id: str, private_endpoint_configs: PrivateEndpointConfigs
-) -> Application:
+) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
@@ -272,7 +262,10 @@ async def app_fixture(
     await model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 30
     )
-    return app
+
+    yield app
+
+    await model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
