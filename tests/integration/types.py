@@ -39,6 +39,7 @@ class PrivateEndpointConfigs(typing.TypedDict):
     """The Private endpoint configuration values.
 
     Attributes:
+        arch: The architecture the test is running on.
         auth_url: OpenStack uthentication URL (Keystone).
         password: OpenStack password.
         project_domain_name: OpenStack project domain to use.
@@ -48,6 +49,7 @@ class PrivateEndpointConfigs(typing.TypedDict):
         region_name: OpenStack deployment region.
     """
 
+    arch: typing.Literal["amd64", "arm64"]
     auth_url: str
     password: str
     project_domain_name: str

@@ -138,7 +138,10 @@ OPENSTACK_IMAGE_ID="$1"
                 f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
             )
             return
-        self.image_observer.update_image_id(image_id=image_id)
+        run_config = state.BuilderRunConfig.from_charm(self)
+        self.image_observer.update_image_data(
+            image_id=image_id, arch=run_config.arch, base=run_config.base
+        )
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
 
