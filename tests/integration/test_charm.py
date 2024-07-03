@@ -46,9 +46,9 @@ async def test_build_image(app: Application, openstack_connection: Connection):
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
         images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info(
-            "Image name: %s, Images: %s, dispatch time: %s", image_name, images, dispatch_time
-        )
+        logger.info("Image name: %s, Images: %s", image_name, images)
+        # split logs, the image log is long and gets cut off.
+        logger.info("Dispatch time: %s", dispatch_time)
         return any(
             datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
             >= dispatch_time
@@ -59,16 +59,15 @@ async def test_build_image(app: Application, openstack_connection: Connection):
 
 
 @pytest.mark.asyncio
-async def test_image_relation(model: Model, app: Application, test_charm: Application):
+async def test_image_relation(app: Application, test_charm: Application):
     """
     arrange: An active charm and a test charm that becomes active when valid relation data is set.
     act: When the relation is joined.
     assert: The test charm becomes active due to proper relation data.
     """
-    await app.relate("image", f"{test_charm.name}:image")
-    await model.wait_for_idle(
-        apps=[app.name, test_charm.name], wait_for_active=True, timeout=5 * 60
-    )
+    model: Model = app.model
+    await model.integrate(app.name, test_charm.name)
+    await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
 
 
 class Commands(NamedTuple):
