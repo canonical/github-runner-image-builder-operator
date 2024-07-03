@@ -21,7 +21,7 @@ jobs:
       builder-runner-label: X64
 
   integration-tests-arm:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@feat/private_endpoint
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       juju-channel: 3.2/stable
