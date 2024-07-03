@@ -22,9 +22,11 @@ class ImageRelationData(TypedDict):
 
     Attributes:
         id: The latest image ID to provide.
+        tags: The comma separated tags of the image, e.g. x64, jammy.
     """
 
     id: str
+    tags: str
 
 
 class Observer(ops.Object):
@@ -55,13 +57,22 @@ class Observer(ops.Object):
         if not image_id:
             logger.warning("Image not yet ready.")
             return
-        self.update_image_id(image_id=image_id)
+        self.update_image_data(image_id=image_id, arch=build_config.arch, base=build_config.base)
 
-    def update_image_id(self, image_id: str) -> None:
+    def update_image_data(
+        self,
+        image_id: str,
+        arch: state.Arch,
+        base: state.BaseImage,
+    ) -> None:
         """Update the relation data if exists.
 
         Args:
             image_id: The latest image ID to propagate.
+            arch: The architecture in which the image was built for.
+            base: The OS base image.
         """
         for relation in self.model.relations[IMAGE_RELATION]:
-            relation.data[self.model.unit].update(ImageRelationData(id=image_id))
+            relation.data[self.model.unit].update(
+                ImageRelationData(id=image_id, tags=",".join((arch.value, base.value)))
+            )

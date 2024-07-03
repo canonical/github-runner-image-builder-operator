@@ -8,7 +8,7 @@
 # The charm package name, no spaces (required)
 # See https://juju.is/docs/sdk/naming#heading--naming-charms for guidance.
 name: test
-title: Test charm for github runner image builder
+title: test
 summary: Test charm for github runner image builder
 description: |
   Test charm for github runner image builder.
@@ -26,12 +26,20 @@ bases:
       channel: "22.04"
       architectures:
       - amd64
-      - arm64
     run-on:
     - name: "ubuntu"
       channel: "22.04"
       architectures:
       - amd64
+  - build-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
+      - arm64
+    run-on:
+    - name: "ubuntu"
+      channel: "22.04"
+      architectures:
       - arm64
 
 config:
