@@ -3,11 +3,17 @@
 
 """Fixtures for github runner charm integration tests."""
 import logging
+import platform
 import secrets
 import string
-from pathlib import Path
-from typing import AsyncGenerator, Generator, NamedTuple, Optional
 
+# subprocess module is used to call juju cli directly due to constraints with private-endpoint
+# models
+import subprocess  # nosec: B404
+from pathlib import Path
+from typing import AsyncGenerator, Generator, Literal, NamedTuple, Optional
+
+import nest_asyncio
 import openstack
 import pytest
 import pytest_asyncio
@@ -22,6 +28,7 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
+import state
 from builder import IMAGE_NAME_TMPL
 from state import (
     APP_CHANNEL_CONFIG_NAME,
@@ -36,10 +43,13 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
+from tests.integration.helpers import wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
+
+# This is required to dynamically load async fixtures in async def model_fixture()
+nest_asyncio.apply()
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -58,33 +68,77 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
+@pytest.fixture(scope="module", name="arch")
+def arch_fixture() -> Literal["amd64", "arm64"]:
+    """The running test architecture."""
+    arch = platform.machine()
+    match arch:
+        case arch if arch in state.ARCHITECTURES_ARM64:
+            return "arm64"
+        case arch if arch in state.ARCHITECTURES_X86:
+            return "amd64"
+    raise ValueError(f"Unsupported testing architecture {arch}")
+
+
+@pytest.fixture(scope="module", name="use_private_endpoint")
+def use_private_endpoint_fixture(
+    pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]
+) -> bool:
+    """Whether the private endpoint is used."""
+    openstack_auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
+    # ARM64 requires private endpoint testing because we cannot test in LXD models due to nested
+    # virtualization limitations.
+    return bool(openstack_auth_url) and arch == "arm64"
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
-async def model_fixture(ops_test: OpsTest, proxy: ProxyConfig) -> Model:
+async def model_fixture(
+    request: pytest.FixtureRequest, proxy: ProxyConfig, use_private_endpoint: bool
+) -> AsyncGenerator[Model, None]:
     """Juju model used in the test."""
-    assert ops_test.model is not None
-
-    # Set model proxy for the runners
-
-    await ops_test.model.set_config(
-        {
-            "juju-http-proxy": proxy.http,
-            "juju-https-proxy": proxy.https,
-            "juju-no-proxy": proxy.no_proxy,
-        }
-    )
-    return ops_test.model
+    model: Model
+    if use_private_endpoint:
+        model = Model()
+        await model.connect()
+        yield model
+        await model.disconnect()
+    else:
+        # Dynamically use ops_test fixture - juju users on private endpoint do not have access to
+        # the controller model and will fail. See issue:
+        # https://github.com/juju/python-libjuju/issues/1064
+        ops_test: OpsTest = request.getfixturevalue("ops_test")
+        assert ops_test.model is not None
+        # Check if private endpoint Juju model is being used. If not, configure proxy.
+        # Note that "testing" is the name of the default testing model in operator-workflows.
+        if ops_test.model.name == "testing":
+            # Set model proxy for the runners
+            await ops_test.model.set_config(
+                {
+                    "juju-http-proxy": proxy.http,
+                    "juju-https-proxy": proxy.https,
+                    "juju-no-proxy": proxy.no_proxy,
+                }
+            )
+        yield ops_test.model
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(ops_test: OpsTest, model: Model) -> AsyncGenerator[Application, None]:
+async def test_charm_fixture(
+    model: Model, test_id: str, arch: Literal["amd64", "arm64"]
+) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    charm_file = await ops_test.build_charm("tests/integration/data/charm")
-    app = await model.deploy(charm_file)
-    await model.wait_for_idle(apps=[app.name])
+    # The predefine inputs here can be trusted
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    )
+    logger.info("Deploying built test charm.")
+    app_name = f"test-{test_id}"
+    app: Application = await model.deploy(f"./test_ubuntu-22.04-{arch}.charm", app_name)
 
     yield app
 
-    await model.remove_application(app.name)
+    logger.info("Cleaning up test charm.")
+    await model.remove_application(app_name=app_name)
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -95,31 +149,50 @@ def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
 
 
 @pytest.fixture(scope="module", name="network_name")
-def network_name_fixture(pytestconfig: pytest.Config) -> str:
+def network_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]) -> str:
     """Network to use to spawn test instances under."""
-    network_name = pytestconfig.getoption("--openstack-network-name")
-    assert network_name, "Please specify the --openstack-network-name command line option"
+    network_name: str
+    if arch == "arm64":
+        network_name = pytestconfig.getoption("--openstack-network-name-arm64")
+    else:
+        network_name = pytestconfig.getoption("--openstack-network-name-amd64")
+    assert network_name, "Please specify the --openstack-network-name(-amd64) command line option"
     return network_name
 
 
 @pytest.fixture(scope="module", name="flavor_name")
-def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
+def flavor_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]) -> str:
     """Flavor to create testing instances with."""
-    flavor_name = pytestconfig.getoption("--openstack-flavor-name")
-    assert flavor_name, "Please specify the --openstack-flavor-name command line option"
+    flavor_name: str
+    if arch == "arm64":
+        flavor_name = pytestconfig.getoption("--openstack-flavor-name-arm64")
+    else:
+        flavor_name = pytestconfig.getoption("--openstack-flavor-name-amd64")
+    assert flavor_name, "Please specify the --openstack-flavor-name(-amd64) command line option"
     return flavor_name
 
 
 @pytest.fixture(scope="module", name="private_endpoint_configs")
-def private_endpoint_configs_fixture(pytestconfig: pytest.Config) -> PrivateEndpointConfigs | None:
+def private_endpoint_configs_fixture(
+    pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]
+) -> PrivateEndpointConfigs | None:
     """The OpenStack private endpoint configurations."""
-    auth_url = pytestconfig.getoption("--openstack-auth-url")
-    password = pytestconfig.getoption("--openstack-password")
-    project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
-    project_name = pytestconfig.getoption("--openstack-project-name")
-    user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
-    user_name = pytestconfig.getoption("--openstack-user-name")
-    region_name = pytestconfig.getoption("--openstack-region-name")
+    if arch == "arm64":
+        auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
+        password = pytestconfig.getoption("--openstack-password-arm64")
+        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
+        project_name = pytestconfig.getoption("--openstack-project-name-arm64")
+        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
+        user_name = pytestconfig.getoption("--openstack-user-name-arm64")
+        region_name = pytestconfig.getoption("--openstack-region-name-arm64")
+    else:
+        auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
+        password = pytestconfig.getoption("--openstack-password-amd64")
+        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
+        project_name = pytestconfig.getoption("--openstack-project-name-amd64")
+        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
+        user_name = pytestconfig.getoption("--openstack-user-name-amd64")
+        region_name = pytestconfig.getoption("--openstack-region-name-amd64")
     if any(
         not val
         for val in (
@@ -134,6 +207,7 @@ def private_endpoint_configs_fixture(pytestconfig: pytest.Config) -> PrivateEndp
     ):
         return None
     return {
+        "arch": arch,
         "auth_url": auth_url,
         "password": password,
         "project_domain_name": project_domain_name,
@@ -203,8 +277,12 @@ def test_id_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
-    model: Model, charm_file: str, test_id: str, private_endpoint_configs: PrivateEndpointConfigs
-) -> Application:
+    model: Model,
+    charm_file: str,
+    test_id: str,
+    private_endpoint_configs: PrivateEndpointConfigs,
+    use_private_endpoint: bool,
+) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
@@ -218,19 +296,26 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
+    base_machine_constraint = (
+        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=20G"
+    )
+    # if local LXD testing model, make the machine of VM type
+    if not use_private_endpoint:
+        base_machine_constraint += " virt-type=virtual-machine"
     app: Application = await model.deploy(
         charm_file,
-        application_name=f"image-builder-{test_id}",
-        constraints=(
-            f"arch={get_juju_arch()} cores=3 mem=18G root-disk=15G virt-type=virtual-machine"
-        ),
+        application_name=f"image-builder-operator-{test_id}",
+        constraints=base_machine_constraint,
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
     await model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 30
     )
-    return app
+
+    yield app
+
+    await model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -238,7 +323,9 @@ def ssh_key_fixture(
     openstack_connection: Connection, test_id: str
 ) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
+    keypair: Keypair = openstack_connection.create_keypair(
+        f"test-image-builder-operator-keys-{test_id}"
+    )
     ssh_key_path = Path("tmp_key")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
@@ -323,7 +410,7 @@ async def openstack_server_fixture(
 ):
     """A testing openstack instance."""
     await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    server_name = f"test-server-{test_id}"
+    server_name = f"test-image-builder-operator-server-{test_id}"
 
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}

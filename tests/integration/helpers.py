@@ -5,7 +5,6 @@
 
 import inspect
 import logging
-import platform
 import time
 import urllib
 from pathlib import Path
@@ -17,7 +16,6 @@ from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
-import state
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
@@ -201,19 +199,3 @@ async def wait_for(
         if result := func():
             return cast(R, result)
     raise TimeoutError()
-
-
-def get_juju_arch() -> str:
-    """Get juju compatible architecture.
-
-    Returns:
-        The juju compatible compute architecture.
-    """
-    arch = platform.machine()
-    match arch:
-        case arch if arch in state.ARCHITECTURES_ARM64:
-            return "arm64"
-        case arch if arch in state.ARCHITECTURES_X86:
-            return "amd64"
-    logger.warning("No matching architecture found, defaulting to amd64.")
-    return "amd64"
