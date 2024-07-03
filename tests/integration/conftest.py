@@ -43,7 +43,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_juju_arch, wait_for_valid_connection
+from tests.integration.helpers import wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
 
 logger = logging.getLogger(__name__)
@@ -123,7 +123,9 @@ async def model_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Application, None]:
+async def test_charm_fixture(
+    model: Model, test_id: str, arch: Literal["amd64", "arm64"]
+) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     # The predefine inputs here can be trusted
     subprocess.check_call(  # nosec: B603
@@ -131,7 +133,7 @@ async def test_charm_fixture(model: Model, test_id: str) -> AsyncGenerator[Appli
     )
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
-    app: Application = await model.deploy(f"./test_ubuntu-22.04-{get_juju_arch()}.charm", app_name)
+    app: Application = await model.deploy(f"./test_ubuntu-22.04-{arch}.charm", app_name)
 
     yield app
 
@@ -205,6 +207,7 @@ def private_endpoint_configs_fixture(
     ):
         return None
     return {
+        "arch": arch,
         "auth_url": auth_url,
         "password": password,
         "project_domain_name": project_domain_name,
@@ -273,7 +276,6 @@ async def app_fixture(
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
-    arch: Literal["amd64", "arm64"],
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -288,7 +290,9 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
-    base_machine_constraint = f"arch={arch} cores=4 mem=16G root-disk=20G"
+    base_machine_constraint = (
+        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=20G"
+    )
     # if local LXD testing model, make the machine of VM type
     if not use_private_endpoint:
         base_machine_constraint += " virt-type=virtual-machine"
