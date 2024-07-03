@@ -73,7 +73,7 @@ def _configure_dockerhub_mirror(conn: SSHConnection, dockerhub_mirror: str | Non
     """
     if not dockerhub_mirror:
         return
-    command = f'echo {{ "registry-mirrors": ["{dockerhub_mirror}"]}} > /etc/docker/daemon.json'
+    command = f'echo "{{ "registry-mirrors": ["{dockerhub_mirror}"] }}" > /etc/docker/daemon.json'
     logger.info("Running command: %s", command)
     result: Result = conn.run(command)
     assert result.ok, "Failed to setup DockerHub mirror"
