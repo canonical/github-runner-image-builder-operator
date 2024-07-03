@@ -3,6 +3,7 @@
 
 """Fixtures for github runner charm integration tests."""
 import logging
+import platform
 import secrets
 import string
 
@@ -10,7 +11,7 @@ import string
 # models
 import subprocess  # nosec: B404
 from pathlib import Path
-from typing import AsyncGenerator, Generator, NamedTuple, Optional
+from typing import AsyncGenerator, Generator, Literal, NamedTuple, Optional
 
 import nest_asyncio
 import openstack
@@ -27,6 +28,7 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
+import state
 from builder import IMAGE_NAME_TMPL
 from state import (
     APP_CHANNEL_CONFIG_NAME,
@@ -66,13 +68,27 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
+@pytest.fixture(scope="module", name="arch")
+def arch_fixture() -> Literal["amd64", "arm64"]:
+    """The running test architecture."""
+    arch = platform.machine()
+    match arch:
+        case arch if arch in state.ARCHITECTURES_ARM64:
+            return "arm64"
+        case arch if arch in state.ARCHITECTURES_X86:
+            return "amd64"
+    raise ValueError(f"Unsupported testing architecture {arch}")
+
+
 @pytest.fixture(scope="module", name="use_private_endpoint")
-def use_private_endpoint_fixture(pytestconfig: pytest.Config) -> bool:
+def use_private_endpoint_fixture(
+    pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]
+) -> bool:
     """Whether the private endpoint is used."""
     openstack_auth_url = pytestconfig.getoption("--openstack-auth-url")
     # ARM64 requires private endpoint testing because we cannot test in LXD models due to nested
     # virtualization limitations.
-    return bool(openstack_auth_url) and get_juju_arch() == "arm64"
+    return bool(openstack_auth_url) and arch == "arm64"
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
@@ -131,31 +147,50 @@ def openstack_clouds_yaml_fixture(pytestconfig: pytest.Config) -> str:
 
 
 @pytest.fixture(scope="module", name="network_name")
-def network_name_fixture(pytestconfig: pytest.Config) -> str:
+def network_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]) -> str:
     """Network to use to spawn test instances under."""
-    network_name = pytestconfig.getoption("--openstack-network-name")
-    assert network_name, "Please specify the --openstack-network-name command line option"
+    network_name: str
+    if arch == "arm64":
+        network_name = pytestconfig.getoption("--openstack-network-name")
+    else:
+        network_name = pytestconfig.getoption("--openstack-network-name-amd64")
+    assert network_name, "Please specify the --openstack-network-name(-amd64) command line option"
     return network_name
 
 
 @pytest.fixture(scope="module", name="flavor_name")
-def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
+def flavor_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]) -> str:
     """Flavor to create testing instances with."""
-    flavor_name = pytestconfig.getoption("--openstack-flavor-name")
-    assert flavor_name, "Please specify the --openstack-flavor-name command line option"
+    flavor_name: str
+    if arch == "arm64":
+        flavor_name = pytestconfig.getoption("--openstack-flavor-name")
+    else:
+        flavor_name = pytestconfig.getoption("--openstack-flavor-name-amd64")
+    assert flavor_name, "Please specify the --openstack-flavor-name(-amd64) command line option"
     return flavor_name
 
 
 @pytest.fixture(scope="module", name="private_endpoint_configs")
-def private_endpoint_configs_fixture(pytestconfig: pytest.Config) -> PrivateEndpointConfigs | None:
+def private_endpoint_configs_fixture(
+    pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]
+) -> PrivateEndpointConfigs | None:
     """The OpenStack private endpoint configurations."""
-    auth_url = pytestconfig.getoption("--openstack-auth-url")
-    password = pytestconfig.getoption("--openstack-password")
-    project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
-    project_name = pytestconfig.getoption("--openstack-project-name")
-    user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
-    user_name = pytestconfig.getoption("--openstack-user-name")
-    region_name = pytestconfig.getoption("--openstack-region-name")
+    if arch == "arm64":
+        auth_url = pytestconfig.getoption("--openstack-auth-url")
+        password = pytestconfig.getoption("--openstack-password")
+        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
+        project_name = pytestconfig.getoption("--openstack-project-name")
+        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
+        user_name = pytestconfig.getoption("--openstack-user-name")
+        region_name = pytestconfig.getoption("--openstack-region-name")
+    else:
+        auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
+        password = pytestconfig.getoption("--openstack-password-amd64")
+        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
+        project_name = pytestconfig.getoption("--openstack-project-name-amd64")
+        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
+        user_name = pytestconfig.getoption("--openstack-user-name-amd64")
+        region_name = pytestconfig.getoption("--openstack-region-name-amd64")
     if any(
         not val
         for val in (
@@ -238,6 +273,7 @@ async def app_fixture(
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
+    arch: Literal["amd64", "arm64"],
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -252,7 +288,7 @@ async def app_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
     }
 
-    base_machine_constraint = f"arch={get_juju_arch()} cores=4 mem=16G root-disk=20G"
+    base_machine_constraint = f"arch={arch} cores=4 mem=16G root-disk=20G"
     # if local LXD testing model, make the machine of VM type
     if not use_private_endpoint:
         base_machine_constraint += " virt-type=virtual-machine"
