@@ -169,11 +169,14 @@ def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerI
     """
     monkeypatch.setattr(os, "getenv", MagicMock())
     monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
+    monkeypatch.setattr(builder.state.BuilderRunConfig, "from_charm", MagicMock())
+    charm.image_observer.update_image_data = (update_mock := MagicMock())
 
     charm._on_build_success(MagicMock)
 
     assert charm.unit.status == ops.ActiveStatus()
     upgrade_mock.assert_called_once()
+    update_mock.assert_called_once()
 
 
 def test__on_build_fail(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
