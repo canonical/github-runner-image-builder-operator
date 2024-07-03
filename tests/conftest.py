@@ -25,47 +25,47 @@ def pytest_addoption(parser: Parser):
     )
     # Private endpoint options ARM64
     parser.addoption(
-        "--openstack-network-name",
+        "--openstack-network-name-arm64",
         action="store",
         help="The Openstack network to create testing instances under.",
     )
     parser.addoption(
-        "--openstack-flavor-name",
+        "--openstack-flavor-name-arm64",
         action="store",
         help="The Openstack flavor to create testing instances with.",
     )
     parser.addoption(
-        "--openstack-auth-url",
+        "--openstack-auth-url-arm64",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
     )
     parser.addoption(
-        "--openstack-password",
+        "--openstack-password-arm64",
         action="store",
         help="The password to authenticate to Openstack service.",
     )
     parser.addoption(
-        "--openstack-project-domain-name",
+        "--openstack-project-domain-name-arm64",
         action="store",
         help="The Openstack project domain name to use.",
     )
     parser.addoption(
-        "--openstack-project-name",
+        "--openstack-project-name-arm64",
         action="store",
         help="The Openstack project name to use.",
     )
     parser.addoption(
-        "--openstack-user-domain-name",
+        "--openstack-user-domain-name-arm64",
         action="store",
         help="The Openstack user domain name to use.",
     )
     parser.addoption(
-        "--openstack-user-name",
+        "--openstack-user-name-arm64",
         action="store",
         help="The Openstack user to authenticate as.",
     )
     parser.addoption(
-        "--openstack-region-name",
+        "--openstack-region-name-arm64",
         action="store",
         help="The Openstack region to authenticate to.",
     )

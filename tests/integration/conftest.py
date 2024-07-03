@@ -85,7 +85,7 @@ def use_private_endpoint_fixture(
     pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]
 ) -> bool:
     """Whether the private endpoint is used."""
-    openstack_auth_url = pytestconfig.getoption("--openstack-auth-url")
+    openstack_auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
     # ARM64 requires private endpoint testing because we cannot test in LXD models due to nested
     # virtualization limitations.
     return bool(openstack_auth_url) and arch == "arm64"
@@ -153,7 +153,7 @@ def network_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "ar
     """Network to use to spawn test instances under."""
     network_name: str
     if arch == "arm64":
-        network_name = pytestconfig.getoption("--openstack-network-name")
+        network_name = pytestconfig.getoption("--openstack-network-name-arm64")
     else:
         network_name = pytestconfig.getoption("--openstack-network-name-amd64")
     assert network_name, "Please specify the --openstack-network-name(-amd64) command line option"
@@ -165,7 +165,7 @@ def flavor_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm
     """Flavor to create testing instances with."""
     flavor_name: str
     if arch == "arm64":
-        flavor_name = pytestconfig.getoption("--openstack-flavor-name")
+        flavor_name = pytestconfig.getoption("--openstack-flavor-name-arm64")
     else:
         flavor_name = pytestconfig.getoption("--openstack-flavor-name-amd64")
     assert flavor_name, "Please specify the --openstack-flavor-name(-amd64) command line option"
@@ -178,13 +178,13 @@ def private_endpoint_configs_fixture(
 ) -> PrivateEndpointConfigs | None:
     """The OpenStack private endpoint configurations."""
     if arch == "arm64":
-        auth_url = pytestconfig.getoption("--openstack-auth-url")
-        password = pytestconfig.getoption("--openstack-password")
-        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
-        project_name = pytestconfig.getoption("--openstack-project-name")
-        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
-        user_name = pytestconfig.getoption("--openstack-user-name")
-        region_name = pytestconfig.getoption("--openstack-region-name")
+        auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
+        password = pytestconfig.getoption("--openstack-password-arm64")
+        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
+        project_name = pytestconfig.getoption("--openstack-project-name-arm64")
+        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
+        user_name = pytestconfig.getoption("--openstack-user-name-arm64")
+        region_name = pytestconfig.getoption("--openstack-region-name-arm64")
     else:
         auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
         password = pytestconfig.getoption("--openstack-password-amd64")
