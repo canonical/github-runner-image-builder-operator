@@ -65,11 +65,6 @@ async def test_image_relation(app: Application, test_charm: Application):
     act: When the relation is joined.
     assert: The test charm becomes active due to proper relation data.
     """
-    # Use CLI call since Juju model, due to ARM64 private endpoint constraints, has been imported
-    # dynamically (see conftest.py def model_fixture). This causes the model object to not work
-    # as expected (the REPL also has a different behavior) and throw KeyError or websocket
-    # disconnect error.
-    # we are using trusted input here.
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
     await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
