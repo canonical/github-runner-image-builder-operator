@@ -263,6 +263,12 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
     return openstack.connect(first_cloud)
 
 
+@pytest.fixture(scope="module", name="dockerhub_mirror")
+def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str | None:
+    """Dockerhub mirror URL."""
+    return pytestconfig.getoption("--dockerhub-mirror")
+
+
 @pytest.fixture(scope="module", name="test_id")
 def test_id_fixture() -> str:
     """The test ID fixture."""
@@ -437,7 +443,10 @@ async def openstack_server_fixture(
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
 async def ssh_connection_fixture(
-    openstack_server: Server, openstack_metadata: OpenstackMeta, proxy: ProxyConfig
+    openstack_server: Server,
+    openstack_metadata: OpenstackMeta,
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
@@ -447,6 +456,7 @@ async def ssh_connection_fixture(
         network=openstack_metadata.network,
         ssh_key=openstack_metadata.ssh_key.private_key,
         proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror,
     )
 
     return ssh_connection

@@ -5,9 +5,9 @@
 
 """Integration testing module."""
 
+import dataclasses
 import logging
 from datetime import datetime, timezone
-from typing import NamedTuple
 
 import pytest
 from fabric.connection import Connection as SSHConnection
@@ -19,7 +19,7 @@ from openstack.image.v2.image import Image
 
 from builder import IMAGE_NAME_TMPL
 from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
-from tests.integration.helpers import wait_for
+from tests.integration.helpers import format_dockerhub_mirror_microk8s_command, wait_for
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,8 @@ async def test_image_relation(app: Application, test_charm: Application):
     await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
 
 
-class Commands(NamedTuple):
+@dataclasses.dataclass
+class Commands:
     """Test commands to execute.
 
     Attributes:
@@ -92,6 +93,16 @@ TEST_RUNNER_COMMANDS = (
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
     Commands(name="install microk8s", command="sudo snap install microk8s --classic"),
+    # This is a special helper command to configure dockerhub registry if available.
+    Commands(
+        name="configure dockerhub mirror",
+        command="""echo 'server = "{registry_url}"
+
+[host.{hostname}:{port}]
+capabilities = ["pull", "resolve"]
+' | sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml && \
+sudo microk8s stop && sudo microk8s start""",
+    ),
     Commands(name="wait for microk8s", command="microk8s status --wait-ready"),
     Commands(
         name="deploy nginx in microk8s",
@@ -122,14 +133,16 @@ TEST_RUNNER_COMMANDS = (
 
 
 @pytest.mark.asyncio
-async def test_image(ssh_connection: SSHConnection, proxy: ProxyConfig):
+async def test_image(
+    ssh_connection: SSHConnection, proxy: ProxyConfig, dockerhub_mirror: str | None
+):
     """
     arrange: given a latest image build, a ssh-key and a server.
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
     env = (
-        None
+        {}
         if not proxy.http
         else {
             "HTTP_PROXY": proxy.http,
@@ -140,8 +153,17 @@ async def test_image(ssh_connection: SSHConnection, proxy: ProxyConfig):
             "no_proxy": proxy.no_proxy,
         }
     )
+    if dockerhub_mirror:
+        env.update(DOCKERHUB_MIRROR=dockerhub_mirror, CONTAINER_REGISTRY_URL=dockerhub_mirror)
+
     for command in TEST_RUNNER_COMMANDS:
+        if command.command == "configure dockerhub mirror":
+            if not dockerhub_mirror:
+                continue
+            command.command = format_dockerhub_mirror_microk8s_command(
+                command=command.command, dockerhub_mirror=dockerhub_mirror
+            )
         logger.info("Running test: %s", command.name)
-        result: Result = ssh_connection.run(command.command, env=env)
+        result: Result = ssh_connection.run(command.command, env=env if env else None)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
