@@ -151,6 +151,8 @@ def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
             str(run_config.num_revisions),
             "--callback-script",
             str(run_config.callback_script.absolute()),
+            "--runner-version",
+            run_config.runner_version,
         ]
     )
     cron_text = (
@@ -215,6 +217,8 @@ def run(config: state.BuilderRunConfig) -> None:
                     str(config.num_revisions),
                     "--callback-script",
                     str(config.callback_script.absolute()),
+                    "--runner-version",
+                    config.runner_version,
                     ">>",
                     str(OUTPUT_LOG_PATH),
                     "2>&1",

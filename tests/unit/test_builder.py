@@ -209,7 +209,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
         callback_script=test_path,
-        runner_version="1.234.5",
+        runner_version=(runner_version := "1.234.5"),
         num_revisions=5,
     )
 
@@ -227,6 +227,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 --base-image {test_config.base.value} \
 --keep-revisions {test_config.num_revisions} \
 --callback-script {test_path} \
+--runner-version {runner_version} \
 >> /home/ubuntu/github-runner-image-builder.log 2>&1 \
 || /home/ubuntu/on_build_failed_callback.sh
 """
