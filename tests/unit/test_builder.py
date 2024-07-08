@@ -184,6 +184,7 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
             base=state.BaseImage.JAMMY,
             cloud_config=factories.CloudFactory(),
             callback_script=MagicMock(),
+            runner_version="1.234.5",
             num_revisions=5,
         ),
         interval=1,
@@ -208,6 +209,7 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
         callback_script=test_path,
+        runner_version="1.234.5",
         num_revisions=5,
     )
 
@@ -272,6 +274,7 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
         num_revisions=1,
+        runner_version="1.234.5",
         callback_script=tmp_path,
     )
 
@@ -293,6 +296,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
         num_revisions=1,
+        runner_version="1.234.5",
         callback_script=tmp_path,
     )
 
