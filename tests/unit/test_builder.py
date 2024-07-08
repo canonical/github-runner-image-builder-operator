@@ -193,7 +193,60 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     service_restart_mock.assert_not_called()
 
 
-def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+@pytest.mark.parametrize(
+    "run_config, expected_file_contents",
+    [
+        pytest.param(
+            state.BuilderRunConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_config=factories.CloudFactory(),
+                runner_version="1.234.5",
+                num_revisions=5,
+            ),
+            """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
+/usr/bin/sudo \
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+testcloud \
+jammy-arm64 \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script {TEST_PATH} \
+--runner-version 1.234.5 \
+>> /home/ubuntu/github-runner-image-builder.log 2>&1 \
+|| /home/ubuntu/on_build_failed_callback.sh
+""",
+            id="runner version set",
+        ),
+        pytest.param(
+            state.BuilderRunConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_config=factories.CloudFactory(),
+                runner_version="",
+                num_revisions=5,
+            ),
+            """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
+/usr/bin/sudo \
+--preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
+testcloud \
+jammy-arm64 \
+--base-image jammy \
+--keep-revisions 5 \
+--callback-script {TEST_PATH} \
+>> /home/ubuntu/github-runner-image-builder.log 2>&1 \
+|| /home/ubuntu/on_build_failed_callback.sh
+""",
+            id="runner version not set",
+        ),
+    ],
+)
+def test_configure_cron(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    run_config: state.BuilderRunConfig,
+    expected_file_contents: str,
+):
     """
     arrange: given monkeypatched subfunctions of configure_cron.
     act: when configure_cron is called.
@@ -204,34 +257,13 @@ def test_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     test_path = tmp_path / "test"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
     test_interval = 1
-    test_config = state.BuilderRunConfig(
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
-        cloud_config=factories.CloudFactory(),
-        callback_script=test_path,
-        runner_version=(runner_version := "1.234.5"),
-        num_revisions=5,
-    )
+    run_config.callback_script = test_path
 
-    builder.configure_cron(run_config=test_config, interval=test_interval)
+    builder.configure_cron(run_config=run_config, interval=test_interval)
 
     service_restart_mock.assert_called_once()
     cron_contents = test_path.read_text(encoding="utf-8")
-    assert (
-        cron_contents
-        == f"""0 */{test_interval} * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
-/usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-{test_config.cloud_name} \
-{test_config.base.value}-{test_config.arch.value} \
---base-image {test_config.base.value} \
---keep-revisions {test_config.num_revisions} \
---callback-script {test_path} \
---runner-version {runner_version} \
->> /home/ubuntu/github-runner-image-builder.log 2>&1 \
-|| /home/ubuntu/on_build_failed_callback.sh
-"""
-    )
+    assert cron_contents == expected_file_contents.format(TEST_PATH=test_path)
 
 
 def test__should_configure_cron_no_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -285,7 +317,14 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert "Failed to spawn process" in str(exc.getrepr())
 
 
-def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+@pytest.mark.parametrize(
+    "runner_version",
+    [
+        pytest.param("1.234.5", id="runner version config set"),
+        pytest.param("", id="runner version config not set"),
+    ],
+)
+def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, runner_version: str):
     """
     arrange: given a monkeypatched subprocess call.
     act: when run is called.
@@ -297,7 +336,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
         num_revisions=1,
-        runner_version="1.234.5",
+        runner_version=runner_version,
         callback_script=tmp_path,
     )
 

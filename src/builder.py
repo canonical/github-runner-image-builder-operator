@@ -131,30 +131,30 @@ def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
     Returns:
         True if cron is reconfigured. False otherwise.
     """
-    builder_exec_command: str = " ".join(
-        [
-            # HOME path is required for GO modules.
-            f"HOME={UBUNTU_HOME}",
-            "/usr/bin/run-one",
-            "/usr/bin/sudo",
-            "--preserve-env",
-            str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-            "run",
-            run_config.cloud_name,
-            IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=run_config.base.value,
-                ARCH=run_config.arch.value,
-            ),
-            "--base-image",
-            run_config.base.value,
-            "--keep-revisions",
-            str(run_config.num_revisions),
-            "--callback-script",
-            str(run_config.callback_script.absolute()),
-            "--runner-version",
-            run_config.runner_version,
-        ]
-    )
+    commands = [
+        # HOME path is required for GO modules.
+        f"HOME={UBUNTU_HOME}",
+        "/usr/bin/run-one",
+        "/usr/bin/sudo",
+        "--preserve-env",
+        str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+        "run",
+        run_config.cloud_name,
+        IMAGE_NAME_TMPL.format(
+            IMAGE_BASE=run_config.base.value,
+            ARCH=run_config.arch.value,
+        ),
+        "--base-image",
+        run_config.base.value,
+        "--keep-revisions",
+        str(run_config.num_revisions),
+        "--callback-script",
+        str(run_config.callback_script.absolute()),
+    ]
+    if run_config.runner_version:
+        commands += ["--runner-version", run_config.runner_version]
+
+    builder_exec_command: str = " ".join(commands)
     cron_text = (
         f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command} "
         f">> {OUTPUT_LOG_PATH} 2>&1 || {state.FAILED_CALLBACK_SCRIPT_PATH.absolute()}\n"
@@ -193,43 +193,44 @@ def run(config: state.BuilderRunConfig) -> None:
         BuilderRunError: if there was an error while launching the subprocess.
     """
     try:
+        commands = [
+            "(",
+            # HOME path is required for GO modules.
+            f"HOME={UBUNTU_HOME}",
+            "/usr/bin/run-one",
+            "/usr/bin/sudo",
+            "--preserve-env",
+            str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+            "run",
+            config.cloud_name,
+            IMAGE_NAME_TMPL.format(
+                IMAGE_BASE=config.base.value,
+                ARCH=config.arch.value,
+            ),
+            "--base-image",
+            config.base.value,
+            "--keep-revisions",
+            str(config.num_revisions),
+            "--callback-script",
+            str(config.callback_script.absolute()),
+        ]
+        if config.runner_version:
+            commands += ["--runner-version", config.runner_version]
+        commands += [
+            ">>",
+            str(OUTPUT_LOG_PATH),
+            "2>&1",
+            "||",
+            # Run the callback script without Openstack ID argument to let the charm know
+            # about the error.
+            str(state.FAILED_CALLBACK_SCRIPT_PATH.absolute()),
+            ")",
+            "&",
+        ]
         # The callback invokes another hook - which cannot be run when another hook is already
         # running. Call the process as a background and exit immediately.
         subprocess.Popen(  # pylint: disable=consider-using-with
-            " ".join(
-                [
-                    "(",
-                    # HOME path is required for GO modules.
-                    f"HOME={UBUNTU_HOME}",
-                    "/usr/bin/run-one",
-                    "/usr/bin/sudo",
-                    "--preserve-env",
-                    str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-                    "run",
-                    config.cloud_name,
-                    IMAGE_NAME_TMPL.format(
-                        IMAGE_BASE=config.base.value,
-                        ARCH=config.arch.value,
-                    ),
-                    "--base-image",
-                    config.base.value,
-                    "--keep-revisions",
-                    str(config.num_revisions),
-                    "--callback-script",
-                    str(config.callback_script.absolute()),
-                    "--runner-version",
-                    config.runner_version,
-                    ">>",
-                    str(OUTPUT_LOG_PATH),
-                    "2>&1",
-                    "||",
-                    # Run the callback script without Openstack ID argument to let the charm know
-                    # about the error.
-                    str(state.FAILED_CALLBACK_SCRIPT_PATH.absolute()),
-                    ")",
-                    "&",
-                ]
-            ),
+            " ".join(commands),
             # run as shell for log redirection, the command is trusted
             shell=True,  # nosec: B602
             user=UBUNTU_USER,
