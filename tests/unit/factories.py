@@ -20,6 +20,7 @@ from state import (
     OPENSTACK_USER_CONFIG_NAME,
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
+    RUNNER_VERSION_CONFIG_NAME,
 )
 
 T = typing.TypeVar("T")
@@ -60,6 +61,7 @@ class MockCharmFactory(factory.Factory):
             OPENSTACK_USER_DOMAIN_CONFIG_NAME: "user_domain_name",
             OPENSTACK_USER_CONFIG_NAME: "username",
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
+            RUNNER_VERSION_CONFIG_NAME: "1.234.5",
         }
     )
 

@@ -179,6 +179,13 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
             "",
             id="invalid revision history",
         ),
+        pytest.param(
+            state,
+            "_parse_runner_version",
+            ValueError,
+            "",
+            id="invalid runner version",
+        ),
     ],
 )
 def test_builder_run_config_invalid_configs(
@@ -197,6 +204,7 @@ def test_builder_run_config_invalid_configs(
     monkeypatch.setattr(state.BaseImage, "from_charm", MagicMock())
     monkeypatch.setattr(state, "_parse_openstack_clouds_config", MagicMock())
     monkeypatch.setattr(state, "_parse_revision_history_limit", MagicMock())
+    monkeypatch.setattr(state, "_parse_runner_version", MagicMock())
     monkeypatch.setattr(module, patch_func, MagicMock(side_effect=exception))
 
     charm = MockCharmFactory()
@@ -236,6 +244,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                     }
                 }
             },
+            runner_version="1.234.5",
             num_revisions=5,
         ),
         interval=6,
@@ -347,6 +356,66 @@ def test__parse_revision_history_limit(revision_history: str, expected: int):
     charm.config[state.REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
 
     assert state._parse_revision_history_limit(charm) == expected
+
+
+@pytest.mark.parametrize(
+    "version, expected_message",
+    [
+        pytest.param(
+            "abc", "The runner version must be in semantic version format.", id="not a version"
+        ),
+        pytest.param(
+            "1.20",
+            "The runner version must be in semantic version format.",
+            id="not a semantic version",
+        ),
+        pytest.param(
+            "a.b.c",
+            "The runner version numbers must be an integer.",
+            id="non a integer versions",
+        ),
+        pytest.param(
+            "1.20.-1",
+            "The runner version numbers cannot be negative",
+            id="not a semantic version (negative integer)",
+        ),
+        pytest.param(
+            "v1.20.1", "The runner version numbers must be an integer", id="v char not accepted"
+        ),
+    ],
+)
+def test__parse_runner_version_invalid(version: str, expected_message: str):
+    """
+    arrange: given an invalid runner version config value.
+    act: when _parse_runner_version is called.
+    assert: ValueError is raised.
+    """
+    charm = MockCharmFactory()
+    charm.config[state.RUNNER_VERSION_CONFIG_NAME] = version
+
+    with pytest.raises(ValueError) as exc:
+        state._parse_runner_version(charm)
+
+    assert expected_message in str(exc.getrepr())
+
+
+@pytest.mark.parametrize(
+    "version, expected_version",
+    [
+        pytest.param("", "", id="latest version"),
+        pytest.param("1.234.5", "1.234.5", id="valid version"),
+    ],
+)
+def test__parse_runner_version(version: str, expected_version: str):
+    """
+    arrange: given a valid runner version config value.
+    act: when _parse_runner_version is called.
+    assert: expected version number is returned.
+    """
+    charm = MockCharmFactory()
+    charm.config[state.RUNNER_VERSION_CONFIG_NAME] = version
+
+    assert state._parse_runner_version(charm) == expected_version
 
 
 @pytest.mark.parametrize(
