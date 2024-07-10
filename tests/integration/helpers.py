@@ -6,6 +6,7 @@
 import inspect
 import logging
 import time
+import urllib
 from pathlib import Path
 from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
 
@@ -63,6 +64,32 @@ EOF"""  # noqa: E501
     assert result.ok, "Failed to configure iptable rules"
 
 
+def _configure_dockerhub_mirror(conn: SSHConnection, dockerhub_mirror: str | None):
+    """Use dockerhub mirror if provided.
+
+    Args:
+        conn: The SSH connection instance.
+        dockerhub_mirror: The DockerHub mirror URL.
+    """
+    if not dockerhub_mirror:
+        return
+    command = f"""echo '{{ "registry-mirrors": ["{dockerhub_mirror}"] }}' | \
+sudo tee /etc/docker/daemon.json"""
+    logger.info("Running command: %s", command)
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to setup DockerHub mirror"
+
+    command = "sudo systemctl daemon-reload"
+    logger.info("Running command: %s", command)
+    result = conn.run(command)
+    assert result.ok, "Failed to reload daemon"
+
+    command = "sudo systemctl restart docker"
+    logger.info("Running command: %s", command)
+    result = conn.run(command)
+    assert result.ok, "Failed to restart docker"
+
+
 # All the arguments are necessary
 def wait_for_valid_connection(  # pylint: disable=too-many-arguments
     connection: Connection,
@@ -71,6 +98,7 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
     ssh_key: Path,
     timeout: int = 30 * 60,
     proxy: ProxyConfig | None = None,
+    dockerhub_mirror: str | None = None,
 ) -> SSHConnection:
     """Wait for a valid SSH connection from Openstack server.
 
@@ -81,6 +109,7 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
         ssh_key: The path to public ssh_key to create connection with.
         timeout: Number of seconds to wait before raising a timeout error.
         proxy: The proxy to configure on host runner.
+        dockerhub_mirror: The DockerHub mirror URL.
 
     Raises:
         TimeoutError: If no valid connections were found.
@@ -107,11 +136,28 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
                 result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
                     _install_proxy(conn=ssh_connection, proxy=proxy)
+                    _configure_dockerhub_mirror(
+                        conn=ssh_connection, dockerhub_mirror=dockerhub_mirror
+                    )
                     return ssh_connection
             except (NoValidConnectionsError, TimeoutError, SSHException) as exc:
                 logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
+
+
+def format_dockerhub_mirror_microk8s_command(command: str, dockerhub_mirror: str) -> str:
+    """Format dockerhub mirror for microk8s command.
+
+    Args:
+        command: The command to run.
+        dockerhub_mirror: The DockerHub mirror URL.
+
+    Returns:
+        The formatted dockerhub mirror registry command for snap microk8s.
+    """
+    url = urllib.parse.urlparse(dockerhub_mirror)
+    return command.format(registry_url=url.geturl(), hostname=url.hostname, port=url.port)
 
 
 P = ParamSpec("P")

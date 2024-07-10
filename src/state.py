@@ -31,6 +31,7 @@ OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
 OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
 OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
+RUNNER_VERSION_CONFIG_NAME = "runner-version"
 
 SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
 FAILED_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_failed_callback.sh")
@@ -179,6 +180,7 @@ class BuilderRunConfig:
         cloud_config: The Openstack clouds.yaml passed as charm config.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         num_revisions: Number of images to keep before deletion.
+        runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         callback_script: Path to callback script.
     """
 
@@ -186,6 +188,7 @@ class BuilderRunConfig:
     base: BaseImage
     cloud_config: dict[str, typing.Any]
     num_revisions: int
+    runner_version: str
     callback_script: pathlib.Path = SUCCESS_CALLBACK_SCRIPT_PATH
 
     @property
@@ -228,6 +231,7 @@ class BuilderRunConfig:
 
         try:
             revision_history_limit = _parse_revision_history_limit(charm)
+            runner_version = _parse_runner_version(charm=charm)
         except ValueError as exc:
             raise BuildConfigInvalidError(msg=str(exc)) from exc
 
@@ -236,6 +240,7 @@ class BuilderRunConfig:
             base=base_image,
             cloud_config=cloud_config,
             num_revisions=revision_history_limit,
+            runner_version=runner_version,
         )
 
 
@@ -279,6 +284,37 @@ def _parse_revision_history_limit(charm: ops.CharmBase) -> int:
     if revision_history < 2 or revision_history > 99:
         raise ValueError("Revision history must be greater than 1 and less than 100")
     return revision_history
+
+
+def _parse_runner_version(charm: ops.CharmBase) -> str:
+    """Parse the runner version configuration value.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        ValueError: If an invalid version number is provided.
+
+    Returns:
+        The semantic version number of the GitHub runner.
+    """
+    version_str = typing.cast(str, charm.config.get(RUNNER_VERSION_CONFIG_NAME, ""))
+    if not version_str:
+        return ""
+
+    parts = version_str.split(".")
+    if len(parts) != 3:
+        raise ValueError("The runner version must be in semantic version format.")
+    try:
+        major = int(parts[0])
+        minor = int(parts[1])
+        patch = int(parts[2])
+    except ValueError as exc:
+        raise ValueError("The runner version numbers must be an integer.") from exc
+    if major < 0 or minor < 0 or patch < 0:
+        raise ValueError("The runner version numbers cannot be negative.")
+
+    return version_str
 
 
 class InvalidCloudConfigError(Exception):
