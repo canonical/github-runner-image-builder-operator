@@ -21,6 +21,7 @@ Module for interacting with charm state and configurations.
 - **OPENSTACK_USER_DOMAIN_CONFIG_NAME**
 - **OPENSTACK_USER_CONFIG_NAME**
 - **REVISION_HISTORY_LIMIT_CONFIG_NAME**
+- **RUNNER_VERSION_CONFIG_NAME**
 
 
 ---
@@ -60,7 +61,7 @@ The ubuntu OS base image to build and deploy runners on.
 ## <kbd>class</kbd> `BuildConfigInvalidError`
 Raised when charm config related to image build config is invalid. 
 
-<a href="../src/state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -103,7 +104,7 @@ This is managed by the application's git tag and versioning tag in pyproject.tom
 ## <kbd>class</kbd> `BuilderAppChannelInvalidError`
 Represents invalid builder app channel configuration. 
 
-<a href="../src/state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -141,7 +142,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -183,6 +184,7 @@ Configurations for running builder periodically.
  - <b>`cloud_config`</b>:  The Openstack clouds.yaml passed as charm config. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
+ - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
  - <b>`callback_script`</b>:  Path to callback script. 
 
 
@@ -196,7 +198,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -229,7 +231,7 @@ Initialize build state from current charm instance.
 ## <kbd>class</kbd> `BuilderSetupConfigInvalidError`
 Raised when charm config related to image build setup config is invalid. 
 
-<a href="../src/state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -260,7 +262,7 @@ Raised when charm config is invalid.
  
  - <b>`msg`</b>:  Explanation of the error. 
 
-<a href="../src/state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -307,7 +309,7 @@ Proxy configuration.
 
 ---
 
-<a href="../src/state.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_env`
 
@@ -328,7 +330,7 @@ Initialize the proxy config from charm.
 ## <kbd>class</kbd> `UnsupportedArchitectureError`
 Raised when given machine charm architecture is unsupported. 
 
-<a href="../src/state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
