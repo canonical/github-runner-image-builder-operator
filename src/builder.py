@@ -140,7 +140,7 @@ def configure_cron(unit_name: str, interval: int) -> bool:
         "/usr/bin/run-one",
         "/usr/bin/bash",
         "-c",
-        f'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run ./dispatch"',
+        f'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME} ./dispatch"',
     ]
 
     builder_exec_command: str = " ".join(commands)
@@ -183,8 +183,6 @@ def run(config: state.BuilderRunConfig) -> str:
     """
     try:
         commands = [
-            # HOME path is required for GO modules.
-            f"HOME={UBUNTU_HOME}",
             "/usr/bin/run-one",
             "/usr/bin/sudo",
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
@@ -198,8 +196,6 @@ def run(config: state.BuilderRunConfig) -> str:
             config.base.value,
             "--keep-revisions",
             str(config.num_revisions),
-            "--callback-script",
-            str(config.callback_script.absolute()),
         ]
         if config.runner_version:
             commands += ["--runner-version", config.runner_version]
@@ -213,7 +209,11 @@ def run(config: state.BuilderRunConfig) -> str:
                 config.external_build_config.network,
             ]
         return subprocess.check_output(
-            args=commands, user=UBUNTU_USER, cwd=UBUNTU_HOME, encoding="utf-8"
+            args=commands,
+            user=UBUNTU_USER,
+            cwd=UBUNTU_HOME,
+            encoding="utf-8",
+            env={"HOME": str(UBUNTU_HOME)},
         )
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc

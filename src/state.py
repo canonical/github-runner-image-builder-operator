@@ -6,7 +6,6 @@
 import dataclasses
 import logging
 import os
-import pathlib
 import platform
 import typing
 from enum import Enum
@@ -35,9 +34,6 @@ OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
 OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
-
-SUCCESS_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_success_callback.sh")
-FAILED_CALLBACK_SCRIPT_PATH = pathlib.Path("/home/ubuntu/on_build_failed_callback.sh")
 
 
 class CharmConfigInvalidError(Exception):
@@ -229,7 +225,6 @@ class BuilderRunConfig:
     external_build_config: ExternalBuildConfig | None
     num_revisions: int
     runner_version: str
-    callback_script: pathlib.Path = SUCCESS_CALLBACK_SCRIPT_PATH
 
     @property
     def cloud_name(self) -> str:
