@@ -20,6 +20,20 @@ links:
   website: https://charmhub.io/github-runner-image-builder
 
 type: charm
+
+parts:
+  charm:
+    build-snaps:
+      - rustup
+    build-packages:
+      - libffi-dev  # for cffi
+      - libssl-dev  # for cryptography
+      - rust-all  # for cryptography
+      - pkg-config # for cryptography
+    override-build: |
+      rustup default stable
+      craftctl default
+
 bases:
   - build-on:
       - name: ubuntu
@@ -65,7 +79,7 @@ config:
       description: |
         The interval in hours between each scheduled image builds.
     experimental-external-build:
-      type: bool
+      type: boolean
       default: false
       description: |
         (Experimental) Whether to use external OpenStack builder VM to build a snapshot image.
