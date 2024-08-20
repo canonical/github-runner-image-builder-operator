@@ -483,6 +483,7 @@ class BuilderInitConfig:
 
         return cls(
             channel=channel,
+            external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
             run_config=run_config,
             interval=build_interval,
         )
