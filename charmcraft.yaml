@@ -42,6 +42,10 @@ bases:
         architectures:
           - amd64
 
+actions:
+  run:
+    description: Trigger an image builder run immediately.
+
 config:
   options:
     app-channel:

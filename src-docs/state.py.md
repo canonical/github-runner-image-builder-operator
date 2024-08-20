@@ -137,15 +137,17 @@ The image builder setup config.
 **Attributes:**
  
  - <b>`channel`</b>:  The application installation channel. 
+ - <b>`external_build`</b>:  Whether the image builder should run in external build mode. 
  - <b>`interval`</b>:  The interval in hours between each scheduled image builds. 
  - <b>`run_config`</b>:  The configuration required to build the image. 
+ - <b>`unit_name`</b>:  The charm unit name in which the builder is running on. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L466"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -308,7 +310,7 @@ Configurations for external builder VMs.
 ### <kbd>classmethod</kbd> `from_charm`
 
 ```python
-from_charm(charm: CharmBase)
+from_charm(charm: CharmBase) → ExternalBuildConfig
 ```
 
 Initialize build configuration from current charm instance. 

@@ -182,7 +182,7 @@ class ExternalBuildConfig:
     network: str
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase):
+    def from_charm(cls, charm: ops.CharmBase) -> "ExternalBuildConfig":
         """Initialize build configuration from current charm instance.
 
         Args:
@@ -201,7 +201,7 @@ class ExternalBuildConfig:
             .lower()
             .strip()
         )
-        return cls(external_build_flavor=flavor_name, external_build_network=network_name)
+        return cls(flavor=flavor_name, network=network_name)
 
 
 class BuildConfigInvalidError(CharmConfigInvalidError):
@@ -451,14 +451,17 @@ class BuilderInitConfig:
 
     Attributes:
         channel: The application installation channel.
+        external_build: Whether the image builder should run in external build mode.
         interval: The interval in hours between each scheduled image builds.
         run_config: The configuration required to build the image.
+        unit_name: The charm unit name in which the builder is running on.
     """
 
     channel: BuilderAppChannel
     external_build: bool
     interval: int
     run_config: BuilderRunConfig
+    unit_name: str
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderInitConfig":
@@ -486,4 +489,5 @@ class BuilderInitConfig:
             external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
             run_config=run_config,
             interval=build_interval,
+            unit_name=charm.unit.name,
         )

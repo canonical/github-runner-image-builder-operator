@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import ops
@@ -16,7 +15,7 @@ import builder
 import image
 import proxy
 import state
-from charm import BUILD_SUCCESS_EVENT_NAME, GithubRunnerImageBuilderCharm, os
+from charm import GithubRunnerImageBuilderCharm
 
 
 @pytest.fixture(name="charm", scope="module")
@@ -57,38 +56,6 @@ def test_block_on_state_error(
     getattr(charm, hook)(MagicMock())
 
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
-
-
-def test__create_callback_script(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given monkeypatched CALLBACK_SCRIPT_PATH.
-    act: when _create_callback_script is called.
-    assert: expected contents are written to path.
-    """
-    test_path = tmp_path / "test"
-    charm.unit.name = (test_unit_name := "test_unit_name")
-    charm.model.name = (test_model_name := "test_model_name")
-    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", test_path)
-    monkeypatch.setattr(os, "getenv", MagicMock(return_value=(test_dir := "test_charm_dir")))
-
-    charm._create_success_callback_script()
-
-    contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""#! /bin/bash
-OPENSTACK_IMAGE_ID="$1"
-
-/usr/bin/juju-exec {test_unit_name} \
-JUJU_DISPATCH_PATH="hooks/{BUILD_SUCCESS_EVENT_NAME}" \
-JUJU_MODEL_NAME="{test_model_name}" \
-JUJU_UNIT_NAME="{test_unit_name}" \
-OPENSTACK_IMAGE_ID="$OPENSTACK_IMAGE_ID" \
-{test_dir}/dispatch
-"""
-    )
 
 
 def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
@@ -143,53 +110,3 @@ def test__on_config_changed(
     charm._on_config_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
-
-
-def test__on_build_success_error(
-    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given a monkeypatched mock os.getenv function that returns no value.
-    act: when _on_build_success is called.
-    assert: the charm is in ActiveStatus with a message.
-    """
-    monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
-
-    charm._on_build_success(MagicMock)
-
-    assert isinstance(charm.unit.status, ops.ActiveStatus)
-    assert "Failed to build image." in charm.unit.status.message
-
-
-def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
-    """
-    arrange: given a monkeypatched mock os.getenv function.
-    act: when _on_build_success is called.
-    assert: the charm is in active status.
-    """
-    monkeypatch.setattr(os, "getenv", MagicMock())
-    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
-    monkeypatch.setattr(builder.state.BuilderRunConfig, "from_charm", MagicMock())
-    charm.image_observer.update_image_data = (update_mock := MagicMock())
-
-    charm._on_build_success(MagicMock)
-
-    assert charm.unit.status == ops.ActiveStatus()
-    upgrade_mock.assert_called_once()
-    update_mock.assert_called_once()
-
-
-def test__on_build_fail(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
-    """
-    arrange: given monkeypatched mock builder upgrade_app function.
-    act: when _on_build_failed is called.
-    assert: the charm is in active status and the upgrade_app is called.
-    """
-    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
-
-    charm._on_build_failed(MagicMock)
-
-    assert charm.unit.status == ops.ActiveStatus(
-        f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
-    )
-    upgrade_mock.assert_called_once()

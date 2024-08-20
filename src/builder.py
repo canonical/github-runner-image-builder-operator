@@ -42,7 +42,6 @@ CRON_PATH = Path("/etc/cron.d")
 CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
-OUTPUT_LOG_PATH = UBUNTU_HOME / "github-runner-image-builder.log"
 IMAGE_NAME_TMPL = "{IMAGE_BASE}-{ARCH}"
 
 
@@ -57,9 +56,9 @@ def initialize(init_config: state.BuilderInitConfig) -> None:
     """
     try:
         _install_dependencies(channel=init_config.channel)
-        _initialize_image_builder()
+        _initialize_image_builder(init_config=init_config)
         install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
-        configure_cron(run_config=init_config.run_config, interval=init_config.interval)
+        configure_cron(unit_name=init_config.unit_name, interval=init_config.interval)
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
         raise BuilderSetupError from exc
 
@@ -89,15 +88,21 @@ def _install_dependencies(channel: state.BuilderAppChannel) -> None:
         raise DependencyInstallError from exc
 
 
-def _initialize_image_builder() -> None:
+def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
     """Initialize github-runner-image-builder app.
+
+    Args:
+        init_config: Imagebuilder initialization configuration parameters.
 
     Raises:
         ImageBuilderInitializeError: If there was an error Initialize the app.
     """
+    init_cmd = ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"]
+    if init_config.external_build:
+        init_cmd += "--experimental-external"
     try:
         subprocess.run(
-            ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"],
+            init_cmd,
             check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
@@ -121,44 +126,25 @@ def install_clouds_yaml(cloud_config: dict) -> None:
         OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
 
 
-def configure_cron(run_config: state.BuilderRunConfig, interval: int) -> bool:
+def configure_cron(unit_name: str, interval: int) -> bool:
     """Configure cron to run builder.
 
     Args:
-        run_config: The configuration required to run builder.
+        unit_name: The charm unit name to run cronjob dispatch hook.
         interval: Number of hours in between image build runs.
 
     Returns:
         True if cron is reconfigured. False otherwise.
     """
     commands = [
-        # HOME path is required for GO modules.
-        f"HOME={UBUNTU_HOME}",
         "/usr/bin/run-one",
-        "/usr/bin/sudo",
-        "--preserve-env",
-        str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-        "run",
-        run_config.cloud_name,
-        IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=run_config.base.value,
-            ARCH=run_config.arch.value,
-        ),
-        "--base-image",
-        run_config.base.value,
-        "--keep-revisions",
-        str(run_config.num_revisions),
-        "--callback-script",
-        str(run_config.callback_script.absolute()),
+        "/usr/bin/bash",
+        "-c",
+        f'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run ./dispatch"',
     ]
-    if run_config.runner_version:
-        commands += ["--runner-version", run_config.runner_version]
 
     builder_exec_command: str = " ".join(commands)
-    cron_text = (
-        f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command} "
-        f">> {OUTPUT_LOG_PATH} 2>&1 || {state.FAILED_CALLBACK_SCRIPT_PATH.absolute()}\n"
-    )
+    cron_text = f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command}"
 
     if not _should_configure_cron(cron_contents=cron_text):
         return False
@@ -183,7 +169,7 @@ def _should_configure_cron(cron_contents: str) -> bool:
     return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
-def run(config: state.BuilderRunConfig) -> None:
+def run(config: state.BuilderRunConfig) -> str:
     """Run a build immediately.
 
     Args:
@@ -191,15 +177,16 @@ def run(config: state.BuilderRunConfig) -> None:
 
     Raises:
         BuilderRunError: if there was an error while launching the subprocess.
+
+    Returns:
+        The built image id.
     """
     try:
         commands = [
-            "(",
             # HOME path is required for GO modules.
             f"HOME={UBUNTU_HOME}",
             "/usr/bin/run-one",
             "/usr/bin/sudo",
-            "--preserve-env",
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
             config.cloud_name,
@@ -216,26 +203,17 @@ def run(config: state.BuilderRunConfig) -> None:
         ]
         if config.runner_version:
             commands += ["--runner-version", config.runner_version]
-        commands += [
-            ">>",
-            str(OUTPUT_LOG_PATH),
-            "2>&1",
-            "||",
-            # Run the callback script without Openstack ID argument to let the charm know
-            # about the error.
-            str(state.FAILED_CALLBACK_SCRIPT_PATH.absolute()),
-            ")",
-            "&",
-        ]
-        # The callback invokes another hook - which cannot be run when another hook is already
-        # running. Call the process as a background and exit immediately.
-        subprocess.Popen(  # pylint: disable=consider-using-with
-            " ".join(commands),
-            # run as shell for log redirection, the command is trusted
-            shell=True,  # nosec: B602
-            user=UBUNTU_USER,
-            cwd=UBUNTU_HOME,
-            env={},
+        if config.external_build_config:
+            commands += [
+                "--experimental-external",
+                "True",
+                "--flavor",
+                config.external_build_config.flavor,
+                "--network",
+                config.external_build_config.network,
+            ]
+        return subprocess.check_output(
+            args=commands, user=UBUNTU_USER, cwd=UBUNTU_HOME, encoding="utf-8"
         )
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc

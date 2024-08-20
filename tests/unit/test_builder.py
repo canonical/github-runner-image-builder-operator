@@ -179,14 +179,7 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder.systemd, "service_restart", (service_restart_mock := MagicMock()))
 
     builder.configure_cron(
-        run_config=state.BuilderRunConfig(
-            arch=state.Arch.ARM64,
-            base=state.BaseImage.JAMMY,
-            cloud_config=factories.CloudFactory(),
-            callback_script=MagicMock(),
-            runner_version="1.234.5",
-            num_revisions=5,
-        ),
+        unit_name=MagicMock(),
         interval=1,
     )
 
@@ -194,16 +187,9 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "run_config, expected_file_contents",
+    "expected_file_contents",
     [
         pytest.param(
-            state.BuilderRunConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_config=factories.CloudFactory(),
-                runner_version="1.234.5",
-                num_revisions=5,
-            ),
             """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
 /usr/bin/sudo \
 --preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
@@ -219,13 +205,6 @@ jammy-arm64 \
             id="runner version set",
         ),
         pytest.param(
-            state.BuilderRunConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_config=factories.CloudFactory(),
-                runner_version="",
-                num_revisions=5,
-            ),
             """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
 /usr/bin/sudo \
 --preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
@@ -244,7 +223,6 @@ jammy-arm64 \
 def test_configure_cron(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    run_config: state.BuilderRunConfig,
     expected_file_contents: str,
 ):
     """
@@ -257,9 +235,8 @@ def test_configure_cron(
     test_path = tmp_path / "test"
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
     test_interval = 1
-    run_config.callback_script = test_path
 
-    builder.configure_cron(run_config=run_config, interval=test_interval)
+    builder.configure_cron(unit_name=MagicMock(), interval=test_interval)
 
     service_restart_mock.assert_called_once()
     cron_contents = test_path.read_text(encoding="utf-8")
