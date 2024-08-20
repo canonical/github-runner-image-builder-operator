@@ -14,6 +14,9 @@ Module for interacting with charm state and configurations.
 - **APP_CHANNEL_CONFIG_NAME**
 - **BASE_IMAGE_CONFIG_NAME**
 - **BUILD_INTERVAL_CONFIG_NAME**
+- **EXTERNAL_BUILD_CONFIG_NAME**
+- **EXTERNAL_BUILD_FLAVOR_CONFIG_NAME**
+- **EXTERNAL_BUILD_NETWORK_CONFIG_NAME**
 - **OPENSTACK_AUTH_URL_CONFIG_NAME**
 - **OPENSTACK_PASSWORD_CONFIG_NAME**
 - **OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME**
@@ -61,7 +64,7 @@ The ubuntu OS base image to build and deploy runners on.
 ## <kbd>class</kbd> `BuildConfigInvalidError`
 Raised when charm config related to image build config is invalid. 
 
-<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -104,7 +107,7 @@ This is managed by the application's git tag and versioning tag in pyproject.tom
 ## <kbd>class</kbd> `BuilderAppChannelInvalidError`
 Represents invalid builder app channel configuration. 
 
-<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -134,15 +137,15 @@ The image builder setup config.
 **Attributes:**
  
  - <b>`channel`</b>:  The application installation channel. 
- - <b>`run_config`</b>:  The configuration required to build the image. 
  - <b>`interval`</b>:  The interval in hours between each scheduled image builds. 
+ - <b>`run_config`</b>:  The configuration required to build the image. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -183,6 +186,7 @@ Configurations for running builder periodically.
  - <b>`base`</b>:  Ubuntu OS image to build from. 
  - <b>`cloud_config`</b>:  The Openstack clouds.yaml passed as charm config. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
+ - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
  - <b>`callback_script`</b>:  Path to callback script. 
@@ -198,7 +202,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L239"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -231,7 +235,7 @@ Initialize build state from current charm instance.
 ## <kbd>class</kbd> `BuilderSetupConfigInvalidError`
 Raised when charm config related to image build setup config is invalid. 
 
-<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -262,7 +266,7 @@ Raised when charm config is invalid.
  
  - <b>`msg`</b>:  Explanation of the error. 
 
-<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -280,6 +284,45 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 
 
 
+
+
+---
+
+## <kbd>class</kbd> `ExternalBuildConfig`
+Configurations for external builder VMs. 
+
+
+
+**Attributes:**
+ 
+ - <b>`flavor`</b>:  The OpenStack flavor to use for external builder VM. 
+ - <b>`network`</b>:  The OpenStack network to launch the builder VM. 
+
+
+
+
+---
+
+<a href="../src/state.py#L184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `from_charm`
+
+```python
+from_charm(charm: CharmBase)
+```
+
+Initialize build configuration from current charm instance. 
+
+
+
+**Args:**
+ 
+ - <b>`charm`</b>:  The running charm instance. 
+
+
+
+**Returns:**
+ The external build configuration of the charm. 
 
 
 ---
@@ -309,7 +352,7 @@ Proxy configuration.
 
 ---
 
-<a href="../src/state.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_env`
 
@@ -330,7 +373,7 @@ Initialize the proxy config from charm.
 ## <kbd>class</kbd> `UnsupportedArchitectureError`
 Raised when given machine charm architecture is unsupported. 
 
-<a href="../src/state.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

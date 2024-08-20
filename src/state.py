@@ -23,6 +23,9 @@ LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
+EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
+EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
+EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
@@ -166,6 +169,41 @@ class ProxyConfig:
         return cls(http=http_proxy, https=https_proxy, no_proxy=no_proxy)
 
 
+@dataclasses.dataclass
+class ExternalBuildConfig:
+    """Configurations for external builder VMs.
+
+    Attributes:
+        flavor: The OpenStack flavor to use for external builder VM.
+        network: The OpenStack network to launch the builder VM.
+    """
+
+    flavor: str
+    network: str
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase):
+        """Initialize build configuration from current charm instance.
+
+        Args:
+            charm: The running charm instance.
+
+        Returns:
+            The external build configuration of the charm.
+        """
+        flavor_name = (
+            typing.cast(str, charm.config.get(EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, ""))
+            .lower()
+            .strip()
+        )
+        network_name = (
+            typing.cast(str, charm.config.get(EXTERNAL_BUILD_NETWORK_CONFIG_NAME, ""))
+            .lower()
+            .strip()
+        )
+        return cls(external_build_flavor=flavor_name, external_build_network=network_name)
+
+
 class BuildConfigInvalidError(CharmConfigInvalidError):
     """Raised when charm config related to image build config is invalid."""
 
@@ -179,6 +217,7 @@ class BuilderRunConfig:
         base: Ubuntu OS image to build from.
         cloud_config: The Openstack clouds.yaml passed as charm config.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         callback_script: Path to callback script.
@@ -187,6 +226,7 @@ class BuilderRunConfig:
     arch: Arch
     base: BaseImage
     cloud_config: dict[str, typing.Any]
+    external_build_config: ExternalBuildConfig | None
     num_revisions: int
     runner_version: str
     callback_script: pathlib.Path = SUCCESS_CALLBACK_SCRIPT_PATH
@@ -235,10 +275,17 @@ class BuilderRunConfig:
         except ValueError as exc:
             raise BuildConfigInvalidError(msg=str(exc)) from exc
 
+        external_build_enabled = typing.cast(
+            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
+        )
+
         return cls(
             arch=arch,
             base=base_image,
             cloud_config=cloud_config,
+            external_build_config=(
+                ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
+            ),
             num_revisions=revision_history_limit,
             runner_version=runner_version,
         )
@@ -404,13 +451,14 @@ class BuilderInitConfig:
 
     Attributes:
         channel: The application installation channel.
-        run_config: The configuration required to build the image.
         interval: The interval in hours between each scheduled image builds.
+        run_config: The configuration required to build the image.
     """
 
     channel: BuilderAppChannel
-    run_config: BuilderRunConfig
+    external_build: bool
     interval: int
+    run_config: BuilderRunConfig
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderInitConfig":
