@@ -216,7 +216,6 @@ class BuilderRunConfig:
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
-        callback_script: Path to callback script.
     """
 
     arch: Arch

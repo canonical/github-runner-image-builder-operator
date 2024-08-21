@@ -147,7 +147,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L460"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -191,7 +191,6 @@ Configurations for running builder periodically.
  - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
- - <b>`callback_script`</b>:  Path to callback script. 
 
 
 ---
@@ -204,7 +203,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

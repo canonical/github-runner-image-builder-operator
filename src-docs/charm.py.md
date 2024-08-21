@@ -67,4 +67,22 @@ Unit that this execution is responsible for.
 
 
 
+---
+
+<a href="../src/charm.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `update_status`
+
+```python
+update_status(status: StatusBase) → None
+```
+
+Update the charm status. 
+
+
+
+**Args:**
+ 
+ - <b>`status`</b>:  The desired status instance. 
+
 

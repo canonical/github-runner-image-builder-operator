@@ -107,10 +107,10 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     run_mock.assert_called_once()
 
 
-def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
+def test__initialize_image_builder_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched subprocess.run function that raises an error.
-    act: when _install_image_builder is called.
+    act: when _initialize_image_builder is called.
     assert: ImageBuilderInstallError is raised.
     """
     monkeypatch.setattr(
@@ -124,9 +124,29 @@ def test__install_image_builder_error(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(builder.ImageBuilderInitializeError) as exc:
-        builder._initialize_image_builder()
+        builder._initialize_image_builder(init_config=MagicMock())
 
     assert "error running image builder install" in str(exc.getrepr())
+
+
+@pytest.mark.parametrize(
+    "external_build",
+    [
+        pytest.param(True, id="external build"),
+        pytest.param(False, id="chroot build"),
+    ],
+)
+def test__initialize_image_builder(monkeypatch: pytest.MonkeyPatch, external_build: bool):
+    """
+    arrange: given monkeypatched subprocess.run function.
+    act: when _initialize_image_builder is called.
+    assert: No errors are raised.
+    """
+    monkeypatch.setattr(subprocess, "run", MagicMock())
+    init_config_mock = MagicMock()
+    init_config_mock.external_build = external_build
+
+    builder._initialize_image_builder(init_config=init_config_mock)
 
 
 def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -190,33 +210,10 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     "expected_file_contents",
     [
         pytest.param(
-            """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
-/usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-testcloud \
-jammy-arm64 \
---base-image jammy \
---keep-revisions 5 \
---callback-script {TEST_PATH} \
---runner-version 1.234.5 \
->> /home/ubuntu/github-runner-image-builder.log 2>&1 \
-|| /home/ubuntu/on_build_failed_callback.sh
+            """0 */1 * * * ubuntu /usr/bin/run-one /usr/bin/bash -c \
+/usr/bin/juju-exec "test-unit-name" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu ./dispatch"\
 """,
             id="runner version set",
-        ),
-        pytest.param(
-            """0 */1 * * * ubuntu HOME=/home/ubuntu /usr/bin/run-one \
-/usr/bin/sudo \
---preserve-env /home/ubuntu/.local/bin/github-runner-image-builder run \
-testcloud \
-jammy-arm64 \
---base-image jammy \
---keep-revisions 5 \
---callback-script {TEST_PATH} \
->> /home/ubuntu/github-runner-image-builder.log 2>&1 \
-|| /home/ubuntu/on_build_failed_callback.sh
-""",
-            id="runner version not set",
         ),
     ],
 )
@@ -236,7 +233,7 @@ def test_configure_cron(
     monkeypatch.setattr(builder, "CRON_BUILD_SCHEDULE_PATH", test_path)
     test_interval = 1
 
-    builder.configure_cron(unit_name=MagicMock(), interval=test_interval)
+    builder.configure_cron(unit_name="test-unit-name", interval=test_interval)
 
     service_restart_mock.assert_called_once()
     cron_contents = test_path.read_text(encoding="utf-8")
@@ -268,7 +265,7 @@ def test__should_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     assert builder._should_configure_cron(cron_contents="mismatching contents\n")
 
 
-def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_run_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched subprocess Popen that raises an error.
     act: when run is called.
@@ -283,9 +280,9 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
+        external_build_config=None,
         num_revisions=1,
         runner_version="1.234.5",
-        callback_script=tmp_path,
     )
 
     with pytest.raises(builder.BuilderRunError) as exc:
@@ -295,31 +292,40 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "runner_version",
+    "runner_version, external_build_config",
     [
-        pytest.param("1.234.5", id="runner version config set"),
-        pytest.param("", id="runner version config not set"),
+        pytest.param("1.234.5", None, id="runner version config set"),
+        pytest.param("", None, id="runner version config not set"),
+        pytest.param(
+            "",
+            state.ExternalBuildConfig("test-flavor", "test-network"),
+            id="external build config set",
+        ),
     ],
 )
-def test_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, runner_version: str):
+def test_run(
+    monkeypatch: pytest.MonkeyPatch,
+    runner_version: str,
+    external_build_config: state.ExternalBuildConfig | None,
+):
     """
     arrange: given a monkeypatched subprocess call.
     act: when run is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(builder.subprocess, "Popen", popen_mock := MagicMock())
+    monkeypatch.setattr(builder.subprocess, "check_output", check_output_mock := MagicMock())
     testconfig = state.BuilderRunConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
         cloud_config=factories.CloudFactory(),
+        external_build_config=external_build_config,
         num_revisions=1,
         runner_version=runner_version,
-        callback_script=tmp_path,
     )
 
     builder.run(config=testconfig)
 
-    popen_mock.assert_called_once()
+    check_output_mock.assert_called_once()
 
 
 def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):

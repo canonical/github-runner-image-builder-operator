@@ -208,7 +208,8 @@ def run(config: state.BuilderRunConfig) -> str:
                 "--network",
                 config.external_build_config.network,
             ]
-        return subprocess.check_output(
+        # The arg "user" exists but pylint disagrees.
+        return subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,

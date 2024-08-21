@@ -23,7 +23,7 @@ def charm_fixture():
     """Mock charm fixture w/ framework."""
     # this is required since current ops does not support charmcraft.yaml
     mock_framework = MagicMock(spec=ops.framework.Framework)
-    mock_framework.meta.actions = ["build-image"]
+    mock_framework.meta.actions = ["run"]
     mock_framework.meta.relations = ["image"]
     charm = GithubRunnerImageBuilderCharm(mock_framework)
     return charm
@@ -34,6 +34,7 @@ def charm_fixture():
     [
         pytest.param("_on_install", id="_on_install"),
         pytest.param("_on_config_changed", id="_on_config_changed"),
+        pytest.param("_on_run_action", id="_on_run_action"),
     ],
 )
 def test_block_on_state_error(
@@ -45,10 +46,13 @@ def test_block_on_state_error(
     assert: charm is in blocked status.
     """
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", MagicMock())
-    monkeypatch.setattr(state, "FAILED_CALLBACK_SCRIPT_PATH", MagicMock())
     monkeypatch.setattr(
         state.BuilderInitConfig,
+        "from_charm",
+        MagicMock(side_effect=state.CharmConfigInvalidError("Invalid config")),
+    )
+    monkeypatch.setattr(
+        state.BuilderRunConfig,
         "from_charm",
         MagicMock(side_effect=state.CharmConfigInvalidError("Invalid config")),
     )
@@ -65,21 +69,19 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     assert: setup_builder is called.
     """
     monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
     monkeypatch.setattr(builder, "run", (run_mock := MagicMock()))
-    charm._create_success_callback_script = (create_callback := MagicMock())
-    charm._create_failed_callback_script = (failed_callback := MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", (run_mock := MagicMock()))
 
     charm._on_install(MagicMock())
 
-    create_callback.assert_called_once()
-    failed_callback.assert_called_once()
     setup_mock.assert_called_once()
     run_mock.assert_called_once()
-    assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
+    assert charm.unit.status == ops.ActiveStatus()
 
 
 @pytest.mark.parametrize(
@@ -98,6 +100,7 @@ def test__on_config_changed(
     assert: charm is in active status.
     """
     monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
@@ -105,6 +108,7 @@ def test__on_config_changed(
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=configure_cron))
     monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
     charm.image_observer = image_observer_mock
 
     charm._on_config_changed(MagicMock())

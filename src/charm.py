@@ -56,7 +56,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
+        self.unit.status = ops.ActiveStatus()
 
+    @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, _: ops.EventBase) -> None:
         """Handle the run action event."""
         self._run()
@@ -72,6 +74,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus("Image build success. Checking and upgrading app.")
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
+
+    def update_status(self, status: ops.StatusBase) -> None:
+        """Update the charm status.
+
+        Args:
+            status: The desired status instance.
+        """
+        self.unit.status = status
 
 
 if __name__ == "__main__":  # pragma: nocover

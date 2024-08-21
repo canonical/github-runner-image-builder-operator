@@ -39,6 +39,17 @@ class BaseMetaFactory(typing.Generic[T], factory.base.FactoryMetaClass):
         return super().__call__(*args, **kwargs)  # noqa: DCO030
 
 
+class MockUnitFactory(factory.Factory):
+    """Mock GitHubRunnerImageBuilder charm unit."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = MagicMock
+
+    name: str
+
+
 class MockCharmFactory(factory.Factory):
     """Mock GithubRunnerImageBuilder charm."""  # noqa: DCO060
 
@@ -48,7 +59,7 @@ class MockCharmFactory(factory.Factory):
         model = MagicMock
 
     app = MagicMock
-    unit = MagicMock
+    unit = MockUnitFactory()
     config = factory.Dict(
         {
             APP_CHANNEL_CONFIG_NAME: "edge",

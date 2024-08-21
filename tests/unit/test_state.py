@@ -149,6 +149,38 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize(
+    "flavor, network, expected_config",
+    [
+        pytest.param(
+            "test-flavor",
+            "",
+            state.ExternalBuildConfig(flavor="test-flavor", network=""),
+            id="flavor defined",
+        ),
+        pytest.param(
+            "",
+            "test-network",
+            state.ExternalBuildConfig(flavor="", network="test-network"),
+            id="network defined",
+        ),
+    ],
+)
+def test_external_build_config(
+    flavor: str, network: str, expected_config: state.ExternalBuildConfig
+):
+    """
+    arrange: given a mocked charm.
+    act: when ExternalBuildConfig.from_charm is called.
+    assert: expected build configs are returned.
+    """
+    charm = MockCharmFactory()
+    charm.config[state.EXTERNAL_BUILD_FLAVOR_CONFIG_NAME] = flavor
+    charm.config[state.EXTERNAL_BUILD_NETWORK_CONFIG_NAME] = network
+
+    assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
+
+
+@pytest.mark.parametrize(
     "module, patch_func, exception, message",
     [
         pytest.param(
@@ -227,6 +259,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     result = state.BuilderInitConfig.from_charm(charm)
     assert result == state.BuilderInitConfig(
         channel=state.BuilderAppChannel.EDGE,
+        external_build=False,
         run_config=state.BuilderRunConfig(
             arch=state.Arch.X64,
             base=state.BaseImage.JAMMY,
@@ -244,9 +277,11 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                     }
                 }
             },
+            external_build_config=None,
             runner_version="1.234.5",
             num_revisions=5,
         ),
+        unit_name=charm.unit.name,
         interval=6,
     )
     assert result.run_config.cloud_name == state.CLOUD_NAME
