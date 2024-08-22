@@ -10,6 +10,7 @@ import string
 # subprocess module is used to call juju cli directly due to constraints with private-endpoint
 # models
 import subprocess  # nosec: B404
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Literal, NamedTuple, Optional
 
@@ -122,7 +123,14 @@ async def model_fixture(
         yield ops_test.model
 
 
+@pytest.fixture(scope="module", name="dispatch_time")
+def dispatch_time_fixture():
+    """The timestamp of the start of the charm tests."""
+    return datetime.now(tz=timezone.utc)
+
+
 @pytest_asyncio.fixture(scope="module", name="test_charm")
+@pytest.mark.usefixtures("dispatch_time")
 async def test_charm_fixture(
     model: Model, test_id: str, arch: Literal["amd64", "arm64"]
 ) -> AsyncGenerator[Application, None]:
