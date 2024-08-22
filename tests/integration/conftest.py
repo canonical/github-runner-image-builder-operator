@@ -130,7 +130,6 @@ def dispatch_time_fixture():
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
-@pytest.mark.usefixtures("dispatch_time")
 async def test_charm_fixture(
     model: Model, test_id: str, arch: Literal["amd64", "arm64"]
 ) -> AsyncGenerator[Application, None]:
@@ -284,6 +283,7 @@ def test_id_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="app")
+@pytest.mark.usefixtures("dispatch_time")
 async def app_fixture(
     model: Model,
     charm_file: str,
