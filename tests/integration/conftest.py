@@ -290,6 +290,7 @@ async def app_fixture(
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
+    dispatch_time: datetime,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -310,6 +311,7 @@ async def app_fixture(
     # if local LXD testing model, make the machine of VM type
     if not use_private_endpoint:
         base_machine_constraint += " virt-type=virtual-machine"
+    logger.info("Deploying image builder: %s", dispatch_time)
     app: Application = await model.deploy(
         charm_file,
         application_name=f"image-builder-operator-{test_id}",
