@@ -287,7 +287,9 @@ def test_configs_fixture(
     model: Model, charm_file: str, test_id: str, dispatch_time: datetime
 ) -> TestConfigs:
     """The test configuration values."""
-    return TestConfigs(model=model, charm_file=charm_file, dispatch_time=dispatch_time)
+    return TestConfigs(
+        model=model, charm_file=charm_file, dispatch_time=dispatch_time, test_id=test_id
+    )
 
 
 @pytest_asyncio.fixture(scope="module", name="app")
