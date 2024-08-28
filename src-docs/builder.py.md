@@ -13,7 +13,7 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,7 +38,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -57,12 +57,12 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
 ```python
-configure_cron(run_config: BuilderRunConfig, interval: int) → bool
+configure_cron(unit_name: str, interval: int) → bool
 ```
 
 Configure cron to run builder. 
@@ -71,7 +71,7 @@ Configure cron to run builder.
 
 **Args:**
  
- - <b>`run_config`</b>:  The configuration required to run builder. 
+ - <b>`unit_name`</b>:  The charm unit name to run cronjob dispatch hook. 
  - <b>`interval`</b>:  Number of hours in between image build runs. 
 
 
@@ -82,12 +82,12 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig) → None
+run(config: BuilderRunConfig) → str
 ```
 
 Run a build immediately. 
@@ -105,9 +105,14 @@ Run a build immediately.
  - <b>`BuilderRunError`</b>:  if there was an error while launching the subprocess. 
 
 
+
+**Returns:**
+ The built image id. 
+
+
 ---
 
-<a href="../src/builder.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -139,7 +144,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 

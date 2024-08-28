@@ -4,8 +4,10 @@
 """Types used in the integration test."""
 
 import typing
+from datetime import datetime
 from pathlib import Path
 
+from juju.model import Model
 from openstack.compute.v2.keypair import Keypair
 
 
@@ -57,3 +59,19 @@ class PrivateEndpointConfigs(typing.TypedDict):
     user_domain_name: str
     username: str
     region_name: str
+
+
+class TestConfigs(typing.NamedTuple):
+    """Test configuration values.
+
+    Attributes:
+        model: The juju test model.
+        charm_file: The charm file path.
+        dispatch_time: The test start time.
+        test_id: The test unique identifier.
+    """
+
+    model: Model
+    charm_file: str | Path
+    dispatch_time: datetime
+    test_id: str

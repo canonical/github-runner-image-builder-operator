@@ -26,13 +26,14 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
-async def test_build_image(app: Application, openstack_connection: Connection):
+async def test_build_image(
+    app: Application, openstack_connection: Connection, dispatch_time: datetime
+):
     """
     arrange: A deployed active charm.
     act: When openstack images are listed.
     assert: An image is built successfully.
     """
-    dispatch_time = datetime.now(tz=timezone.utc)
     config: dict = await app.get_config()
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 

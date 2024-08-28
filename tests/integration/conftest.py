@@ -10,6 +10,7 @@ import string
 # subprocess module is used to call juju cli directly due to constraints with private-endpoint
 # models
 import subprocess  # nosec: B404
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Literal, NamedTuple, Optional
 
@@ -44,7 +45,7 @@ from state import (
     _get_supported_arch,
 )
 from tests.integration.helpers import wait_for_valid_connection
-from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey
+from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey, TestConfigs
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,12 @@ async def model_fixture(
                 }
             )
         yield ops_test.model
+
+
+@pytest.fixture(scope="module", name="dispatch_time")
+def dispatch_time_fixture():
+    """The timestamp of the start of the charm tests."""
+    return datetime.now(tz=timezone.utc)
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
@@ -275,11 +282,19 @@ def test_id_fixture() -> str:
     return secrets.token_hex(4)
 
 
+@pytest.fixture(scope="module", name="test_configs")
+def test_configs_fixture(
+    model: Model, charm_file: str, test_id: str, dispatch_time: datetime
+) -> TestConfigs:
+    """The test configuration values."""
+    return TestConfigs(
+        model=model, charm_file=charm_file, dispatch_time=dispatch_time, test_id=test_id
+    )
+
+
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
-    model: Model,
-    charm_file: str,
-    test_id: str,
+    test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
 ) -> AsyncGenerator[Application, None]:
@@ -302,20 +317,21 @@ async def app_fixture(
     # if local LXD testing model, make the machine of VM type
     if not use_private_endpoint:
         base_machine_constraint += " virt-type=virtual-machine"
-    app: Application = await model.deploy(
-        charm_file,
-        application_name=f"image-builder-operator-{test_id}",
+    logger.info("Deploying image builder: %s", test_configs.dispatch_time)
+    app: Application = await test_configs.model.deploy(
+        test_configs.charm_file,
+        application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
-    await model.wait_for_idle(
+    await test_configs.model.wait_for_idle(
         apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 30
     )
 
     yield app
 
-    await model.remove_application(app_name=app.name)
+    await test_configs.model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
