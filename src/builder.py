@@ -207,6 +207,8 @@ def run(config: state.BuilderRunConfig) -> str:
                 config.external_build_config.flavor,
                 "--network",
                 config.external_build_config.network,
+                "--upload-cloud",
+                state.UPLOAD_CLOUD_NAME,
             ]
         # The arg "user" exists but pylint disagrees.
         return subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603

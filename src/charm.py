@@ -46,25 +46,49 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         init_config = state.BuilderInitConfig.from_charm(self)
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
-        self._run()
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
-        self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_run_action(self, _: ops.EventBase) -> None:
-        """Handle the run action event."""
+    def _on_run_action(self, event: ops.ActionEvent) -> None:
+        """Handle the run action event.
+
+        Args:
+            event: The run action event.
+        """
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            event.fail("Image relation not yet ready.")
+            return
         self._run()
 
+    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig):
+        """Check if image relation is ready and set according status otherwise."""
+        if state.UPLOAD_CLOUD_NAME not in config.cloud_config["clouds"]:
+            self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
+            return False
+        if not config.cloud_config["clouds"][state.UPLOAD_CLOUD_NAME]["auth"]:
+            self.unit.status = ops.WaitingStatus(
+                "Waiting for OpenStack credentials from relation."
+            )
+            return False
+        return True
+
     def _run(self) -> None:
-        """Trigger an image build."""
+        """Trigger an image build.
+
+        This method requires that the clouds.yaml are properly installed with build cloud and
+        upload cloud authentication parameters.
+        """
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
         image_id = builder.run(config=run_config)

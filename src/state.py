@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
 CLOUD_NAME = "builder"
+UPLOAD_CLOUD_NAME = "upload"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 APP_CHANNEL_CONFIG_NAME = "app-channel"
@@ -34,6 +35,8 @@ OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
 OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
+
+IMAGE_RELATION = "image"
 
 
 class CharmConfigInvalidError(Exception):
@@ -200,6 +203,30 @@ class ExternalBuildConfig:
         return cls(flavor=flavor_name, network=network_name)
 
 
+class _CloudsAuthConfig(typing.TypedDict):
+    auth_url: str
+    password: str
+    project_domain_name: str
+    project_name: str
+    user_domain_name: str
+    username: str
+
+
+class _CloudsConfig(typing.TypedDict):
+    auth: _CloudsAuthConfig | None
+    region_name: str
+
+
+class OpenstackCloudsConfig(typing.TypedDict):
+    """The Openstack clouds.yaml configuration mapping.
+
+    Attributes:
+        clouds: The mapping of cloud to cloud configuration values.
+    """
+
+    clouds: typing.Mapping[str, _CloudsConfig]
+
+
 class BuildConfigInvalidError(CharmConfigInvalidError):
     """Raised when charm config related to image build config is invalid."""
 
@@ -220,7 +247,7 @@ class BuilderRunConfig:
 
     arch: Arch
     base: BaseImage
-    cloud_config: dict[str, typing.Any]
+    cloud_config: OpenstackCloudsConfig
     external_build_config: ExternalBuildConfig | None
     num_revisions: int
     runner_version: str
@@ -362,7 +389,7 @@ class InvalidCloudConfigError(Exception):
     """Represents an error with openstack cloud config."""
 
 
-def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, dict]:
+def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfig:
     """Parse and validate openstack clouds yaml config value.
 
     Args:
@@ -383,7 +410,7 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, dict]:
     if not all((auth_url, password, project_domain, project, user_domain, user)):
         raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
 
-    return {
+    clouds_config = {
         "clouds": {
             CLOUD_NAME: {
                 "auth": {
@@ -394,9 +421,15 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> dict[str, dict]:
                     "user_domain_name": user_domain,
                     "username": user,
                 }
-            }
+            },
         }
     }
+
+    upload_cloud = GitHubRunnerOpenStackConfig.from_charm(charm=charm)
+    if upload_cloud:
+        clouds_config["clouds"].update({UPLOAD_CLOUD_NAME: {"auth": upload_cloud.auth}})
+
+    return clouds_config
 
 
 class BuilderAppChannelInvalidError(CharmConfigInvalidError):
@@ -485,3 +518,26 @@ class BuilderInitConfig:
             interval=build_interval,
             unit_name=charm.unit.name,
         )
+
+
+class GitHubRunnerOpenStackConfig:
+    """The OpenStack cloud authentication data.
+
+    Attributes:
+        auth: The cloud authentication data.
+    """
+
+    auth: _CloudsAuthConfig | None
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "GitHubRunnerOpenStackConfig" | None:
+        """Get the Github runner's OpenStack configuration from integratiotn data."""
+        for relation in charm.model.relations[IMAGE_RELATION]:
+            if not relation.units:
+                return None
+            for unit in relation.units:
+                if not relation.data[unit]:
+                    continue
+                return cls(auth=_CloudsAuthConfig(**relation.data[unit]))
+        # Denotes relation exists but waiting for data.
+        return cls(auth=None)
