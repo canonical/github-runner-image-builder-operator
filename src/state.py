@@ -530,7 +530,7 @@ class GitHubRunnerOpenStackConfig:
     auth: _CloudsAuthConfig | None
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "GitHubRunnerOpenStackConfig" | None:
+    def from_charm(cls, charm: ops.CharmBase) -> "GitHubRunnerOpenStackConfig | None":
         """Get the Github runner's OpenStack configuration from integratiotn data."""
         for relation in charm.model.relations[IMAGE_RELATION]:
             if not relation.units:
