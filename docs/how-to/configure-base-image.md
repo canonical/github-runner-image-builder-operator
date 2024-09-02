@@ -1,6 +1,7 @@
-# How to configure base-image
+# How to configure `base-image`
 
-To use different Ubuntu OS base, you can use the `base-image` configuration option.
+By default, github-runner-image-builder uses the `noble` Ubuntu OS base. To choose a different
+base, you can use the `base-image` configuration option.
 
 ```
 BASE_IMAGE=jammy

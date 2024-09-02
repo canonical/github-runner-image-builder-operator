@@ -1,7 +1,7 @@
-# How to configure revision history
+# How to configure `revision-history-limit`
 
-You can limit how many versions of the images are kept in OpenStack glance by specifying the
-revision-history-limit configuration option.
+You can limit how many revisions of the images are kept in OpenStack Glance by specifying the
+`revision-history-limit` configuration option. By default, 5 most recent images are kept.
 
 ```
 REVISION_HISTORY_LIMIT=2
@@ -22,4 +22,4 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-The example above would keep two revisions of the image before deletion.
+The example above would keep the two most recent revisions of the image before deletion.

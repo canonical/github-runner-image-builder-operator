@@ -1,6 +1,7 @@
 # How to pin GitHub runner version
 
-Depending on your needs, you can also pin the GitHub runner version by specifying the `runner-version` configuration option.
+Depending on your needs, you can pin the GitHub runner version by specifying the `runner-version` 
+configuration option.
 
 ```
 RUNNER_VERSION=1.2.3
@@ -21,4 +22,5 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-You can find out what versions are available on the source actions-runner repository's [releases page](https://github.com/actions/runner/releases).
+You can find out what versions are available on the actions-runner repository's
+[releases page](https://github.com/actions/runner/releases).

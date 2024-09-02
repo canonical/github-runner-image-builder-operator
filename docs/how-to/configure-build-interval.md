@@ -1,4 +1,4 @@
-# How to configure build-interval
+# How to configure `build-interval`
 
 You can configure how often the image will be built by specifying the `build-interval` configuration option.
 
@@ -21,4 +21,4 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-The example above would build images every 3 hours, from the latest versions of dependent sources (cloud-images, apt, snap, ...etc).
+The example above would build images every 3 hours, from the latest version of dependent sources (cloud-images, apt, snap, etc).
