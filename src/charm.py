@@ -57,6 +57,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
+        self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
@@ -71,8 +72,15 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
         self._run()
 
-    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig):
-        """Check if image relation is ready and set according status otherwise."""
+    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig) -> bool:
+        """Check if image relation is ready and set according status otherwise.
+
+        Args:
+            config: The image builder run configuration.
+
+        Returns:
+            Whether the image relation is ready.
+        """
         if state.UPLOAD_CLOUD_NAME not in config.cloud_config["clouds"]:
             self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
             return False

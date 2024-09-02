@@ -149,7 +149,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L493"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -205,7 +205,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -344,7 +344,7 @@ The OpenStack cloud authentication data.
 
 ---
 
-<a href="../src/state.py#L532"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -353,6 +353,17 @@ from_charm(charm: CharmBase) → GitHubRunnerOpenStackConfig | None
 ```
 
 Get the Github runner's OpenStack configuration from integratiotn data. 
+
+
+
+**Args:**
+ 
+ - <b>`charm`</b>:  The running charm instance. 
+
+
+
+**Returns:**
+ GitHubRunnerOpenStackConfig if it exists on the relation. 
 
 
 ---

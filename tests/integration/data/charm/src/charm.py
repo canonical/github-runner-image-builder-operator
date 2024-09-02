@@ -36,7 +36,7 @@ class RelationCharm(ops.CharmBase):
         )
 
     def _on_image_relation_joined(self, event: ops.RelationJoinedEvent):
-        """Handle the iamge relation joined event.
+        """Handle the image relation joined event.
 
         Args:
             event: The event fired when relation is joined.

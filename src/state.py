@@ -204,6 +204,17 @@ class ExternalBuildConfig:
 
 
 class _CloudsAuthConfig(typing.TypedDict):
+    """Clouds.yaml authentication parameters.
+
+    Attributes:
+        auth_url: OpenStack authentication URL (keystone).
+        password: OpenStack project user password.
+        project_domain_name: OpenStack project domain name.
+        project_name: OpenStack project name.
+        user_domain_name: OpenStack user domain name.
+        username: The OpenStack user name for given project.
+    """
+
     auth_url: str
     password: str
     project_domain_name: str
@@ -213,8 +224,13 @@ class _CloudsAuthConfig(typing.TypedDict):
 
 
 class _CloudsConfig(typing.TypedDict):
+    """Clouds.yaml configuration.
+
+    Attributes:
+        auth: The authentication parameters.
+    """
+
     auth: _CloudsAuthConfig | None
-    region_name: str
 
 
 class OpenstackCloudsConfig(typing.TypedDict):
@@ -224,7 +240,7 @@ class OpenstackCloudsConfig(typing.TypedDict):
         clouds: The mapping of cloud to cloud configuration values.
     """
 
-    clouds: typing.Mapping[str, _CloudsConfig]
+    clouds: typing.MutableMapping[str, _CloudsConfig]
 
 
 class BuildConfigInvalidError(CharmConfigInvalidError):
@@ -410,24 +426,24 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
     if not all((auth_url, password, project_domain, project, user_domain, user)):
         raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
 
-    clouds_config = {
-        "clouds": {
-            CLOUD_NAME: {
-                "auth": {
-                    "auth_url": auth_url,
-                    "password": password,
-                    "project_domain_name": project_domain,
-                    "project_name": project,
-                    "user_domain_name": user_domain,
-                    "username": user,
-                }
-            },
+    clouds_config = OpenstackCloudsConfig(
+        clouds={
+            CLOUD_NAME: _CloudsConfig(
+                auth=_CloudsAuthConfig(
+                    auth_url=auth_url,
+                    password=password,
+                    project_domain_name=project_domain,
+                    project_name=project,
+                    user_domain_name=user_domain,
+                    username=user,
+                ),
+            )
         }
-    }
+    )
 
     upload_cloud = GitHubRunnerOpenStackConfig.from_charm(charm=charm)
     if upload_cloud:
-        clouds_config["clouds"].update({UPLOAD_CLOUD_NAME: {"auth": upload_cloud.auth}})
+        clouds_config["clouds"][UPLOAD_CLOUD_NAME] = _CloudsConfig(auth=upload_cloud.auth)
 
     return clouds_config
 
@@ -520,6 +536,7 @@ class BuilderInitConfig:
         )
 
 
+@dataclasses.dataclass
 class GitHubRunnerOpenStackConfig:
     """The OpenStack cloud authentication data.
 
@@ -531,13 +548,29 @@ class GitHubRunnerOpenStackConfig:
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "GitHubRunnerOpenStackConfig | None":
-        """Get the Github runner's OpenStack configuration from integratiotn data."""
-        for relation in charm.model.relations[IMAGE_RELATION]:
+        """Get the Github runner's OpenStack configuration from integratiotn data.
+
+        Args:
+            charm: The running charm instance.
+
+        Returns:
+            GitHubRunnerOpenStackConfig if it exists on the relation.
+        """
+        for relation in charm.model.relations.get(IMAGE_RELATION, []):
             if not relation.units:
                 return None
             for unit in relation.units:
                 if not relation.data[unit]:
                     continue
-                return cls(auth=_CloudsAuthConfig(**relation.data[unit]))
+                return cls(
+                    auth=_CloudsAuthConfig(
+                        auth_url=relation.data[unit]["auth_url"],
+                        password=relation.data[unit]["password"],
+                        project_domain_name=relation.data[unit]["project_domain_name"],
+                        project_name=relation.data[unit]["project_name"],
+                        user_domain_name=relation.data[unit]["user_domain_name"],
+                        username=relation.data[unit]["username"],
+                    )
+                )
         # Denotes relation exists but waiting for data.
         return cls(auth=None)
