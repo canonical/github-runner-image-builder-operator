@@ -26,6 +26,18 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
+async def test_image_relation(app: Application, test_charm: Application):
+    """
+    arrange: An active charm and a test charm that becomes active when valid relation data is set.
+    act: When the relation is joined.
+    assert: The test charm becomes active due to proper relation data.
+    """
+    model: Model = app.model
+    await model.integrate(app.name, test_charm.name)
+    await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
+
+
+@pytest.mark.asyncio
 async def test_build_image(
     app: Application, openstack_connection: Connection, dispatch_time: datetime
 ):
@@ -57,18 +69,6 @@ async def test_build_image(
         )
 
     await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
-
-
-@pytest.mark.asyncio
-async def test_image_relation(app: Application, test_charm: Application):
-    """
-    arrange: An active charm and a test charm that becomes active when valid relation data is set.
-    act: When the relation is joined.
-    assert: The test charm becomes active due to proper relation data.
-    """
-    model: Model = app.model
-    await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
 
 
 @dataclasses.dataclass

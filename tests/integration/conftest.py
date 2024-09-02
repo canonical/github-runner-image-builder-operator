@@ -131,7 +131,10 @@ def dispatch_time_fixture():
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(
-    model: Model, test_id: str, arch: Literal["amd64", "arm64"]
+    model: Model,
+    test_id: str,
+    arch: Literal["amd64", "arm64"],
+    private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     # The predefine inputs here can be trusted
@@ -140,7 +143,18 @@ async def test_charm_fixture(
     )
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
-    app: Application = await model.deploy(f"./test_ubuntu-22.04-{arch}.charm", app_name)
+    app: Application = await model.deploy(
+        f"./test_ubuntu-22.04-{arch}.charm",
+        app_name,
+        config={
+            "openstack-auth-url": private_endpoint_configs["auth_url"],
+            "openstack-password": private_endpoint_configs["password"],
+            "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
+            "openstack-project-name": private_endpoint_configs["project_name"],
+            "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
+            "openstack-user-name": private_endpoint_configs["username"],
+        },
+    )
 
     yield app
 
