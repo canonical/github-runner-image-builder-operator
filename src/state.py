@@ -560,9 +560,21 @@ class GitHubRunnerOpenStackConfig:
         """
         for relation in charm.model.relations.get(IMAGE_RELATION, []):
             if not relation.units:
+                logger.warn(f"Units not yet joined {IMAGE_RELATION} relation.")
                 return None
             for unit in relation.units:
-                if not relation.data[unit]:
+                if not relation.data[unit] or any(
+                    required_field not in relation.data[unit]
+                    for required_field in (
+                        "auth_url",
+                        "password",
+                        "project_domain_name",
+                        "project_name",
+                        "user_domain_name",
+                        "username",
+                    )
+                ):
+                    logger.warn("%s required field not yet set.", IMAGE_RELATION)
                     continue
                 return cls(
                     auth=_CloudsAuthConfig(
@@ -574,5 +586,4 @@ class GitHubRunnerOpenStackConfig:
                         username=relation.data[unit]["username"],
                     )
                 )
-        # Denotes relation exists but waiting for data.
-        return cls(auth=None)
+        return None

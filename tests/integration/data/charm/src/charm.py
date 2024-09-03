@@ -44,6 +44,7 @@ class RelationCharm(ops.CharmBase):
         Args:
             event: The event fired when relation is joined.
         """
+        logger.info("Relation joined.")
         event.relation.data[self.unit].update(
             {
                 "auth_url": self.config["openstack-auth-url"],
@@ -54,6 +55,7 @@ class RelationCharm(ops.CharmBase):
                 "username": self.config["openstack-user-name"],
             }
         )
+        logger.info("Relation data updated.")
 
     def _on_image_relation_changed(self, event: ops.RelationChangedEvent):
         """Handle the image relation changed event.
