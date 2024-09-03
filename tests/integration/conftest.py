@@ -339,9 +339,7 @@ async def app_fixture(
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
-    await test_configs.model.wait_for_idle(
-        apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 30
-    )
+    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
     yield app
 
