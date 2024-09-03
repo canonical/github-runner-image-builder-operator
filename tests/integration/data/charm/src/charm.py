@@ -32,6 +32,9 @@ class RelationCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(
+            self.on[IMAGE_RELATION].relation_joined, self._on_image_relation_joined
+        )
+        self.framework.observe(
             self.on[IMAGE_RELATION].relation_changed, self._on_image_relation_changed
         )
 
