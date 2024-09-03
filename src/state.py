@@ -464,6 +464,8 @@ class BuilderAppChannel(str, Enum):
 
     EDGE = "edge"
     STABLE = "stable"
+    # This is only for testing with latest version of image-builder app.
+    TEST = "test"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
