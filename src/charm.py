@@ -63,15 +63,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_image_relation_changed(self, _: ops.RelationJoinedEvent) -> None:
+    def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         init_config = state.BuilderInitConfig.from_charm(self)
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
-        if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
-            self._run()
+        self._run()
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)

@@ -65,6 +65,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
     [
         pytest.param("_on_config_changed", id="config_changed"),
         pytest.param("_on_run_action", id="run_action"),
+        pytest.param("_on_image_relation_changed", id="image_relation_changed"),
     ],
 )
 def test_block_on_image_relation_not_ready(
@@ -162,6 +163,37 @@ def test__on_config_changed(
     charm.image_observer = image_observer_mock
 
     charm._on_config_changed(MagicMock())
+
+    assert charm.unit.status == ops.ActiveStatus()
+
+
+def test__on_image_relation_changed(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given monkeypatched builder, openstack manager, image_observer.
+    act: when _on_image_relation_changed is called.
+    assert: charm is in active status.
+    """
+    mock_init_config = MagicMock()
+    mock_init_config.run_config = (run_config := MagicMock())
+    run_config.cloud_config = state.OpenstackCloudsConfig(
+        clouds={state.UPLOAD_CLOUD_NAME: state._CloudsConfig(auth="non-empty")}
+    )
+    monkeypatch.setattr(
+        state.BuilderInitConfig, "from_charm", MagicMock(return_value=mock_init_config)
+    )
+    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(
+        image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
+    )
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
+    charm.image_observer = image_observer_mock
+
+    charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
 

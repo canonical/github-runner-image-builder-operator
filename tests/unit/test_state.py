@@ -275,7 +275,6 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                             "username": "username",
                         }
                     },
-                    state.UPLOAD_CLOUD_NAME: {"auth": None},
                 }
             },
             external_build_config=None,
@@ -639,9 +638,7 @@ def test_github_runner_openstack_config_from_charm_no_unit_data():
     relation_mock.units = [(relation_unit_mock := MagicMock())]
     relation_mock.data = {relation_unit_mock: None}
 
-    assert state.GitHubRunnerOpenStackConfig.from_charm(
-        charm=mock_charm
-    ) == state.GitHubRunnerOpenStackConfig(auth=None)
+    assert state.GitHubRunnerOpenStackConfig.from_charm(charm=mock_charm) is None
 
 
 def test_github_runner_openstack_config_from_charm():
@@ -653,7 +650,18 @@ def test_github_runner_openstack_config_from_charm():
     mock_charm = MagicMock()
     mock_charm.model.relations = {state.IMAGE_RELATION: [(relation_mock := MagicMock())]}
     relation_mock.units = [(relation_unit_mock := MagicMock())]
-    relation_mock.data = {relation_unit_mock: (mock_data := MagicMock())}
+    relation_mock.data = {
+        relation_unit_mock: (
+            mock_data := {
+                "auth_url": "test",
+                "password": "test",
+                "project_domain_name": "test",
+                "project_name": "test",
+                "user_domain_name": "test",
+                "username": "test",
+            }
+        )
+    }
 
     assert state.GitHubRunnerOpenStackConfig.from_charm(
         charm=mock_charm
