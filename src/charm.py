@@ -33,6 +33,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run_action, self._on_run_action)
+        self.framework.observe(
+            self.on[state.IMAGE_RELATION].relation_changed, self._on_image_relation_changed
+        )
 
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_install(self, _: ops.InstallEvent) -> None:
@@ -50,6 +53,18 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
+        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
+            self._run()
+        self.unit.status = ops.ActiveStatus()
+
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_image_relation_changed(self, _: ops.RelationJoinedEvent) -> None:
+        """Handle charm image relation changed event."""
         init_config = state.BuilderInitConfig.from_charm(self)
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return

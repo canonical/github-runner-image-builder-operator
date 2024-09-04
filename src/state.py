@@ -464,8 +464,6 @@ class BuilderAppChannel(str, Enum):
 
     EDGE = "edge"
     STABLE = "stable"
-    # This is only for testing with latest version of image-builder app.
-    TEST = "test"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
@@ -560,7 +558,7 @@ class GitHubRunnerOpenStackConfig:
         """
         for relation in charm.model.relations.get(IMAGE_RELATION, []):
             if not relation.units:
-                logger.warn(f"Units not yet joined {IMAGE_RELATION} relation.")
+                logger.warning("Units not yet joined %s relation.", IMAGE_RELATION)
                 return None
             for unit in relation.units:
                 if not relation.data[unit] or any(
@@ -574,7 +572,7 @@ class GitHubRunnerOpenStackConfig:
                         "username",
                     )
                 ):
-                    logger.warn("%s required field not yet set.", IMAGE_RELATION)
+                    logger.warning("%s required field not yet set.", IMAGE_RELATION)
                     continue
                 return cls(
                     auth=_CloudsAuthConfig(

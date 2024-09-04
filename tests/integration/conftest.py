@@ -314,7 +314,7 @@ async def app_fixture(
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
-        APP_CHANNEL_CONFIG_NAME: "test",
+        APP_CHANNEL_CONFIG_NAME: "edge",
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
