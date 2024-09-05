@@ -105,6 +105,8 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "init",
         "--experimental-external",
+        "--cloud-name",
+        init_config.run_config.cloud_name,
     ]
     try:
         subprocess.run(
