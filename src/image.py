@@ -3,6 +3,7 @@
 
 """The Github-runner-image-builder-operator image relation observer."""
 
+import json
 import logging
 import typing
 
@@ -23,10 +24,13 @@ class ImageRelationData(typing.TypedDict, total=False):
     Attributes:
         id: The latest image ID to provide of the primary default image.
         tags: The comma separated tags of the image, e.g. x64, jammy, of the primary default image.
+        custom: JSON formatted string of list of images [{"id": <image-id>, "tags": \
+            <comma-separated-tags>}]
     """
 
     id: str
     tags: str
+    custom: str
 
 
 class Observer(ops.Object):
@@ -54,6 +58,9 @@ class Observer(ops.Object):
             bases=build_config.bases,
             cloud_name=build_config.upload_cloud_name,
         )
+        if not get_results:
+            logger.warning("No images ready.")
+            return
         if not all(result.id for result in get_results):
             logger.warning("Not all images ready.")
             return
@@ -92,14 +99,14 @@ class Observer(ops.Object):
         relation_data = ImageRelationData(
             id=primary_result.id,
             tags=self._get_tags(config=primary_result.config),
-        )
-        relation_data.update(
-            # mypy does not understand that the update function for TypedDict can have dynamic keys
-            # with total=False parameter.
-            {  # type: ignore
-                extra_result.id: self._get_tags(config=extra_result.config)
-                for extra_result in extra_results
-            }
+            custom=json.dumps(
+                [
+                    ImageRelationData(
+                        id=image_data.id, tags=self._get_tags(config=image_data.config)
+                    )
+                    for image_data in extra_results
+                ]
+            ),
         )
         return relation_data
 

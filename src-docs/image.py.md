@@ -20,6 +20,7 @@ Other attributes map from image ID to comma separated tags.
  
  - <b>`id`</b>:  The latest image ID to provide of the primary default image. 
  - <b>`tags`</b>:  The comma separated tags of the image, e.g. x64, jammy, of the primary default image. 
+ - <b>`custom`</b>:  JSON formatted string of list of images [{"id": <image-id>, "tags":             <comma-separated-tags>}] 
 
 
 
@@ -30,7 +31,7 @@ Other attributes map from image ID to comma separated tags.
 ## <kbd>class</kbd> `Observer`
 The image relation observer. 
 
-<a href="../src/image.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -57,7 +58,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 

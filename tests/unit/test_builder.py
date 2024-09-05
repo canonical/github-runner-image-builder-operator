@@ -17,13 +17,12 @@ from charms.operator_libs_linux.v0 import apt
 
 import builder
 import state
-from tests.unit import factories
 
 
-def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
+def test_initialize_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched internal funcs that raises an error.
-    act: when setup_builder is called.
+    act: when initialize is called.
     assert: BuilderSetupError is raised.
     """
     monkeypatch.setattr(
@@ -38,10 +37,10 @@ def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
     assert "Failed to install dependencies." in str(exc.getrepr())
 
 
-def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
+def test_initialize(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched internal funcs.
-    act: when setup_builder is called.
+    act: when initialize is called.
     assert: expected mocks are called.
     """
     monkeypatch.setattr(
@@ -265,10 +264,10 @@ def test__should_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     assert builder._should_configure_cron(cron_contents="mismatching contents\n")
 
 
-def test_run_error(monkeypatch: pytest.MonkeyPatch):
+def test__run_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched subprocess Popen that raises an error.
-    act: when run is called.
+    act: when _run is called.
     assert: the call to image builder is made.
     """
     monkeypatch.setattr(
@@ -276,62 +275,130 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
         "Popen",
         MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
     )
-    testconfig = state.BuilderRunConfig(
+    testconfig = builder.BuildConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
-        cloud_config=factories.CloudFactory(),
-        external_build_config=None,
+        cloud_config=MagicMock(),
         num_revisions=1,
         runner_version="1.234.5",
     )
 
     with pytest.raises(builder.BuilderRunError) as exc:
-        builder.run(config=testconfig)
+        builder._run(config=testconfig)
 
     assert "Failed to spawn process" in str(exc.getrepr())
 
 
-@pytest.mark.parametrize(
-    "runner_version, external_build_config",
-    [
-        pytest.param("1.234.5", None, id="runner version config set"),
-        pytest.param("", None, id="runner version config not set"),
-        pytest.param(
-            "",
-            state.ExternalBuildConfig("test-flavor", "test-network"),
-            id="external build config set",
-        ),
-    ],
-)
-def test_run(
+def test_run(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched subprocess.check_output function.
+    act: when run is called.
+    assert: expected build results are returned.
+    """
+    monkeypatch.setattr(
+        subprocess,
+        "check_output",
+        MagicMock(return_value=(test_id := "test-id")),
+    )
+
+    assert builder.run(
+        config=state.BuilderRunConfig(
+            arch=state.Arch.ARM64,
+            bases=(state.BaseImage.JAMMY,),
+            cloud_config=state.OpenstackCloudsConfig(clouds={}),
+            external_build_config=state.ExternalBuildConfig(flavor="", network=""),
+            num_revisions=1,
+            runner_version="",
+        )
+    ) == [
+        builder.BuildResult(
+            config=builder.BuildConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_config=builder._CloudConfig(
+                    build_cloud=state.CLOUD_NAME,
+                    upload_cloud=state.UPLOAD_CLOUD_NAME,
+                    flavor="",
+                    network="",
+                ),
+                num_revisions=1,
+                runner_version="",
+            ),
+            id=test_id,
+        )
+    ]
+
+
+def test__run(
     monkeypatch: pytest.MonkeyPatch,
-    runner_version: str,
-    external_build_config: state.ExternalBuildConfig | None,
 ):
     """
     arrange: given a monkeypatched subprocess call.
-    act: when run is called.
+    act: when _run is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(builder.subprocess, "check_output", check_output_mock := MagicMock())
-    testconfig = state.BuilderRunConfig(
+    monkeypatch.setattr(
+        builder.subprocess,
+        "check_output",
+        check_output_mock := MagicMock(return_value=(test_id := "test-id")),
+    )
+    config = builder.BuildConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
-        cloud_config=factories.CloudFactory(),
-        external_build_config=external_build_config,
+        cloud_config=builder._CloudConfig(
+            build_cloud=(build_cloud_name := "test-build"),
+            upload_cloud=(upload_cloud_name := "test-upload"),
+            flavor=(test_flavor_name := "test-flavor"),
+            network=(test_network_name := "test-network"),
+        ),
         num_revisions=1,
-        runner_version=runner_version,
+        runner_version=None,
     )
 
-    builder.run(config=testconfig)
-
+    assert builder._run(config=config) == builder.BuildResult(
+        id=test_id,
+        config=builder.BuildConfig(
+            arch=state.Arch.ARM64,
+            base=state.BaseImage.JAMMY,
+            cloud_config=builder._CloudConfig(
+                build_cloud=build_cloud_name,
+                upload_cloud=upload_cloud_name,
+                flavor=test_flavor_name,
+                network=test_network_name,
+            ),
+            num_revisions=1,
+            runner_version=None,
+        ),
+    )
     check_output_mock.assert_called_once()
 
 
-def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
+def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched subprocess.check_output function that returns test string.
+    act: when get_latest_image is called.
+    assert: expected results are returned with test value.
+    """
+    monkeypatch.setattr(
+        subprocess, "check_output", MagicMock(return_value=(test_value := "test-value"))
+    )
+
+    assert builder.get_latest_image(
+        arch=state.Arch.ARM64, bases=(state.BaseImage.JAMMY,), cloud_name="test"
+    ) == [
+        builder.GetLatestImageResult(
+            id=test_value,
+            config=builder.GetLatestImageConfig(
+                arch=state.Arch.ARM64, base=state.BaseImage.JAMMY, cloud_name="test"
+            ),
+        )
+    ]
+
+
+def test__get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
-    act: when get_latest_image is called.
+    act: when _get_latest_image is called.
     assert: GetLatestImageError is raised.
     """
     monkeypatch.setattr(
@@ -341,29 +408,26 @@ def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(builder.GetLatestImageError) as exc:
-        builder.get_latest_image(arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock())
+        builder._get_latest_image(config=MagicMock())
 
     assert "openstack error" in str(exc.getrepr())
 
 
-def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
+def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched subprocess.run that returns an image id.
-    act: when get_latest_image is called.
+    act: when _get_latest_image is called.
     assert: image id is returned.
     """
     monkeypatch.setattr(
         subprocess,
-        "run",
-        MagicMock(
-            return_value=subprocess.CompletedProcess(
-                args=MagicMock(), returncode=0, stdout="test-image", stderr=""
-            )
-        ),
+        "check_output",
+        MagicMock(return_value=(test_id := "test-id")),
     )
+    test_config = MagicMock()
 
-    assert "test-image" == builder.get_latest_image(
-        arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock()
+    assert builder._get_latest_image(config=test_config) == builder.GetLatestImageResult(
+        id=test_id, config=test_config
     )
 
 

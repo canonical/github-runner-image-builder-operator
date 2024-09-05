@@ -91,4 +91,4 @@ class CloudAuthFactory(factory.DictFactory):
 class CloudFactory(factory.DictFactory):
     """Mock cloud dict object factory."""  # noqa: DCO060
 
-    clouds = {"testcloud": CloudAuthFactory()}
+    clouds = {"builder": CloudAuthFactory(), "upload": CloudAuthFactory()}

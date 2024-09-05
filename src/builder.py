@@ -248,7 +248,7 @@ def run(config: state.BuilderRunConfig) -> list[BuildResult]:
         runner_version=config.runner_version,
     )
     with multiprocessing.Pool(processes=len(build_configs)) as pool:
-        results = pool.map(_run_build, build_configs)
+        results = pool.map(_run, build_configs)
     return results
 
 
@@ -283,7 +283,7 @@ def _parametrize_build(
     )
 
 
-def _run_build(config: BuildConfig) -> BuildResult:
+def _run(config: BuildConfig) -> BuildResult:
     """Spawn a single build process.
 
     Args:
@@ -393,15 +393,15 @@ def get_latest_image(
         arch=arch, bases=bases, cloud_name=cloud_name
     )
     with multiprocessing.Pool(processes=len(get_image_configs)) as pool:
-        results = pool.map(_run_get_latest_image, get_image_configs)
+        results = pool.map(_get_latest_image, get_image_configs)
     return results
 
 
-def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageResult:
+def _get_latest_image(config: GetLatestImageConfig) -> GetLatestImageResult:
     """Get the latest image.
 
     Args:
-        get_config: Get the latest image.
+        config: Get the latest image.
 
     Raises:
         GetLatestImageError: If there was an error fetching the latest image.
@@ -417,10 +417,8 @@ def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageRes
                 "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
-                get_config.cloud_name,
-                IMAGE_NAME_TMPL.format(
-                    IMAGE_BASE=get_config.base.value, ARCH=get_config.arch.value
-                ),
+                config.cloud_name,
+                IMAGE_NAME_TMPL.format(IMAGE_BASE=config.base.value, ARCH=config.arch.value),
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
@@ -428,7 +426,7 @@ def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageRes
             env=os.environ,
             encoding="utf-8",
         )  # nosec: B603
-        return GetLatestImageResult(id=image_id, config=get_config)
+        return GetLatestImageResult(id=image_id, config=config)
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 

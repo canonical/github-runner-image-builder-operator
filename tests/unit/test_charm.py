@@ -38,11 +38,10 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
         MagicMock(
             return_value=state.BuilderInitConfig(
                 channel=MagicMock(),
-                external_build=True,
                 interval=1,
                 run_config=state.BuilderRunConfig(
                     arch=MagicMock(),
-                    base=MagicMock(),
+                    bases=MagicMock(),
                     cloud_config=state.OpenstackCloudsConfig(
                         clouds={
                             state.UPLOAD_CLOUD_NAME: state._CloudsConfig(
@@ -218,25 +217,25 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
         pytest.param(
             state.BuilderRunConfig(
                 arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
+                bases=(state.BaseImage.JAMMY,),
                 cloud_config=state.OpenstackCloudsConfig(clouds={}),
-                external_build_config=None,
+                external_build_config=state.ExternalBuildConfig(flavor="test", network="test"),
                 num_revisions=1,
                 runner_version="test",
             ),
             False,
-            id="missiong integration",
+            id="missing integration",
         ),
         pytest.param(
             state.BuilderRunConfig(
                 arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
+                bases=(state.BaseImage.JAMMY,),
                 cloud_config=state.OpenstackCloudsConfig(
                     clouds={
                         state.UPLOAD_CLOUD_NAME: state._CloudsConfig(auth=None, region_name="test")
                     }
                 ),
-                external_build_config=None,
+                external_build_config=state.ExternalBuildConfig(flavor="test", network="test"),
                 num_revisions=1,
                 runner_version="test",
             ),
@@ -246,7 +245,7 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
         pytest.param(
             state.BuilderRunConfig(
                 arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
+                bases=(state.BaseImage.JAMMY,),
                 cloud_config=state.OpenstackCloudsConfig(
                     clouds={
                         state.UPLOAD_CLOUD_NAME: state._CloudsConfig(
@@ -255,7 +254,7 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
                         )
                     }
                 ),
-                external_build_config=None,
+                external_build_config=state.ExternalBuildConfig(flavor="test", network="test"),
                 num_revisions=1,
                 runner_version="test",
             ),

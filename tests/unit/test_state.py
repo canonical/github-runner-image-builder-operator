@@ -103,8 +103,8 @@ def test_base_image_invalid(image: str):
 @pytest.mark.parametrize(
     "image, expected_base_image",
     [
-        pytest.param("jammy", state.BaseImage.JAMMY, id="jammy"),
-        pytest.param("22.04", state.BaseImage.JAMMY, id="22.04"),
+        pytest.param("jammy", (state.BaseImage.JAMMY,), id="jammy"),
+        pytest.param("22.04", (state.BaseImage.JAMMY,), id="22.04"),
     ],
 )
 def test_base_image(image: str, expected_base_image: state.BaseImage):
@@ -259,10 +259,9 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     result = state.BuilderInitConfig.from_charm(charm)
     assert result == state.BuilderInitConfig(
         channel=state.BuilderAppChannel.EDGE,
-        external_build=False,
         run_config=state.BuilderRunConfig(
             arch=state.Arch.X64,
-            base=state.BaseImage.JAMMY,
+            bases=(state.BaseImage.JAMMY,),
             cloud_config={
                 "clouds": {
                     state.CLOUD_NAME: {
@@ -277,7 +276,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                     },
                 }
             },
-            external_build_config=None,
+            external_build_config=state.ExternalBuildConfig(flavor="", network=""),
             runner_version="1.234.5",
             num_revisions=5,
         ),
