@@ -3,13 +3,16 @@
 
 """Module for interacting with qemu image builder."""
 
+import dataclasses
 import logging
+import multiprocessing
 import os
 
 # Ignore B404:blacklist since all subprocesses are run with predefined executables.
 # nosec: B603 is applied across subprocess.run calls since we are calling with predefined
 # inputs.
 import subprocess  # nosec
+import typing
 from pathlib import Path
 
 import yaml
@@ -97,9 +100,12 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
     Raises:
         ImageBuilderInitializeError: If there was an error Initialize the app.
     """
-    init_cmd = ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"]
-    if init_config.external_build:
-        init_cmd += "--experimental-external"
+    init_cmd = [
+        "/usr/bin/sudo",
+        str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+        "init",
+        "--experimental-external",
+    ]
     try:
         subprocess.run(
             init_cmd,
@@ -169,7 +175,52 @@ def _should_configure_cron(cron_contents: str) -> bool:
     return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
-def run(config: state.BuilderRunConfig) -> str:
+@dataclasses.dataclass
+class _CloudConfig:
+    """The cloud configuration values for image building.
+
+    Attributes:
+        build_cloud: The name of the cloud to build the image on.
+        upload_cloud: The name of the cloud to upload thee image to.
+        flavor: The name of the flavor to launch to VM with.
+        network: The name of the network to launch the builder VMs on.
+    """
+
+    build_cloud: str
+    upload_cloud: str
+    flavor: str
+    network: str
+
+
+@dataclasses.dataclass
+class BuildConfig:
+    """The image build configuration.
+
+    Attributes:
+        base: The ubuntu OS base to build.
+    """
+
+    arch: state.Arch
+    base: state.BaseImage
+    cloud_config: _CloudConfig
+    num_revisions: int
+    runner_version: str | None
+
+
+@dataclasses.dataclass
+class BuildResult:
+    """Build result wrapper.
+
+    Attributes:
+        config: The configuration values used to run build.
+        id: The output image id.
+    """
+
+    config: BuildConfig
+    id: str
+
+
+def run(config: state.BuilderRunConfig) -> list[BuildResult]:
     """Run a build immediately.
 
     Args:
@@ -179,7 +230,59 @@ def run(config: state.BuilderRunConfig) -> str:
         BuilderRunError: if there was an error while launching the subprocess.
 
     Returns:
-        The built image id.
+        The built image results.
+    """
+    build_configs = _parametrize_build(
+        arch=config.arch,
+        os_bases=config.bases,
+        cloud_config=_CloudConfig(
+            build_cloud=config.cloud_name,
+            upload_cloud=config.upload_cloud_name,
+            flavor=config.external_build_config.flavor,
+            network=config.external_build_config.network,
+        ),
+        num_revisions=config.num_revisions,
+        runner_version=config.runner_version,
+    )
+    with multiprocessing.Pool(processes=len(build_configs)) as pool:
+        results = pool.map(_run_build, build_configs)
+    return results
+
+
+def _parametrize_build(
+    arch: state.Arch,
+    os_bases: typing.Iterable[state.BaseImage],
+    cloud_config: _CloudConfig,
+    num_revisions: int,
+    runner_version: str | None,
+) -> tuple[BuildConfig]:
+    """Get parametrized build configurations.
+
+    Args:
+        os_bases: The ubuntu OS bases to build for.
+
+    Returns:
+        Per image build configuration values.
+    """
+    configs = []
+    for os_base in os_bases:
+        configs.append(
+            BuildConfig(
+                arch=arch,
+                base=os_base,
+                cloud_config=cloud_config,
+                num_revisions=num_revisions,
+                runner_version=runner_version,
+            )
+        )
+    return configs
+
+
+def _run_build(config: BuildConfig):
+    """Spawn a single bulid process.
+
+    Args:
+        config: The build configuration parameters.
     """
     try:
         commands = [
@@ -187,11 +290,8 @@ def run(config: state.BuilderRunConfig) -> str:
             "/usr/bin/sudo",
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
-            config.cloud_name,
-            IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=config.base.value,
-                ARCH=config.arch.value,
-            ),
+            config.cloud_config.build_cloud,
+            _format_image_name(arch=config.arch, base=config.base),
             "--base-image",
             config.base.value,
             "--keep-revisions",
@@ -199,35 +299,80 @@ def run(config: state.BuilderRunConfig) -> str:
         ]
         if config.runner_version:
             commands += ["--runner-version", config.runner_version]
-        if config.external_build_config:
-            commands += [
-                "--experimental-external",
-                "True",
-                "--flavor",
-                config.external_build_config.flavor,
-                "--network",
-                config.external_build_config.network,
-                "--upload-cloud",
-                state.UPLOAD_CLOUD_NAME,
-            ]
+        commands += [
+            "--experimental-external",
+            "True",
+            "--flavor",
+            config.cloud_config.flavor,
+            "--network",
+            config.cloud_config.network,
+            "--upload-cloud",
+            config.cloud_config.upload_cloud,
+        ]
         # The arg "user" exists but pylint disagrees.
-        return subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
-            args=commands,
-            user=UBUNTU_USER,
-            cwd=UBUNTU_HOME,
-            encoding="utf-8",
-            env={"HOME": str(UBUNTU_HOME)},
+        return BuildResult(
+            build_config=config,
+            id=subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+                args=commands,
+                user=UBUNTU_USER,
+                cwd=UBUNTU_HOME,
+                encoding="utf-8",
+                env={"HOME": str(UBUNTU_HOME)},
+            ),
         )
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc
 
 
-def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -> str:
+def _format_image_name(arch: state.Arch, base: state.BaseImage) -> str:
+    """Create image name based on build configuration parameters.
+
+    Args:
+        arch; The architecture to build for.
+        base: The Ubuntu OS base image.
+
+    Returns:
+        The formatted image name.
+    """
+    return f"{base.value}-{arch.value}"
+
+
+@dataclasses.dataclass
+class GetLatestImageConfig:
+    """Configurations for fetching latest built images.
+
+    Attributes:
+        arch: The architecture of the image to fetch.
+        base: The Ubuntu OS base image.
+        cloud_name: The cloud to fetch the image from.
+    """
+
+    arch: state.Arch
+    base: state.BaseImage
+    cloud_name: str
+
+
+@dataclasses.dataclass
+class GetLatestImageResult:
+    """Get latest image wrapper.
+
+    Attributes:
+        id: The image ID.
+        config: Configuration used to fetch the image.
+    """
+
+    id: str
+    config: GetLatestImageConfig
+
+
+def get_latest_image(
+    arch: state.Arch, bases: typing.Iterable[state.BaseImage], cloud_name: str
+) -> list[GetLatestImageResult]:
     """Fetch the latest image build ID.
 
     Args:
         arch: The machine architecture the image was built with.
-        base: Ubuntu OS image to build from.
+        bases: Ubuntu OS images the image was built on.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
 
     Raises:
@@ -235,6 +380,23 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
 
     Returns:
         The latest successful image build ID.
+    """
+    get_image_configs = _parametrize_get_latest_image(
+        arch=arch, os_bases=bases, cloud_name=cloud_name
+    )
+    with multiprocessing.Pool(processes=len(get_image_configs)) as pool:
+        results = pool.map(_run_get_latest_image, get_image_configs)
+    return results
+
+
+def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageResult:
+    """Get the latest image.
+
+    Args:
+        get_config: Get the latest image.
+
+    Returns:
+        The image ID.
     """
     try:
         # the user keyword argument exists but pylint doesn't think so.
@@ -244,8 +406,10 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
                 "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
-                cloud_name,
-                IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, ARCH=arch.value),
+                get_config.cloud_name,
+                IMAGE_NAME_TMPL.format(
+                    IMAGE_BASE=get_config.base.value, ARCH=get_config.arch.value
+                ),
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
@@ -256,6 +420,25 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
         return image_id
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
+
+
+def _parametrize_get_latest_image(
+    arch: state.Arch, os_bases: typing.Iterable[state.BaseImage], cloud_name: str
+) -> tuple[GetLatestImageConfig]:
+    """Get parametrized configurations for getting latest image.
+
+    Args:
+        arch: The machine architecture the image was built with.
+        base: Ubuntu OS image to build from.
+        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+
+    Returns:
+        The parametrized GetLatestImage configuration values.
+    """
+    return tuple(
+        GetLatestImageConfig(arch=arch, base=os_base, cloud_name=cloud_name)
+        for os_base in os_bases
+    )
 
 
 def upgrade_app() -> None:

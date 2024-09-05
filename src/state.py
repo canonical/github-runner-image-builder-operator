@@ -23,9 +23,8 @@ LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
-EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
-EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
+OPENSTACK_FLAVOR_CONFIG_NAME = "openstack-flavor"
+OPENSTACK_NETWORK_CONFIG_NAME = "openstack-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
@@ -120,7 +119,7 @@ class BaseImage(str, Enum):
         return self.value
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BaseImage":
+    def from_charm(cls, charm: ops.CharmBase) -> tuple["BaseImage"]:
         """Retrieve the base image tag from charm.
 
         Args:
@@ -129,12 +128,20 @@ class BaseImage(str, Enum):
         Returns:
             The base image configuration of the charm.
         """
-        image_name = (
-            typing.cast(str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")).lower().strip()
+        image_names = (
+            image_name.lower().strip()
+            for image_name in typing.cast(
+                str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")
+            ).split(",")
         )
-        if image_name in LTS_IMAGE_VERSION_TAG_MAP:
-            return cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
-        return cls(image_name)
+        return tuple(
+            (
+                cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
+                if image_name in LTS_IMAGE_VERSION_TAG_MAP
+                else cls(image_name)
+            )
+            for image_name in image_names
+        )
 
 
 @dataclasses.dataclass
@@ -191,14 +198,10 @@ class ExternalBuildConfig:
             The external build configuration of the charm.
         """
         flavor_name = (
-            typing.cast(str, charm.config.get(EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, ""))
-            .lower()
-            .strip()
+            typing.cast(str, charm.config.get(OPENSTACK_FLAVOR_CONFIG_NAME, "")).lower().strip()
         )
         network_name = (
-            typing.cast(str, charm.config.get(EXTERNAL_BUILD_NETWORK_CONFIG_NAME, ""))
-            .lower()
-            .strip()
+            typing.cast(str, charm.config.get(OPENSTACK_NETWORK_CONFIG_NAME, "")).lower().strip()
         )
         return cls(flavor=flavor_name, network=network_name)
 
@@ -253,7 +256,7 @@ class BuilderRunConfig:
 
     Attributes:
         arch: The machine architecture of the image to build with.
-        base: Ubuntu OS image to build from.
+        base: Ubuntu OS images to build from.
         cloud_config: The Openstack clouds.yaml passed as charm config.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
         external_build_config: The external builder configuration values.
@@ -262,16 +265,21 @@ class BuilderRunConfig:
     """
 
     arch: Arch
-    base: BaseImage
+    bases: tuple[BaseImage]
     cloud_config: OpenstackCloudsConfig
-    external_build_config: ExternalBuildConfig | None
+    external_build_config: ExternalBuildConfig
     num_revisions: int
     runner_version: str
 
     @property
     def cloud_name(self) -> str:
         """The cloud name from cloud_config."""
-        return list(self.cloud_config["clouds"].keys())[0]
+        return CLOUD_NAME
+
+    @property
+    def upload_cloud_name(self) -> str:
+        """The cloud to upload to."""
+        return UPLOAD_CLOUD_NAME
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
@@ -292,7 +300,7 @@ class BuilderRunConfig:
             raise BuildConfigInvalidError("Unsupported architecture") from exc
 
         try:
-            base_image = BaseImage.from_charm(charm)
+            base_images = BaseImage.from_charm(charm)
         except ValueError as exc:
             raise BuildConfigInvalidError(
                 (
@@ -312,17 +320,11 @@ class BuilderRunConfig:
         except ValueError as exc:
             raise BuildConfigInvalidError(msg=str(exc)) from exc
 
-        external_build_enabled = typing.cast(
-            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
-        )
-
         return cls(
             arch=arch,
-            base=base_image,
+            base=base_images,
             cloud_config=cloud_config,
-            external_build_config=(
-                ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
-            ),
+            external_build_config=ExternalBuildConfig.from_charm(charm=charm),
             num_revisions=revision_history_limit,
             runner_version=runner_version,
         )
@@ -494,14 +496,12 @@ class BuilderInitConfig:
 
     Attributes:
         channel: The application installation channel.
-        external_build: Whether the image builder should run in external build mode.
         interval: The interval in hours between each scheduled image builds.
         run_config: The configuration required to build the image.
         unit_name: The charm unit name in which the builder is running on.
     """
 
     channel: BuilderAppChannel
-    external_build: bool
     interval: int
     run_config: BuilderRunConfig
     unit_name: str
@@ -529,7 +529,6 @@ class BuilderInitConfig:
 
         return cls(
             channel=channel,
-            external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
             run_config=run_config,
             interval=build_interval,
             unit_name=charm.unit.name,

@@ -4,7 +4,7 @@
 """The Github-runner-image-builder-operator image relation observer."""
 
 import logging
-from typing import TypedDict
+import typing
 
 import ops
 
@@ -15,12 +15,14 @@ import state
 logger = logging.getLogger(__name__)
 
 
-class ImageRelationData(TypedDict):
+class ImageRelationData(typing.TypedDict, total=False):
     """Relation data for providing image ID.
 
+    Other attributes map from image ID to comma separated tags.
+
     Attributes:
-        id: The latest image ID to provide.
-        tags: The comma separated tags of the image, e.g. x64, jammy.
+        id: The latest image ID to provide of the primary default image.
+        tags: The comma separated tags of the image, e.g. x64, jammy, of the primary default image.
     """
 
     id: str
@@ -47,30 +49,65 @@ class Observer(ops.Object):
     def _on_image_relation_joined(self, _: ops.RelationJoinedEvent) -> None:
         """Handle the image relation joined event."""
         build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
-        image_id = builder.get_latest_image(
+        get_results = builder.get_latest_image(
             arch=build_config.arch,
-            base=build_config.base,
-            cloud_name=build_config.cloud_name,
+            bases=build_config.bases,
+            cloud_name=build_config.upload_cloud_name,
         )
-        if not image_id:
-            logger.warning("Image not yet ready.")
+        if not all(result.id for result in get_results):
+            logger.warning("Not all images ready.")
             return
-        self.update_image_data(image_id=image_id, arch=build_config.arch, base=build_config.base)
+        self.update_image_data(results=get_results)
 
     def update_image_data(
-        self,
-        image_id: str,
-        arch: state.Arch,
-        base: state.BaseImage,
+        self, results: typing.Iterable[builder.BuildResult | builder.GetLatestImageResult]
     ) -> None:
         """Update the relation data if exists.
 
         Args:
-            image_id: The latest image ID to propagate.
-            arch: The architecture in which the image was built for.
-            base: The OS base image.
+            results: The build results from image builder.
         """
         for relation in self.model.relations[state.IMAGE_RELATION]:
-            relation.data[self.model.unit].update(
-                ImageRelationData(id=image_id, tags=",".join((arch.value, base.value)))
-            )
+            relation.data[self.model.unit].update(self._to_image_relation_data(builds=results))
+
+    def _to_image_relation_data(
+        self, results: typing.Iterable[builder.BuildResult | builder.GetLatestImageResult]
+    ) -> ImageRelationData:
+        """Map build/fetch results to relation data.
+
+        Args:
+            results: The builder/fetch results.
+
+        Raises:
+            ValueError: If no builds were provided.
+
+        Returns:
+            image relation data mapping.
+        """
+        results = tuple(results)
+        if len(results) < 1:
+            raise ValueError("Builds output must be greater than 0.")
+        primary_result = results[0]
+        extra_results = results[1:]
+        relation_data = ImageRelationData(
+            id=primary_result.id,
+            tags=self._get_tags(build_config=primary_result.config),
+        )
+        relation_data.update(
+            {
+                extra_result.id: self._get_tags(config=extra_result.config)
+                for extra_result in extra_results
+            }
+        )
+        return relation_data
+
+    def _get_tags(self, config: builder.BuildConfig | builder.GetLatestImageConfig) -> str:
+        """Get image tags from build/fetch config.
+
+        Args:
+            config: The arguments used to build/fetch the image.
+
+        Returns:
+            A comma separate image tags.
+        """
+        return ",".join([config.arch.value, config.base.value])

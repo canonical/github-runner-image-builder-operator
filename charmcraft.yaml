@@ -78,18 +78,13 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
-    experimental-external-build:
-      type: boolean
-      default: false
-      description: |
-        (Experimental) Whether to use external OpenStack builder VM to build a snapshot image.
-    experimental-external-build-flavor:
+    openstack-flavor:
       type: string
       default: ""
       description: |
         (Experimental) The flavor to use when launching a builder VM machine. Will default to
         minimum matching flavor: 2 vCPU, 8G Memory, 20G Disk.
-    experimental-external-build-network:
+    openstack-network:
       type: string
       default: ""
       description: |

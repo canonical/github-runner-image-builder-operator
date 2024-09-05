@@ -174,8 +174,8 @@ def test_external_build_config(
     assert: expected build configs are returned.
     """
     charm = MockCharmFactory()
-    charm.config[state.EXTERNAL_BUILD_FLAVOR_CONFIG_NAME] = flavor
-    charm.config[state.EXTERNAL_BUILD_NETWORK_CONFIG_NAME] = network
+    charm.config[state.OPENSTACK_FLAVOR_CONFIG_NAME] = flavor
+    charm.config[state.OPENSTACK_NETWORK_CONFIG_NAME] = network
 
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
 

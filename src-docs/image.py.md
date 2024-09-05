@@ -12,12 +12,14 @@ The Github-runner-image-builder-operator image relation observer.
 ## <kbd>class</kbd> `ImageRelationData`
 Relation data for providing image ID. 
 
+Other attributes map from image ID to comma separated tags. 
+
 
 
 **Attributes:**
  
- - <b>`id`</b>:  The latest image ID to provide. 
- - <b>`tags`</b>:  The comma separated tags of the image, e.g. x64, jammy. 
+ - <b>`id`</b>:  The latest image ID to provide of the primary default image. 
+ - <b>`tags`</b>:  The comma separated tags of the image, e.g. x64, jammy, of the primary default image. 
 
 
 
@@ -28,7 +30,7 @@ Relation data for providing image ID.
 ## <kbd>class</kbd> `Observer`
 The image relation observer. 
 
-<a href="../src/image.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -55,12 +57,12 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
 ```python
-update_image_data(image_id: str, arch: Arch, base: BaseImage) → None
+update_image_data(results: Iterable[BuildResult | GetLatestImageResult]) → None
 ```
 
 Update the relation data if exists. 
@@ -69,8 +71,6 @@ Update the relation data if exists.
 
 **Args:**
  
- - <b>`image_id`</b>:  The latest image ID to propagate. 
- - <b>`arch`</b>:  The architecture in which the image was built for. 
- - <b>`base`</b>:  The OS base image. 
+ - <b>`results`</b>:  The build results from image builder. 
 
 

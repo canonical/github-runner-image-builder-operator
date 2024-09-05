@@ -13,7 +13,7 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,7 +38,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -57,7 +57,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -82,12 +82,12 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig) → str
+run(config: BuilderRunConfig) → list[BuildResult]
 ```
 
 Run a build immediately. 
@@ -107,17 +107,21 @@ Run a build immediately.
 
 
 **Returns:**
- The built image id. 
+ The built image results. 
 
 
 ---
 
-<a href="../src/builder.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
 ```python
-get_latest_image(arch: Arch, base: BaseImage, cloud_name: str) → str
+get_latest_image(
+    arch: Arch,
+    bases: Iterable[BaseImage],
+    cloud_name: str
+) → list[GetLatestImageResult]
 ```
 
 Fetch the latest image build ID. 
@@ -127,7 +131,7 @@ Fetch the latest image build ID.
 **Args:**
  
  - <b>`arch`</b>:  The machine architecture the image was built with. 
- - <b>`base`</b>:  Ubuntu OS image to build from. 
+ - <b>`bases`</b>:  Ubuntu OS images the image was built on. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
 
 
@@ -144,7 +148,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -159,5 +163,69 @@ Upgrade the application if newer version is available.
 **Raises:**
  
  - <b>`UpgradeApplicationError`</b>:  If there was an error upgrading the application. 
+
+
+---
+
+## <kbd>class</kbd> `BuildConfig`
+The image build configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`base`</b>:  The ubuntu OS base to build. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `BuildResult`
+Build result wrapper. 
+
+
+
+**Attributes:**
+ 
+ - <b>`config`</b>:  The configuration values used to run build. 
+ - <b>`id`</b>:  The output image id. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `GetLatestImageConfig`
+Configurations for fetching latest built images. 
+
+
+
+**Attributes:**
+ 
+ - <b>`arch`</b>:  The architecture of the image to fetch. 
+ - <b>`base`</b>:  The Ubuntu OS base image. 
+ - <b>`cloud_name`</b>:  The cloud to fetch the image from. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `GetLatestImageResult`
+Get latest image wrapper. 
+
+
+
+**Attributes:**
+ 
+ - <b>`id`</b>:  The image ID. 
+ - <b>`config`</b>:  Configuration used to fetch the image. 
+
+
+
 
 

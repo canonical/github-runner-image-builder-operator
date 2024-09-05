@@ -113,13 +113,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
-        image_id = builder.run(config=run_config)
-        self.image_observer.update_image_data(
-            image_id=image_id, arch=run_config.arch, base=run_config.base
-        )
+        build_results = builder.run(config=run_config)
+        self.image_observer.update_image_data(results=build_results)
         self.unit.status = ops.ActiveStatus("Image build success. Checking and upgrading app.")
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
+
+    def _build_result_to_image_relation_data(
+        self,
+    ):
+        """Convert the build results to image relation data."""
 
     def update_status(self, status: ops.StatusBase) -> None:
         """Update the charm status.
