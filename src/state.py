@@ -119,7 +119,7 @@ class BaseImage(str, Enum):
         return self.value
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> tuple["BaseImage"]:
+    def from_charm(cls, charm: ops.CharmBase) -> tuple["BaseImage", ...]:
         """Retrieve the base image tag from charm.
 
         Args:
@@ -256,16 +256,17 @@ class BuilderRunConfig:
 
     Attributes:
         arch: The machine architecture of the image to build with.
-        base: Ubuntu OS images to build from.
+        bases: Ubuntu OS images to build from.
         cloud_config: The Openstack clouds.yaml passed as charm config.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        upload_cloud_name: The Openstack cloud name to upload the image to.
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
     """
 
     arch: Arch
-    bases: tuple[BaseImage]
+    bases: tuple[BaseImage, ...]
     cloud_config: OpenstackCloudsConfig
     external_build_config: ExternalBuildConfig
     num_revisions: int
@@ -322,7 +323,7 @@ class BuilderRunConfig:
 
         return cls(
             arch=arch,
-            base=base_images,
+            bases=base_images,
             cloud_config=cloud_config,
             external_build_config=ExternalBuildConfig.from_charm(charm=charm),
             num_revisions=revision_history_limit,

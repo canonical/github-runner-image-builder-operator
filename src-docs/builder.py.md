@@ -82,7 +82,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -100,19 +100,13 @@ Run a build immediately.
 
 
 
-**Raises:**
- 
- - <b>`BuilderRunError`</b>:  if there was an error while launching the subprocess. 
-
-
-
 **Returns:**
  The built image results. 
 
 
 ---
 
-<a href="../src/builder.py#L368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L377"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -136,19 +130,13 @@ Fetch the latest image build ID.
 
 
 
-**Raises:**
- 
- - <b>`GetLatestImageError`</b>:  If there was an error fetching the latest image. 
-
-
-
 **Returns:**
- The latest successful image build ID. 
+ List of get latest image results. 
 
 
 ---
 
-<a href="../src/builder.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L452"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -174,7 +162,11 @@ The image build configuration.
 
 **Attributes:**
  
+ - <b>`arch`</b>:  The architecture to build the image for. 
  - <b>`base`</b>:  The ubuntu OS base to build. 
+ - <b>`cloud_config`</b>:  Cloud configuration values for launching a builder VM. 
+ - <b>`num_revisions`</b>:  The number or revisions to keep before deleting old images. 
+ - <b>`runner_version`</b>:  The GitHub actions-runner version. 
 
 
 

@@ -68,7 +68,7 @@ class Observer(ops.Object):
             results: The build results from image builder.
         """
         for relation in self.model.relations[state.IMAGE_RELATION]:
-            relation.data[self.model.unit].update(self._to_image_relation_data(builds=results))
+            relation.data[self.model.unit].update(self._to_image_relation_data(results=results))
 
     def _to_image_relation_data(
         self, results: typing.Iterable[builder.BuildResult | builder.GetLatestImageResult]
@@ -91,10 +91,12 @@ class Observer(ops.Object):
         extra_results = results[1:]
         relation_data = ImageRelationData(
             id=primary_result.id,
-            tags=self._get_tags(build_config=primary_result.config),
+            tags=self._get_tags(config=primary_result.config),
         )
         relation_data.update(
-            {
+            # mypy does not understand that the update function for TypedDict can have dynamic keys
+            # with total=False parameter.
+            {  # type: ignore
                 extra_result.id: self._get_tags(config=extra_result.config)
                 for extra_result in extra_results
             }

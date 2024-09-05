@@ -119,11 +119,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
 
-    def _build_result_to_image_relation_data(
-        self,
-    ):
-        """Convert the build results to image relation data."""
-
     def update_status(self, status: ops.StatusBase) -> None:
         """Update the charm status.
 

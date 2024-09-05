@@ -147,7 +147,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L510"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -185,9 +185,10 @@ Configurations for running builder periodically.
 **Attributes:**
  
  - <b>`arch`</b>:  The machine architecture of the image to build with. 
- - <b>`base`</b>:  Ubuntu OS images to build from. 
+ - <b>`bases`</b>:  Ubuntu OS images to build from. 
  - <b>`cloud_config`</b>:  The Openstack clouds.yaml passed as charm config. 
  - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
+ - <b>`upload_cloud_name`</b>:  The Openstack cloud name to upload the image to. 
  - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
@@ -209,7 +210,7 @@ The cloud to upload to.
 
 ---
 
-<a href="../src/state.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -348,7 +349,7 @@ The OpenStack cloud authentication data.
 
 ---
 
-<a href="../src/state.py#L548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

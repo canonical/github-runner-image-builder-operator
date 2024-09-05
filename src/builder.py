@@ -197,7 +197,11 @@ class BuildConfig:
     """The image build configuration.
 
     Attributes:
+        arch: The architecture to build the image for.
         base: The ubuntu OS base to build.
+        cloud_config: Cloud configuration values for launching a builder VM.
+        num_revisions: The number or revisions to keep before deleting old images.
+        runner_version: The GitHub actions-runner version.
     """
 
     arch: state.Arch
@@ -226,15 +230,12 @@ def run(config: state.BuilderRunConfig) -> list[BuildResult]:
     Args:
         config: The configuration values for running image builder.
 
-    Raises:
-        BuilderRunError: if there was an error while launching the subprocess.
-
     Returns:
         The built image results.
     """
     build_configs = _parametrize_build(
         arch=config.arch,
-        os_bases=config.bases,
+        bases=config.bases,
         cloud_config=_CloudConfig(
             build_cloud=config.cloud_name,
             upload_cloud=config.upload_cloud_name,
@@ -251,38 +252,46 @@ def run(config: state.BuilderRunConfig) -> list[BuildResult]:
 
 def _parametrize_build(
     arch: state.Arch,
-    os_bases: typing.Iterable[state.BaseImage],
+    bases: typing.Iterable[state.BaseImage],
     cloud_config: _CloudConfig,
     num_revisions: int,
     runner_version: str | None,
-) -> tuple[BuildConfig]:
+) -> tuple[BuildConfig, ...]:
     """Get parametrized build configurations.
 
     Args:
-        os_bases: The ubuntu OS bases to build for.
+        arch: The target image architecture to build for.
+        bases: The ubuntu OS bases to build for.
+        cloud_config: The cloud configuration for building and uploading images.
+        num_revisions: The number or revisions to keep before deleting old images.
+        runner_version: The GitHub actions-runner version.
 
     Returns:
         Per image build configuration values.
     """
-    configs = []
-    for os_base in os_bases:
-        configs.append(
-            BuildConfig(
-                arch=arch,
-                base=os_base,
-                cloud_config=cloud_config,
-                num_revisions=num_revisions,
-                runner_version=runner_version,
-            )
+    return tuple(
+        BuildConfig(
+            arch=arch,
+            base=base,
+            cloud_config=cloud_config,
+            num_revisions=num_revisions,
+            runner_version=runner_version,
         )
-    return configs
+        for base in bases
+    )
 
 
-def _run_build(config: BuildConfig):
-    """Spawn a single bulid process.
+def _run_build(config: BuildConfig) -> BuildResult:
+    """Spawn a single build process.
 
     Args:
         config: The build configuration parameters.
+
+    Raises:
+        BuilderRunError: if there was an error while running the build subprocess.
+
+    Returns:
+        The build result with build configuration data and output image ID.
     """
     try:
         commands = [
@@ -311,7 +320,7 @@ def _run_build(config: BuildConfig):
         ]
         # The arg "user" exists but pylint disagrees.
         return BuildResult(
-            build_config=config,
+            config=config,
             id=subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
                 args=commands,
                 user=UBUNTU_USER,
@@ -328,7 +337,7 @@ def _format_image_name(arch: state.Arch, base: state.BaseImage) -> str:
     """Create image name based on build configuration parameters.
 
     Args:
-        arch; The architecture to build for.
+        arch: The architecture to build for.
         base: The Ubuntu OS base image.
 
     Returns:
@@ -375,14 +384,11 @@ def get_latest_image(
         bases: Ubuntu OS images the image was built on.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
 
-    Raises:
-        GetLatestImageError: If there was an error fetching the latest image.
-
     Returns:
-        The latest successful image build ID.
+        List of get latest image results.
     """
     get_image_configs = _parametrize_get_latest_image(
-        arch=arch, os_bases=bases, cloud_name=cloud_name
+        arch=arch, bases=bases, cloud_name=cloud_name
     )
     with multiprocessing.Pool(processes=len(get_image_configs)) as pool:
         results = pool.map(_run_get_latest_image, get_image_configs)
@@ -395,8 +401,11 @@ def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageRes
     Args:
         get_config: Get the latest image.
 
+    Raises:
+        GetLatestImageError: If there was an error fetching the latest image.
+
     Returns:
-        The image ID.
+        The latest successful image build ID with get image configuration values.
     """
     try:
         # the user keyword argument exists but pylint doesn't think so.
@@ -417,27 +426,26 @@ def _run_get_latest_image(get_config: GetLatestImageConfig) -> GetLatestImageRes
             env=os.environ,
             encoding="utf-8",
         )  # nosec: B603
-        return image_id
+        return GetLatestImageResult(id=image_id, config=get_config)
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 
 
 def _parametrize_get_latest_image(
-    arch: state.Arch, os_bases: typing.Iterable[state.BaseImage], cloud_name: str
-) -> tuple[GetLatestImageConfig]:
+    arch: state.Arch, bases: typing.Iterable[state.BaseImage], cloud_name: str
+) -> tuple[GetLatestImageConfig, ...]:
     """Get parametrized configurations for getting latest image.
 
     Args:
         arch: The machine architecture the image was built with.
-        base: Ubuntu OS image to build from.
+        bases: Ubuntu OS image to build from.
         cloud_name: The Openstack cloud name to connect to from clouds.yaml.
 
     Returns:
         The parametrized GetLatestImage configuration values.
     """
     return tuple(
-        GetLatestImageConfig(arch=arch, base=os_base, cloud_name=cloud_name)
-        for os_base in os_bases
+        GetLatestImageConfig(arch=arch, base=base, cloud_name=cloud_name) for base in bases
     )
 
 
