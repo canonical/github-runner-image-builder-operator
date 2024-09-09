@@ -291,6 +291,34 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
     assert "Failed to spawn process" in str(exc.getrepr())
 
 
+def test_run_output_error(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: given a monkeypatched subprocess call.
+    act: when run is called.
+    assert: the call to image builder is made.
+    """
+    monkeypatch.setattr(
+        builder.subprocess,
+        "check_output",
+        MagicMock(return_value="No image found"),
+    )
+    testconfig = state.BuilderRunConfig(
+        arch=state.Arch.ARM64,
+        base=state.BaseImage.JAMMY,
+        cloud_config=factories.CloudFactory(),
+        external_build_config=state.ExternalBuildConfig("test-flavor", "test-network"),
+        num_revisions=1,
+        runner_version="",
+    )
+
+    with pytest.raises(builder.BuilderRunError) as exc:
+        builder.run(config=testconfig)
+
+    assert "Unexpected output" in str(exc)
+
+
 @pytest.mark.parametrize(
     "runner_version, external_build_config",
     [
@@ -313,7 +341,11 @@ def test_run(
     act: when run is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(builder.subprocess, "check_output", check_output_mock := MagicMock())
+    monkeypatch.setattr(
+        builder.subprocess,
+        "check_output",
+        check_output_mock := MagicMock(return_value="Image build success\ntest-image-id"),
+    )
     testconfig = state.BuilderRunConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
