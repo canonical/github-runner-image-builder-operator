@@ -214,13 +214,17 @@ def run(config: state.BuilderRunConfig) -> str:
                 state.UPLOAD_CLOUD_NAME,
             ]
         # The arg "user" exists but pylint disagrees.
-        return subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+        stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             encoding="utf-8",
             env={"HOME": str(UBUNTU_HOME)},
         )
+        if "Image build success" not in stdout:
+            raise BuilderRunError(f"Unexpected output: {stdout}")
+        # The return value of the CLI is "Image build success:\n<image-id>"
+        return stdout.split()[-1]
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc
 
