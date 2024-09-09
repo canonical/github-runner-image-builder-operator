@@ -99,10 +99,9 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
     """
     init_cmd = ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"]
     if init_config.external_build:
-        init_cmd += "--experimental-external"
-        init_cmd += "True"
-        init_cmd += "--cloud-name"
-        init_cmd += init_config.run_config.cloud_name
+        init_cmd.extend(
+            ["--experimental-external", "True", "--cloud-name", init_config.run_config.cloud_name]
+        )
     try:
         subprocess.run(
             init_cmd,
@@ -201,18 +200,20 @@ def run(config: state.BuilderRunConfig) -> str:
             str(config.num_revisions),
         ]
         if config.runner_version:
-            commands += ["--runner-version", config.runner_version]
+            commands.extend(["--runner-version", config.runner_version])
         if config.external_build_config:
-            commands += [
-                "--experimental-external",
-                "True",
-                "--flavor",
-                config.external_build_config.flavor,
-                "--network",
-                config.external_build_config.network,
-                "--upload-cloud",
-                state.UPLOAD_CLOUD_NAME,
-            ]
+            commands.extend(
+                [
+                    "--experimental-external",
+                    "True",
+                    "--flavor",
+                    config.external_build_config.flavor,
+                    "--network",
+                    config.external_build_config.network,
+                    "--upload-cloud",
+                    state.UPLOAD_CLOUD_NAME,
+                ]
+            )
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
