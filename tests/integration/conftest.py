@@ -315,7 +315,7 @@ async def app_fixture(
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
-        BASE_IMAGE_CONFIG_NAME: "jammy,noble",
+        BASE_IMAGE_CONFIG_NAME: "jammy",
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
