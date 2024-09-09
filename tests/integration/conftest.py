@@ -35,6 +35,9 @@ from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
+    EXTERNAL_BUILD_CONFIG_NAME,
+    EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
+    EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -311,6 +314,8 @@ async def app_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
+    network_name: str,
+    flavor_name: str,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -324,6 +329,9 @@ async def app_fixture(
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
+        EXTERNAL_BUILD_CONFIG_NAME: "True",
+        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: network_name,
+        EXTERNAL_BUILD_NETWORK_CONFIG_NAME: flavor_name,
     }
 
     base_machine_constraint = (

@@ -221,7 +221,7 @@ def run(config: state.BuilderRunConfig) -> str:
             encoding="utf-8",
             env={"HOME": str(UBUNTU_HOME)},
         )
-        if "Image build success" not in stdout:
+        if config.external_build_config and "Image build success" not in stdout:
             raise BuilderRunError(f"Unexpected output: {stdout}")
         # The return value of the CLI is "Image build success:\n<image-id>"
         return stdout.split()[-1]
