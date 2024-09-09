@@ -59,7 +59,11 @@ async def test_build_image(
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
         images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info("Image name: %s, Images: %s", image_name, images)
+        logger.info(
+            "Image name: %s, Images: %s",
+            image_name,
+            tuple((image.id, image.name, image.created_at) for image in images),
+        )
         # split logs, the image log is long and gets cut off.
         logger.info("Dispatch time: %s", dispatch_time)
         return any(
