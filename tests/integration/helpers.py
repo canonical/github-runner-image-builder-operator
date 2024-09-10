@@ -73,7 +73,13 @@ def _configure_dockerhub_mirror(conn: SSHConnection, dockerhub_mirror: str | Non
     """
     if not dockerhub_mirror:
         return
-    command = f"""echo '{{ "registry-mirrors": ["{dockerhub_mirror}"] }}' | \
+    command = "sudo systemctl status docker --no-pager"
+    logger.info("Running command: %s", command)
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to show docker status"
+
+    command = f"""sudo mkdir -p /etc/docker/ && \
+echo '{{ "registry-mirrors": ["{dockerhub_mirror}"] }}' | \
 sudo tee /etc/docker/daemon.json"""
     logger.info("Running command: %s", command)
     result: Result = conn.run(command)
