@@ -9,6 +9,7 @@ import dataclasses
 import logging
 from datetime import datetime, timezone
 
+import invoke.exceptions
 import pytest
 from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
@@ -169,6 +170,10 @@ async def test_image(
                 command=command.command, dockerhub_mirror=dockerhub_mirror
             )
         logger.info("Running test: %s", command.name)
-        result: Result = ssh_connection.run(command.command, env=env if env else None)
+        try:
+            result: Result = ssh_connection.run(command.command, env=env if env else None)
+        except invoke.exceptions.UnexpectedExit as exc:
+            logger.info("Unexpected exception: %s %s %s", exc.reason, exc.reason, exc.args)
+            assert False
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
