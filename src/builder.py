@@ -206,6 +206,8 @@ def run(config: state.BuilderRunConfig) -> str:
                 [
                     "--experimental-external",
                     "True",
+                    "--arch",
+                    config.arch.value,
                     "--flavor",
                     config.external_build_config.flavor,
                     "--network",

@@ -114,7 +114,7 @@ async def model_fixture(
         assert ops_test.model is not None
         # Check if private endpoint Juju model is being used. If not, configure proxy.
         # Note that "testing" is the name of the default testing model in operator-workflows.
-        if ops_test.model.name == "testing":
+        if "test" in ops_test.model.name:
             # Set model proxy for the runners
             await ops_test.model.set_config(
                 {
