@@ -127,6 +127,7 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
 
     charm._on_install(MagicMock())
