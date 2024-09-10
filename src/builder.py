@@ -218,7 +218,9 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
                 ]
             )
         if proxy:
-            commands.extend(["--proxy", proxy.http])
+            commands.extend(
+                ["--proxy", proxy.http.removeprefix("http://").removeprefix("https://")]
+            )
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
