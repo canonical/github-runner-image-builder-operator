@@ -322,7 +322,7 @@ async def app_fixture(
         APP_CHANNEL_CONFIG_NAME: "edge",
         BASE_IMAGE_CONFIG_NAME: "jammy",
         BUILD_INTERVAL_CONFIG_NAME: 12,
-        REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
+        REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
         OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
@@ -474,8 +474,6 @@ async def openstack_server_fixture(
     yield server
 
     openstack_metadata.connection.delete_server(server_name, wait=True)
-    for image in images:
-        openstack_metadata.connection.delete_image(image.id)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
