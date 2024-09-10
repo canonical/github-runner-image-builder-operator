@@ -87,7 +87,7 @@ Configure cron to run builder.
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig) → str
+run(config: BuilderRunConfig, proxy: ProxyConfig | None) → str
 ```
 
 Run a build immediately. 
@@ -97,6 +97,7 @@ Run a build immediately.
 **Args:**
  
  - <b>`config`</b>:  The configuration values for running image builder. 
+ - <b>`proxy`</b>:  The proxy configuration to apply on the builder. 
 
 
 
@@ -112,7 +113,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -144,7 +145,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 

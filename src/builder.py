@@ -171,11 +171,12 @@ def _should_configure_cron(cron_contents: str) -> bool:
     return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
-def run(config: state.BuilderRunConfig) -> str:
+def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
     """Run a build immediately.
 
     Args:
         config: The configuration values for running image builder.
+        proxy: The proxy configuration to apply on the builder.
 
     Raises:
         BuilderRunError: if there was an error while launching the subprocess.
@@ -216,6 +217,8 @@ def run(config: state.BuilderRunConfig) -> str:
                     state.UPLOAD_CLOUD_NAME,
                 ]
             )
+        if proxy:
+            commands.extend(["--proxy", proxy.http])
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,

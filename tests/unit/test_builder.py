@@ -286,7 +286,7 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(builder.BuilderRunError) as exc:
-        builder.run(config=testconfig)
+        builder.run(config=testconfig, proxy=None)
 
     assert "Failed to spawn process" in str(exc.getrepr())
 
@@ -314,7 +314,7 @@ def test_run_output_error(
     )
 
     with pytest.raises(builder.BuilderRunError) as exc:
-        builder.run(config=testconfig)
+        builder.run(config=testconfig, proxy=None)
 
     assert "Unexpected output" in str(exc)
 
@@ -355,7 +355,7 @@ def test_run(
         runner_version=runner_version,
     )
 
-    builder.run(config=testconfig)
+    builder.run(config=testconfig, proxy=MagicMock())
 
     check_output_mock.assert_called_once()
 
