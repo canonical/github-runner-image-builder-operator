@@ -19,7 +19,6 @@ jobs:
       self-hosted-runner-arch: X64
       self-hosted-runner-label: stg-private-endpoint
       builder-runner-label: X64
-      tmate-debug: true
 
   integration-tests-arm:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
@@ -33,4 +32,3 @@ jobs:
       self-hosted-runner-label: stg-private-endpoint
       builder-runner-label: ARM64
       pre-run-script: tests/integration/setup_private_endpoint.sh
-      tmate-debug: true
