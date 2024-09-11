@@ -63,6 +63,11 @@ EOF"""  # noqa: E501
     result = conn.run(command)
     assert result.ok, "Failed to configure iptable rules"
 
+    command = "sudo snap services aproxy"
+    logger.info("Running command: %s", command)
+    result = conn.run(command)
+    assert result.ok, "Failed to check aproxy status"
+
 
 def _configure_dockerhub_mirror(conn: SSHConnection, dockerhub_mirror: str | None):
     """Use dockerhub mirror if provided.
