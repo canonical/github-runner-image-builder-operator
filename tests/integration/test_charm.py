@@ -173,7 +173,14 @@ async def test_image(
         try:
             result: Result = ssh_connection.run(command.command, env=env if env else None)
         except invoke.exceptions.UnexpectedExit as exc:
-            logger.info("Unexpected exception: %s %s %s", exc.reason, exc.reason, exc.args)
+            logger.info(
+                "Unexpected exception: %s %s %s %s %s",
+                exc.reason,
+                exc.args,
+                exc.result.stdout,
+                exc.result.stderr,
+                exc.result.return_code,
+            )
             assert False
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
         assert result.ok
