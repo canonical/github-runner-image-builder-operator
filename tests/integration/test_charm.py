@@ -83,10 +83,12 @@ class Commands:
     Attributes:
         name: The test name.
         command: The command to execute.
+        retry: number of times to retry.
     """
 
     name: str
     command: str
+    retry: int = 1
 
 
 # This is matched with E2E test run of github-runner-operator charm.
@@ -98,7 +100,7 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
-    Commands(name="install microk8s", command="sudo snap install microk8s --classic"),
+    Commands(name="install microk8s", command="sudo snap install microk8s --classic", retry=3),
     # This is a special helper command to configure dockerhub registry if available.
     Commands(
         name="configure dockerhub mirror",
@@ -170,17 +172,23 @@ async def test_image(
                 command=command.command, dockerhub_mirror=dockerhub_mirror
             )
         logger.info("Running test: %s", command.name)
-        try:
-            result: Result = ssh_connection.run(command.command, env=env if env else None)
-        except invoke.exceptions.UnexpectedExit as exc:
+        for attempt in range(command.retry):
+            try:
+                result: Result = ssh_connection.run(command.command, env=env if env else None)
+            except invoke.exceptions.UnexpectedExit as exc:
+                logger.info(
+                    "Unexpected exception (retry attempt: %s): %s %s %s %s %s %s",
+                    attempt,
+                    exc.reason,
+                    exc.args,
+                    exc.result.stdout,
+                    exc.result.stderr,
+                    exc.result.return_code,
+                )
+                continue
             logger.info(
-                "Unexpected exception: %s %s %s %s %s",
-                exc.reason,
-                exc.args,
-                exc.result.stdout,
-                exc.result.stderr,
-                exc.result.return_code,
+                "Command output: %s %s %s", result.return_code, result.stdout, result.stderr
             )
-            assert False
-        logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
+            if result.ok:
+                break
         assert result.ok
