@@ -100,6 +100,7 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
+    Commands(name="proxy internet access test", command="curl google.com", retry=3),
     Commands(name="install microk8s", command="sudo snap install microk8s --classic", retry=3),
     # This is a special helper command to configure dockerhub registry if available.
     Commands(
@@ -177,7 +178,7 @@ async def test_image(
                 result: Result = ssh_connection.run(command.command, env=env if env else None)
             except invoke.exceptions.UnexpectedExit as exc:
                 logger.info(
-                    "Unexpected exception (retry attempt: %s): %s %s %s %s %s %s",
+                    "Unexpected exception (retry attempt: %s): %s %s %s %s %s",
                     attempt,
                     exc.reason,
                     exc.args,
