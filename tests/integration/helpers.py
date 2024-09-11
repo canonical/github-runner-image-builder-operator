@@ -82,7 +82,7 @@ def _configure_dockerhub_mirror(conn: SSHConnection, dockerhub_mirror: str | Non
 echo '{{ "registry-mirrors": ["{dockerhub_mirror}"] }}' | \
 sudo tee /etc/docker/daemon.json"""
     logger.info("Running command: %s", command)
-    result: Result = conn.run(command)
+    result = conn.run(command)
     assert result.ok, "Failed to setup DockerHub mirror"
 
     command = "sudo systemctl daemon-reload"
