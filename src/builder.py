@@ -99,7 +99,9 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
     """
     init_cmd = ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"]
     if init_config.external_build:
-        init_cmd += "--experimental-external"
+        init_cmd.extend(
+            ["--experimental-external", "True", "--cloud-name", init_config.run_config.cloud_name]
+        )
     try:
         subprocess.run(
             init_cmd,
@@ -169,11 +171,12 @@ def _should_configure_cron(cron_contents: str) -> bool:
     return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
-def run(config: state.BuilderRunConfig) -> str:
+def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
     """Run a build immediately.
 
     Args:
         config: The configuration values for running image builder.
+        proxy: The proxy configuration to apply on the builder.
 
     Raises:
         BuilderRunError: if there was an error while launching the subprocess.
@@ -198,24 +201,38 @@ def run(config: state.BuilderRunConfig) -> str:
             str(config.num_revisions),
         ]
         if config.runner_version:
-            commands += ["--runner-version", config.runner_version]
+            commands.extend(["--runner-version", config.runner_version])
         if config.external_build_config:
-            commands += [
-                "--experimental-external",
-                "True",
-                "--flavor",
-                config.external_build_config.flavor,
-                "--network",
-                config.external_build_config.network,
-            ]
+            commands.extend(
+                [
+                    "--experimental-external",
+                    "True",
+                    "--arch",
+                    config.arch.value,
+                    "--flavor",
+                    config.external_build_config.flavor,
+                    "--network",
+                    config.external_build_config.network,
+                    "--upload-cloud",
+                    state.UPLOAD_CLOUD_NAME,
+                ]
+            )
+        if proxy:
+            commands.extend(
+                ["--proxy", proxy.http.removeprefix("http://").removeprefix("https://")]
+            )
         # The arg "user" exists but pylint disagrees.
-        return subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+        stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             encoding="utf-8",
             env={"HOME": str(UBUNTU_HOME)},
         )
+        if config.external_build_config and "Image build success" not in stdout:
+            raise BuilderRunError(f"Unexpected output: {stdout}")
+        # The return value of the CLI is "Image build success:\n<image-id>"
+        return stdout.split()[-1]
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc
 

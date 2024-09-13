@@ -37,6 +37,8 @@ class SSHKey(typing.NamedTuple):
     private_key: Path
 
 
+# The following is a wrapper for test related data and is not a duplicate code.
+# pylint: disable=duplicate-code
 class PrivateEndpointConfigs(typing.TypedDict):
     """The Private endpoint configuration values.
 
@@ -59,6 +61,9 @@ class PrivateEndpointConfigs(typing.TypedDict):
     user_domain_name: str
     username: str
     region_name: str
+
+
+# pylint: enable=duplicate-code
 
 
 class TestConfigs(typing.NamedTuple):

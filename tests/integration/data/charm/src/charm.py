@@ -32,8 +32,30 @@ class RelationCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(
+            self.on[IMAGE_RELATION].relation_joined, self._on_image_relation_joined
+        )
+        self.framework.observe(
             self.on[IMAGE_RELATION].relation_changed, self._on_image_relation_changed
         )
+
+    def _on_image_relation_joined(self, event: ops.RelationJoinedEvent):
+        """Handle the image relation joined event.
+
+        Args:
+            event: The event fired when relation is joined.
+        """
+        logger.info("Relation joined.")
+        event.relation.data[self.unit].update(
+            {
+                "auth_url": self.config["openstack-auth-url"],
+                "password": self.config["openstack-password"],
+                "project_domain_name": self.config["openstack-project-domain-name"],
+                "project_name": self.config["openstack-project-name"],
+                "user_domain_name": self.config["openstack-user-domain-name"],
+                "username": self.config["openstack-user-name"],
+            }
+        )
+        logger.info("Relation data updated.")
 
     def _on_image_relation_changed(self, event: ops.RelationChangedEvent):
         """Handle the image relation changed event.

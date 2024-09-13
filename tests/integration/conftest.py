@@ -35,6 +35,9 @@ from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
+    EXTERNAL_BUILD_CONFIG_NAME,
+    EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
+    EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -111,7 +114,7 @@ async def model_fixture(
         assert ops_test.model is not None
         # Check if private endpoint Juju model is being used. If not, configure proxy.
         # Note that "testing" is the name of the default testing model in operator-workflows.
-        if ops_test.model.name == "testing":
+        if "test" in ops_test.model.name:
             # Set model proxy for the runners
             await ops_test.model.set_config(
                 {
@@ -131,7 +134,10 @@ def dispatch_time_fixture():
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(
-    model: Model, test_id: str, arch: Literal["amd64", "arm64"]
+    model: Model,
+    test_id: str,
+    arch: Literal["amd64", "arm64"],
+    private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     # The predefine inputs here can be trusted
@@ -140,7 +146,18 @@ async def test_charm_fixture(
     )
     logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
-    app: Application = await model.deploy(f"./test_ubuntu-22.04-{arch}.charm", app_name)
+    app: Application = await model.deploy(
+        f"./test_ubuntu-22.04-{arch}.charm",
+        app_name,
+        config={
+            "openstack-auth-url": private_endpoint_configs["auth_url"],
+            "openstack-password": private_endpoint_configs["password"],
+            "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
+            "openstack-project-name": private_endpoint_configs["project_name"],
+            "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
+            "openstack-user-name": private_endpoint_configs["username"],
+        },
+    )
 
     yield app
 
@@ -297,18 +314,24 @@ async def app_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
+    network_name: str,
+    flavor_name: str,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
+        BASE_IMAGE_CONFIG_NAME: "jammy",
         BUILD_INTERVAL_CONFIG_NAME: 12,
-        REVISION_HISTORY_LIMIT_CONFIG_NAME: 2,
+        REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
         OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
+        EXTERNAL_BUILD_CONFIG_NAME: "True",
+        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: flavor_name,
+        EXTERNAL_BUILD_NETWORK_CONFIG_NAME: network_name,
     }
 
     base_machine_constraint = (
@@ -325,9 +348,7 @@ async def app_fixture(
         config=config,
     )
     # This takes long due to having to wait for the machine to come up.
-    await test_configs.model.wait_for_idle(
-        apps=[app.name], wait_for_active=True, idle_period=30, timeout=60 * 30
-    )
+    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
     yield app
 
@@ -453,8 +474,6 @@ async def openstack_server_fixture(
     yield server
 
     openstack_metadata.connection.delete_server(server_name, wait=True)
-    for image in images:
-        openstack_metadata.connection.delete_image(image.id)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")

@@ -9,6 +9,7 @@ import dataclasses
 import logging
 from datetime import datetime, timezone
 
+import invoke.exceptions
 import pytest
 from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
@@ -23,6 +24,18 @@ from tests.integration.helpers import format_dockerhub_mirror_microk8s_command, 
 from tests.integration.types import ProxyConfig
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.mark.asyncio
+async def test_image_relation(app: Application, test_charm: Application):
+    """
+    arrange: An active charm and a test charm that becomes active when valid relation data is set.
+    act: When the relation is joined.
+    assert: The test charm becomes active due to proper relation data.
+    """
+    model: Model = app.model
+    await model.integrate(app.name, test_charm.name)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
 
 
 @pytest.mark.asyncio
@@ -47,7 +60,11 @@ async def test_build_image(
             IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
         )
         images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info("Image name: %s, Images: %s", image_name, images)
+        logger.info(
+            "Image name: %s, Images: %s",
+            image_name,
+            tuple((image.id, image.name, image.created_at) for image in images),
+        )
         # split logs, the image log is long and gets cut off.
         logger.info("Dispatch time: %s", dispatch_time)
         return any(
@@ -59,18 +76,6 @@ async def test_build_image(
     await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
 
 
-@pytest.mark.asyncio
-async def test_image_relation(app: Application, test_charm: Application):
-    """
-    arrange: An active charm and a test charm that becomes active when valid relation data is set.
-    act: When the relation is joined.
-    assert: The test charm becomes active due to proper relation data.
-    """
-    model: Model = app.model
-    await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name, test_charm.name], wait_for_active=True)
-
-
 @dataclasses.dataclass
 class Commands:
     """Test commands to execute.
@@ -78,10 +83,12 @@ class Commands:
     Attributes:
         name: The test name.
         command: The command to execute.
+        retry: number of times to retry.
     """
 
     name: str
     command: str
+    retry: int = 1
 
 
 # This is matched with E2E test run of github-runner-operator charm.
@@ -93,7 +100,8 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
-    Commands(name="install microk8s", command="sudo snap install microk8s --classic"),
+    Commands(name="proxy internet access test", command="curl google.com", retry=3),
+    Commands(name="install microk8s", command="sudo snap install microk8s --classic", retry=3),
     # This is a special helper command to configure dockerhub registry if available.
     Commands(
         name="configure dockerhub mirror",
@@ -165,6 +173,23 @@ async def test_image(
                 command=command.command, dockerhub_mirror=dockerhub_mirror
             )
         logger.info("Running test: %s", command.name)
-        result: Result = ssh_connection.run(command.command, env=env if env else None)
-        logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
+        for attempt in range(command.retry):
+            try:
+                result: Result = ssh_connection.run(command.command, env=env if env else None)
+            except invoke.exceptions.UnexpectedExit as exc:
+                logger.info(
+                    "Unexpected exception (retry attempt: %s): %s %s %s %s %s",
+                    attempt,
+                    exc.reason,
+                    exc.args,
+                    exc.result.stdout,
+                    exc.result.stderr,
+                    exc.result.return_code,
+                )
+                continue
+            logger.info(
+                "Command output: %s %s %s", result.return_code, result.stdout, result.stderr
+            )
+            if result.ok:
+                break
         assert result.ok

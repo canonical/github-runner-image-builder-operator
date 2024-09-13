@@ -274,7 +274,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                             "user_domain_name": "user_domain_name",
                             "username": "username",
                         }
-                    }
+                    },
                 }
             },
             external_build_config=None,
@@ -479,6 +479,78 @@ def test__parse_openstack_clouds_config_invalid(missing_config: str):
     assert "Please supply all OpenStack configurations." in str(exc)
 
 
+# mypy doesn't understand walrus operator here
+# pylint: disable=undefined-variable,unused-variable
+@pytest.mark.parametrize(
+    "openstack_config_from_relation, expected_config",
+    [
+        pytest.param(
+            None,
+            state.OpenstackCloudsConfig(
+                clouds={
+                    state.CLOUD_NAME: state._CloudsConfig(
+                        auth=state._CloudsAuthConfig(
+                            auth_url="http://testing-auth/keystone",
+                            # this is referring to hard-coded factory value since factory object
+                            # is not initialized and it is not a real secret
+                            password="testingvalue",  # nosec
+                            project_domain_name="project_domain_name",
+                            project_name="project_name",
+                            user_domain_name="user_domain_name",
+                            username="username",
+                        )
+                    ),
+                }
+            ),
+            id="None",
+        ),
+        pytest.param(
+            (relation_mock_config := MagicMock()),
+            state.OpenstackCloudsConfig(
+                clouds={
+                    state.CLOUD_NAME: state._CloudsConfig(
+                        auth=state._CloudsAuthConfig(
+                            auth_url="http://testing-auth/keystone",
+                            # this is referring to hard-coded factory value since factory object
+                            # is not initialized and it is not a real secret
+                            password="testingvalue",  # nosec
+                            project_domain_name="project_domain_name",
+                            project_name="project_name",
+                            user_domain_name="user_domain_name",
+                            username="username",
+                        )
+                    ),
+                    state.UPLOAD_CLOUD_NAME: state._CloudsConfig(auth=relation_mock_config.auth),
+                }
+            ),
+            id="mock data",
+        ),
+    ],
+)
+def test__parse_openstack_clouds_config(
+    monkeypatch: pytest.MonkeyPatch,
+    openstack_config_from_relation: state.GitHubRunnerOpenStackConfig | None,
+    expected_config: state.OpenstackCloudsConfig,
+):
+    """
+    arrange: given openstack related config options and monkeypatched GitHubRunnerOpenStackConfig.
+    act: when _parse_openstack_clouds_config is called.
+    assert: expected clouds_config is returned.
+    """
+    monkeypatch.setattr(
+        state.GitHubRunnerOpenStackConfig,
+        "from_charm",
+        MagicMock(return_value=openstack_config_from_relation),
+    )
+    charm = MockCharmFactory()
+
+    cloud_config = state._parse_openstack_clouds_config(charm=charm)
+    assert cloud_config == expected_config
+
+
+# pylint: enable=undefined-variable,unused-variable
+
+
 def test_builder_app_channel_from_charm_error():
     """
     arrange: given an invalid charm app channel config.
@@ -540,3 +612,66 @@ def test_builder_init_config_invalid(
         state.BuilderInitConfig.from_charm(charm)
 
     assert expected_message in str(exc.getrepr())
+
+
+def test_github_runner_openstack_config_from_charm_no_relation_units():
+    """
+    arrange: given a github runner image relation with no relations.
+    act: when GitHubRunnerOpenStackConfig.from_charm is called.
+    assert: None is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.model.relations = {state.IMAGE_RELATION: [(mock_relation := MagicMock())]}
+    mock_relation.units = None
+
+    assert state.GitHubRunnerOpenStackConfig.from_charm(charm=mock_charm) is None
+
+
+def test_github_runner_openstack_config_from_charm_no_unit_data():
+    """
+    arrange: given a github runner image relation with no relation data.
+    act: when GitHubRunnerOpenStackConfig.from_charm is called.
+    assert: None is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.model.relations = {state.IMAGE_RELATION: [(relation_mock := MagicMock())]}
+    relation_mock.units = [(relation_unit_mock := MagicMock())]
+    relation_mock.data = {relation_unit_mock: None}
+
+    assert state.GitHubRunnerOpenStackConfig.from_charm(charm=mock_charm) is None
+
+
+def test_github_runner_openstack_config_from_charm():
+    """
+    arrange: given a github runner image relation.
+    act: when GitHubRunnerOpenStackConfig.from_charm is called.
+    assert: expected GitHubRunnerOpenStackConfig is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.model.relations = {state.IMAGE_RELATION: [(relation_mock := MagicMock())]}
+    relation_mock.units = [(relation_unit_mock := MagicMock())]
+    relation_mock.data = {
+        relation_unit_mock: (
+            mock_data := {
+                "auth_url": "test",
+                "password": "test",
+                "project_domain_name": "test",
+                "project_name": "test",
+                "user_domain_name": "test",
+                "username": "test",
+            }
+        )
+    }
+
+    assert state.GitHubRunnerOpenStackConfig.from_charm(
+        charm=mock_charm
+    ) == state.GitHubRunnerOpenStackConfig(
+        auth=state._CloudsAuthConfig(
+            auth_url=mock_data["auth_url"],
+            password=mock_data["password"],
+            project_domain_name=mock_data["project_domain_name"],
+            project_name=mock_data["project_name"],
+            user_domain_name=mock_data["user_domain_name"],
+            username=mock_data["username"],
+        )
+    )

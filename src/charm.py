@@ -33,6 +33,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run_action, self._on_run_action)
+        self.framework.observe(
+            self.on[state.IMAGE_RELATION].relation_changed, self._on_image_relation_changed
+        )
 
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_install(self, _: ops.InstallEvent) -> None:
@@ -44,30 +47,74 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
+        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
-        self._run()
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_run_action(self, _: ops.EventBase) -> None:
-        """Handle the run action event."""
+    def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
+        """Handle charm image relation changed event."""
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
+        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        self._run()
+        self.unit.status = ops.ActiveStatus()
+
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_run_action(self, event: ops.ActionEvent) -> None:
+        """Handle the run action event.
+
+        Args:
+            event: The run action event.
+        """
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            event.fail("Image relation not yet ready.")
+            return
         self._run()
 
+    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig) -> bool:
+        """Check if image relation is ready and set according status otherwise.
+
+        Args:
+            config: The image builder run configuration.
+
+        Returns:
+            Whether the image relation is ready.
+        """
+        if state.UPLOAD_CLOUD_NAME not in config.cloud_config["clouds"]:
+            self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
+            return False
+        if not config.cloud_config["clouds"][state.UPLOAD_CLOUD_NAME]["auth"]:
+            self.unit.status = ops.WaitingStatus(
+                "Waiting for OpenStack credentials from relation."
+            )
+            return False
+        return True
+
     def _run(self) -> None:
-        """Trigger an image build."""
+        """Trigger an image build.
+
+        This method requires that the clouds.yaml are properly installed with build cloud and
+        upload cloud authentication parameters.
+        """
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
-        image_id = builder.run(config=run_config)
+        image_id = builder.run(config=run_config, proxy=proxy.ProxyConfig.from_env())
         self.image_observer.update_image_data(
             image_id=image_id, arch=run_config.arch, base=run_config.base
         )

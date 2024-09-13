@@ -65,8 +65,7 @@ def test_update_relation_data(monkeypatch: pytest.MonkeyPatch):
     """
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     observer = image.Observer(MagicMock())
-    # Harness doesn't understand latest charmcraft.yaml, so it can't be used here.
-    observer.model.relations = {image.IMAGE_RELATION: [(relation := MagicMock())]}
+    observer.model.relations = {state.IMAGE_RELATION: [(relation := MagicMock())]}
 
     observer.update_image_data(
         image_id=(test_id := "test-image-id"), arch=state.Arch.ARM64, base=state.BaseImage.JAMMY

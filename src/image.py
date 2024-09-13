@@ -14,8 +14,6 @@ import state
 
 logger = logging.getLogger(__name__)
 
-IMAGE_RELATION = "image"
-
 
 class ImageRelationData(TypedDict):
     """Relation data for providing image ID.
@@ -42,7 +40,7 @@ class Observer(ops.Object):
         self.charm = charm
 
         charm.framework.observe(
-            charm.on[IMAGE_RELATION].relation_joined, self._on_image_relation_joined
+            charm.on[state.IMAGE_RELATION].relation_joined, self._on_image_relation_joined
         )
 
     @charm_utils.block_if_invalid_config(defer=False)
@@ -72,7 +70,7 @@ class Observer(ops.Object):
             arch: The architecture in which the image was built for.
             base: The OS base image.
         """
-        for relation in self.model.relations[IMAGE_RELATION]:
+        for relation in self.model.relations[state.IMAGE_RELATION]:
             relation.data[self.model.unit].update(
                 ImageRelationData(id=image_id, tags=",".join((arch.value, base.value)))
             )

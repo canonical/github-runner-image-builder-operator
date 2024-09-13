@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `image.py`
 The Github-runner-image-builder-operator image relation observer. 
 
-**Global Variables**
----------------
-- **IMAGE_RELATION**
 
 
 ---
@@ -31,7 +28,7 @@ Relation data for providing image ID.
 ## <kbd>class</kbd> `Observer`
 The image relation observer. 
 
-<a href="../src/image.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -58,7 +55,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
