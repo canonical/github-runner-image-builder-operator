@@ -11,13 +11,13 @@ import typing
 from enum import Enum
 
 import ops
+import pydantic
 
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
 CLOUD_NAME = "builder"
-UPLOAD_CLOUD_NAME = "upload"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 APP_CHANNEL_CONFIG_NAME = "app-channel"
@@ -203,7 +203,7 @@ class ExternalBuildConfig:
         return cls(flavor=flavor_name, network=network_name)
 
 
-class _CloudsAuthConfig(typing.TypedDict):
+class CloudsAuthConfig(pydantic.BaseModel):
     """Clouds.yaml authentication parameters.
 
     Attributes:
@@ -215,6 +215,16 @@ class _CloudsAuthConfig(typing.TypedDict):
         username: The OpenStack user name for given project.
     """
 
+    # This is a configuration class and does not have methods.
+    class Config:  # pylint: disable=too-few-public-methods
+        """Pydantic configuration options.
+
+        Attributes:
+            frozen: Define whether the object should be mutable.
+        """
+
+        frozen = True
+
     auth_url: str
     password: str
     project_domain_name: str
@@ -222,18 +232,57 @@ class _CloudsAuthConfig(typing.TypedDict):
     user_domain_name: str
     username: str
 
+    def get_id(self) -> str:
+        """Get unique cloud configuration ID.
 
-class _CloudsConfig(typing.TypedDict):
+        Returns:
+            The unique cloud configuration ID.
+        """
+        return f"{self.project_name}_{self.username}"
+
+    @classmethod
+    def from_unit_relation_data(cls, data: ops.RelationDataContent) -> "CloudsAuthConfig | None":
+        """Get auth data from unit relation data.
+
+        Args:
+            data: The unit relation data.
+
+        Returns:
+            CloudsAuthConfig if all required relation data are available, None otherwise.
+        """
+        if any(
+            required_field not in data
+            for required_field in (
+                "auth_url",
+                "password",
+                "project_domain_name",
+                "project_name",
+                "user_domain_name",
+                "username",
+            )
+        ):
+            return None
+        return cls(
+            auth_url=data["auth_url"],
+            password=data["password"],
+            project_domain_name=data["project_domain_name"],
+            project_name=data["project_name"],
+            user_domain_name=data["user_domain_name"],
+            username=data["username"],
+        )
+
+
+class _CloudsConfig(pydantic.BaseModel):
     """Clouds.yaml configuration.
 
     Attributes:
         auth: The authentication parameters.
     """
 
-    auth: _CloudsAuthConfig | None
+    auth: CloudsAuthConfig | None
 
 
-class OpenstackCloudsConfig(typing.TypedDict):
+class OpenstackCloudsConfig(pydantic.BaseModel):
     """The Openstack clouds.yaml configuration mapping.
 
     Attributes:
@@ -254,8 +303,10 @@ class BuilderRunConfig:
     Attributes:
         arch: The machine architecture of the image to build with.
         base: Ubuntu OS image to build from.
-        cloud_config: The Openstack clouds.yaml passed as charm config.
-        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        cloud_config: The OpenStack clouds.yaml passed as charm config.
+        cloud_name: The OpenStack cloud name to connect to from clouds.yaml.
+        upload_cloud_ids: The OpenStack cloud ids to connect to, where the image should be \
+            made available.
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
@@ -271,7 +322,14 @@ class BuilderRunConfig:
     @property
     def cloud_name(self) -> str:
         """The cloud name from cloud_config."""
-        return list(self.cloud_config["clouds"].keys())[0]
+        return CLOUD_NAME
+
+    @property
+    def upload_cloud_ids(self) -> list[str]:
+        """The cloud name from cloud_config."""
+        return list(
+            cloud_id for cloud_id in self.cloud_config.clouds.keys() if cloud_id != CLOUD_NAME
+        )
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
@@ -429,7 +487,7 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
     clouds_config = OpenstackCloudsConfig(
         clouds={
             CLOUD_NAME: _CloudsConfig(
-                auth=_CloudsAuthConfig(
+                auth=CloudsAuthConfig(
                     auth_url=auth_url,
                     password=password,
                     project_domain_name=project_domain,
@@ -441,10 +499,36 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
         }
     )
 
-    upload_cloud = GitHubRunnerOpenStackConfig.from_charm(charm=charm)
-    if upload_cloud:
-        clouds_config["clouds"][UPLOAD_CLOUD_NAME] = _CloudsConfig(auth=upload_cloud.auth)
+    upload_cloud_auths = _parse_openstack_clouds_auth_configs_from_relation(charm=charm)
+    for cloud_auth_config in upload_cloud_auths:
+        clouds_config.clouds[cloud_auth_config.get_id()] = _CloudsConfig(auth=cloud_auth_config)
 
+    return clouds_config
+
+
+def _parse_openstack_clouds_auth_configs_from_relation(
+    charm: ops.CharmBase,
+) -> set[CloudsAuthConfig]:
+    """Parse OpenStack clouds auth configuration from charm relation data.
+
+    Args:
+        charm: The charm instance.
+
+    Returns:
+        The OpenStack clouds yaml.
+    """
+    clouds_config: set[CloudsAuthConfig] = set()
+    for relation in charm.model.relations.get(IMAGE_RELATION, []):
+        if not relation.units:
+            logger.warning("Units not yet joined %s relation.", IMAGE_RELATION)
+            continue
+        for unit in relation.units:
+            if not relation.data[unit] or not (
+                unit_auth_data := CloudsAuthConfig.from_unit_relation_data(relation.data[unit])
+            ):
+                logger.warning("Required field not yet set on %s.", unit.name)
+                continue
+            clouds_config.add(unit_auth_data)
     return clouds_config
 
 
@@ -534,54 +618,3 @@ class BuilderInitConfig:
             interval=build_interval,
             unit_name=charm.unit.name,
         )
-
-
-@dataclasses.dataclass
-class GitHubRunnerOpenStackConfig:
-    """The OpenStack cloud authentication data.
-
-    Attributes:
-        auth: The cloud authentication data.
-    """
-
-    auth: _CloudsAuthConfig | None
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "GitHubRunnerOpenStackConfig | None":
-        """Get the Github runner's OpenStack configuration from integratiotn data.
-
-        Args:
-            charm: The running charm instance.
-
-        Returns:
-            GitHubRunnerOpenStackConfig if it exists on the relation.
-        """
-        for relation in charm.model.relations.get(IMAGE_RELATION, []):
-            if not relation.units:
-                logger.warning("Units not yet joined %s relation.", IMAGE_RELATION)
-                return None
-            for unit in relation.units:
-                if not relation.data[unit] or any(
-                    required_field not in relation.data[unit]
-                    for required_field in (
-                        "auth_url",
-                        "password",
-                        "project_domain_name",
-                        "project_name",
-                        "user_domain_name",
-                        "username",
-                    )
-                ):
-                    logger.warning("%s required field not yet set.", IMAGE_RELATION)
-                    continue
-                return cls(
-                    auth=_CloudsAuthConfig(
-                        auth_url=relation.data[unit]["auth_url"],
-                        password=relation.data[unit]["password"],
-                        project_domain_name=relation.data[unit]["project_domain_name"],
-                        project_name=relation.data[unit]["project_name"],
-                        user_domain_name=relation.data[unit]["user_domain_name"],
-                        username=relation.data[unit]["username"],
-                    )
-                )
-        return None

@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -16,17 +17,6 @@ import image
 import proxy
 import state
 from charm import GithubRunnerImageBuilderCharm
-
-
-@pytest.fixture(name="charm", scope="module")
-def charm_fixture():
-    """Mock charm fixture w/ framework."""
-    # this is required since current ops does not support charmcraft.yaml
-    mock_framework = MagicMock(spec=ops.framework.Framework)
-    mock_framework.meta.actions = ["run"]
-    mock_framework.meta.relations = ["image"]
-    charm = GithubRunnerImageBuilderCharm(mock_framework)
-    return charm
 
 
 @pytest.fixture(name="patch_builder_init_config_from_charm", scope="function")
@@ -45,8 +35,15 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                     base=MagicMock(),
                     cloud_config=state.OpenstackCloudsConfig(
                         clouds={
-                            state.UPLOAD_CLOUD_NAME: state._CloudsConfig(
-                                auth=MagicMock(), region_name="test"
+                            "test": state._CloudsConfig(
+                                auth=state.CloudsAuthConfig(
+                                    auth_url="test-url",
+                                    password=secrets.token_hex(16),
+                                    project_domain_name="test_domain",
+                                    project_name="test-project",
+                                    user_domain_name="test_domain",
+                                    username="test-user",
+                                )
                             )
                         }
                     ),
@@ -76,8 +73,6 @@ def test_block_on_image_relation_not_ready(
     act: when the hook is called.
     assert: the charm falls into BlockedStatus.
     """
-    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     getattr(charm, hook)(MagicMock())
 
     assert charm.unit.status == ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
@@ -176,23 +171,12 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status.
     """
-    mock_init_config = MagicMock()
-    mock_init_config.run_config = (run_config := MagicMock())
-    run_config.cloud_config = state.OpenstackCloudsConfig(
-        clouds={state.UPLOAD_CLOUD_NAME: state._CloudsConfig(auth="non-empty")}
-    )
-    monkeypatch.setattr(
-        state.BuilderInitConfig, "from_charm", MagicMock(return_value=mock_init_config)
-    )
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
-    monkeypatch.setattr(
-        image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
-    )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
     monkeypatch.setattr(builder, "upgrade_app", MagicMock())
-    charm.image_observer = image_observer_mock
+    charm.image_observer = MagicMock()
 
     charm._on_image_relation_changed(MagicMock())
 
@@ -234,24 +218,15 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
                 base=state.BaseImage.JAMMY,
                 cloud_config=state.OpenstackCloudsConfig(
                     clouds={
-                        state.UPLOAD_CLOUD_NAME: state._CloudsConfig(auth=None, region_name="test")
-                    }
-                ),
-                external_build_config=None,
-                num_revisions=1,
-                runner_version="test",
-            ),
-            False,
-            id="waiting integration data",
-        ),
-        pytest.param(
-            state.BuilderRunConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_config=state.OpenstackCloudsConfig(
-                    clouds={
-                        state.UPLOAD_CLOUD_NAME: state._CloudsConfig(
-                            auth=state._CloudsAuthConfig(auth_url="test-auth-url"),
+                        "test": state._CloudsConfig(
+                            auth=state.CloudsAuthConfig(
+                                auth_url="test-auth-url",
+                                password=secrets.token_hex(16),
+                                project_domain_name="test-project-domain-name",
+                                project_name="test-project-name",
+                                user_domain_name="test-user-domain",
+                                username="test-user-name",
+                            ),
                             region_name="test",
                         )
                     }

@@ -3,7 +3,6 @@
 
 """Factories for generating test data."""
 
-import secrets
 import typing
 from unittest.mock import MagicMock
 
@@ -80,15 +79,21 @@ class MockCharmFactory(factory.Factory):
 class CloudAuthFactory(factory.DictFactory):
     """Mock cloud auth dict object factory."""  # noqa: DCO060
 
-    auth_url = factory.Faker("url")
-    password = secrets.token_hex(16)
-    project_domain_name = factory.Faker("name")
-    project_name = factory.Faker("name")
-    user_domain_name = factory.Faker("name")
-    username = factory.Faker("name")
+    auth_url = "test-auth-url"
+    # We need to use known password for unit testing
+    password = "test-password"  # nosec: B105:hardcoded_password_string
+    project_domain_name = "test-project-domain"
+    project_name = "test-project-name"
+    user_domain_name = "test-user-domain"
+    username = "test-username"
 
 
-class CloudFactory(factory.DictFactory):
+class CloudFactory(factory.Factory):
     """Mock cloud dict object factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = MagicMock
 
     clouds = {"testcloud": CloudAuthFactory()}

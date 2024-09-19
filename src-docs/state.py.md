@@ -10,7 +10,6 @@ Module for interacting with charm state and configurations.
 - **ARCHITECTURES_ARM64**
 - **ARCHITECTURES_X86**
 - **CLOUD_NAME**
-- **UPLOAD_CLOUD_NAME**
 - **LTS_IMAGE_VERSION_TAG_MAP**
 - **APP_CHANNEL_CONFIG_NAME**
 - **BASE_IMAGE_CONFIG_NAME**
@@ -149,7 +148,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -188,8 +187,9 @@ Configurations for running builder periodically.
  
  - <b>`arch`</b>:  The machine architecture of the image to build with. 
  - <b>`base`</b>:  Ubuntu OS image to build from. 
- - <b>`cloud_config`</b>:  The Openstack clouds.yaml passed as charm config. 
- - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
+ - <b>`cloud_config`</b>:  The OpenStack clouds.yaml passed as charm config. 
+ - <b>`cloud_name`</b>:  The OpenStack cloud name to connect to from clouds.yaml. 
+ - <b>`upload_cloud_ids`</b>:  The OpenStack cloud ids to connect to, where the image should be             made available. 
  - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
@@ -201,11 +201,17 @@ Configurations for running builder periodically.
 
 The cloud name from cloud_config. 
 
+---
+
+#### <kbd>property</kbd> upload_cloud_ids
+
+The cloud name from cloud_config. 
+
 
 
 ---
 
-<a href="../src/state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -291,6 +297,88 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 
 ---
 
+## <kbd>class</kbd> `CloudsAuthConfig`
+Clouds.yaml authentication parameters. 
+
+
+
+**Attributes:**
+ 
+ - <b>`auth_url`</b>:  OpenStack authentication URL (keystone). 
+ - <b>`password`</b>:  OpenStack project user password. 
+ - <b>`project_domain_name`</b>:  OpenStack project domain name. 
+ - <b>`project_name`</b>:  OpenStack project name. 
+ - <b>`user_domain_name`</b>:  OpenStack user domain name. 
+ - <b>`username`</b>:  The OpenStack user name for given project. 
+
+
+---
+
+#### <kbd>property</kbd> model_extra
+
+Get extra fields set during validation. 
+
+
+
+**Returns:**
+  A dictionary of extra fields, or `None` if `config.extra` is not set to `"allow"`. 
+
+---
+
+#### <kbd>property</kbd> model_fields_set
+
+Returns the set of fields that have been explicitly set on this model instance. 
+
+
+
+**Returns:**
+  A set of strings representing the fields that have been set,  i.e. that were not filled from defaults. 
+
+
+
+---
+
+<a href="../src/state.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `from_unit_relation_data`
+
+```python
+from_unit_relation_data(data: RelationDataContent) → CloudsAuthConfig | None
+```
+
+Get auth data from unit relation data. 
+
+
+
+**Args:**
+ 
+ - <b>`data`</b>:  The unit relation data. 
+
+
+
+**Returns:**
+ CloudsAuthConfig if all required relation data are available, None otherwise. 
+
+---
+
+<a href="../src/state.py#L235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_id`
+
+```python
+get_id() → str
+```
+
+Get unique cloud configuration ID. 
+
+
+
+**Returns:**
+  The unique cloud configuration ID. 
+
+
+---
+
 ## <kbd>class</kbd> `ExternalBuildConfig`
 Configurations for external builder VMs. 
 
@@ -330,44 +418,6 @@ Initialize build configuration from current charm instance.
 
 ---
 
-## <kbd>class</kbd> `GitHubRunnerOpenStackConfig`
-The OpenStack cloud authentication data. 
-
-
-
-**Attributes:**
- 
- - <b>`auth`</b>:  The cloud authentication data. 
-
-
-
-
----
-
-<a href="../src/state.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `from_charm`
-
-```python
-from_charm(charm: CharmBase) → GitHubRunnerOpenStackConfig | None
-```
-
-Get the Github runner's OpenStack configuration from integratiotn data. 
-
-
-
-**Args:**
- 
- - <b>`charm`</b>:  The running charm instance. 
-
-
-
-**Returns:**
- GitHubRunnerOpenStackConfig if it exists on the relation. 
-
-
----
-
 ## <kbd>class</kbd> `InvalidCloudConfigError`
 Represents an error with openstack cloud config. 
 
@@ -386,6 +436,28 @@ The Openstack clouds.yaml configuration mapping.
  
  - <b>`clouds`</b>:  The mapping of cloud to cloud configuration values. 
 
+
+---
+
+#### <kbd>property</kbd> model_extra
+
+Get extra fields set during validation. 
+
+
+
+**Returns:**
+  A dictionary of extra fields, or `None` if `config.extra` is not set to `"allow"`. 
+
+---
+
+#### <kbd>property</kbd> model_fields_set
+
+Returns the set of fields that have been explicitly set on this model instance. 
+
+
+
+**Returns:**
+  A set of strings representing the fields that have been set,  i.e. that were not filled from defaults. 
 
 
 

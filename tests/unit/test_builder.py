@@ -6,6 +6,8 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import secrets
+
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
 from pathlib import Path
@@ -158,21 +160,76 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
     test_path = tmp_path / "not-exists"
     monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_path)
 
-    builder.install_clouds_yaml({"a": "b"})
+    builder.install_clouds_yaml(
+        cloud_config=state.OpenstackCloudsConfig(
+            clouds={
+                "test": state._CloudsConfig(
+                    auth=state.CloudsAuthConfig(
+                        auth_url="test-url",
+                        password=(test_password := secrets.token_hex(16)),
+                        project_domain_name="test_domain",
+                        project_name="test-project",
+                        user_domain_name="test_domain",
+                        username="test-user",
+                    )
+                )
+            }
+        )
+    )
 
     contents = test_path.read_text(encoding="utf-8")
-    assert contents == "a: b\n"
+    assert (
+        contents
+        == f"""clouds:
+  test:
+    auth:
+      auth_url: test-url
+      password: {test_password}
+      project_domain_name: test_domain
+      project_name: test-project
+      user_domain_name: test_domain
+      username: test-user
+"""
+    )
 
 
 @pytest.mark.parametrize(
     "original_contents, cloud_config",
     [
-        pytest.param("", {"a": "b"}, id="changed"),
-        pytest.param("a: b\n", {"a": "b"}, id="not changed"),
+        pytest.param(
+            "",
+            state.OpenstackCloudsConfig(
+                clouds={"test": state._CloudsConfig(auth=factories.CloudAuthFactory())}
+            ),
+            id="changed",
+        ),
+        pytest.param(
+            """{
+    'clouds': {
+        'test': {
+            'auth': {
+                'auth_url': 'test-auth-url',
+                'password': 'test-password',
+                'project_domain_name': 'test-project-domain',
+                'project_name': 'test-project-name',
+                'user_domain_name': 'test-user-domain',
+                'username': 'test-username',
+            },
+        },
+    },
+}""",
+            state.OpenstackCloudsConfig(
+                clouds={"test": state._CloudsConfig(auth=factories.CloudAuthFactory())}
+            ),
+            id="not changed",
+        ),
     ],
 )
 def test_install_clouds_yaml(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, original_contents: str, cloud_config: dict
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    original_contents: str,
+    cloud_config: state.OpenstackCloudsConfig,
 ):
     """
     arrange: given mocked empty OPENSTACK_CLOUDS_YAML_PATH.
@@ -186,7 +243,7 @@ def test_install_clouds_yaml(
     builder.install_clouds_yaml(cloud_config=cloud_config)
 
     contents = yaml.safe_load(test_path.read_text(encoding="utf-8"))
-    assert contents == cloud_config
+    assert contents == cloud_config.model_dump()
 
 
 def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):

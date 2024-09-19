@@ -9,7 +9,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from ops.testing import Harness
 
+import builder
 import image
 import state
 
@@ -33,6 +35,7 @@ def test__on_image_relation_joined_no_image(
     assert: image not ready warning is logged.
     """
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value=""))
 
     observer = image.Observer(MagicMock())
@@ -41,36 +44,46 @@ def test__on_image_relation_joined_no_image(
     assert all("Image not yet ready." in log for log in caplog.messages)
 
 
-def test__on_image_relation_joined(monkeypatch: pytest.MonkeyPatch):
+def test__on_image_relation_joined(
+    monkeypatch: pytest.MonkeyPatch, image_observer: image.Observer
+):
     """
     arrange: given a monkeypatched OpenstackManager.get_latest_image_id that returns an image ID.
     act: when _on_image_relation_joined hook is fired.
     assert: update_relation_data is called.
     """
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value="test-id"))
 
-    observer = image.Observer(MagicMock())
-    observer.update_image_data = (update_relation_data_mock := MagicMock())
-    observer._on_image_relation_joined(MagicMock())
+    image_observer.update_image_data = (update_relation_data_mock := MagicMock())
+    image_observer._on_image_relation_joined(MagicMock())
 
     update_relation_data_mock.assert_called()
 
 
-def test_update_relation_data(monkeypatch: pytest.MonkeyPatch):
+def test_init(harness: Harness, image_observer: image.Observer):
     """
     arrange: given a monkeypatched OpenstackManager.get_latest_image_id that returns an image ID.
     act: when _on_image_relation_joined hook is fired.
     assert: update_relation_data is called.
     """
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
-    observer = image.Observer(MagicMock())
-    observer.model.relations = {state.IMAGE_RELATION: [(relation := MagicMock())]}
-
-    observer.update_image_data(
-        image_id=(test_id := "test-image-id"), arch=state.Arch.ARM64, base=state.BaseImage.JAMMY
+    harness.charm._on_image_relation_changed = lambda *args, **kwargs: ...
+    harness.add_relation(
+        state.IMAGE_RELATION,
+        remote_app="github-runner",
+        unit_data={
+            "auth_url": "test",
+            "password": "test",
+            "project_domain_name": "test",
+            "project_name": "test",
+            "user_domain_name": "test",
+            "username": "test",
+        },
     )
 
-    relation.data[observer.model.unit].update.called_once_with(
-        image.ImageRelationData(id=test_id, arch=state.Arch.ARM64, base=state.BaseImage.JAMMY)
+    image_observer.update_image_data(
+        cloud_image_ids=[builder.CloudImage(cloud_id="test", image_id="test")],
+        arch=state.Arch.ARM64,
+        base=state.BaseImage.JAMMY,
     )

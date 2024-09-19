@@ -13,7 +13,7 @@ Module for interacting with qemu image builder.
 
 ---
 
-<a href="../src/builder.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,12 +38,12 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
 ```python
-install_clouds_yaml(cloud_config: dict) → None
+install_clouds_yaml(cloud_config: OpenstackCloudsConfig) → None
 ```
 
 Install clouds.yaml for Openstack used by the image builder. 
@@ -57,7 +57,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -82,12 +82,12 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig, proxy: ProxyConfig | None) → str
+run(config: BuilderRunConfig, proxy: ProxyConfig | None) → list[CloudImage]
 ```
 
 Run a build immediately. 
@@ -113,7 +113,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_image`
 
@@ -145,7 +145,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -160,5 +160,21 @@ Upgrade the application if newer version is available.
 **Raises:**
  
  - <b>`UpgradeApplicationError`</b>:  If there was an error upgrading the application. 
+
+
+---
+
+## <kbd>class</kbd> `CloudImage`
+The cloud ID to uploaded image ID pair. 
+
+
+
+**Attributes:**
+ 
+ - <b>`cloud_id`</b>:  The cloud ID that the image was uploaded to. 
+ - <b>`image_id`</b>:  The uploaded image ID. 
+
+
+
 
 
