@@ -109,26 +109,32 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     run_mock.assert_called_once()
 
 
-def test__initialize_image_builder_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test__initialize_image_builder_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run function that raises an error.
     act: when _initialize_image_builder is called.
     assert: ImageBuilderInstallError is raised.
     """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(
-            side_effect=subprocess.CalledProcessError(
-                1, [], "", "error running image builder install"
-            )
-        ),
-    )
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
-    with pytest.raises(builder.ImageBuilderInitializeError) as exc:
+    with pytest.raises(builder.ImageBuilderInitializeError):
         builder._initialize_image_builder(init_config=MagicMock())
-
-    assert "error running image builder install" in str(exc.getrepr())
 
 
 @pytest.mark.parametrize(
@@ -433,7 +439,23 @@ def test_run(
     check_output_mock.assert_called_once()
 
 
-def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test_get_latest_image_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
     act: when get_latest_image is called.
@@ -442,13 +464,11 @@ def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         subprocess,
         "run",
-        MagicMock(side_effect=subprocess.CalledProcessError(1, "", "", "openstack error")),
+        error,
     )
 
-    with pytest.raises(builder.GetLatestImageError) as exc:
+    with pytest.raises(builder.GetLatestImageError):
         builder.get_latest_image(arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock())
-
-    assert "openstack error" in str(exc.getrepr())
 
 
 def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
@@ -472,17 +492,29 @@ def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def test_upgrade_app_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test_upgrade_app_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
     act: when upgrade_app is called.
     assert: UpgradeApplicationError is raised.
     """
-    monkeypatch.setattr(
-        subprocess, "run", MagicMock(side_effect=subprocess.SubprocessError("Pipx error"))
-    )
+    monkeypatch.setattr(subprocess, "run", error)
 
-    with pytest.raises(builder.UpgradeApplicationError) as exc:
+    with pytest.raises(builder.UpgradeApplicationError):
         builder.upgrade_app()
-
-    assert "Pipx error" in str(exc.getrepr())

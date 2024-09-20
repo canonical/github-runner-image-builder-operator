@@ -112,6 +112,14 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
             timeout=10 * 60,
             env=os.environ,
         )  # nosec: B603
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Failed to initialize builder, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise ImageBuilderInitializeError from exc
     except subprocess.SubprocessError as exc:
         raise ImageBuilderInitializeError from exc
 
@@ -292,6 +300,14 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
             encoding="utf-8",
         )  # nosec: B603
         return image_id
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Get latest id failed, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise GetLatestImageError from exc
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 
@@ -305,6 +321,7 @@ def upgrade_app() -> None:
     try:
         subprocess.run(  # nosec: B603
             [
+                "/usr/bin/run-one",
                 "/usr/bin/pipx",
                 "upgrade",
                 "github-runner-image-builder",
@@ -313,5 +330,13 @@ def upgrade_app() -> None:
             check=True,
             user=UBUNTU_USER,
         )
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Pipx upgrade failed, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise UpgradeApplicationError from exc
     except subprocess.SubprocessError as exc:
         raise UpgradeApplicationError from exc
