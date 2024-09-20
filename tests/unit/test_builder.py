@@ -461,11 +461,7 @@ def test_get_latest_image_error(
     act: when get_latest_image is called.
     assert: GetLatestImageError is raised.
     """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        error,
-    )
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
     with pytest.raises(builder.GetLatestImageError):
         builder.get_latest_image(arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock())
@@ -514,7 +510,7 @@ def test_upgrade_app_error(
     act: when upgrade_app is called.
     assert: UpgradeApplicationError is raised.
     """
-    monkeypatch.setattr(subprocess, "run", error)
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
     with pytest.raises(builder.UpgradeApplicationError):
         builder.upgrade_app()
