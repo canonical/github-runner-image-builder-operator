@@ -322,17 +322,33 @@ def test__should_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     assert builder._should_configure_cron(cron_contents="mismatching contents\n")
 
 
-def test_run_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
+            id="general subprocess error",
+        ),
+        pytest.param(
+            MagicMock(
+                side_effect=subprocess.CalledProcessError(
+                    returncode=1, cmd=["test"], output="stdout", stderr="stderr"
+                )
+            ),
+            id="called process error",
+        ),
+    ],
+)
+def test_run_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.SubprocessError | subprocess.CalledProcessError,
+):
     """
     arrange: given a monkeypatched subprocess Popen that raises an error.
     act: when run is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(
-        builder.subprocess,
-        "Popen",
-        MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
-    )
+    monkeypatch.setattr(builder.subprocess, "check_output", error)
     testconfig = state.BuilderRunConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,

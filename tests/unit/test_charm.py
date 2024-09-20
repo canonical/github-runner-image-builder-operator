@@ -35,7 +35,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                     base=MagicMock(),
                     cloud_config=state.OpenstackCloudsConfig(
                         clouds={
-                            "test": state._CloudsConfig(
+                            "test-builder": state._CloudsConfig(
                                 auth=state.CloudsAuthConfig(
                                     auth_url="test-url",
                                     password=secrets.token_hex(16),
@@ -65,9 +65,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
         pytest.param("_on_image_relation_changed", id="image_relation_changed"),
     ],
 )
-def test_block_on_image_relation_not_ready(
-    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, hook: str
-):
+def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm, hook: str):
     """
     arrange: given hooks that should not run build when image relation is not yet ready.
     act: when the hook is called.

@@ -63,12 +63,16 @@ class Observer(ops.Object):
         image_id = builder.get_latest_image(
             arch=build_config.arch,
             base=build_config.base,
-            cloud_name=unit_cloud_auth_config.get_id(),
+            cloud_name=(cloud_id := unit_cloud_auth_config.get_id()),
         )
         if not image_id:
             logger.warning("Image not yet ready.")
             return
-        self.update_image_data(image_id=image_id, arch=build_config.arch, base=build_config.base)
+        self.update_image_data(
+            cloud_image_ids=[builder.CloudImage(cloud_id=cloud_id, image_id=image_id)],
+            arch=build_config.arch,
+            base=build_config.base,
+        )
 
     def update_image_data(
         self,
@@ -88,7 +92,8 @@ class Observer(ops.Object):
             cloud_image.cloud_id: cloud_image.image_id for cloud_image in cloud_image_ids
         }
         for relation in self.model.relations[state.IMAGE_RELATION]:
-            for unit in relation.units:
+            # There is no need to test for case with no units (95->94)
+            for unit in relation.units:  # pragma: no cover
                 unit_auth_data = state.CloudsAuthConfig.from_unit_relation_data(
                     data=relation.data[unit]
                 )

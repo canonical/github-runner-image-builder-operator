@@ -13,6 +13,9 @@ import image
 import state
 from charm import GithubRunnerImageBuilderCharm
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 
 @pytest.fixture(name="harness")
 def harness_fixture():

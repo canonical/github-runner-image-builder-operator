@@ -12,8 +12,10 @@ import typing
 from unittest.mock import MagicMock
 
 import pytest
+from ops.testing import Harness
 
 import state
+from charm import GithubRunnerImageBuilderCharm
 from tests.unit.factories import MockCharmFactory
 
 
@@ -506,6 +508,21 @@ def test__parse_openstack_clouds_config():
 
 
 # pylint: enable=undefined-variable,unused-variable
+
+
+def test__parse_openstack_clouds_auth_configs_from_relation_no_units(
+    harness: Harness, charm: GithubRunnerImageBuilderCharm, caplog: pytest.LogCaptureFixture
+):
+    """
+    arrange: given an image relation with no units.
+    act: when _parse_openstack_clouds_auth_configs_from_relation is called.
+    assert: warning log is printed.
+    """
+    harness.add_relation(state.IMAGE_RELATION, "github-runner")
+
+    state._parse_openstack_clouds_auth_configs_from_relation(charm=charm)
+
+    assert any("Units not yet joined" in log_line for log_line in caplog.messages)
 
 
 def test_builder_app_channel_from_charm_error():
