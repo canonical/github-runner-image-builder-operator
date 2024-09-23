@@ -52,7 +52,9 @@ class Observer(ops.Object):
         """
         build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
         if not build_config.upload_cloud_ids:
-            self.model.unit.status = ops.WaitingStatus("Waiting for relation data.")
+            self.model.unit.status = ops.BlockedStatus(
+                f"{state.IMAGE_RELATION} integration required."
+            )
             return
         unit_cloud_auth_config = state.CloudsAuthConfig.from_unit_relation_data(
             data=event.relation.data[event.unit]
@@ -66,7 +68,7 @@ class Observer(ops.Object):
             cloud_name=(cloud_id := unit_cloud_auth_config.get_id()),
         )
         if not image_id:
-            logger.warning("Image not yet ready.")
+            logger.info("Image not yet ready for %s.", event.unit.name)
             return
         self.update_image_data(
             cloud_image_ids=[builder.CloudImage(cloud_id=cloud_id, image_id=image_id)],
@@ -80,8 +82,7 @@ class Observer(ops.Object):
         arch: state.Arch,
         base: state.BaseImage,
     ) -> None:
-        """Update the relation data if image exists for according cloud supplied by the relation \
-        data.
+        """Update relation data for each cloud coming from image requires side of relation.
 
         Args:
             cloud_image_ids: The cloud id and image id pairs to propagate via relation data.
@@ -92,8 +93,8 @@ class Observer(ops.Object):
             cloud_image.cloud_id: cloud_image.image_id for cloud_image in cloud_image_ids
         }
         for relation in self.model.relations[state.IMAGE_RELATION]:
-            # There is no need to test for case with no units (95->94)
-            for unit in relation.units:  # pragma: no cover
+            # There is no need to test for case with no units
+            for unit in relation.units:  # pragma: no branch
                 unit_auth_data = state.CloudsAuthConfig.from_unit_relation_data(
                     data=relation.data[unit]
                 )

@@ -55,7 +55,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
@@ -67,7 +67,7 @@ update_image_data(
 ) → None
 ```
 
-Update the relation data if image exists for according cloud supplied by the relation         data. 
+Update relation data for each cloud coming from image requires side of relation. 
 
 
 

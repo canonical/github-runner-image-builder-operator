@@ -261,6 +261,7 @@ class CloudsAuthConfig(pydantic.BaseModel):
                 "username",
             )
         ):
+            logger.info("Required relation data not yet set.")
             return None
         return cls(
             auth_url=data["auth_url"],

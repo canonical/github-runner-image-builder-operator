@@ -57,11 +57,14 @@ def test__on_image_relation_joined_no_image(
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value=""))
+    mock_event = MagicMock()
+    mock_event.unit = MagicMock()
+    mock_event.unit.name = (test_unit_name := "test-unit-name")
 
     observer = image.Observer(MagicMock())
-    observer._on_image_relation_joined(MagicMock())
+    observer._on_image_relation_joined(mock_event)
 
-    assert all("Image not yet ready." in log for log in caplog.messages)
+    assert all(f"Image not yet ready for {test_unit_name}." in log for log in caplog.messages)
 
 
 def test__on_image_relation_joined(
