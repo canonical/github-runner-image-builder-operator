@@ -55,21 +55,25 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
 ```python
-update_image_data(image_id: str, arch: Arch, base: BaseImage) → None
+update_image_data(
+    cloud_image_ids: list[CloudImage],
+    arch: Arch,
+    base: BaseImage
+) → None
 ```
 
-Update the relation data if exists. 
+Update relation data for each cloud coming from image requires side of relation. 
 
 
 
 **Args:**
  
- - <b>`image_id`</b>:  The latest image ID to propagate. 
+ - <b>`cloud_image_ids`</b>:  The cloud id and image id pairs to propagate via relation data. 
  - <b>`arch`</b>:  The architecture in which the image was built for. 
  - <b>`base`</b>:  The OS base image. 
 

@@ -47,7 +47,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import wait_for_valid_connection
+from tests.integration.helpers import OpenStackConnectionParams, wait_for_valid_connection
 from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey, TestConfigs
 
 logger = logging.getLogger(__name__)
@@ -486,10 +486,12 @@ async def ssh_connection_fixture(
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
     ssh_connection = wait_for_valid_connection(
-        connection=openstack_metadata.connection,
-        server_name=openstack_server.name,
-        network=openstack_metadata.network,
-        ssh_key=openstack_metadata.ssh_key.private_key,
+        connection_params=OpenStackConnectionParams(
+            connection=openstack_metadata.connection,
+            server_name=openstack_server.name,
+            network=openstack_metadata.network,
+            ssh_key=openstack_metadata.ssh_key.private_key,
+        ),
         proxy=proxy,
         dockerhub_mirror=dockerhub_mirror,
     )

@@ -3,6 +3,7 @@
 
 """Module for interacting with qemu image builder."""
 
+import dataclasses
 import logging
 import os
 
@@ -111,21 +112,30 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
             timeout=10 * 60,
             env=os.environ,
         )  # nosec: B603
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Failed to initialize builder, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise ImageBuilderInitializeError from exc
     except subprocess.SubprocessError as exc:
         raise ImageBuilderInitializeError from exc
 
 
-def install_clouds_yaml(cloud_config: dict) -> None:
+def install_clouds_yaml(cloud_config: state.OpenstackCloudsConfig) -> None:
     """Install clouds.yaml for Openstack used by the image builder.
 
     Args:
         cloud_config: The contents of clouds.yaml parsed as dict.
     """
+    cloud_config_dict = cloud_config.model_dump()
     if not OPENSTACK_CLOUDS_YAML_PATH.exists():
-        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config_dict), encoding="utf-8")
         return
-    if yaml.safe_load(OPENSTACK_CLOUDS_YAML_PATH.read_text(encoding="utf-8")) != cloud_config:
-        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config), encoding="utf-8")
+    if yaml.safe_load(OPENSTACK_CLOUDS_YAML_PATH.read_text(encoding="utf-8")) != cloud_config_dict:
+        OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config_dict), encoding="utf-8")
 
 
 def configure_cron(unit_name: str, interval: int) -> bool:
@@ -171,7 +181,20 @@ def _should_configure_cron(cron_contents: str) -> bool:
     return cron_contents != CRON_BUILD_SCHEDULE_PATH.read_text(encoding="utf-8")
 
 
-def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
+@dataclasses.dataclass
+class CloudImage:
+    """The cloud ID to uploaded image ID pair.
+
+    Attributes:
+        cloud_id: The cloud ID that the image was uploaded to.
+        image_id: The uploaded image ID.
+    """
+
+    cloud_id: str
+    image_id: str
+
+
+def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[CloudImage]:
     """Run a build immediately.
 
     Args:
@@ -213,8 +236,8 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
                     config.external_build_config.flavor,
                     "--network",
                     config.external_build_config.network,
-                    "--upload-cloud",
-                    state.UPLOAD_CLOUD_NAME,
+                    "--upload-clouds",
+                    ",".join(config.upload_cloud_ids),
                 ]
             )
         if proxy:
@@ -231,8 +254,16 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> str:
         )
         if config.external_build_config and "Image build success" not in stdout:
             raise BuilderRunError(f"Unexpected output: {stdout}")
-        # The return value of the CLI is "Image build success:\n<image-id>"
-        return stdout.split()[-1]
+        # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
+        return list(
+            CloudImage(image_id=image_id, cloud_id=cloud_id)
+            for (cloud_id, image_id) in zip(config.upload_cloud_ids, stdout.split()[-1].split(","))
+        )
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Image build failed, code: %s, out: %s, err: %s", exc.stderr, exc.stdout, exc.stderr
+        )
+        raise BuilderRunError from exc
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc
 
@@ -269,6 +300,14 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
             encoding="utf-8",
         )  # nosec: B603
         return image_id
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Get latest id failed, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise GetLatestImageError from exc
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
 
@@ -282,6 +321,7 @@ def upgrade_app() -> None:
     try:
         subprocess.run(  # nosec: B603
             [
+                "/usr/bin/run-one",
                 "/usr/bin/pipx",
                 "upgrade",
                 "github-runner-image-builder",
@@ -290,5 +330,13 @@ def upgrade_app() -> None:
             check=True,
             user=UBUNTU_USER,
         )
+    except subprocess.CalledProcessError as exc:
+        logger.error(
+            "Pipx upgrade failed, code: %s, out: %s, err: %s",
+            exc.returncode,
+            exc.stdout,
+            exc.stderr,
+        )
+        raise UpgradeApplicationError from exc
     except subprocess.SubprocessError as exc:
         raise UpgradeApplicationError from exc

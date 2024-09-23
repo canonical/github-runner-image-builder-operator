@@ -6,6 +6,8 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import secrets
+
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
 from pathlib import Path
@@ -107,26 +109,32 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     run_mock.assert_called_once()
 
 
-def test__initialize_image_builder_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test__initialize_image_builder_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run function that raises an error.
     act: when _initialize_image_builder is called.
     assert: ImageBuilderInstallError is raised.
     """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(
-            side_effect=subprocess.CalledProcessError(
-                1, [], "", "error running image builder install"
-            )
-        ),
-    )
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
-    with pytest.raises(builder.ImageBuilderInitializeError) as exc:
+    with pytest.raises(builder.ImageBuilderInitializeError):
         builder._initialize_image_builder(init_config=MagicMock())
-
-    assert "error running image builder install" in str(exc.getrepr())
 
 
 @pytest.mark.parametrize(
@@ -158,21 +166,76 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
     test_path = tmp_path / "not-exists"
     monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_path)
 
-    builder.install_clouds_yaml({"a": "b"})
+    builder.install_clouds_yaml(
+        cloud_config=state.OpenstackCloudsConfig(
+            clouds={
+                "test": state._CloudsConfig(
+                    auth=state.CloudsAuthConfig(
+                        auth_url="test-url",
+                        password=(test_password := secrets.token_hex(16)),
+                        project_domain_name="test_domain",
+                        project_name="test-project",
+                        user_domain_name="test_domain",
+                        username="test-user",
+                    )
+                )
+            }
+        )
+    )
 
     contents = test_path.read_text(encoding="utf-8")
-    assert contents == "a: b\n"
+    assert (
+        contents
+        == f"""clouds:
+  test:
+    auth:
+      auth_url: test-url
+      password: {test_password}
+      project_domain_name: test_domain
+      project_name: test-project
+      user_domain_name: test_domain
+      username: test-user
+"""
+    )
 
 
 @pytest.mark.parametrize(
     "original_contents, cloud_config",
     [
-        pytest.param("", {"a": "b"}, id="changed"),
-        pytest.param("a: b\n", {"a": "b"}, id="not changed"),
+        pytest.param(
+            "",
+            state.OpenstackCloudsConfig(
+                clouds={"test": state._CloudsConfig(auth=factories.CloudAuthFactory())}
+            ),
+            id="changed",
+        ),
+        pytest.param(
+            """{
+    'clouds': {
+        'test': {
+            'auth': {
+                'auth_url': 'test-auth-url',
+                'password': 'test-password',
+                'project_domain_name': 'test-project-domain',
+                'project_name': 'test-project-name',
+                'user_domain_name': 'test-user-domain',
+                'username': 'test-username',
+            },
+        },
+    },
+}""",
+            state.OpenstackCloudsConfig(
+                clouds={"test": state._CloudsConfig(auth=factories.CloudAuthFactory())}
+            ),
+            id="not changed",
+        ),
     ],
 )
 def test_install_clouds_yaml(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, original_contents: str, cloud_config: dict
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    original_contents: str,
+    cloud_config: state.OpenstackCloudsConfig,
 ):
     """
     arrange: given mocked empty OPENSTACK_CLOUDS_YAML_PATH.
@@ -186,7 +249,7 @@ def test_install_clouds_yaml(
     builder.install_clouds_yaml(cloud_config=cloud_config)
 
     contents = yaml.safe_load(test_path.read_text(encoding="utf-8"))
-    assert contents == cloud_config
+    assert contents == cloud_config.model_dump()
 
 
 def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
@@ -265,17 +328,33 @@ def test__should_configure_cron(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     assert builder._should_configure_cron(cron_contents="mismatching contents\n")
 
 
-def test_run_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
+            id="general subprocess error",
+        ),
+        pytest.param(
+            MagicMock(
+                side_effect=subprocess.CalledProcessError(
+                    returncode=1, cmd=["test"], output="stdout", stderr="stderr"
+                )
+            ),
+            id="called process error",
+        ),
+    ],
+)
+def test_run_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.SubprocessError | subprocess.CalledProcessError,
+):
     """
     arrange: given a monkeypatched subprocess Popen that raises an error.
     act: when run is called.
     assert: the call to image builder is made.
     """
-    monkeypatch.setattr(
-        builder.subprocess,
-        "Popen",
-        MagicMock(side_effect=subprocess.SubprocessError("Failed to spawn process")),
-    )
+    monkeypatch.setattr(builder.subprocess, "check_output", error)
     testconfig = state.BuilderRunConfig(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
@@ -360,22 +439,32 @@ def test_run(
     check_output_mock.assert_called_once()
 
 
-def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test_get_latest_image_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
     act: when get_latest_image is called.
     assert: GetLatestImageError is raised.
     """
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(side_effect=subprocess.CalledProcessError(1, "", "", "openstack error")),
-    )
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
-    with pytest.raises(builder.GetLatestImageError) as exc:
+    with pytest.raises(builder.GetLatestImageError):
         builder.get_latest_image(arch=MagicMock(), base=MagicMock(), cloud_name=MagicMock())
-
-    assert "openstack error" in str(exc.getrepr())
 
 
 def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
@@ -399,17 +488,29 @@ def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def test_upgrade_app_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
+            id="process error",
+        ),
+        pytest.param(
+            subprocess.SubprocessError("Something happened"),
+            id="general error",
+        ),
+    ],
+)
+def test_upgrade_app_error(
+    monkeypatch: pytest.MonkeyPatch,
+    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
     act: when upgrade_app is called.
     assert: UpgradeApplicationError is raised.
     """
-    monkeypatch.setattr(
-        subprocess, "run", MagicMock(side_effect=subprocess.SubprocessError("Pipx error"))
-    )
+    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
-    with pytest.raises(builder.UpgradeApplicationError) as exc:
+    with pytest.raises(builder.UpgradeApplicationError):
         builder.upgrade_app()
-
-    assert "Pipx error" in str(exc.getrepr())

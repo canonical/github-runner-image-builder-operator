@@ -96,13 +96,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Returns:
             Whether the image relation is ready.
         """
-        if state.UPLOAD_CLOUD_NAME not in config.cloud_config["clouds"]:
+        if not config.upload_cloud_ids:
             self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
-            return False
-        if not config.cloud_config["clouds"][state.UPLOAD_CLOUD_NAME]["auth"]:
-            self.unit.status = ops.WaitingStatus(
-                "Waiting for OpenStack credentials from relation."
-            )
             return False
         return True
 
@@ -112,14 +107,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         This method requires that the clouds.yaml are properly installed with build cloud and
         upload cloud authentication parameters.
         """
+        self.unit.status = ops.ActiveStatus("Running upgrade.")
+        builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
-        image_id = builder.run(config=run_config, proxy=proxy.ProxyConfig.from_env())
+        cloud_image_ids = builder.run(config=run_config, proxy=proxy.ProxyConfig.from_env())
         self.image_observer.update_image_data(
-            image_id=image_id, arch=run_config.arch, base=run_config.base
+            cloud_image_ids=cloud_image_ids, arch=run_config.arch, base=run_config.base
         )
-        self.unit.status = ops.ActiveStatus("Image build success. Checking and upgrading app.")
-        builder.upgrade_app()
         self.unit.status = ops.ActiveStatus()
 
     def update_status(self, status: ops.StatusBase) -> None:

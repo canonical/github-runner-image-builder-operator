@@ -44,33 +44,72 @@ class Observer(ops.Object):
         )
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_image_relation_joined(self, _: ops.RelationJoinedEvent) -> None:
-        """Handle the image relation joined event."""
+    def _on_image_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
+        """Handle the image relation joined event.
+
+        Args:
+            event: The event emitted when a relation is joined.
+        """
         build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
+        if not build_config.upload_cloud_ids:
+            self.model.unit.status = ops.BlockedStatus(
+                f"{state.IMAGE_RELATION} integration required."
+            )
+            return
+        unit_cloud_auth_config = state.CloudsAuthConfig.from_unit_relation_data(
+            data=event.relation.data[event.unit]
+        )
+        if not unit_cloud_auth_config:
+            logger.warning("Unit relation data not yet ready.")
+            return
         image_id = builder.get_latest_image(
             arch=build_config.arch,
             base=build_config.base,
-            cloud_name=build_config.cloud_name,
+            cloud_name=(cloud_id := unit_cloud_auth_config.get_id()),
         )
         if not image_id:
-            logger.warning("Image not yet ready.")
+            logger.info("Image not yet ready for %s.", event.unit.name)
             return
-        self.update_image_data(image_id=image_id, arch=build_config.arch, base=build_config.base)
+        self.update_image_data(
+            cloud_image_ids=[builder.CloudImage(cloud_id=cloud_id, image_id=image_id)],
+            arch=build_config.arch,
+            base=build_config.base,
+        )
 
     def update_image_data(
         self,
-        image_id: str,
+        cloud_image_ids: list[builder.CloudImage],
         arch: state.Arch,
         base: state.BaseImage,
     ) -> None:
-        """Update the relation data if exists.
+        """Update relation data for each cloud coming from image requires side of relation.
 
         Args:
-            image_id: The latest image ID to propagate.
+            cloud_image_ids: The cloud id and image id pairs to propagate via relation data.
             arch: The architecture in which the image was built for.
             base: The OS base image.
         """
+        cloud_id_to_image_id = {
+            cloud_image.cloud_id: cloud_image.image_id for cloud_image in cloud_image_ids
+        }
         for relation in self.model.relations[state.IMAGE_RELATION]:
-            relation.data[self.model.unit].update(
-                ImageRelationData(id=image_id, tags=",".join((arch.value, base.value)))
-            )
+            # There is no need to test for case with no units
+            for unit in relation.units:  # pragma: no branch
+                unit_auth_data = state.CloudsAuthConfig.from_unit_relation_data(
+                    data=relation.data[unit]
+                )
+                if (
+                    not unit_auth_data
+                    or (cloud_id := unit_auth_data.get_id()) not in cloud_id_to_image_id
+                ):
+                    logger.warning("Cloud auth data not found in relation with %s", unit.name)
+                    continue
+                relation.data[self.model.unit].update(
+                    ImageRelationData(
+                        id=cloud_id_to_image_id[cloud_id],
+                        tags=",".join((arch.value, base.value)),
+                    )
+                )
+                # the relation data update is required only once per relation since every units in
+                # the relation share the same OpenStack cloud credentials.
+                break
