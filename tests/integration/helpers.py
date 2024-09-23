@@ -3,6 +3,7 @@
 
 """Helper utilities for integration tests."""
 
+import dataclasses
 import inspect
 import logging
 import time
@@ -101,12 +102,25 @@ sudo tee /etc/docker/daemon.json"""
     assert result.ok, "Failed to restart docker"
 
 
-# All the arguments are necessary
-def wait_for_valid_connection(  # pylint: disable=too-many-arguments
-    connection: Connection,
-    server_name: str,
-    network: str,
-    ssh_key: Path,
+@dataclasses.dataclass
+class OpenStackConnectionParams:
+    """Parameters for connecting to OpenStack instance.
+
+    Attributes:
+        connection: The openstack connection client to communicate with Openstack.
+        server_name: Openstack server to find the valid connection from.
+        network: The network to find valid connection from.
+        ssh_key: The path to public ssh_key to create connection with.
+    """
+
+    connection: Connection
+    server_name: str
+    network: str
+    ssh_key: Path
+
+
+def wait_for_valid_connection(
+    connection_params: OpenStackConnectionParams,
     timeout: int = 30 * 60,
     proxy: ProxyConfig | None = None,
     dockerhub_mirror: str | None = None,
@@ -114,10 +128,7 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
     """Wait for a valid SSH connection from Openstack server.
 
     Args:
-        connection: The openstack connection client to communicate with Openstack.
-        server_name: Openstack server to find the valid connection from.
-        network: The network to find valid connection from.
-        ssh_key: The path to public ssh_key to create connection with.
+        connection_params: Parameters for connecting to OpenStack instance.
         timeout: Number of seconds to wait before raising a timeout error.
         proxy: The proxy to configure on host runner.
         dockerhub_mirror: The DockerHub mirror URL.
@@ -130,17 +141,23 @@ def wait_for_valid_connection(  # pylint: disable=too-many-arguments
     """
     start_time = time.time()
     while time.time() - start_time <= timeout:
-        server: Server | None = connection.get_server(name_or_id=server_name)
+        server: Server | None = connection_params.connection.get_server(
+            name_or_id=connection_params.server_name
+        )
         if not server or not server.addresses:
             time.sleep(10)
             continue
-        for address in server.addresses[network]:
+        for address in server.addresses[connection_params.network]:
             ip = address["addr"]
-            logger.info("Trying SSH into %s using key: %s...", ip, str(ssh_key.absolute()))
+            logger.info(
+                "Trying SSH into %s using key: %s...",
+                ip,
+                str(connection_params.ssh_key.absolute()),
+            )
             ssh_connection = SSHConnection(
                 host=ip,
                 user="ubuntu",
-                connect_kwargs={"key_filename": str(ssh_key.absolute())},
+                connect_kwargs={"key_filename": str(connection_params.ssh_key.absolute())},
                 connect_timeout=60 * 10,
             )
             try:
