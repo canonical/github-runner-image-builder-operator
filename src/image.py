@@ -62,6 +62,7 @@ class Observer(ops.Object):
         if not unit_cloud_auth_config:
             logger.warning("Unit relation data not yet ready.")
             return
+        builder.install_clouds_yaml(build_config.cloud_config)
         image_id = builder.get_latest_image(
             arch=build_config.arch,
             base=build_config.base,
