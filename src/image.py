@@ -50,9 +50,8 @@ class Observer(ops.Object):
         Args:
             event: The event emitted when a relation is joined.
         """
-        init_config = state.BuilderInitConfig.from_charm(charm=self.charm)
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
-        if not init_config.run_config.upload_cloud_ids:
+        build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
+        if not build_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
             )
@@ -64,8 +63,8 @@ class Observer(ops.Object):
             logger.warning("Unit relation data not yet ready.")
             return
         image_id = builder.get_latest_image(
-            arch=init_config.run_config.arch,
-            base=init_config.run_config.base,
+            arch=build_config.arch,
+            base=build_config.base,
             cloud_name=(cloud_id := unit_cloud_auth_config.get_id()),
         )
         if not image_id:
@@ -73,8 +72,8 @@ class Observer(ops.Object):
             return
         self.update_image_data(
             cloud_image_ids=[builder.CloudImage(cloud_id=cloud_id, image_id=image_id)],
-            arch=init_config.run_config.arch,
-            base=init_config.run_config.base,
+            arch=build_config.arch,
+            base=build_config.base,
         )
 
     def update_image_data(
