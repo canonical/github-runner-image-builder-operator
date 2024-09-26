@@ -56,6 +56,7 @@ def test__on_image_relation_joined_no_image(
     """
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock(return_value=""))
     monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value=""))
     mock_event = MagicMock()
     mock_event.unit = MagicMock()
@@ -77,7 +78,8 @@ def test__on_image_relation_joined(
     """
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
-    monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value="test-id"))
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "get_latest_image", MagicMock(return_value="test-id"))
 
     image_observer.update_image_data = (update_relation_data_mock := MagicMock())
     image_observer._on_image_relation_joined(MagicMock())
