@@ -82,12 +82,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_run(self, event: RunEvent) -> None:
-        """Handle the run event.
-
-        Args:
-            event: The run event.
-        """
+    def _on_run(self, _: RunEvent) -> None:
+        """Handle the run event."""
         init_config = state.BuilderInitConfig.from_charm(self)
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return

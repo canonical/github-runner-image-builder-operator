@@ -6,6 +6,7 @@
 """Integration testing module."""
 
 import dataclasses
+import functools
 import logging
 from datetime import datetime, timezone
 
@@ -15,6 +16,7 @@ from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
 from juju.model import Model
+from juju.unit import Unit
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
@@ -38,6 +40,38 @@ async def test_image_relation(app: Application, test_charm: Application):
     await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
 
 
+def image_created_from_dispatch(
+    image_base: str, app_name: str, connection: Connection, dispatch_time: datetime
+) -> bool:
+    """Return whether there is an image created after dispatch has been called.
+
+    Args:
+        image_base: The Ubuntu image base.
+        app_name: The The application name that built the image.
+        connection: The OpenStack connection instance.
+        dispatch_time: Time when the image build was dispatched.
+
+    Returns:
+        Whether there exists an image that has been created after dispatch time.
+    """
+    image_name = IMAGE_NAME_TMPL.format(
+        IMAGE_BASE=image_base, APP_NAME=app_name, ARCH=_get_supported_arch().value
+    )
+    images: list[Image] = connection.search_images(image_name)
+    logger.info(
+        "Image name: %s, Images: %s",
+        image_name,
+        tuple((image.id, image.name, image.created_at) for image in images),
+    )
+    # split logs, the image log is long and gets cut off.
+    logger.info("Dispatch time: %s", dispatch_time)
+    return any(
+        datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        >= dispatch_time
+        for image in images
+    )
+
+
 @pytest.mark.asyncio
 async def test_build_image(
     app: Application, openstack_connection: Connection, dispatch_time: datetime
@@ -50,30 +84,17 @@ async def test_build_image(
     config: dict = await app.get_config()
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
-    def image_created_from_dispatch() -> bool:
-        """Return whether there is an image created after dispatch has been called.
-
-        Returns:
-            Whether there exists an image that has been created after dispatch time.
-        """
-        image_name = IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
-        )
-        images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info(
-            "Image name: %s, Images: %s",
-            image_name,
-            tuple((image.id, image.name, image.created_at) for image in images),
-        )
-        # split logs, the image log is long and gets cut off.
-        logger.info("Dispatch time: %s", dispatch_time)
-        return any(
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            >= dispatch_time
-            for image in images
-        )
-
-    await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
+    await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_base=image_base,
+            app_name=app.name,
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
+        check_interval=30,
+        timeout=60 * 30,
+    )
 
 
 @dataclasses.dataclass
@@ -193,3 +214,39 @@ async def test_image(
             if result.ok:
                 break
         assert result.ok
+
+
+@pytest.mark.asyncio
+async def test_run_dispatch(
+    app: Application,
+    openstack_connection: Connection,
+    image_base: str,
+):
+    """
+    arrange: A deployed active charm.
+    act: When dispatch command is given.
+    assert: An image is built successfully.
+    """
+    dispatch_time = datetime.now(tz=timezone.utc)
+    unit: Unit = next(iter(app.units))
+    await unit.ssh(
+        [
+            "/usr/bin/run-one",
+            "/usr/bin/bash",
+            "-c",
+            f'/usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu'
+            ' ./dispatch"',
+        ]
+    )
+
+    await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_base=image_base,
+            app_name=app.name,
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
+        check_interval=30,
+        timeout=60 * 30,
+    )

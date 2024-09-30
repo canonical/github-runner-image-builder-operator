@@ -62,6 +62,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
     [
         pytest.param("_on_config_changed", id="config_changed"),
         pytest.param("_on_run_action", id="run_action"),
+        pytest.param("_on_run", id="run event"),
         pytest.param("_on_image_relation_changed", id="image_relation_changed"),
     ],
 )
@@ -191,6 +192,20 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
     charm._run = (run_mock := MagicMock())
 
     charm._on_run_action(MagicMock())
+
+    run_mock.assert_called()
+
+
+@pytest.mark.usefixtures("patch_builder_init_config_from_charm")
+def test__on_run(charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a mocked functions of _on_run.
+    act: when _on_run is called.
+    assert: subfunctions are called.
+    """
+    charm._run = (run_mock := MagicMock())
+
+    charm._on_run(MagicMock())
 
     run_mock.assert_called()
 
