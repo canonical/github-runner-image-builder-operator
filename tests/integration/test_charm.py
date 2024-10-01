@@ -220,13 +220,14 @@ async def test_image(
 async def test_run_dispatch(
     app: Application,
     openstack_connection: Connection,
-    image_base: str,
 ):
     """
     arrange: A deployed active charm.
     act: When dispatch command is given.
     assert: An image is built successfully.
     """
+    config: dict = await app.get_config()
+    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
     dispatch_time = datetime.now(tz=timezone.utc)
     unit: Unit = next(iter(app.units))
     await unit.ssh(
