@@ -228,13 +228,11 @@ async def test_run_dispatch(
     """
     unit: Unit = next(iter(app.units))
     await unit.ssh(
-        [
-            "/usr/bin/run-one",
-            "/usr/bin/bash",
-            "-c",
+        command=(
+            "/usr/bin/run-one /usr/bin/bash -c "
             f'/usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu'
-            ' ./dispatch" &',
-        ]
+            ' ./dispatch" &'
+        ),
     )
 
     assert unit.agent_status == "executing"
