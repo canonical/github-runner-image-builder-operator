@@ -217,10 +217,7 @@ async def test_image(
 
 
 @pytest.mark.asyncio
-async def test_run_dispatch(
-    app: Application,
-    openstack_connection: Connection,
-):
+async def test_run_dispatch(app: Application):
     """
     arrange: A deployed active charm.
     act: When dispatch command is given.
