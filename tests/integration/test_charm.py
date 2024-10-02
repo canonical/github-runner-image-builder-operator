@@ -232,4 +232,4 @@ async def test_run_dispatch(app: Application):
         ),
     )
 
-    assert unit.agent_status == "executing"
+    await wait_for(lambda: unit.latest().agent_status == "executing")
