@@ -32,7 +32,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                 interval=1,
                 run_config=state.BuilderRunConfig(
                     arch=MagicMock(),
-                    base=MagicMock(),
+                    bases=MagicMock(),
                     cloud_config=state.OpenstackCloudsConfig(
                         clouds={
                             "test-builder": state._CloudsConfig(
@@ -201,7 +201,7 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
         pytest.param(
             state.BuilderRunConfig(
                 arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
+                bases=state.BaseImage.JAMMY,
                 cloud_config=state.OpenstackCloudsConfig(clouds={}),
                 external_build_config=None,
                 num_revisions=1,
@@ -213,7 +213,7 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
         pytest.param(
             state.BuilderRunConfig(
                 arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
+                bases=state.BaseImage.JAMMY,
                 cloud_config=state.OpenstackCloudsConfig(
                     clouds={
                         "test": state._CloudsConfig(

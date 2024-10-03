@@ -102,9 +102,16 @@ def test_update_image_data_no_unit_data(harness: Harness, image_observer: image.
     harness.add_relation_unit(relation_id=relation_id, remote_unit_name="github-runner/0")
 
     image_observer.update_image_data(
-        cloud_image_ids=[builder.CloudImage(cloud_id="test_test", image_id="test")],
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
+        cloud_images=[
+            [
+                builder.CloudImage(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test_test",
+                    image_id="test",
+                )
+            ]
+        ],
     )
 
     assert (
@@ -189,14 +196,49 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
     )
 
     image_observer.update_image_data(
-        cloud_image_ids=[builder.CloudImage(cloud_id="test_test", image_id="test")],
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
+        cloud_images=[
+            [
+                builder.CloudImage(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test_test",
+                    image_id="test",
+                )
+            ]
+        ],
     )
 
     assert harness.get_relation_data(
         relation_id=first_relation_id, app_or_unit=image_observer.model.unit.name
-    ) == {"id": "test", "tags": "arm64,jammy"}
+    ) == {"id": "test", "tags": "arm64,jammy", "images": '[{"id": "test", "tags": "arm64,jammy"}]'}
     assert harness.get_relation_data(
         relation_id=second_relation_id, app_or_unit=image_observer.model.unit.name
-    ) == {"id": "test", "tags": "arm64,jammy"}
+    ) == {"id": "test", "tags": "arm64,jammy", "images": '[{"id": "test", "tags": "arm64,jammy"}]'}
+
+
+def test__build_cloud_to_images_map():
+    """
+    arrange: given cloud image list.
+    act: when _build_cloud_to_images_map is called.
+    assert: expected cloud id to image map is built.
+    """
+    cloud_images = [
+        [
+            image_1 := builder.CloudImage(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="cloud-1",
+                image_id="image-1",
+            ),
+            image_2 := builder.CloudImage(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="cloud-1",
+                image_id="image-2",
+            ),
+        ],
+    ]
+
+    assert image._build_cloud_to_images_map(cloud_images=cloud_images) == {
+        "cloud-1": [image_1, image_2]
+    }
