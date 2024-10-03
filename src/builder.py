@@ -5,12 +5,14 @@
 
 import dataclasses
 import logging
+import multiprocessing
 import os
 
 # Ignore B404:blacklist since all subprocesses are run with predefined executables.
 # nosec: B603 is applied across subprocess.run calls since we are calling with predefined
 # inputs.
 import subprocess  # nosec
+import typing
 from pathlib import Path
 
 import yaml
@@ -186,15 +188,19 @@ class CloudImage:
     """The cloud ID to uploaded image ID pair.
 
     Attributes:
+        arch: The image architecture.
+        base: The ubuntu base image of the build.
         cloud_id: The cloud ID that the image was uploaded to.
         image_id: The uploaded image ID.
     """
 
+    arch: state.Arch
+    base: state.BaseImage
     cloud_id: str
     image_id: str
 
 
-def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[CloudImage]:
+def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[list[CloudImage]]:
     """Run a build immediately.
 
     Args:
@@ -207,42 +213,144 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list
     Returns:
         The built image id.
     """
+    build_configs = _parametrize_build(config=config, proxy=proxy)
+    try:
+        with multiprocessing.Pool(len(build_configs)) as pool:
+            build_results = pool.map(_run, build_configs)
+    except multiprocessing.ProcessError as exc:
+        raise BuilderRunError("Failed to run parallel build") from exc
+    return build_results
+
+
+@dataclasses.dataclass
+class _RunImageConfig:
+    """Builder run image related configuration parameters.
+
+    Attributes:
+        arch: The architecture to build the image for.
+        base: The Ubuntu base OS image to build the image on.
+        runner_version: The GitHub runner version to pin, defaults to latest.
+    """
+
+    arch: state.Arch
+    base: state.BaseImage
+    runner_version: str | None
+
+
+@dataclasses.dataclass
+class _RunCloudConfig:
+    """Builder run cloud related configuration parameters.
+
+    Attributes:
+        build_cloud: The cloud to build the images on.
+        build_flavor: The OpenStack builder flavor to use.
+        build_network: The OpenStack builder network to use.
+        upload_clouds: The clouds to upload the final image to.
+        num_revisions: The number of revisions to keep before deleting the image.
+        proxy: The proxy to use to build the image.
+    """
+
+    build_cloud: str
+    build_flavor: str
+    build_network: str
+    upload_clouds: typing.Iterable[str]
+    num_revisions: int
+    proxy: str | None
+
+
+@dataclasses.dataclass
+class RunConfig:
+    """Builder run configuration parameters.
+
+    Attributes:
+        image: The image configuration parameters.
+        cloud: The cloud configuration parameters.
+    """
+
+    image: _RunImageConfig
+    cloud: _RunCloudConfig
+
+
+def _parametrize_build(
+    config: state.BuilderRunConfig, proxy: state.ProxyConfig | None
+) -> tuple[RunConfig, ...]:
+    """Get parametrized build configurations.
+
+    Args:
+        config: The configuration values for running image builder.
+        proxy: The proxy configuration to apply on the builder.
+
+    Returns:
+        Per image build configuration values.
+    """
+    return tuple(
+        RunConfig(
+            image=_RunImageConfig(
+                arch=config.arch, base=base, runner_version=config.runner_version
+            ),
+            cloud=_RunCloudConfig(
+                build_cloud=config.cloud_name,
+                build_flavor=config.external_build_config.flavor,
+                build_network=config.external_build_config.network,
+                upload_clouds=config.upload_cloud_ids,
+                num_revisions=config.num_revisions,
+                proxy=proxy.http,
+            ),
+        )
+        for base in config.bases
+    )
+
+
+def _run(config: RunConfig):
+    """Run a single build process.
+
+    Args:
+        config: The build configuration parameters.
+
+    Raises:
+        BuilderRunError: if there was an error while running the build subprocess.
+
+    Returns:
+        The build result with build configuration data and output image ID.
+    """
     try:
         commands = [
             "/usr/bin/run-one",
             "/usr/bin/sudo",
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
-            config.cloud_name,
+            config.cloud.build_cloud,
             IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=config.base.value,
-                ARCH=config.arch.value,
+                IMAGE_BASE=config.image.base.value,
+                ARCH=config.image.arch.value,
             ),
             "--base-image",
-            config.base.value,
+            config.image.base.value,
             "--keep-revisions",
-            str(config.num_revisions),
+            str(config.cloud.num_revisions),
         ]
-        if config.runner_version:
-            commands.extend(["--runner-version", config.runner_version])
-        if config.external_build_config:
+        if config.image.runner_version:
+            commands.extend(["--runner-version", config.image.runner_version])
+        commands.extend(
+            [
+                "--experimental-external",
+                "True",
+                "--arch",
+                config.image.arch.value,
+                "--flavor",
+                config.cloud.build_flavor,
+                "--network",
+                config.cloud.build_network,
+                "--upload-clouds",
+                ",".join(config.cloud.upload_clouds),
+            ]
+        )
+        if config.cloud.proxy:
             commands.extend(
                 [
-                    "--experimental-external",
-                    "True",
-                    "--arch",
-                    config.arch.value,
-                    "--flavor",
-                    config.external_build_config.flavor,
-                    "--network",
-                    config.external_build_config.network,
-                    "--upload-clouds",
-                    ",".join(config.upload_cloud_ids),
+                    "--proxy",
+                    config.cloud.proxy.removeprefix("http://").removeprefix("https://"),
                 ]
-            )
-        if proxy:
-            commands.extend(
-                ["--proxy", proxy.http.removeprefix("http://").removeprefix("https://")]
             )
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
@@ -252,12 +360,17 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list
             encoding="utf-8",
             env={"HOME": str(UBUNTU_HOME)},
         )
-        if config.external_build_config and "Image build success" not in stdout:
-            raise BuilderRunError(f"Unexpected output: {stdout}")
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
         return list(
-            CloudImage(image_id=image_id, cloud_id=cloud_id)
-            for (cloud_id, image_id) in zip(config.upload_cloud_ids, stdout.split()[-1].split(","))
+            CloudImage(
+                arch=config.image.arch,
+                base=config.image.base,
+                cloud_id=cloud_id,
+                image_id=image_id,
+            )
+            for (cloud_id, image_id) in zip(
+                config.cloud.upload_clouds, stdout.split()[-1].split(",")
+            )
         )
     except subprocess.CalledProcessError as exc:
         logger.error(
@@ -268,19 +381,63 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list
         raise BuilderRunError from exc
 
 
-def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -> str:
+def get_latest_image(config: state.BuilderRunConfig, cloud_id: str) -> list[CloudImage]:
     """Fetch the latest image build ID.
 
     Args:
-        arch: The machine architecture the image was built with.
-        base: Ubuntu OS image to build from.
-        cloud_name: The Openstack cloud name to connect to from clouds.yaml.
+        config: The configuration values for fetching latest image id.
+        cloud_id: The cloud the fetch the images for.
 
     Raises:
         GetLatestImageError: If there was an error fetching the latest image.
 
     Returns:
-        The latest successful image build ID.
+        The latest successful image build information.
+    """
+    fetch_configs = _parametrize_fetch(config=config, cloud_id=cloud_id)
+    try:
+        with multiprocessing.Pool(len(fetch_configs)) as pool:
+            get_results = pool.map(_get_latest_image, fetch_configs)
+    except multiprocessing.ProcessError as exc:
+        raise BuilderRunError("Failed to run parallel build") from exc
+    return get_results
+
+
+@dataclasses.dataclass
+class FetchConfig:
+    """Fetch image configuration parameters.
+
+    Attributes:
+        arch: The architecture to build the image for.
+        base: The Ubuntu base OS image to build the image on.
+        cloud_id: The cloud ID to fetch the image from.
+    """
+
+    arch: state.Arch
+    base: state.BaseImage
+    cloud_id: str
+
+
+def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[FetchConfig, ...]:
+    """Get parametrized fetch configurations.
+
+    Args:
+        config: The configuration values for running image builder.
+        cloud_id: The cloud ID to fetch image for.
+
+    Returns:
+        Per image fetch configuration values.
+    """
+    return tuple(
+        FetchConfig(arch=config.arch, base=base, cloud_id=cloud_id) for base in config.bases
+    )
+
+
+def _get_latest_image(config: FetchConfig):
+    """Fetch the latest image.
+
+    Args:
+        config: The fetch image configuration parameters.
     """
     try:
         # the user keyword argument exists but pylint doesn't think so.
@@ -290,8 +447,8 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
                 "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
-                cloud_name,
-                IMAGE_NAME_TMPL.format(IMAGE_BASE=base.value, ARCH=arch.value),
+                config.cloud_id,
+                IMAGE_NAME_TMPL.format(IMAGE_BASE=config.base.value, ARCH=config.arch.value),
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
@@ -299,7 +456,9 @@ def get_latest_image(arch: state.Arch, base: state.BaseImage, cloud_name: str) -
             env=os.environ,
             encoding="utf-8",
         )  # nosec: B603
-        return image_id
+        return CloudImage(
+            arch=config.arch, base=config.base, cloud_id=config.cloud_id, image_id=image_id
+        )
     except subprocess.CalledProcessError as exc:
         logger.error(
             "Get latest id failed, code: %s, out: %s, err: %s",
