@@ -226,7 +226,7 @@ async def test_run_dispatch(app: Application):
     unit: Unit = next(iter(app.units))
     await unit.ssh(
         command=(
-            f'sudo -E /usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu'
+            f'sudo -E nohup /usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu'
             ' ./dispatch"&'
         ),
     )
