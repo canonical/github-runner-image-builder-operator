@@ -16,7 +16,7 @@ import state
 logger = logging.getLogger(__name__)
 
 
-class ImageRelationData(TypedDict):
+class ImageRelationData(TypedDict, total=False):
     """Relation data for providing image ID.
 
     Attributes:
@@ -124,23 +124,24 @@ def _build_cloud_to_images_map(
     return cloud_id_to_image_ids
 
 
-def _cloud_images_to_relation_data(cloud_images: list[builder.CloudImage]):
+def _cloud_images_to_relation_data(cloud_images: list[builder.CloudImage]) -> ImageRelationData:
     """Transform cloud images data to relation data.
 
     Args:
         cloud_images: The images built for a cloud.
+
+    Returns:
+        The image relation data for a unit.
     """
     primary = cloud_images[0]
-    return (
-        ImageRelationData(
-            id=primary.image_id,
-            tags=_format_tags(image=primary),
-            images=json.dumps(
-                list(
-                    ImageRelationData(id=image.image_id, tags=_format_tags(image=image))
-                    for image in cloud_images
-                )
-            ),
+    return ImageRelationData(
+        id=primary.image_id,
+        tags=_format_tags(image=primary),
+        images=json.dumps(
+            list(
+                ImageRelationData(id=image.image_id, tags=_format_tags(image=image))
+                for image in cloud_images
+            )
         ),
     )
 
@@ -150,5 +151,8 @@ def _format_tags(image: builder.CloudImage) -> str:
 
     Args:
         image: The cloud image.
+
+    Returns:
+        The CSV formatted tags.
     """
     return ",".join((image.arch.value, image.base.value))

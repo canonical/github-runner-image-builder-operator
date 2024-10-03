@@ -294,14 +294,14 @@ def _parametrize_build(
                 build_network=config.external_build_config.network,
                 upload_clouds=config.upload_cloud_ids,
                 num_revisions=config.num_revisions,
-                proxy=proxy.http,
+                proxy=proxy.http if proxy else None,
             ),
         )
         for base in config.bases
     )
 
 
-def _run(config: RunConfig):
+def _run(config: RunConfig) -> list[CloudImage]:
     """Run a single build process.
 
     Args:
@@ -399,7 +399,7 @@ def get_latest_image(config: state.BuilderRunConfig, cloud_id: str) -> list[Clou
         with multiprocessing.Pool(len(fetch_configs)) as pool:
             get_results = pool.map(_get_latest_image, fetch_configs)
     except multiprocessing.ProcessError as exc:
-        raise BuilderRunError("Failed to run parallel build") from exc
+        raise GetLatestImageError("Failed to run parallel fetch") from exc
     return get_results
 
 
@@ -433,11 +433,17 @@ def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[F
     )
 
 
-def _get_latest_image(config: FetchConfig):
+def _get_latest_image(config: FetchConfig) -> CloudImage:
     """Fetch the latest image.
 
     Args:
         config: The fetch image configuration parameters.
+
+    Raises:
+        GetLatestImageError: If there was something wrong calling the image builder CLI.
+
+    Returns:
+        The built cloud image.
     """
     try:
         # the user keyword argument exists but pylint doesn't think so.
