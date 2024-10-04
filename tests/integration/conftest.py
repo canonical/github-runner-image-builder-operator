@@ -455,7 +455,9 @@ async def openstack_server_fixture(
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
     images: list[Image] = openstack_metadata.connection.search_images(
-        _get_image_name(base=image_base, arch=_get_supported_arch(), prefix=app.name)
+        _get_image_name(
+            base=state.BaseImage(image_base), arch=_get_supported_arch(), prefix=app.name
+        )
     )
     assert images, "No built image found."
     server: Server = openstack_metadata.connection.create_server(
