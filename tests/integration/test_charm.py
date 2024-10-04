@@ -16,6 +16,7 @@ from fabric.connection import Connection as SSHConnection
 from fabric.runners import Result
 from juju.application import Application
 from juju.model import Model
+from juju.unit import Unit
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
@@ -37,6 +38,38 @@ async def test_image_relation(app: Application, test_charm: Application):
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
     await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
+
+
+def image_created_from_dispatch(
+    image_base: str, app_name: str, connection: Connection, dispatch_time: datetime
+) -> bool:
+    """Return whether there is an image created after dispatch has been called.
+
+    Args:
+        image_base: The Ubuntu image base.
+        app_name: The The application name that built the image.
+        connection: The OpenStack connection instance.
+        dispatch_time: Time when the image build was dispatched.
+
+    Returns:
+        Whether there exists an image that has been created after dispatch time.
+    """
+    image_name = IMAGE_NAME_TMPL.format(
+        IMAGE_BASE=image_base, APP_NAME=app_name, ARCH=_get_supported_arch().value
+    )
+    images: list[Image] = connection.search_images(image_name)
+    logger.info(
+        "Image name: %s, Images: %s",
+        image_name,
+        tuple((image.id, image.name, image.created_at) for image in images),
+    )
+    # split logs, the image log is long and gets cut off.
+    logger.info("Dispatch time: %s", dispatch_time)
+    return any(
+        datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        >= dispatch_time
+        for image in images
+    )
 
 
 @pytest.mark.asyncio
@@ -207,3 +240,22 @@ async def test_image(
             if result.ok:
                 break
         assert result.ok
+
+
+@pytest.mark.skip(reason="There is an issue with dispatch tests as of now")
+@pytest.mark.asyncio
+async def test_run_dispatch(app: Application):
+    """
+    arrange: A deployed active charm.
+    act: When dispatch command is given.
+    assert: An image is built successfully.
+    """
+    unit: Unit = next(iter(app.units))
+    await unit.ssh(
+        command=(
+            f'sudo -E -b /usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run '
+            'HOME=/home/ubuntu ./dispatch"'
+        ),
+    )
+
+    await wait_for(lambda: unit.latest().agent_status == "executing")
