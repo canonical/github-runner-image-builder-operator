@@ -30,7 +30,7 @@ from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
 import state
-from builder import IMAGE_NAME_TMPL
+from builder import _get_image_name
 from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
@@ -455,7 +455,7 @@ async def openstack_server_fixture(
     image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
 
     images: list[Image] = openstack_metadata.connection.search_images(
-        IMAGE_NAME_TMPL.format(IMAGE_BASE=image_base, ARCH=_get_supported_arch().value)
+        _get_image_name(base=image_base, arch=_get_supported_arch(), prefix=app.name)
     )
     assert images, "No built image found."
     server: Server = openstack_metadata.connection.create_server(

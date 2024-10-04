@@ -55,6 +55,9 @@ async def test_build_image(
     def image_created_from_dispatch(image_base: str) -> bool:
         """Return whether there is an image created after dispatch has been called.
 
+        Args:
+            image_base: The ubuntu OS image base to check for.
+
         Returns:
             Whether there exists an image that has been created after dispatch time.
         """

@@ -370,6 +370,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
             cloud_config=state.OpenstackCloudsConfig(clouds={}),
             external_build_config=None,
             num_revisions=1,
+            prefix="app-name",
             runner_version="",
         ),
         proxy=None,
@@ -425,6 +426,7 @@ def test__run_error(
                     build_network="test",
                     upload_clouds=["test"],
                     num_revisions=1,
+                    prefix="app-name",
                     proxy=None,
                 ),
             ),
@@ -441,6 +443,7 @@ def test__run_error(
                     build_network="test",
                     upload_clouds=["test"],
                     num_revisions=1,
+                    prefix="app-name",
                     proxy="test",
                 ),
             ),
@@ -494,6 +497,7 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
             cloud_config=state.OpenstackCloudsConfig(clouds={}),
             external_build_config=None,
             num_revisions=1,
+            prefix="app-name",
             runner_version="",
         ),
         cloud_id="test",
@@ -538,7 +542,10 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
 
     assert builder._get_latest_image(
         config=builder.FetchConfig(
-            arch=state.Arch.ARM64, base=state.BaseImage.JAMMY, cloud_id="test-cloud"
+            arch=state.Arch.ARM64,
+            base=state.BaseImage.JAMMY,
+            cloud_id="test-cloud",
+            prefix="app-name",
         )
     ) == builder.CloudImage(
         arch=state.Arch.ARM64,

@@ -300,6 +300,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
             ),
             external_build_config=None,
             runner_version="1.234.5",
+            prefix=charm.app.name,
             num_revisions=5,
         ),
         unit_name=charm.unit.name,
