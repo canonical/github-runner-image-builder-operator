@@ -476,6 +476,8 @@ async def openstack_server_fixture(
     yield server
 
     openstack_metadata.connection.delete_server(server_name, wait=True)
+    for image in images:
+        openstack_metadata.connection.delete_image(image.id, wait=True)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
