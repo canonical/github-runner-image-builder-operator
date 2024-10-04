@@ -452,7 +452,8 @@ async def openstack_server_fixture(
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
     config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    image_bases: str = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    image_base = list(image.strip() for image in image_bases.split(","))[0]
 
     images: list[Image] = openstack_metadata.connection.search_images(
         _get_image_name(
