@@ -16,10 +16,11 @@ import pydantic
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
-ARCHITECTURES_X86 = {"x86_64"}
+ARCHITECTURES_X86 = {"x86_64", "amd64"}
 CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
+ARCHITECTURE_CONFIG_NAME = "architecture"
 APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
@@ -75,6 +76,27 @@ class Arch(str, Enum):
 
     ARM64 = "arm64"
     X64 = "x64"
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "Arch":
+        """Get architecture to build for from charm config.
+
+        Args:
+            charm: The charm instance.
+
+        Returns:
+            The architecture to build for.
+        """
+        architecture = (
+            typing.cast(str, charm.config.get(ARCHITECTURE_CONFIG_NAME, "")).lower().strip()
+        )
+        match architecture:
+            case arch if arch in ARCHITECTURES_ARM64:
+                return Arch.ARM64
+            case arch if arch in ARCHITECTURES_X86:
+                return Arch.X64
+            case _:
+                return _get_supported_arch()
 
 
 class UnsupportedArchitectureError(CharmConfigInvalidError):
@@ -346,7 +368,7 @@ class BuilderRunConfig:
             Current charm state.
         """
         try:
-            arch = _get_supported_arch()
+            arch = Arch.from_charm(charm=charm)
         except UnsupportedArchitectureError as exc:
             raise BuildConfigInvalidError("Unsupported architecture") from exc
 
