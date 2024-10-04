@@ -85,39 +85,25 @@ async def test_build_image(
     image_bases: str = config[BASE_IMAGE_CONFIG_NAME]["value"]
     images = tuple(image.strip() for image in image_bases.split(","))
 
-    def image_created_from_dispatch(image_base: str) -> bool:
-        """Return whether there is an image created after dispatch has been called.
-
-        Args:
-            image_base: The ubuntu OS image base to check for.
-
-        Returns:
-            Whether there exists an image that has been created after dispatch time.
-        """
-        image_name = _get_image_name(
-            arch=_get_supported_arch(), base=BaseImage(image_base), prefix=app.name
-        )
-        images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info(
-            "Image name: %s, Images: %s",
-            image_name,
-            tuple((image.id, image.name, image.created_at) for image in images),
-        )
-        # split logs, the image log is long and gets cut off.
-        logger.info("Dispatch time: %s", dispatch_time)
-        return any(
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            >= dispatch_time
-            for image in images
-        )
-
     await wait_for(
-        functools.partial(image_created_from_dispatch, image_base=images[0]),
+        functools.partial(
+            image_created_from_dispatch,
+            image_base=images[0],
+            app_name=app.name,
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
         check_interval=30,
         timeout=60 * 30,
     )
     await wait_for(
-        functools.partial(image_created_from_dispatch, image_base=images[1]),
+        functools.partial(
+            image_created_from_dispatch,
+            image_base=images[1],
+            app_name=app.name,
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
         check_interval=30,
         timeout=60 * 30,
     )
