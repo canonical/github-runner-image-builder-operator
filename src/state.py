@@ -133,7 +133,7 @@ class BaseImage(str, Enum):
             image_name.lower().strip()
             for image_name in typing.cast(
                 str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")
-            ).split()
+            ).split(",")
         )
 
         return tuple(
