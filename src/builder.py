@@ -214,7 +214,7 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list
     """
     build_configs = _parametrize_build(config=config, proxy=proxy)
     try:
-        with multiprocessing.Pool(len(build_configs)) as pool:
+        with multiprocessing.Pool(min(len(build_configs), 10)) as pool:
             build_results = pool.map(_run, build_configs)
     except multiprocessing.ProcessError as exc:
         raise BuilderRunError("Failed to run parallel build") from exc
@@ -411,7 +411,7 @@ def get_latest_images(config: state.BuilderRunConfig, cloud_id: str) -> list[Clo
     """
     fetch_configs = _parametrize_fetch(config=config, cloud_id=cloud_id)
     try:
-        with multiprocessing.Pool(len(fetch_configs)) as pool:
+        with multiprocessing.Pool(min(len(fetch_configs), 10)) as pool:
             get_results = pool.map(_get_latest_image, fetch_configs)
     except multiprocessing.ProcessError as exc:
         raise GetLatestImageError("Failed to run parallel fetch") from exc
