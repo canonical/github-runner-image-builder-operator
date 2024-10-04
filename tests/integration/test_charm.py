@@ -54,8 +54,8 @@ def image_created_from_dispatch(
     Returns:
         Whether there exists an image that has been created after dispatch time.
     """
-    image_name = IMAGE_NAME_TMPL.format(
-        IMAGE_BASE=image_base, APP_NAME=app_name, ARCH=_get_supported_arch().value
+    image_name = _get_image_name(
+        arch=_get_supported_arch(), base=BaseImage(image_base), prefix=app_name
     )
     images: list[Image] = connection.search_images(image_name)
     logger.info(
