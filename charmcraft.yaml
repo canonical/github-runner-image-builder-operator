@@ -62,6 +62,10 @@ actions:
 
 config:
   options:
+    architecture:
+      type: string
+      default: ""
+      description: The image architecture to build for using external builder (i.e. amd64, arm64).
     app-channel:
       type: string
       default: stable
