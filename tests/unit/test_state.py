@@ -43,6 +43,25 @@ def test__get_supported_arch_unsupported_arch(arch: str, monkeypatch: pytest.Mon
 
 
 @pytest.mark.parametrize(
+    "arch, expected",
+    [
+        pytest.param("arm64", state.Arch.ARM64, id="arm64"),
+        pytest.param("amd64", state.Arch.X64, id="amd64"),
+    ],
+)
+def test_arch_from_charm(arch: str, expected: state.Arch):
+    """
+    arrange: given charm with architecture configurations.
+    act: when Arch.from_charm is called.
+    assert: expected architecture is returned.
+    """
+    charm = MockCharmFactory()
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = arch
+
+    assert state.Arch.from_charm(charm=charm) == expected
+
+
+@pytest.mark.parametrize(
     "arch, expected_arch",
     [
         pytest.param("aarch64", state.Arch.ARM64, id="aarch64"),
