@@ -19,6 +19,10 @@ import state
 logger = logging.getLogger(__name__)
 
 
+class RunEvent(ops.EventBase):
+    """Event representing a periodic image builder run."""
+
+
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
     """Charm GitHubRunner image builder application."""
 
@@ -29,9 +33,12 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             args: The CharmBase initialization arguments.
         """
         super().__init__(*args)
+        self.on.define_event("run", RunEvent)
+
         self.image_observer = image.Observer(self)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.run, self._on_run)
         self.framework.observe(self.on.run_action, self._on_run_action)
         self.framework.observe(
             self.on[state.IMAGE_RELATION].relation_changed, self._on_image_relation_changed
@@ -73,6 +80,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
         self._run()
         self.unit.status = ops.ActiveStatus()
+
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_run(self, _: RunEvent) -> None:
+        """Handle the run event."""
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        self._run()
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
