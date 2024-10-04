@@ -465,29 +465,29 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
     check_output_mock.assert_called_once()
 
 
-def test_get_latest_image_error(monkeypatch: pytest.MonkeyPatch):
+def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched pool.map that raises an error.
-    act: when run is called.
+    act: when get_latest_images is called.
     assert: GetLatestImageError is raised.
     """
     monkeypatch.setattr(builder.multiprocessing, "Pool", pool_context_mock := MagicMock())
     pool_context_mock.return_value.__enter__.return_value = (pool_mock := MagicMock())
     pool_mock.map = MagicMock(side_effect=builder.multiprocessing.ProcessError("Process Error"))
     with pytest.raises(builder.GetLatestImageError):
-        builder.get_latest_image(config=MagicMock(), cloud_id="test")
+        builder.get_latest_images(config=MagicMock(), cloud_id="test")
 
 
-def test_get_latest_image(monkeypatch: pytest.MonkeyPatch):
+def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a monkeypatched _run function.
-    act: when get_latest_image is called.
-    assert: get_latest_image results are returned.
+    act: when get_latest_images is called.
+    assert: get_latest_images results are returned.
     """
     monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_get_latest_image", _patched_test_func)
 
-    assert ["test", "test"] == builder.get_latest_image(
+    assert ["test", "test"] == builder.get_latest_images(
         config=state.BuilderRunConfig(
             arch=state.Arch.ARM64,
             bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),

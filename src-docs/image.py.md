@@ -29,7 +29,7 @@ Relation data for providing image ID.
 ## <kbd>class</kbd> `Observer`
 The image relation observer. 
 
-<a href="../src/image.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L37"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -56,7 +56,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 

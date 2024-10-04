@@ -45,7 +45,6 @@ CRON_PATH = Path("/etc/cron.d")
 CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
-IMAGE_NAME_TMPL = "{IMAGE_BASE}-{ARCH}"
 
 
 def initialize(init_config: state.BuilderInitConfig) -> None:
@@ -247,6 +246,7 @@ class _RunCloudConfig:
         build_network: The OpenStack builder network to use.
         upload_clouds: The clouds to upload the final image to.
         num_revisions: The number of revisions to keep before deleting the image.
+        prefix: The image name prefix (app name).
         proxy: The proxy to use to build the image.
     """
 
@@ -255,6 +255,7 @@ class _RunCloudConfig:
     build_network: str
     upload_clouds: typing.Iterable[str]
     num_revisions: int
+    prefix: str
     proxy: str | None
 
 
@@ -294,6 +295,7 @@ def _parametrize_build(
                 build_network=config.external_build_config.network,
                 upload_clouds=config.upload_cloud_ids,
                 num_revisions=config.num_revisions,
+                prefix=config.prefix,
                 proxy=proxy.http if proxy else None,
             ),
         )
@@ -320,9 +322,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
             config.cloud.build_cloud,
-            IMAGE_NAME_TMPL.format(
-                IMAGE_BASE=config.image.base.value,
-                ARCH=config.image.arch.value,
+            _get_image_name(
+                arch=config.image.arch, base=config.image.base, prefix=config.cloud.prefix
             ),
             "--base-image",
             config.image.base.value,
@@ -381,7 +382,21 @@ def _run(config: RunConfig) -> list[CloudImage]:
         raise BuilderRunError from exc
 
 
-def get_latest_image(config: state.BuilderRunConfig, cloud_id: str) -> list[CloudImage]:
+def _get_image_name(arch: state.Arch, base: state.BaseImage, prefix: str) -> str:
+    """Get image name.
+
+    Args:
+        arch: The image compute architecture.
+        base: The Ubuntu OS base of the image.
+        prefix: The prefix to use for image name.
+
+    Returns:
+        The image name to upload on OpenStack.
+    """
+    return f"{prefix}-{base.value}-{arch.value}"
+
+
+def get_latest_images(config: state.BuilderRunConfig, cloud_id: str) -> list[CloudImage]:
     """Fetch the latest image build ID.
 
     Args:
@@ -411,11 +426,13 @@ class FetchConfig:
         arch: The architecture to build the image for.
         base: The Ubuntu base OS image to build the image on.
         cloud_id: The cloud ID to fetch the image from.
+        prefix: The image name prefix.
     """
 
     arch: state.Arch
     base: state.BaseImage
     cloud_id: str
+    prefix: str
 
 
 def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[FetchConfig, ...]:
@@ -429,7 +446,8 @@ def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[F
         Per image fetch configuration values.
     """
     return tuple(
-        FetchConfig(arch=config.arch, base=base, cloud_id=cloud_id) for base in config.bases
+        FetchConfig(arch=config.arch, base=base, cloud_id=cloud_id, prefix=config.prefix)
+        for base in config.bases
     )
 
 
@@ -454,7 +472,7 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
                 config.cloud_id,
-                IMAGE_NAME_TMPL.format(IMAGE_BASE=config.base.value, ARCH=config.arch.value),
+                _get_image_name(arch=config.arch, base=config.base, prefix=config.prefix),
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,

@@ -5,6 +5,7 @@
 
 import json
 import logging
+from collections import defaultdict
 from typing import TypedDict
 
 import ops
@@ -66,7 +67,7 @@ class Observer(ops.Object):
             logger.warning("Unit relation data not yet ready.")
             return
         builder.install_clouds_yaml(build_config.cloud_config)
-        cloud_images = builder.get_latest_image(
+        cloud_images = builder.get_latest_images(
             config=build_config, cloud_id=unit_cloud_auth_config.get_id()
         )
         if not cloud_images:
@@ -115,11 +116,9 @@ def _build_cloud_to_images_map(
     Returns:
         The map of cloud_id to cloud images.
     """
-    cloud_id_to_image_ids: dict[str, list[builder.CloudImage]] = {}
+    cloud_id_to_image_ids: dict[str, list[builder.CloudImage]] = defaultdict(list)
     for images in cloud_images:
         for image in images:
-            if image.cloud_id not in cloud_id_to_image_ids:
-                cloud_id_to_image_ids[image.cloud_id] = []
             cloud_id_to_image_ids[image.cloud_id].append(image)
     return cloud_id_to_image_ids
 

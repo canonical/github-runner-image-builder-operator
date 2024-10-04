@@ -341,6 +341,7 @@ class BuilderRunConfig:
             made available.
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
+        prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
     """
 
@@ -349,6 +350,7 @@ class BuilderRunConfig:
     cloud_config: OpenstackCloudsConfig
     external_build_config: ExternalBuildConfig | None
     num_revisions: int
+    prefix: str
     runner_version: str
 
     @property
@@ -414,6 +416,7 @@ class BuilderRunConfig:
                 ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
             ),
             num_revisions=revision_history_limit,
+            prefix=charm.app.name,
             runner_version=runner_version,
         )
 

@@ -9,11 +9,10 @@ Module for interacting with qemu image builder.
 ---------------
 - **UBUNTU_USER**
 - **APT_DEPENDENCIES**
-- **IMAGE_NAME_TMPL**
 
 ---
 
-<a href="../src/builder.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,7 +37,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -57,7 +56,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -82,7 +81,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -116,12 +115,12 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L399"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_latest_image`
+## <kbd>function</kbd> `get_latest_images`
 
 ```python
-get_latest_image(config: BuilderRunConfig, cloud_id: str) → list[CloudImage]
+get_latest_images(config: BuilderRunConfig, cloud_id: str) → list[CloudImage]
 ```
 
 Fetch the latest image build ID. 
@@ -147,7 +146,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -194,6 +193,7 @@ Fetch image configuration parameters.
  - <b>`arch`</b>:  The architecture to build the image for. 
  - <b>`base`</b>:  The Ubuntu base OS image to build the image on. 
  - <b>`cloud_id`</b>:  The cloud ID to fetch the image from. 
+ - <b>`prefix`</b>:  The image name prefix. 
 
 
 

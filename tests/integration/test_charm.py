@@ -6,6 +6,7 @@
 """Integration testing module."""
 
 import dataclasses
+import functools
 import logging
 from datetime import datetime, timezone
 
@@ -18,8 +19,8 @@ from juju.model import Model
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
-from builder import IMAGE_NAME_TMPL
-from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
+from builder import _get_image_name
+from state import BASE_IMAGE_CONFIG_NAME, BaseImage, _get_supported_arch
 from tests.integration.helpers import format_dockerhub_mirror_microk8s_command, wait_for
 from tests.integration.types import ProxyConfig
 
@@ -48,16 +49,17 @@ async def test_build_image(
     assert: An image is built successfully.
     """
     config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    image_bases: str = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    images = tuple(image.strip() for image in image_bases.split(","))
 
-    def image_created_from_dispatch() -> bool:
+    def image_created_from_dispatch(image_base: str) -> bool:
         """Return whether there is an image created after dispatch has been called.
 
         Returns:
             Whether there exists an image that has been created after dispatch time.
         """
-        image_name = IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
+        image_name = _get_image_name(
+            arch=_get_supported_arch(), base=BaseImage(image_base), prefix=app.name
         )
         images: list[Image] = openstack_connection.search_images(image_name)
         logger.info(
@@ -73,7 +75,16 @@ async def test_build_image(
             for image in images
         )
 
-    await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
+    await wait_for(
+        functools.partial(image_created_from_dispatch, image_base=images[0]),
+        check_interval=30,
+        timeout=60 * 30,
+    )
+    await wait_for(
+        functools.partial(image_created_from_dispatch, image_base=images[1]),
+        check_interval=30,
+        timeout=60 * 30,
+    )
 
 
 @dataclasses.dataclass
