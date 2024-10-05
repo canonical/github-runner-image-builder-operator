@@ -242,3 +242,13 @@ def test__build_cloud_to_images_map():
     assert image._build_cloud_to_images_map(cloud_images=cloud_images) == {
         "cloud-1": [image_1, image_2]
     }
+
+
+def test__cloud_images_to_relation_data_no_images():
+    """
+    arrange: given no cloud images.
+    act: when _cloud_images_to_relation_data is called.
+    assert: ValueError is raised.
+    """
+    with pytest.raises(ValueError):
+        image._cloud_images_to_relation_data(cloud_images=[])

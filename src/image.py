@@ -129,9 +129,14 @@ def _cloud_images_to_relation_data(cloud_images: list[builder.CloudImage]) -> Im
     Args:
         cloud_images: The images built for a cloud.
 
+    Raises:
+        ValueError: if no images were available for parsing.
+
     Returns:
         The image relation data for a unit.
     """
+    if not cloud_images:
+        raise ValueError("No images to parse to relation data.")
     primary = cloud_images[0]
     return ImageRelationData(
         id=primary.image_id,
