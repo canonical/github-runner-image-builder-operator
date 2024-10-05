@@ -142,7 +142,7 @@ class BaseImage(str, Enum):
         return self.value
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BaseImage":
+    def from_charm(cls, charm: ops.CharmBase) -> tuple["BaseImage", ...]:
         """Retrieve the base image tag from charm.
 
         Args:
@@ -151,12 +151,21 @@ class BaseImage(str, Enum):
         Returns:
             The base image configuration of the charm.
         """
-        image_name = (
-            typing.cast(str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")).lower().strip()
+        image_names = (
+            image_name.lower().strip()
+            for image_name in typing.cast(
+                str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")
+            ).split(",")
         )
-        if image_name in LTS_IMAGE_VERSION_TAG_MAP:
-            return cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
-        return cls(image_name)
+
+        return tuple(
+            (
+                cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
+                if image_name in LTS_IMAGE_VERSION_TAG_MAP
+                else cls(image_name)
+            )
+            for image_name in image_names
+        )
 
 
 @dataclasses.dataclass
@@ -325,21 +334,23 @@ class BuilderRunConfig:
 
     Attributes:
         arch: The machine architecture of the image to build with.
-        base: Ubuntu OS image to build from.
+        bases: Ubuntu OS images to build from.
         cloud_config: The OpenStack clouds.yaml passed as charm config.
         cloud_name: The OpenStack cloud name to connect to from clouds.yaml.
         upload_cloud_ids: The OpenStack cloud ids to connect to, where the image should be \
             made available.
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
+        prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
     """
 
     arch: Arch
-    base: BaseImage
+    bases: tuple[BaseImage, ...]
     cloud_config: OpenstackCloudsConfig
     external_build_config: ExternalBuildConfig | None
     num_revisions: int
+    prefix: str
     runner_version: str
 
     @property
@@ -373,7 +384,7 @@ class BuilderRunConfig:
             raise BuildConfigInvalidError("Unsupported architecture") from exc
 
         try:
-            base_image = BaseImage.from_charm(charm)
+            base_images = BaseImage.from_charm(charm)
         except ValueError as exc:
             raise BuildConfigInvalidError(
                 (
@@ -399,12 +410,13 @@ class BuilderRunConfig:
 
         return cls(
             arch=arch,
-            base=base_image,
+            bases=base_images,
             cloud_config=cloud_config,
             external_build_config=(
                 ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
             ),
             num_revisions=revision_history_limit,
+            prefix=charm.app.name,
             runner_version=runner_version,
         )
 

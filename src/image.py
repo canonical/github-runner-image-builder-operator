@@ -3,7 +3,9 @@
 
 """The Github-runner-image-builder-operator image relation observer."""
 
+import json
 import logging
+from collections import defaultdict
 from typing import TypedDict
 
 import ops
@@ -15,16 +17,18 @@ import state
 logger = logging.getLogger(__name__)
 
 
-class ImageRelationData(TypedDict):
+class ImageRelationData(TypedDict, total=False):
     """Relation data for providing image ID.
 
     Attributes:
         id: The latest image ID to provide.
         tags: The comma separated tags of the image, e.g. x64, jammy.
+        images: JSON formatted list of image dictionary {id: str, tags: str}.
     """
 
     id: str
     tags: str
+    images: str | None
 
 
 class Observer(ops.Object):
@@ -63,36 +67,24 @@ class Observer(ops.Object):
             logger.warning("Unit relation data not yet ready.")
             return
         builder.install_clouds_yaml(build_config.cloud_config)
-        image_id = builder.get_latest_image(
-            arch=build_config.arch,
-            base=build_config.base,
-            cloud_name=(cloud_id := unit_cloud_auth_config.get_id()),
+        cloud_images = builder.get_latest_images(
+            config=build_config, cloud_id=unit_cloud_auth_config.get_id()
         )
-        if not image_id:
+        if not cloud_images:
             logger.info("Image not yet ready for %s.", event.unit.name)
             return
-        self.update_image_data(
-            cloud_image_ids=[builder.CloudImage(cloud_id=cloud_id, image_id=image_id)],
-            arch=build_config.arch,
-            base=build_config.base,
-        )
+        self.update_image_data(cloud_images=[cloud_images])
 
     def update_image_data(
         self,
-        cloud_image_ids: list[builder.CloudImage],
-        arch: state.Arch,
-        base: state.BaseImage,
+        cloud_images: list[list[builder.CloudImage]],
     ) -> None:
         """Update relation data for each cloud coming from image requires side of relation.
 
         Args:
-            cloud_image_ids: The cloud id and image id pairs to propagate via relation data.
-            arch: The architecture in which the image was built for.
-            base: The OS base image.
+            cloud_images: The cloud id and image ids to propagate via relation data.
         """
-        cloud_id_to_image_id = {
-            cloud_image.cloud_id: cloud_image.image_id for cloud_image in cloud_image_ids
-        }
+        cloud_id_to_image_ids = _build_cloud_to_images_map(cloud_images=cloud_images)
         for relation in self.model.relations[state.IMAGE_RELATION]:
             # There is no need to test for case with no units
             for unit in relation.units:  # pragma: no branch
@@ -101,16 +93,70 @@ class Observer(ops.Object):
                 )
                 if (
                     not unit_auth_data
-                    or (cloud_id := unit_auth_data.get_id()) not in cloud_id_to_image_id
+                    or (cloud_id := unit_auth_data.get_id()) not in cloud_id_to_image_ids
                 ):
                     logger.warning("Cloud auth data not found in relation with %s", unit.name)
                     continue
                 relation.data[self.model.unit].update(
-                    ImageRelationData(
-                        id=cloud_id_to_image_id[cloud_id],
-                        tags=",".join((arch.value, base.value)),
-                    )
+                    _cloud_images_to_relation_data(cloud_images=cloud_id_to_image_ids[cloud_id])
                 )
                 # the relation data update is required only once per relation since every units in
                 # the relation share the same OpenStack cloud credentials.
                 break
+
+
+def _build_cloud_to_images_map(
+    cloud_images: list[list[builder.CloudImage]],
+) -> dict[str, list[builder.CloudImage]]:
+    """Build a map of cloud id to cloud_images.
+
+    Args:
+        cloud_images: The cloud id and image ids to propagate via relation data.
+
+    Returns:
+        The map of cloud_id to cloud images.
+    """
+    cloud_id_to_image_ids: dict[str, list[builder.CloudImage]] = defaultdict(list)
+    for images in cloud_images:
+        for image in images:
+            cloud_id_to_image_ids[image.cloud_id].append(image)
+    return cloud_id_to_image_ids
+
+
+def _cloud_images_to_relation_data(cloud_images: list[builder.CloudImage]) -> ImageRelationData:
+    """Transform cloud images data to relation data.
+
+    Args:
+        cloud_images: The images built for a cloud.
+
+    Raises:
+        ValueError: if no images were available for parsing.
+
+    Returns:
+        The image relation data for a unit.
+    """
+    if not cloud_images:
+        raise ValueError("No images to parse to relation data.")
+    primary = cloud_images[0]
+    return ImageRelationData(
+        id=primary.image_id,
+        tags=_format_tags(image=primary),
+        images=json.dumps(
+            list(
+                ImageRelationData(id=image.image_id, tags=_format_tags(image=image))
+                for image in cloud_images
+            )
+        ),
+    )
+
+
+def _format_tags(image: builder.CloudImage) -> str:
+    """Generate image tags.
+
+    Args:
+        image: The cloud image.
+
+    Returns:
+        The CSV formatted tags.
+    """
+    return ",".join((image.arch.value, image.base.value))

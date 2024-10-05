@@ -49,6 +49,17 @@ class MockUnitFactory(factory.Factory):
     name: str
 
 
+class MockAppFactory(factory.Factory):
+    """Mock GitHubrunnerImageBuilder app."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = MagicMock
+
+    name: str = "test-app"
+
+
 class MockCharmFactory(factory.Factory):
     """Mock GithubRunnerImageBuilder charm."""  # noqa: DCO060
 
@@ -57,7 +68,7 @@ class MockCharmFactory(factory.Factory):
 
         model = MagicMock
 
-    app = MagicMock
+    app = MockAppFactory()
     unit = MockUnitFactory()
     config = factory.Dict(
         {

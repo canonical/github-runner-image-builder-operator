@@ -30,7 +30,6 @@ from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
 import state
-from builder import IMAGE_NAME_TMPL
 from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
@@ -320,7 +319,7 @@ async def app_fixture(
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
-        BASE_IMAGE_CONFIG_NAME: "jammy",
+        BASE_IMAGE_CONFIG_NAME: "jammy, noble",
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
@@ -452,11 +451,13 @@ async def openstack_server_fixture(
     # the config is the entire config info dict, weird.
     # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
     config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    image_bases: str = config[BASE_IMAGE_CONFIG_NAME]["value"]
+    image_base = list(image.strip() for image in image_bases.split(","))[0]
 
     images: list[Image] = openstack_metadata.connection.search_images(
-        IMAGE_NAME_TMPL.format(IMAGE_BASE=image_base, ARCH=_get_supported_arch().value)
+        f"{app.name}-{image_base}-{_get_supported_arch().value}"
     )
+
     assert images, "No built image found."
     server: Server = openstack_metadata.connection.create_server(
         name=server_name,
@@ -474,6 +475,8 @@ async def openstack_server_fixture(
     yield server
 
     openstack_metadata.connection.delete_server(server_name, wait=True)
+    for image in images:
+        openstack_metadata.connection.delete_image(image.id, wait=True)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")

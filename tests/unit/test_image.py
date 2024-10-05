@@ -57,7 +57,7 @@ def test__on_image_relation_joined_no_image(
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock(return_value=""))
-    monkeypatch.setattr(image.builder, "get_latest_image", MagicMock(return_value=""))
+    monkeypatch.setattr(image.builder, "get_latest_images", MagicMock(return_value=""))
     mock_event = MagicMock()
     mock_event.unit = MagicMock()
     mock_event.unit.name = (test_unit_name := "test-unit-name")
@@ -79,7 +79,7 @@ def test__on_image_relation_joined(
     monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
-    monkeypatch.setattr(builder, "get_latest_image", MagicMock(return_value="test-id"))
+    monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value="test-id"))
 
     image_observer.update_image_data = (update_relation_data_mock := MagicMock())
     image_observer._on_image_relation_joined(MagicMock())
@@ -102,9 +102,16 @@ def test_update_image_data_no_unit_data(harness: Harness, image_observer: image.
     harness.add_relation_unit(relation_id=relation_id, remote_unit_name="github-runner/0")
 
     image_observer.update_image_data(
-        cloud_image_ids=[builder.CloudImage(cloud_id="test_test", image_id="test")],
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
+        cloud_images=[
+            [
+                builder.CloudImage(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test_test",
+                    image_id="test",
+                )
+            ]
+        ],
     )
 
     assert (
@@ -189,14 +196,59 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
     )
 
     image_observer.update_image_data(
-        cloud_image_ids=[builder.CloudImage(cloud_id="test_test", image_id="test")],
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
+        cloud_images=[
+            [
+                builder.CloudImage(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test_test",
+                    image_id="test",
+                )
+            ]
+        ],
     )
 
     assert harness.get_relation_data(
         relation_id=first_relation_id, app_or_unit=image_observer.model.unit.name
-    ) == {"id": "test", "tags": "arm64,jammy"}
+    ) == {"id": "test", "tags": "arm64,jammy", "images": '[{"id": "test", "tags": "arm64,jammy"}]'}
     assert harness.get_relation_data(
         relation_id=second_relation_id, app_or_unit=image_observer.model.unit.name
-    ) == {"id": "test", "tags": "arm64,jammy"}
+    ) == {"id": "test", "tags": "arm64,jammy", "images": '[{"id": "test", "tags": "arm64,jammy"}]'}
+
+
+def test__build_cloud_to_images_map():
+    """
+    arrange: given cloud image list.
+    act: when _build_cloud_to_images_map is called.
+    assert: expected cloud id to image map is built.
+    """
+    cloud_images = [
+        [
+            image_1 := builder.CloudImage(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="cloud-1",
+                image_id="image-1",
+            ),
+            image_2 := builder.CloudImage(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="cloud-1",
+                image_id="image-2",
+            ),
+        ],
+    ]
+
+    assert image._build_cloud_to_images_map(cloud_images=cloud_images) == {
+        "cloud-1": [image_1, image_2]
+    }
+
+
+def test__cloud_images_to_relation_data_no_images():
+    """
+    arrange: given no cloud images.
+    act: when _cloud_images_to_relation_data is called.
+    assert: ValueError is raised.
+    """
+    with pytest.raises(ValueError):
+        image._cloud_images_to_relation_data(cloud_images=[])

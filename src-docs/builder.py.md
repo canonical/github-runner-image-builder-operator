@@ -9,11 +9,10 @@ Module for interacting with qemu image builder.
 ---------------
 - **UBUNTU_USER**
 - **APT_DEPENDENCIES**
-- **IMAGE_NAME_TMPL**
 
 ---
 
-<a href="../src/builder.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
@@ -38,7 +37,7 @@ Configure the host machine to build images.
 
 ---
 
-<a href="../src/builder.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -57,7 +56,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -82,12 +81,15 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L209"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig, proxy: ProxyConfig | None) → list[CloudImage]
+run(
+    config: BuilderRunConfig,
+    proxy: ProxyConfig | None
+) → list[list[CloudImage]]
 ```
 
 Run a build immediately. 
@@ -113,12 +115,12 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_latest_image`
+## <kbd>function</kbd> `get_latest_images`
 
 ```python
-get_latest_image(arch: Arch, base: BaseImage, cloud_name: str) → str
+get_latest_images(config: BuilderRunConfig, cloud_id: str) → list[CloudImage]
 ```
 
 Fetch the latest image build ID. 
@@ -127,9 +129,8 @@ Fetch the latest image build ID.
 
 **Args:**
  
- - <b>`arch`</b>:  The machine architecture the image was built with. 
- - <b>`base`</b>:  Ubuntu OS image to build from. 
- - <b>`cloud_name`</b>:  The Openstack cloud name to connect to from clouds.yaml. 
+ - <b>`config`</b>:  The configuration values for fetching latest image id. 
+ - <b>`cloud_id`</b>:  The cloud the fetch the images for. 
 
 
 
@@ -140,12 +141,12 @@ Fetch the latest image build ID.
 
 
 **Returns:**
- The latest successful image build ID. 
+ The latest successful image build information. 
 
 
 ---
 
-<a href="../src/builder.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -171,8 +172,56 @@ The cloud ID to uploaded image ID pair.
 
 **Attributes:**
  
+ - <b>`arch`</b>:  The image architecture. 
+ - <b>`base`</b>:  The ubuntu base image of the build. 
  - <b>`cloud_id`</b>:  The cloud ID that the image was uploaded to. 
  - <b>`image_id`</b>:  The uploaded image ID. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `FetchConfig`
+Fetch image configuration parameters. 
+
+
+
+**Attributes:**
+ 
+ - <b>`arch`</b>:  The architecture to build the image for. 
+ - <b>`base`</b>:  The Ubuntu base OS image to build the image on. 
+ - <b>`cloud_id`</b>:  The cloud ID to fetch the image from. 
+ - <b>`prefix`</b>:  The image name prefix. 
+ - <b>`image_name`</b>:  The image name derived from image configuration attributes. 
+
+
+---
+
+#### <kbd>property</kbd> image_name
+
+The image name derived from the image configuration attributes. 
+
+
+
+**Returns:**
+  The image name. 
+
+
+
+
+---
+
+## <kbd>class</kbd> `RunConfig`
+Builder run configuration parameters. 
+
+
+
+**Attributes:**
+ 
+ - <b>`image`</b>:  The image configuration parameters. 
+ - <b>`cloud`</b>:  The cloud configuration parameters. 
 
 
 

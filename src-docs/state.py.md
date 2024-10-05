@@ -149,7 +149,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L616"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L628"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -187,12 +187,13 @@ Configurations for running builder periodically.
 **Attributes:**
  
  - <b>`arch`</b>:  The machine architecture of the image to build with. 
- - <b>`base`</b>:  Ubuntu OS image to build from. 
+ - <b>`bases`</b>:  Ubuntu OS images to build from. 
  - <b>`cloud_config`</b>:  The OpenStack clouds.yaml passed as charm config. 
  - <b>`cloud_name`</b>:  The OpenStack cloud name to connect to from clouds.yaml. 
  - <b>`upload_cloud_ids`</b>:  The OpenStack cloud ids to connect to, where the image should be             made available. 
  - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
+ - <b>`prefix`</b>:  The image name prefix (application name). 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
 
 
@@ -212,7 +213,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -339,7 +340,7 @@ Returns the set of fields that have been explicitly set on this model instance.
 
 ---
 
-<a href="../src/state.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_unit_relation_data`
 
@@ -362,7 +363,7 @@ Get auth data from unit relation data.
 
 ---
 
-<a href="../src/state.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_id`
 
@@ -395,7 +396,7 @@ Configurations for external builder VMs.
 
 ---
 
-<a href="../src/state.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -481,7 +482,7 @@ Proxy configuration.
 
 ---
 
-<a href="../src/state.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_env`
 
