@@ -20,8 +20,7 @@ from juju.unit import Unit
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
-from builder import _get_image_name
-from state import BASE_IMAGE_CONFIG_NAME, BaseImage, _get_supported_arch
+from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
 from tests.integration.helpers import format_dockerhub_mirror_microk8s_command, wait_for
 from tests.integration.types import ProxyConfig
 
@@ -54,9 +53,7 @@ def image_created_from_dispatch(
     Returns:
         Whether there exists an image that has been created after dispatch time.
     """
-    image_name = _get_image_name(
-        arch=_get_supported_arch(), base=BaseImage(image_base), prefix=app_name
-    )
+    image_name = f"{app_name}-{image_base}-{_get_supported_arch().value}"
     images: list[Image] = connection.search_images(image_name)
     logger.info(
         "Image name: %s, Images: %s",

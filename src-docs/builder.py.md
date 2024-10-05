@@ -115,7 +115,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_images`
 
@@ -146,7 +146,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -194,7 +194,19 @@ Fetch image configuration parameters.
  - <b>`base`</b>:  The Ubuntu base OS image to build the image on. 
  - <b>`cloud_id`</b>:  The cloud ID to fetch the image from. 
  - <b>`prefix`</b>:  The image name prefix. 
+ - <b>`image_name`</b>:  The image name derived from image configuration attributes. 
 
+
+---
+
+#### <kbd>property</kbd> image_name
+
+The image name derived from the image configuration attributes. 
+
+
+
+**Returns:**
+  The image name. 
 
 
 

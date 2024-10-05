@@ -418,7 +418,10 @@ def test__run_error(
         pytest.param(
             builder.RunConfig(
                 image=builder._RunImageConfig(
-                    arch=state.Arch.ARM64, base=state.BaseImage.JAMMY, runner_version="1.2.3"
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    runner_version="1.2.3",
+                    prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
                     build_cloud="test",
@@ -426,7 +429,6 @@ def test__run_error(
                     build_network="test",
                     upload_clouds=["test"],
                     num_revisions=1,
-                    prefix="app-name",
                     proxy=None,
                 ),
             ),
@@ -435,7 +437,10 @@ def test__run_error(
         pytest.param(
             builder.RunConfig(
                 image=builder._RunImageConfig(
-                    arch=state.Arch.ARM64, base=state.BaseImage.JAMMY, runner_version=None
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    runner_version=None,
+                    prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
                     build_cloud="test",
@@ -443,7 +448,6 @@ def test__run_error(
                     build_network="test",
                     upload_clouds=["test"],
                     num_revisions=1,
-                    prefix="app-name",
                     proxy="test",
                 ),
             ),

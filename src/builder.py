@@ -236,11 +236,23 @@ class _RunImageConfig:
         arch: The architecture to build the image for.
         base: The Ubuntu base OS image to build the image on.
         runner_version: The GitHub runner version to pin, defaults to latest.
+        prefix: The image prefix.
+        image_name: The image name derived from image configuration attributes.
     """
 
     arch: state.Arch
     base: state.BaseImage
     runner_version: str | None
+    prefix: str
+
+    @property
+    def image_name(self) -> str:
+        """The image name derived from the image configuration attributes.
+
+        Returns:
+            The image name.
+        """
+        return f"{self.prefix}-{self.base.value}-{self.arch.value}"
 
 
 @dataclasses.dataclass
@@ -253,7 +265,6 @@ class _RunCloudConfig:
         build_network: The OpenStack builder network to use.
         upload_clouds: The clouds to upload the final image to.
         num_revisions: The number of revisions to keep before deleting the image.
-        prefix: The image name prefix (app name).
         proxy: The proxy to use to build the image.
     """
 
@@ -262,7 +273,6 @@ class _RunCloudConfig:
     build_network: str
     upload_clouds: typing.Iterable[str]
     num_revisions: int
-    prefix: str
     proxy: str | None
 
 
@@ -294,7 +304,10 @@ def _parametrize_build(
     return tuple(
         RunConfig(
             image=_RunImageConfig(
-                arch=config.arch, base=base, runner_version=config.runner_version
+                arch=config.arch,
+                base=base,
+                runner_version=config.runner_version,
+                prefix=config.prefix,
             ),
             cloud=_RunCloudConfig(
                 build_cloud=config.cloud_name,
@@ -302,7 +315,6 @@ def _parametrize_build(
                 build_network=config.external_build_config.network,
                 upload_clouds=config.upload_cloud_ids,
                 num_revisions=config.num_revisions,
-                prefix=config.prefix,
                 proxy=proxy.http if proxy else None,
             ),
         )
@@ -329,9 +341,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
             str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
             "run",
             config.cloud.build_cloud,
-            _get_image_name(
-                arch=config.image.arch, base=config.image.base, prefix=config.cloud.prefix
-            ),
+            config.image.image_name,
             "--base-image",
             config.image.base.value,
             "--keep-revisions",
@@ -389,20 +399,6 @@ def _run(config: RunConfig) -> list[CloudImage]:
         raise BuilderRunError from exc
 
 
-def _get_image_name(arch: state.Arch, base: state.BaseImage, prefix: str) -> str:
-    """Get image name.
-
-    Args:
-        arch: The image compute architecture.
-        base: The Ubuntu OS base of the image.
-        prefix: The prefix to use for image name.
-
-    Returns:
-        The image name to upload on OpenStack.
-    """
-    return f"{prefix}-{base.value}-{arch.value}"
-
-
 def get_latest_images(config: state.BuilderRunConfig, cloud_id: str) -> list[CloudImage]:
     """Fetch the latest image build ID.
 
@@ -434,12 +430,22 @@ class FetchConfig:
         base: The Ubuntu base OS image to build the image on.
         cloud_id: The cloud ID to fetch the image from.
         prefix: The image name prefix.
+        image_name: The image name derived from image configuration attributes.
     """
 
     arch: state.Arch
     base: state.BaseImage
     cloud_id: str
     prefix: str
+
+    @property
+    def image_name(self) -> str:
+        """The image name derived from the image configuration attributes.
+
+        Returns:
+            The image name.
+        """
+        return f"{self.prefix}-{self.base.value}-{self.arch.value}"
 
 
 def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[FetchConfig, ...]:
@@ -479,7 +485,7 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
                 "latest-build-id",
                 config.cloud_id,
-                _get_image_name(arch=config.arch, base=config.base, prefix=config.prefix),
+                config.image_name,
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
