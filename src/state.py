@@ -612,6 +612,7 @@ class BuilderInitConfig:
     """The image builder setup config.
 
     Attributes:
+        app_name: The current charm's application name.
         channel: The application installation channel.
         external_build: Whether the image builder should run in external build mode.
         interval: The interval in hours between each scheduled image builds.
@@ -619,6 +620,7 @@ class BuilderInitConfig:
         unit_name: The charm unit name in which the builder is running on.
     """
 
+    app_name: str
     channel: BuilderAppChannel
     external_build: bool
     interval: int
@@ -647,6 +649,7 @@ class BuilderInitConfig:
             raise BuilderSetupConfigInvalidError(msg=str(exc)) from exc
 
         return cls(
+            app_name=charm.app.name,
             channel=channel,
             external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
             run_config=run_config,
