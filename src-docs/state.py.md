@@ -138,6 +138,7 @@ The image builder setup config.
 
 **Attributes:**
  
+ - <b>`app_name`</b>:  The current charm's application name. 
  - <b>`channel`</b>:  The application installation channel. 
  - <b>`external_build`</b>:  Whether the image builder should run in external build mode. 
  - <b>`interval`</b>:  The interval in hours between each scheduled image builds. 
@@ -149,7 +150,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L628"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L630"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

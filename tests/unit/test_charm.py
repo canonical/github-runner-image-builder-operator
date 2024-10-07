@@ -27,6 +27,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
         "from_charm",
         MagicMock(
             return_value=state.BuilderInitConfig(
+                app_name="app-name",
                 channel=MagicMock(),
                 external_build=True,
                 interval=1,

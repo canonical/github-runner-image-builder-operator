@@ -109,6 +109,8 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
                 init_config.run_config.cloud_name,
                 "--arch",
                 init_config.run_config.arch.value,
+                "--prefix",
+                init_config.app_name,
             ]
         )
     try:
@@ -263,6 +265,7 @@ class _RunCloudConfig:
         build_cloud: The cloud to build the images on.
         build_flavor: The OpenStack builder flavor to use.
         build_network: The OpenStack builder network to use.
+        resource_prefix: The OpenStack resources prefix to indicate the ownership.
         upload_clouds: The clouds to upload the final image to.
         num_revisions: The number of revisions to keep before deleting the image.
         proxy: The proxy to use to build the image.
@@ -271,9 +274,10 @@ class _RunCloudConfig:
     build_cloud: str
     build_flavor: str
     build_network: str
-    upload_clouds: typing.Iterable[str]
+    resource_prefix: str
     num_revisions: int
     proxy: str | None
+    upload_clouds: typing.Iterable[str]
 
 
 @dataclasses.dataclass
@@ -313,9 +317,10 @@ def _parametrize_build(
                 build_cloud=config.cloud_name,
                 build_flavor=config.external_build_config.flavor,
                 build_network=config.external_build_config.network,
-                upload_clouds=config.upload_cloud_ids,
+                resource_prefix=config.prefix,
                 num_revisions=config.num_revisions,
                 proxy=proxy.http if proxy else None,
+                upload_clouds=config.upload_cloud_ids,
             ),
         )
         for base in config.bases
@@ -361,6 +366,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 config.cloud.build_network,
                 "--upload-clouds",
                 ",".join(config.cloud.upload_clouds),
+                "--prefix",
+                config.image.prefix,
             ]
         )
         if config.cloud.proxy:
