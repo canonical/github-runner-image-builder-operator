@@ -14,7 +14,7 @@ description: |
   latest version of the images.
 links:
   contact: https://github.com/orgs/canonical/teams/is-charms
-  documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview
+  documentation: https://discourse.charmhub.io/t/github-runner-image-builder-documentation-overview/15390
   issues: https://github.com/canonical/github-runner-image-builder-operator/issues
   source: https://github.com/canonical/github-runner-image-builder-operator
   website: https://charmhub.io/github-runner-image-builder
