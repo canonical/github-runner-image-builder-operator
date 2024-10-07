@@ -279,6 +279,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     charm = MockCharmFactory()
     result = state.BuilderInitConfig.from_charm(charm)
     assert result == state.BuilderInitConfig(
+        app_name=charm.app.name,
         channel=state.BuilderAppChannel.EDGE,
         external_build=False,
         run_config=state.BuilderRunConfig(
