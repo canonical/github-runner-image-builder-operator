@@ -385,15 +385,15 @@ class CloudConfig:
     """Cloud configuration parameters.
 
     Attributes:
-        cloud_config: The OpenStack clouds.yaml passed as charm config.
         cloud_name: The OpenStack cloud name to connect to from clouds.yaml.
         external_build_config: The external builder configuration values.
         num_revisions: Number of images to keep before deletion.
+        openstack_clouds_config: The OpenStack clouds.yaml passed as charm config.
         upload_cloud_ids: The OpenStack cloud ids to connect to, where the image should be \
             made available.
     """
 
-    cloud_config: OpenstackCloudsConfig
+    openstack_clouds_config: OpenstackCloudsConfig
     external_build_config: ExternalBuildConfig | None
     num_revisions: int
 
@@ -406,7 +406,9 @@ class CloudConfig:
     def upload_cloud_ids(self) -> list[str]:
         """The cloud name from cloud_config."""
         return list(
-            cloud_id for cloud_id in self.cloud_config.clouds.keys() if cloud_id != CLOUD_NAME
+            cloud_id
+            for cloud_id in self.openstack_clouds_config.clouds.keys()
+            if cloud_id != CLOUD_NAME
         )
 
     @classmethod
@@ -429,7 +431,7 @@ class CloudConfig:
         revision_history_limit = _parse_revision_history_limit(charm)
 
         return cls(
-            cloud_config=cloud_config,
+            openstack_clouds_config=cloud_config,
             external_build_config=external_build_config,
             num_revisions=revision_history_limit,
         )

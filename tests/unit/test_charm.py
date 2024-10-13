@@ -34,7 +34,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                 interval=1,
                 run_config=state.BuilderRunConfig(
                     cloud_config=state.CloudConfig(
-                        cloud_config=factories.OpenstackCloudsConfigFactory(),
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
                         external_build_config=factories.ExternalBuildConfigFactory(),
                         num_revisions=1,
                     ),
@@ -160,7 +160,7 @@ def test__on_config_changed(
                         runner_version="",
                     ),
                     cloud_config=state.CloudConfig(
-                        cloud_config=factories.OpenstackCloudsConfigFactory(
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
                             clouds={
                                 "builder": factories._CloudsConfig(
                                     auth=factories.CloudAuthFactory()
@@ -257,7 +257,7 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     runner_version="",
                 ),
                 cloud_config=state.CloudConfig(
-                    cloud_config=factories.OpenstackCloudsConfigFactory(clouds={}),
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(clouds={}),
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
                 ),
@@ -275,7 +275,7 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     runner_version="",
                 ),
                 cloud_config=state.CloudConfig(
-                    cloud_config=factories.OpenstackCloudsConfigFactory(
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
                         clouds={
                             "builder": factories._CloudsConfig(auth=factories.CloudAuthFactory()),
                             "uploader": factories._CloudsConfig(auth=factories.CloudAuthFactory()),

@@ -419,7 +419,9 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
         pytest.param(
             state.BuilderRunConfig(
                 cloud_config=state.CloudConfig(
-                    cloud_config=(cloud_config := factories.OpenstackCloudsConfigFactory()),
+                    openstack_clouds_config=(
+                        cloud_config := factories.OpenstackCloudsConfigFactory()
+                    ),
                     external_build_config=(
                         external_build_config := factories.ExternalBuildConfigFactory()
                     ),
@@ -729,7 +731,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     runner_version="",
                 ),
                 cloud_config=state.CloudConfig(
-                    cloud_config=factories.OpenstackCloudsConfigFactory(),
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
                 ),

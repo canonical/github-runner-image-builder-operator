@@ -218,7 +218,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
         external_build=True,
         run_config=state.BuilderRunConfig(
             cloud_config=state.CloudConfig(
-                cloud_config=factories.OpenstackCloudsConfigFactory(),
+                openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
                 external_build_config=factories.ExternalBuildConfigFactory(),
                 num_revisions=5,
             ),

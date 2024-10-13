@@ -54,7 +54,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 

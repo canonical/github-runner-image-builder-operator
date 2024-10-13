@@ -176,7 +176,7 @@ The image builder setup config.
 
 ---
 
-<a href="../src/state.py#L734"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -215,7 +215,7 @@ Configurations for running builder periodically.
 
 ---
 
-<a href="../src/state.py#L450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L452"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -302,10 +302,10 @@ Cloud configuration parameters.
 
 **Attributes:**
  
- - <b>`cloud_config`</b>:  The OpenStack clouds.yaml passed as charm config. 
  - <b>`cloud_name`</b>:  The OpenStack cloud name to connect to from clouds.yaml. 
  - <b>`external_build_config`</b>:  The external builder configuration values. 
  - <b>`num_revisions`</b>:  Number of images to keep before deletion. 
+ - <b>`openstack_clouds_config`</b>:  The OpenStack clouds.yaml passed as charm config. 
  - <b>`upload_cloud_ids`</b>:  The OpenStack cloud ids to connect to, where the image should be             made available. 
 
 
@@ -325,7 +325,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
