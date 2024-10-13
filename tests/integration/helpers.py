@@ -325,7 +325,7 @@ class ImageTestMeta:
     test_id: str
 
 
-async def test_image(
+async def run_image_test(
     openstack_metadata: OpenstackMeta,
     image_id: str,
     image_test_meta: ImageTestMeta,

@@ -16,7 +16,7 @@ from juju.unit import Unit
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
-from tests.integration.helpers import ImageTestMeta, test_image, wait_for
+from tests.integration.helpers import ImageTestMeta, run_image_test, wait_for
 from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ async def test_bare_image(
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
-    await test_image(
+    await run_image_test(
         openstack_metadata=openstack_metadata,
         image_id=bare_image_id,
         image_test_meta=ImageTestMeta(
@@ -178,7 +178,7 @@ async def test_juju_image(
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
-    await test_image(
+    await run_image_test(
         openstack_metadata=openstack_metadata,
         image_id=bare_image_id,
         image_test_meta=ImageTestMeta(
