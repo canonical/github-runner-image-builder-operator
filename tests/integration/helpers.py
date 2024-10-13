@@ -8,16 +8,19 @@ import inspect
 import logging
 import time
 import urllib
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
+from typing import AsyncIterator, Awaitable, Callable, Iterable, ParamSpec, TypeVar, cast
 
+import invoke
 from fabric import Connection as SSHConnection
 from fabric import Result
+from juju.application import Application
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
-from tests.integration.types import ProxyConfig
+from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +122,7 @@ class OpenStackConnectionParams:
     ssh_key: Path
 
 
-def wait_for_valid_connection(
+def _wait_for_valid_connection(
     connection_params: OpenStackConnectionParams,
     timeout: int = 30 * 60,
     proxy: ProxyConfig | None = None,
@@ -230,3 +233,148 @@ async def wait_for(
         if result := func():
             return cast(R, result)
     raise TimeoutError()
+
+
+@asynccontextmanager
+async def _get_ssh_connection_for_image(
+    image: str,
+    test_id: str,
+    openstack_metadata: OpenstackMeta,
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+) -> AsyncIterator[SSHConnection]:
+    """Spawn a server with the image and create an SSH connection.
+
+    Args:
+        image: The image to use to create server.
+        test_id: The unique test ID.
+        openstack_metadata: The OpenStack metadata to create servers with.
+        proxy: The proxy configuration to spawn the servers with.
+        dockerhub_mirror: The dockerhub mirror to configure the OpenStack servers with.
+
+    Yields:
+        The SSH connection to the server.
+    """
+    images = openstack_metadata.connection.search_images(name_or_id=image)
+    assert images, f"No image found with name/id {image}"
+    server_name = f"test-image-builder-operator-server-{test_id}"
+    server: Server = openstack_metadata.connection.create_server(
+        name=server_name,
+        image=images[0],
+        key_name=openstack_metadata.ssh_key.keypair.name,
+        auto_ip=False,
+        # these are pre-configured values on private endpoint.
+        security_groups=[openstack_metadata.security_group.name],
+        flavor=openstack_metadata.flavor,
+        network=openstack_metadata.network,
+        timeout=120,
+        wait=True,
+    )
+
+    logger.info("Setting up SSH connection.")
+    ssh_connection = _wait_for_valid_connection(
+        connection_params=OpenStackConnectionParams(
+            connection=openstack_metadata.connection,
+            server_name=server.name,
+            network=openstack_metadata.network,
+            ssh_key=openstack_metadata.ssh_key.private_key,
+        ),
+        proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror,
+    )
+
+    yield ssh_connection
+
+    openstack_metadata.connection.delete_server(server_name, wait=True)
+    for openstack_image in images:
+        openstack_metadata.connection.delete_image(openstack_image.id, wait=True)
+
+
+def get_image_relation_data(app: Application) -> None | dict[str, str]:
+    """Get default image ID from app relation data.
+
+    Args:
+        app: The image builder application.
+
+    Returns:
+        The image relation data dictionary if available.
+    """
+    app = app.latest()
+    if not app.relations:
+        return None
+    image_relation = app.relations[0]
+    if not image_relation or not image_relation.data:
+        return None
+    if "id" not in image_relation.data:
+        return None
+    return image_relation.data
+
+
+async def test_image(
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+    openstack_metadata: OpenstackMeta,
+    image_id: str,
+    test_id: str,
+    test_commands: Iterable[Commands],
+):
+    """Run test commands on an image.
+
+    Args:
+        proxy: The proxy to enable for testing.
+        dockerhub_mirror: The DockerHub mirror URL to enable for docker tests.
+        openstack_metadata: OpenStack metadata for creating test server.
+        image_id: The image to test.
+        test_id: The unique testing ID.
+        test_commands: The test commands to run.
+    """
+    env = (
+        {}
+        if not proxy.http
+        else {
+            "HTTP_PROXY": proxy.http,
+            "HTTPS_PROXY": proxy.https,
+            "NO_PROXY": proxy.no_proxy,
+            "http_proxy": proxy.http,
+            "https_proxy": proxy.https,
+            "no_proxy": proxy.no_proxy,
+        }
+    )
+    if dockerhub_mirror:
+        env.update(DOCKERHUB_MIRROR=dockerhub_mirror, CONTAINER_REGISTRY_URL=dockerhub_mirror)
+
+    async with _get_ssh_connection_for_image(
+        image=image_id,
+        test_id=test_id,
+        openstack_metadata=openstack_metadata,
+        proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror,
+    ) as ssh_conn:
+        for command in test_commands:
+            if command.command == "configure dockerhub mirror":
+                if not dockerhub_mirror:
+                    continue
+                command.command = format_dockerhub_mirror_microk8s_command(
+                    command=command.command, dockerhub_mirror=dockerhub_mirror
+                )
+            logger.info("Running test: %s", command.name)
+            for attempt in range(command.retry):
+                try:
+                    result: Result = ssh_conn.run(command.command, env=env if env else None)
+                except invoke.exceptions.UnexpectedExit as exc:
+                    logger.info(
+                        "Unexpected exception (retry attempt: %s): %s %s %s %s %s",
+                        attempt,
+                        exc.reason,
+                        exc.args,
+                        exc.result.stdout,
+                        exc.result.stderr,
+                        exc.result.return_code,
+                    )
+                    continue
+                logger.info(
+                    "Command output: %s %s %s", result.return_code, result.stdout, result.stderr
+                )
+                if result.ok:
+                    break
+            assert result.ok

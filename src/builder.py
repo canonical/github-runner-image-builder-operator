@@ -200,12 +200,14 @@ class CloudImage:
         base: The ubuntu base image of the build.
         cloud_id: The cloud ID that the image was uploaded to.
         image_id: The uploaded image ID.
+        juju: The juju snap channel.
     """
 
     arch: state.Arch
     base: state.BaseImage
     cloud_id: str
     image_id: str
+    juju: str
 
 
 def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[list[CloudImage]]:
@@ -237,6 +239,7 @@ class _RunImageConfig:
     Attributes:
         arch: The architecture to build the image for.
         base: The Ubuntu base OS image to build the image on.
+        juju: The Juju channel to install and bootstrap on the image.
         runner_version: The GitHub runner version to pin, defaults to latest.
         prefix: The image prefix.
         image_name: The image name derived from image configuration attributes.
@@ -244,6 +247,7 @@ class _RunImageConfig:
 
     arch: state.Arch
     base: state.BaseImage
+    juju: str
     runner_version: str | None
     prefix: str
 
@@ -254,7 +258,10 @@ class _RunImageConfig:
         Returns:
             The image name.
         """
-        return f"{self.prefix}-{self.base.value}-{self.arch.value}"
+        image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
+        if self.juju:
+            image_name += f"-juju-{self.juju}"
+        return image_name
 
 
 @dataclasses.dataclass
@@ -305,26 +312,30 @@ def _parametrize_build(
     Returns:
         Per image build configuration values.
     """
-    return tuple(
-        RunConfig(
-            image=_RunImageConfig(
-                arch=config.arch,
-                base=base,
-                runner_version=config.runner_version,
-                prefix=config.prefix,
-            ),
-            cloud=_RunCloudConfig(
-                build_cloud=config.cloud_name,
-                build_flavor=config.external_build_config.flavor,
-                build_network=config.external_build_config.network,
-                resource_prefix=config.prefix,
-                num_revisions=config.num_revisions,
-                proxy=proxy.http if proxy else None,
-                upload_clouds=config.upload_cloud_ids,
-            ),
-        )
-        for base in config.bases
-    )
+    configs = []
+    for base in config.image_config.bases:
+        for juju in config.image_config.juju_channels:
+            configs.append(
+                RunConfig(
+                    image=_RunImageConfig(
+                        arch=config.image_config.arch,
+                        base=base,
+                        juju=juju,
+                        runner_version=config.image_config.runner_version,
+                        prefix=config.image_config.prefix,
+                    ),
+                    cloud=_RunCloudConfig(
+                        build_cloud=config.cloud_config.cloud_name,
+                        build_flavor=config.cloud_config.external_build_config.flavor,
+                        build_network=config.cloud_config.external_build_config.network,
+                        resource_prefix=config.image_config.prefix,
+                        num_revisions=config.cloud_config.num_revisions,
+                        proxy=proxy.http if proxy else None,
+                        upload_clouds=config.cloud_config.upload_cloud_ids,
+                    ),
+                )
+            )
+    return tuple(configs)
 
 
 def _run(config: RunConfig) -> list[CloudImage]:
@@ -354,6 +365,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
         ]
         if config.image.runner_version:
             commands.extend(["--runner-version", config.image.runner_version])
+        if config.image.juju:
+            commands.extend(["--juju", config.image.juju])
         commands.extend(
             [
                 "--experimental-external",
@@ -392,6 +405,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 base=config.image.base,
                 cloud_id=cloud_id,
                 image_id=image_id,
+                juju=config.image.juju,
             )
             for (cloud_id, image_id) in zip(
                 config.cloud.upload_clouds, stdout.split()[-1].split(",")
@@ -436,6 +450,7 @@ class FetchConfig:
         arch: The architecture to build the image for.
         base: The Ubuntu base OS image to build the image on.
         cloud_id: The cloud ID to fetch the image from.
+        juju: The Juju channel to fetch the image for.
         prefix: The image name prefix.
         image_name: The image name derived from image configuration attributes.
     """
@@ -443,6 +458,7 @@ class FetchConfig:
     arch: state.Arch
     base: state.BaseImage
     cloud_id: str
+    juju: str
     prefix: str
 
     @property
@@ -452,7 +468,10 @@ class FetchConfig:
         Returns:
             The image name.
         """
-        return f"{self.prefix}-{self.base.value}-{self.arch.value}"
+        image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
+        if self.juju:
+            image_name += f"-juju-{self.juju}"
+        return image_name
 
 
 def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[FetchConfig, ...]:
@@ -465,10 +484,19 @@ def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[F
     Returns:
         Per image fetch configuration values.
     """
-    return tuple(
-        FetchConfig(arch=config.arch, base=base, cloud_id=cloud_id, prefix=config.prefix)
-        for base in config.bases
-    )
+    configs = []
+    for base in config.image_config.bases:
+        for juju in config.image_config.juju_channels:
+            configs.append(
+                FetchConfig(
+                    arch=config.image_config.arch,
+                    base=base,
+                    cloud_id=cloud_id,
+                    prefix=config.image_config.prefix,
+                    juju=juju,
+                )
+            )
+    return tuple(configs)
 
 
 def _get_latest_image(config: FetchConfig) -> CloudImage:
@@ -501,7 +529,11 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
             encoding="utf-8",
         )  # nosec: B603
         return CloudImage(
-            arch=config.arch, base=config.base, cloud_id=config.cloud_id, image_id=image_id
+            arch=config.arch,
+            base=config.base,
+            cloud_id=config.cloud_id,
+            image_id=image_id,
+            juju=config.juju,
         )
     except subprocess.CalledProcessError as exc:
         logger.error(

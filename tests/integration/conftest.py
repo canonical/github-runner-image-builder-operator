@@ -2,6 +2,8 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm integration tests."""
+import functools
+import json
 import logging
 import platform
 import secrets
@@ -12,19 +14,16 @@ import string
 import subprocess  # nosec: B404
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncGenerator, Generator, Literal, NamedTuple, Optional
+from typing import AsyncGenerator, Generator, Literal, Optional
 
 import nest_asyncio
 import openstack
 import pytest
 import pytest_asyncio
 import yaml
-from fabric.connection import Connection as SSHConnection
 from juju.application import Application
 from juju.model import Model
-from openstack.compute.v2.image import Image
 from openstack.compute.v2.keypair import Keypair
-from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
@@ -37,6 +36,7 @@ from state import (
     EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
+    JUJU_CHANNELS_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -46,8 +46,15 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import OpenStackConnectionParams, wait_for_valid_connection
-from tests.integration.types import PrivateEndpointConfigs, ProxyConfig, SSHKey, TestConfigs
+from tests.integration.helpers import get_image_relation_data, wait_for
+from tests.integration.types import (
+    ImageConfigs,
+    OpenstackMeta,
+    PrivateEndpointConfigs,
+    ProxyConfig,
+    SSHKey,
+    TestConfigs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +315,15 @@ def test_configs_fixture(
     )
 
 
+@pytest.fixture(scope="module", name="image_configs")
+def image_configs_fixture():
+    """The image configuration values used to parametrize image build."""
+    return ImageConfigs(
+        bases=("jammy", "noble"),
+        juju_channels=("3.6/stable", "4/stable"),
+    )
+
+
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
     test_configs: TestConfigs,
@@ -315,12 +331,14 @@ async def app_fixture(
     use_private_endpoint: bool,
     network_name: str,
     flavor_name: str,
+    image_configs: ImageConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
         APP_CHANNEL_CONFIG_NAME: "edge",
-        BASE_IMAGE_CONFIG_NAME: "jammy, noble",
+        BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
+        JUJU_CHANNELS_CONFIG_NAME: ",".join(image_configs.juju_channels),
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
@@ -371,32 +389,6 @@ def ssh_key_fixture(
     openstack_connection.delete_keypair(name=keypair.name)
 
 
-class OpenstackMeta(NamedTuple):
-    """A wrapper around Openstack related info.
-
-    Attributes:
-        connection: The connection instance to Openstack.
-        ssh_key: The SSH-Key created to connect to Openstack instance.
-        network: The Openstack network to create instances under.
-        flavor: The flavor to create instances with.
-    """
-
-    connection: Connection
-    ssh_key: SSHKey
-    network: str
-    flavor: str
-
-
-@pytest.fixture(scope="module", name="openstack_metadata")
-def openstack_metadata_fixture(
-    openstack_connection: Connection, ssh_key: SSHKey, network_name: str, flavor_name: str
-) -> OpenstackMeta:
-    """A wrapper around openstack related info."""
-    return OpenstackMeta(
-        connection=openstack_connection, ssh_key=ssh_key, network=network_name, flavor=flavor_name
-    )
-
-
 @pytest.fixture(scope="module", name="openstack_security_group")
 def openstack_security_group_fixture(openstack_connection: Connection):
     """An ssh-connectable security group."""
@@ -436,67 +428,59 @@ def openstack_security_group_fixture(openstack_connection: Connection):
     openstack_connection.delete_security_group(security_group_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="openstack_server")
-async def openstack_server_fixture(
-    model: Model,
-    app: Application,
-    openstack_metadata: OpenstackMeta,
+@pytest.fixture(scope="module", name="openstack_metadata")
+def openstack_metadata_fixture(
+    openstack_connection: Connection,
+    ssh_key: SSHKey,
+    network_name: str,
+    flavor_name: str,
     openstack_security_group: SecurityGroup,
-    test_id: str,
-):
-    """A testing openstack instance."""
-    await model.wait_for_idle(apps=[app.name], wait_for_active=True, timeout=40 * 60)
-    server_name = f"test-image-builder-operator-server-{test_id}"
-
-    # the config is the entire config info dict, weird.
-    # i.e. {"name": ..., "description:", ..., "value":..., "default": ...}
-    config: dict = await app.get_config()
-    image_bases: str = config[BASE_IMAGE_CONFIG_NAME]["value"]
-    image_base = list(image.strip() for image in image_bases.split(","))[0]
-
-    images: list[Image] = openstack_metadata.connection.search_images(
-        f"{app.name}-{image_base}-{_get_supported_arch().value}"
+) -> OpenstackMeta:
+    """A wrapper around openstack related info."""
+    return OpenstackMeta(
+        connection=openstack_connection,
+        security_group=openstack_security_group,
+        ssh_key=ssh_key,
+        network=network_name,
+        flavor=flavor_name,
     )
 
-    assert images, "No built image found."
-    server: Server = openstack_metadata.connection.create_server(
-        name=server_name,
-        image=images[0],
-        key_name=openstack_metadata.ssh_key.keypair.name,
-        auto_ip=False,
-        # these are pre-configured values on private endpoint.
-        security_groups=[openstack_security_group.name],
-        flavor=openstack_metadata.flavor,
-        network=openstack_metadata.network,
-        timeout=120,
-        wait=True,
+
+@pytest.fixture(scope="module", name="image_names")
+def image_names_fixture(image_configs: ImageConfigs, app: Application):
+    """Expected image names after imagebuilder run."""
+    image_names = []
+    arch = _get_supported_arch()
+    for base in image_configs.bases:
+        image_names.append(f"{app.name}-{base}-{arch.value}")
+        for juju in image_configs.juju_channels:
+            image_names.append(f"{app.name}-{base}-{arch.value}-juju-{juju}")
+    return image_names
+
+
+@pytest_asyncio.fixture(scope="module", name="bare_image_id")
+async def bare_image_id_fixture(app: Application):
+    """The bare image expected from builder application."""
+    await wait_for(
+        functools.partial(get_image_relation_data, app=app), timeout=60 * 30, check_interval=30
     )
+    assert (
+        image_relation_data := get_image_relation_data(app=app)
+    ), "Image relation data not yet setup."
+    return image_relation_data["id"]
 
-    yield server
 
-    openstack_metadata.connection.delete_server(server_name, wait=True)
+@pytest_asyncio.fixture(scope="module", name="juju_image_id")
+async def juju_image_id_fixture(app: Application):
+    """The Juju bootstrapped image expected from builder application."""
+    await wait_for(
+        functools.partial(get_image_relation_data, app=app), timeout=60 * 30, check_interval=30
+    )
+    assert (
+        image_relation_data := get_image_relation_data(app=app)
+    ), "Image relation data not yet setup."
+    images = json.loads(image_relation_data["images"])
     for image in images:
-        openstack_metadata.connection.delete_image(image.id, wait=True)
-
-
-@pytest_asyncio.fixture(scope="module", name="ssh_connection")
-async def ssh_connection_fixture(
-    openstack_server: Server,
-    openstack_metadata: OpenstackMeta,
-    proxy: ProxyConfig,
-    dockerhub_mirror: str | None,
-) -> SSHConnection:
-    """The openstack server ssh connection fixture."""
-    logger.info("Setting up SSH connection.")
-    ssh_connection = wait_for_valid_connection(
-        connection_params=OpenStackConnectionParams(
-            connection=openstack_metadata.connection,
-            server_name=openstack_server.name,
-            network=openstack_metadata.network,
-            ssh_key=openstack_metadata.ssh_key.private_key,
-        ),
-        proxy=proxy,
-        dockerhub_mirror=dockerhub_mirror,
-    )
-
-    return ssh_connection
+        if "juju" in image["tags"]:
+            return image["id"]
+    raise ValueError("Juju image not found in built images on relation data.")

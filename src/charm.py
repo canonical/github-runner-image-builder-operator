@@ -111,7 +111,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Returns:
             Whether the image relation is ready.
         """
-        if not config.upload_cloud_ids:
+        if not config.cloud_config.upload_cloud_ids:
             self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
             return False
         return True

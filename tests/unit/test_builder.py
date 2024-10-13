@@ -199,6 +199,51 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
     )
 
 
+def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """
+    arrange: given mocked OPENSTACK_CLOUDS_YAML_PATH with unchanged contents.
+    act: when install_clouds_yaml is called.
+    assert: contents of cloud_config are written.
+    """
+    test_path = tmp_path / "test_yaml"
+    test_config = state.OpenstackCloudsConfig(
+        clouds={
+            "test": state._CloudsConfig(
+                auth=state.CloudsAuthConfig(
+                    auth_url="test-url",
+                    password=(test_password := secrets.token_hex(16)),
+                    project_domain_name="test_domain",
+                    project_name="test-project",
+                    user_domain_name="test_domain",
+                    username="test-user",
+                )
+            )
+        }
+    )
+    test_path.write_text(
+        yaml.dump(test_config.model_dump()),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_path)
+
+    builder.install_clouds_yaml(cloud_config=test_config)
+
+    contents = test_path.read_text(encoding="utf-8")
+    assert (
+        contents
+        == f"""clouds:
+  test:
+    auth:
+      auth_url: test-url
+      password: {test_password}
+      project_domain_name: test_domain
+      project_name: test-project
+      user_domain_name: test_domain
+      username: test-user
+"""
+    )
+
+
 @pytest.mark.parametrize(
     "original_contents, cloud_config",
     [
@@ -363,18 +408,115 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_run", _patched_test_func)
 
-    assert ["test", "test"] == builder.run(
-        config=state.BuilderRunConfig(
-            arch=state.Arch.ARM64,
-            bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-            cloud_config=state.OpenstackCloudsConfig(clouds={}),
-            external_build_config=None,
-            num_revisions=1,
-            prefix="app-name",
-            runner_version="",
+    assert ["test", "test"] == builder.run(config=MagicMock(), proxy=None)
+
+
+@pytest.mark.parametrize(
+    "builder_run_config, expected_configs",
+    [
+        pytest.param(
+            state.BuilderRunConfig(
+                cloud_config=state.CloudConfig(
+                    cloud_config=(cloud_config := factories.OpenstackCloudsConfigFactory()),
+                    external_build_config=(
+                        external_build_config := factories.ExternalBuildConfigFactory()
+                    ),
+                    num_revisions=1,
+                ),
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                    juju_channels=("3.1/stable", "2.9/stable"),
+                    prefix="",
+                    runner_version="",
+                ),
+            ),
+            (
+                builder.RunConfig(
+                    image=builder._RunImageConfig(
+                        arch=state.Arch.ARM64,
+                        base=state.BaseImage.JAMMY,
+                        juju="3.1/stable",
+                        runner_version="",
+                        prefix="",
+                    ),
+                    cloud=builder._RunCloudConfig(
+                        build_cloud="builder",
+                        build_flavor=external_build_config.flavor,
+                        build_network=external_build_config.network,
+                        resource_prefix="",
+                        num_revisions=1,
+                        proxy=None,
+                        upload_clouds=[],
+                    ),
+                ),
+                builder.RunConfig(
+                    image=builder._RunImageConfig(
+                        arch=state.Arch.ARM64,
+                        base=state.BaseImage.JAMMY,
+                        juju="2.9/stable",
+                        runner_version="",
+                        prefix="",
+                    ),
+                    cloud=builder._RunCloudConfig(
+                        build_cloud="builder",
+                        build_flavor=external_build_config.flavor,
+                        build_network=external_build_config.network,
+                        resource_prefix="",
+                        num_revisions=1,
+                        proxy=None,
+                        upload_clouds=[],
+                    ),
+                ),
+                builder.RunConfig(
+                    image=builder._RunImageConfig(
+                        arch=state.Arch.ARM64,
+                        base=state.BaseImage.NOBLE,
+                        juju="3.1/stable",
+                        runner_version="",
+                        prefix="",
+                    ),
+                    cloud=builder._RunCloudConfig(
+                        build_cloud="builder",
+                        build_flavor=external_build_config.flavor,
+                        build_network=external_build_config.network,
+                        resource_prefix="",
+                        num_revisions=1,
+                        proxy=None,
+                        upload_clouds=[],
+                    ),
+                ),
+                builder.RunConfig(
+                    image=builder._RunImageConfig(
+                        arch=state.Arch.ARM64,
+                        base=state.BaseImage.NOBLE,
+                        juju="2.9/stable",
+                        runner_version="",
+                        prefix="",
+                    ),
+                    cloud=builder._RunCloudConfig(
+                        build_cloud="builder",
+                        build_flavor=external_build_config.flavor,
+                        build_network=external_build_config.network,
+                        resource_prefix="",
+                        num_revisions=1,
+                        proxy=None,
+                        upload_clouds=[],
+                    ),
+                ),
+            ),
         ),
-        proxy=None,
-    )
+    ],
+)
+def test__parametrize_build(
+    builder_run_config: state.BuilderRunConfig, expected_configs: tuple[builder.RunConfig, ...]
+):
+    """
+    arrange: given builder run configuration values.
+    act: when _parametrize_build is called.
+    assert: expected build configurations are returned.
+    """
+    assert builder._parametrize_build(config=builder_run_config, proxy=None) == expected_configs
 
 
 @pytest.mark.parametrize(
@@ -421,6 +563,7 @@ def test__run_error(
                     arch=state.Arch.ARM64,
                     base=state.BaseImage.JAMMY,
                     runner_version="1.2.3",
+                    juju="3.1/stable",
                     prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
@@ -441,6 +584,7 @@ def test__run_error(
                     arch=state.Arch.ARM64,
                     base=state.BaseImage.JAMMY,
                     runner_version=None,
+                    juju="3.1/stable",
                     prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
@@ -454,6 +598,27 @@ def test__run_error(
                 ),
             ),
             id="proxy config set",
+        ),
+        pytest.param(
+            builder.RunConfig(
+                image=builder._RunImageConfig(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    runner_version=None,
+                    juju="",
+                    prefix="app-name",
+                ),
+                cloud=builder._RunCloudConfig(
+                    build_cloud="test",
+                    build_flavor="test",
+                    build_network="test",
+                    upload_clouds=["test"],
+                    resource_prefix="app-name",
+                    num_revisions=1,
+                    proxy="test",
+                ),
+            ),
+            id="juju unset",
         ),
     ],
 )
@@ -472,6 +637,140 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
     builder._run(config=run_config)
 
     check_output_mock.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "config, expected_name",
+    [
+        pytest.param(
+            builder._RunImageConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                juju="",
+                runner_version="",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64",
+            id="raw",
+        ),
+        pytest.param(
+            builder._RunImageConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                juju="3.1/stable",
+                runner_version="",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64-juju-3.1/stable",
+            id="juju",
+        ),
+    ],
+)
+def test__run_image_config_image_name(config: builder._RunImageConfig, expected_name: str):
+    """
+    arrange: given _RunImageConfig.
+    act: when image_name property is accessed.
+    assert: expected image names are returned.
+    """
+    assert config.image_name == expected_name
+
+
+@pytest.mark.parametrize(
+    "config, expected_name",
+    [
+        pytest.param(
+            builder.FetchConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="",
+                juju="",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64",
+            id="raw",
+        ),
+        pytest.param(
+            builder.FetchConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="",
+                juju="3.1/stable",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64-juju-3.1/stable",
+            id="juju",
+        ),
+    ],
+)
+def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: str):
+    """
+    arrange: given FetchConfig.
+    act: when image_name property is accessed.
+    assert: expected image names are returned.
+    """
+    assert config.image_name == expected_name
+
+
+@pytest.mark.parametrize(
+    "builder_run_config, expected_configs",
+    [
+        pytest.param(
+            state.BuilderRunConfig(
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                    juju_channels=("3.1/stable", "2.9/stable"),
+                    prefix="",
+                    runner_version="",
+                ),
+                cloud_config=state.CloudConfig(
+                    cloud_config=factories.OpenstackCloudsConfigFactory(),
+                    external_build_config=factories.ExternalBuildConfigFactory(),
+                    num_revisions=1,
+                ),
+            ),
+            (
+                builder.FetchConfig(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="",
+                    juju="3.1/stable",
+                    prefix="",
+                ),
+                builder.FetchConfig(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="",
+                    juju="2.9/stable",
+                    prefix="",
+                ),
+                builder.FetchConfig(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="",
+                    juju="3.1/stable",
+                    prefix="",
+                ),
+                builder.FetchConfig(
+                    arch=state.Arch.ARM64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="",
+                    juju="2.9/stable",
+                    prefix="",
+                ),
+            ),
+        ),
+    ],
+)
+def test__parametrize_fetch(
+    builder_run_config: state.BuilderRunConfig, expected_configs: tuple[builder.FetchConfig, ...]
+):
+    """
+    arrange: given fetch configuration values.
+    act: when _parametrize_fetch is called.
+    assert: expected fetch configurations are returned.
+    """
+    assert builder._parametrize_fetch(config=builder_run_config, cloud_id="") == expected_configs
 
 
 def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
@@ -496,18 +795,7 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_get_latest_image", _patched_test_func)
 
-    assert ["test", "test"] == builder.get_latest_images(
-        config=state.BuilderRunConfig(
-            arch=state.Arch.ARM64,
-            bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-            cloud_config=state.OpenstackCloudsConfig(clouds={}),
-            external_build_config=None,
-            num_revisions=1,
-            prefix="app-name",
-            runner_version="",
-        ),
-        cloud_id="test",
-    )
+    assert ["test", "test"] == builder.get_latest_images(config=MagicMock(), cloud_id="test")
 
 
 @pytest.mark.parametrize(
@@ -551,6 +839,7 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
             arch=state.Arch.ARM64,
             base=state.BaseImage.JAMMY,
             cloud_id="test-cloud",
+            juju="3.1/stable",
             prefix="app-name",
         )
     ) == builder.CloudImage(
@@ -558,6 +847,7 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
         base=state.BaseImage.JAMMY,
         cloud_id="test-cloud",
         image_id="test-image",
+        juju="3.1/stable",
     )
 
 

@@ -55,7 +55,7 @@ class Observer(ops.Object):
             event: The event emitted when a relation is joined.
         """
         build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
-        if not build_config.upload_cloud_ids:
+        if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
             )
@@ -159,4 +159,4 @@ def _format_tags(image: builder.CloudImage) -> str:
     Returns:
         The CSV formatted tags.
     """
-    return ",".join((image.arch.value, image.base.value))
+    return ",".join(tag for tag in (image.arch.value, image.base.value, image.juju) if tag)

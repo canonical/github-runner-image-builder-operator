@@ -3,12 +3,15 @@
 
 """Types used in the integration test."""
 
+import dataclasses
 import typing
 from datetime import datetime
 from pathlib import Path
 
 from juju.model import Model
 from openstack.compute.v2.keypair import Keypair
+from openstack.connection import Connection
+from openstack.network.v2.security_group import SecurityGroup
 
 
 class ProxyConfig(typing.NamedTuple):
@@ -80,3 +83,48 @@ class TestConfigs(typing.NamedTuple):
     charm_file: str | Path
     dispatch_time: datetime
     test_id: str
+
+
+class ImageConfigs(typing.NamedTuple):
+    """Image configuration values that are used for parametrized build.
+
+    Attributes:
+        bases: The Ubuntu OS Bases.
+        juju_channels: The Juju snap channels to install.
+    """
+
+    bases: tuple[str, ...]
+    juju_channels: tuple[str, ...]
+
+
+class OpenstackMeta(typing.NamedTuple):
+    """A wrapper around Openstack related info.
+
+    Attributes:
+        connection: The connection instance to Openstack.
+        security_group: The OpenStack security group to create servers under.
+        ssh_key: The SSH-Key created to connect to Openstack instance.
+        network: The Openstack network to create instances under.
+        flavor: The flavor to create instances with.
+    """
+
+    connection: Connection
+    security_group: SecurityGroup
+    ssh_key: SSHKey
+    network: str
+    flavor: str
+
+
+@dataclasses.dataclass
+class Commands:
+    """Test commands to execute.
+
+    Attributes:
+        name: The test name.
+        command: The command to execute.
+        retry: number of times to retry.
+    """
+
+    name: str
+    command: str
+    retry: int = 1
