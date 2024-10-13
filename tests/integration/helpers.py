@@ -310,52 +310,66 @@ def get_image_relation_data(app: Application) -> None | dict[str, str]:
     return image_relation.data
 
 
+@dataclasses.dataclass
+class ImageTestMeta:
+    """Testing configuration required for image VM testing.
+
+    Attributes:
+        proxy: The proxy to enable for testing.
+        dockerhub_mirror: The DockerHub mirror URL to enable for docker tests.
+        test_id: The unique testing ID.
+    """
+
+    proxy: ProxyConfig
+    dockerhub_mirror: str | None
+    test_id: str
+
+
 async def test_image(
-    proxy: ProxyConfig,
-    dockerhub_mirror: str | None,
     openstack_metadata: OpenstackMeta,
     image_id: str,
-    test_id: str,
+    image_test_meta: ImageTestMeta,
     test_commands: Iterable[Commands],
 ):
     """Run test commands on an image.
 
     Args:
-        proxy: The proxy to enable for testing.
-        dockerhub_mirror: The DockerHub mirror URL to enable for docker tests.
         openstack_metadata: OpenStack metadata for creating test server.
         image_id: The image to test.
-        test_id: The unique testing ID.
+        image_test_meta: The image testing metadata.
         test_commands: The test commands to run.
     """
     env = (
         {}
-        if not proxy.http
+        if not image_test_meta.proxy.http
         else {
-            "HTTP_PROXY": proxy.http,
-            "HTTPS_PROXY": proxy.https,
-            "NO_PROXY": proxy.no_proxy,
-            "http_proxy": proxy.http,
-            "https_proxy": proxy.https,
-            "no_proxy": proxy.no_proxy,
+            "HTTP_PROXY": image_test_meta.proxy.http,
+            "HTTPS_PROXY": image_test_meta.proxy.https,
+            "NO_PROXY": image_test_meta.proxy.no_proxy,
+            "http_proxy": image_test_meta.proxy.http,
+            "https_proxy": image_test_meta.proxy.https,
+            "no_proxy": image_test_meta.proxy.no_proxy,
         }
     )
-    if dockerhub_mirror:
-        env.update(DOCKERHUB_MIRROR=dockerhub_mirror, CONTAINER_REGISTRY_URL=dockerhub_mirror)
+    if image_test_meta.dockerhub_mirror:
+        env.update(
+            DOCKERHUB_MIRROR=image_test_meta.dockerhub_mirror,
+            CONTAINER_REGISTRY_URL=image_test_meta.dockerhub_mirror,
+        )
 
     async with _get_ssh_connection_for_image(
         image=image_id,
-        test_id=test_id,
+        test_id=image_test_meta.test_id,
         openstack_metadata=openstack_metadata,
-        proxy=proxy,
-        dockerhub_mirror=dockerhub_mirror,
+        proxy=image_test_meta.proxy,
+        dockerhub_mirror=image_test_meta.dockerhub_mirror,
     ) as ssh_conn:
         for command in test_commands:
             if command.command == "configure dockerhub mirror":
-                if not dockerhub_mirror:
+                if not image_test_meta.dockerhub_mirror:
                     continue
                 command.command = format_dockerhub_mirror_microk8s_command(
-                    command=command.command, dockerhub_mirror=dockerhub_mirror
+                    command=command.command, dockerhub_mirror=image_test_meta.dockerhub_mirror
                 )
             logger.info("Running test: %s", command.name)
             for attempt in range(command.retry):

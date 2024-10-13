@@ -329,9 +329,8 @@ async def app_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     use_private_endpoint: bool,
-    network_name: str,
-    flavor_name: str,
     image_configs: ImageConfigs,
+    openstack_metadata: OpenstackMeta,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
@@ -347,10 +346,9 @@ async def app_fixture(
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
         EXTERNAL_BUILD_CONFIG_NAME: "True",
-        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: flavor_name,
-        EXTERNAL_BUILD_NETWORK_CONFIG_NAME: network_name,
+        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
+        EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
-
     base_machine_constraint = (
         f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=20G"
     )

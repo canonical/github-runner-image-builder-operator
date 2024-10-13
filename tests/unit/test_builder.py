@@ -411,6 +411,8 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     assert ["test", "test"] == builder.run(config=MagicMock(), proxy=None)
 
 
+# pylint doesn't quite understand walrus operators
+# pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
     "builder_run_config, expected_configs",
     [
@@ -517,6 +519,9 @@ def test__parametrize_build(
     assert: expected build configurations are returned.
     """
     assert builder._parametrize_build(config=builder_run_config, proxy=None) == expected_configs
+
+
+# pylint: enable=unused-variable,undefined-variable
 
 
 @pytest.mark.parametrize(

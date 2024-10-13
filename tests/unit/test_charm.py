@@ -22,7 +22,8 @@ from tests.unit import factories
 @pytest.fixture(name="patch_builder_init_config_from_charm", scope="function")
 def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
     """Fixture to patch builder init config."""
-    monkeypatch.setattr(
+    # This is to monkeypatch BuilderInitConfig.from_charm function for unit tests.
+    monkeypatch.setattr(  # pylint: disable=expression-not-assigned
         state.BuilderInitConfig,
         "from_charm",
         MagicMock(
@@ -48,7 +49,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                 unit_name="test-unit",
             ),
         ),
-    ),
+    )
 
 
 @pytest.mark.parametrize(
