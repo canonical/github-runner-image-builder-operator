@@ -67,7 +67,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
         self.unit.status = ops.ActiveStatus()
@@ -79,7 +81,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         self._run()
         self.unit.status = ops.ActiveStatus()
 
