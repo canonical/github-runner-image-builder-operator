@@ -106,9 +106,9 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
                 "--experimental-external",
                 "True",
                 "--cloud-name",
-                init_config.run_config.cloud_name,
+                init_config.run_config.cloud_config.cloud_name,
                 "--arch",
-                init_config.run_config.arch.value,
+                init_config.run_config.image_config.arch.value,
                 "--prefix",
                 init_config.app_name,
             ]
