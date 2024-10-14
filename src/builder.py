@@ -15,6 +15,7 @@ import subprocess  # nosec
 import typing
 from pathlib import Path
 
+import tenacity
 import yaml
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1 import systemd
@@ -340,6 +341,10 @@ def _parametrize_build(
     return tuple(configs)
 
 
+@tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=2, min=5, max=60),
+    stop=tenacity.stop_after_attempt(5),
+)
 def _run(config: RunConfig) -> list[CloudImage]:
     """Run a single build process.
 
