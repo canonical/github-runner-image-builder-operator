@@ -421,7 +421,11 @@ def _run(config: RunConfig) -> list[CloudImage]:
         )
     except subprocess.CalledProcessError as exc:
         logger.error(
-            "Image build failed, code: %s, out: %s, err: %s", exc.stderr, exc.stdout, exc.stderr
+            "Image build failed, code: %s, out: %s, err: %s, stdout: %s",
+            exc.returncode,
+            exc.output,
+            exc.stderr,
+            exc.stdout,
         )
         raise BuilderRunError from exc
     except subprocess.SubprocessError as exc:
