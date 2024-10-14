@@ -161,7 +161,7 @@ async def test_charm_fixture(
             "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
             "openstack-project-name": private_endpoint_configs["project_name"],
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
-            "openstack-username": private_endpoint_configs["username"],
+            "openstack-user-name": private_endpoint_configs["username"],
         },
     )
 
