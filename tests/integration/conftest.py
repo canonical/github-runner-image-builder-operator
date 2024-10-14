@@ -163,7 +163,6 @@ async def test_charm_fixture(
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
             "openstack-user-name": private_endpoint_configs["username"],
         },
-        constraints="cores=4 mem=16G root-disk=50G",
     )
 
     yield app
@@ -351,7 +350,7 @@ async def app_fixture(
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
     base_machine_constraint = (
-        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=20G"
+        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=50G"
     )
     # if local LXD testing model, make the machine of VM type
     if not use_private_endpoint:
