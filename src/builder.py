@@ -344,6 +344,7 @@ def _parametrize_build(
 @tenacity.retry(
     wait=tenacity.wait_exponential(multiplier=2, min=5, max=60),
     stop=tenacity.stop_after_attempt(5),
+    reraise=True,
 )
 def _run(config: RunConfig) -> list[CloudImage]:
     """Run a single build process.

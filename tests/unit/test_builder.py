@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import tenacity
 import yaml
 from charms.operator_libs_linux.v0 import apt
 
@@ -640,6 +641,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
         "check_output",
         check_output_mock := MagicMock(return_value="Image build success\ntest-image-id"),
     )
+    monkeypatch.setattr(builder._run.retry, "wait", tenacity.wait_fixed(0))
 
     builder._run(config=run_config)
 
