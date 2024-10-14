@@ -161,7 +161,7 @@ async def test_charm_fixture(
             "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
             "openstack-project-name": private_endpoint_configs["project_name"],
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
-            "openstack-user-name": private_endpoint_configs["username"],
+            "openstack-username": private_endpoint_configs["username"],
         },
     )
 
@@ -213,7 +213,7 @@ def private_endpoint_configs_fixture(
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
         project_name = pytestconfig.getoption("--openstack-project-name-arm64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
-        user_name = pytestconfig.getoption("--openstack-user-name-arm64")
+        user_name = pytestconfig.getoption("--openstack-username-arm64")
         region_name = pytestconfig.getoption("--openstack-region-name-arm64")
     else:
         auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
@@ -221,7 +221,7 @@ def private_endpoint_configs_fixture(
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
         project_name = pytestconfig.getoption("--openstack-project-name-amd64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
-        user_name = pytestconfig.getoption("--openstack-user-name-amd64")
+        user_name = pytestconfig.getoption("--openstack-username-amd64")
         region_name = pytestconfig.getoption("--openstack-region-name-amd64")
     if any(
         not val
