@@ -263,7 +263,7 @@ class _RunImageConfig:
         """
         image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
         if self.juju:
-            image_name += f"-juju-{self.juju}"
+            image_name += f"-juju-{self.juju.replace('/','-')}"
         return image_name
 
 
@@ -482,7 +482,7 @@ class FetchConfig:
         """
         image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
         if self.juju:
-            image_name += f"-juju-{self.juju}"
+            image_name += f"-juju-{self.juju.replace('/', '-')}"
         return image_name
 
 
