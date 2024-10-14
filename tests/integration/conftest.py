@@ -163,6 +163,7 @@ async def test_charm_fixture(
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
             "openstack-user-name": private_endpoint_configs["username"],
         },
+        constraints="cores=4 mem=16G root-disk=80G virt-type=virtual-machine",
     )
 
     yield app
