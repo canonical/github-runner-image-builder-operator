@@ -59,7 +59,9 @@ def initialize(init_config: state.BuilderInitConfig) -> None:
     try:
         _install_dependencies(channel=init_config.channel)
         _initialize_image_builder(init_config=init_config)
-        install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         configure_cron(unit_name=init_config.unit_name, interval=init_config.interval)
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
         raise BuilderSetupError from exc
