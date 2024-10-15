@@ -452,7 +452,7 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
         for juju in image_configs.juju_channels:
-            image_names.append(f"{app.name}-{base}-{arch.value}-juju-{juju}")
+            image_names.append(f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}")
     return image_names
 
 
