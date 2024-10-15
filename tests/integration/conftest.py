@@ -398,7 +398,7 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         for security_group in security_groups[1:]:
             openstack_connection.delete_security_group(name_or_id=security_group.id)
     else:
-        security_group: SecurityGroup = openstack_connection.create_security_group(
+        security_group = openstack_connection.create_security_group(
             name=security_group_name,
             description="For servers managed by the github-runner charm.",
         )
