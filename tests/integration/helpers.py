@@ -16,6 +16,7 @@ import invoke
 from fabric import Connection as SSHConnection
 from fabric import Result
 from juju.application import Application
+from juju.unit import Unit
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
@@ -300,12 +301,15 @@ def get_image_relation_data(app: Application, key: str = "id") -> None | dict[st
 
     Args:
         app: The image builder application.
-        key: The key to wait to appear onn the relation data.
+        key: The key to wait to appear on the relation data.
 
     Returns:
         The image relation data dictionary if available.
     """
     app = app.latest()
+    unit: Unit = app.units[0]
+    unit = unit.latest()
+    logger.info("Unit data for %s: %s", unit.name, unit.data)
     if not app.relations:
         return None
     image_relation = app.relations[0]

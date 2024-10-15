@@ -462,30 +462,30 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
 
 
 @pytest_asyncio.fixture(scope="module", name="bare_image_id")
-async def bare_image_id_fixture(app: Application):
+async def bare_image_id_fixture(test_charm: Application):
     """The bare image expected from builder application."""
     await wait_for(
-        functools.partial(get_image_relation_data, app=app, key="id"),
+        functools.partial(get_image_relation_data, app=test_charm, key="id"),
         timeout=60 * 30,
         check_interval=30,
     )
     assert (
-        image_relation_data := get_image_relation_data(app=app)
+        image_relation_data := get_image_relation_data(app=test_charm)
     ), "Image relation data not yet setup."
     logger.info("Image relation data for bare image: %s", image_relation_data)
     return image_relation_data["id"]
 
 
 @pytest_asyncio.fixture(scope="module", name="juju_image_id")
-async def juju_image_id_fixture(app: Application, image_configs: ImageConfigs):
+async def juju_image_id_fixture(image_configs: ImageConfigs, test_charm: Application):
     """The Juju bootstrapped image expected from builder application."""
     await wait_for(
-        functools.partial(get_image_relation_data, app=app, key="images"),
+        functools.partial(get_image_relation_data, app=test_charm, key="images"),
         timeout=60 * 30,
         check_interval=30,
     )
     assert (
-        image_relation_data := get_image_relation_data(app=app)
+        image_relation_data := get_image_relation_data(app=test_charm)
     ), "Image relation data not yet setup."
     logger.info("Image relation data for juju image: %s", image_relation_data)
     images = json.loads(image_relation_data["images"])
