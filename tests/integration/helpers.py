@@ -295,11 +295,12 @@ DEBIAN_FRONTEND=noninteractive apt-get update -y
         openstack_metadata.connection.delete_image(openstack_image.id, wait=True)
 
 
-def get_image_relation_data(app: Application) -> None | dict[str, str]:
+def get_image_relation_data(app: Application, key: str = "id") -> None | dict[str, str]:
     """Get default image ID from app relation data.
 
     Args:
         app: The image builder application.
+        key: The key to wait to appear onn the relation data.
 
     Returns:
         The image relation data dictionary if available.
@@ -310,7 +311,7 @@ def get_image_relation_data(app: Application) -> None | dict[str, str]:
     image_relation = app.relations[0]
     if not image_relation or not image_relation.data:
         return None
-    if "id" not in image_relation.data:
+    if key not in image_relation.data:
         return None
     return image_relation.data
 

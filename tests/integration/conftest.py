@@ -465,7 +465,9 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
 async def bare_image_id_fixture(app: Application):
     """The bare image expected from builder application."""
     await wait_for(
-        functools.partial(get_image_relation_data, app=app), timeout=60 * 30, check_interval=30
+        functools.partial(get_image_relation_data, app=app, key="id"),
+        timeout=60 * 30,
+        check_interval=30,
     )
     assert (
         image_relation_data := get_image_relation_data(app=app)
@@ -475,10 +477,12 @@ async def bare_image_id_fixture(app: Application):
 
 
 @pytest_asyncio.fixture(scope="module", name="juju_image_id")
-async def juju_image_id_fixture(app: Application):
+async def juju_image_id_fixture(app: Application, image_configs: ImageConfigs):
     """The Juju bootstrapped image expected from builder application."""
     await wait_for(
-        functools.partial(get_image_relation_data, app=app), timeout=60 * 30, check_interval=30
+        functools.partial(get_image_relation_data, app=app, key="images"),
+        timeout=60 * 30,
+        check_interval=30,
     )
     assert (
         image_relation_data := get_image_relation_data(app=app)
@@ -486,6 +490,6 @@ async def juju_image_id_fixture(app: Application):
     logger.info("Image relation data for juju image: %s", image_relation_data)
     images = json.loads(image_relation_data["images"])
     for image in images:
-        if "juju" in image["tags"]:
+        if image_configs.juju_channels[0] in image["tags"]:
             return image["id"]
     raise ValueError("Juju image not found in built images on relation data.")

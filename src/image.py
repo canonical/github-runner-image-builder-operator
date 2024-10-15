@@ -159,4 +159,7 @@ def _format_tags(image: builder.CloudImage) -> str:
     Returns:
         The CSV formatted tags.
     """
-    return ",".join(tag for tag in (image.arch.value, image.base.value, image.juju) if tag)
+    tag_str = ",".join(tag for tag in (image.arch.value, image.base.value) if tag)
+    if image.juju:
+        tag_str += f",juju={image.juju}"
+    return tag_str
