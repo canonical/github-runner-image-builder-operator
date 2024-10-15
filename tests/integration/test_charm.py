@@ -160,7 +160,7 @@ async def test_bare_image(
         image_test_meta=ImageTestMeta(
             proxy=proxy,
             dockerhub_mirror=dockerhub_mirror,
-            test_id=test_id,
+            test_id=f"bare-{test_id}",
         ),
         test_commands=TEST_RUNNER_COMMANDS,
     )
@@ -171,7 +171,7 @@ async def test_juju_image(
     dockerhub_mirror: str | None,
     test_id: str,
     openstack_metadata: OpenstackMeta,
-    bare_image_id: str,
+    juju_image_id: str,
 ):
     """
     arrange: given a latest juju image build, a ssh-key and a server.
@@ -180,11 +180,11 @@ async def test_juju_image(
     """
     await run_image_test(
         openstack_metadata=openstack_metadata,
-        image_id=bare_image_id,
+        image_id=juju_image_id,
         image_test_meta=ImageTestMeta(
             proxy=proxy,
             dockerhub_mirror=dockerhub_mirror,
-            test_id=test_id,
+            test_id=f"juju-{test_id}",
         ),
         test_commands=JUJU_RUNNER_COMMANDS,
     )
