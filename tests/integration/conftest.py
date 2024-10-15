@@ -470,6 +470,7 @@ async def bare_image_id_fixture(app: Application):
     assert (
         image_relation_data := get_image_relation_data(app=app)
     ), "Image relation data not yet setup."
+    logger.info("Image relation data for bare image: %s", image_relation_data)
     return image_relation_data["id"]
 
 
@@ -482,6 +483,7 @@ async def juju_image_id_fixture(app: Application):
     assert (
         image_relation_data := get_image_relation_data(app=app)
     ), "Image relation data not yet setup."
+    logger.info("Image relation data for juju image: %s", image_relation_data)
     images = json.loads(image_relation_data["images"])
     for image in images:
         if "juju" in image["tags"]:

@@ -40,7 +40,7 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     assert result.ok, "Failed to install aproxy"
 
     proxy_str = proxy.http.replace("http://", "").replace("https://", "")
-    command = f"sudo snap set aproxy proxy={proxy_str}"
+    command = f"sudo snap set aproxy proxy={proxy_str} listen=:8444"
     logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to setup aproxy"
