@@ -267,6 +267,11 @@ async def _get_ssh_connection_for_image(
         security_groups=[openstack_metadata.security_group.name],
         flavor=openstack_metadata.flavor,
         network=openstack_metadata.network,
+        # hostname setting is required for microk8s testing
+        userdata="""#!/bin/bash
+hostnamectl set-hostname github-runner
+DEBIAN_FRONTEND=noninteractive apt-get update -y
+""",
         timeout=120,
         wait=True,
     )
