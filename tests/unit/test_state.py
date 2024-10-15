@@ -225,7 +225,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
             image_config=state.ImageConfig(
                 arch=state.Arch.X64,
                 bases=(state.BaseImage.JAMMY,),
-                juju_channels=("", "3.1/stable", "2.9/stable"),
+                juju_channels=set(("", "3.1/stable", "2.9/stable")),
                 prefix=charm.app.name,
                 runner_version="1.234.5",
             ),
@@ -496,10 +496,10 @@ def test__parse_juju_channels_error(juju_config_value: str):
 @pytest.mark.parametrize(
     "juju_config_value, expected_channels",
     [
-        pytest.param("", ("",), id="no channels"),
-        pytest.param("3.1/stable", ("", "3.1/stable"), id="single channel"),
+        pytest.param("", set(("",)), id="no channels"),
+        pytest.param("3.1/stable", set(("", "3.1/stable")), id="single channel"),
         pytest.param(
-            "3.1/stable, 2.9/stable", ("", "3.1/stable", "2.9/stable"), id="multiple channels"
+            "3.1/stable, 2.9/stable", set(("", "3.1/stable", "2.9/stable")), id="multiple channels"
         ),
     ],
 )

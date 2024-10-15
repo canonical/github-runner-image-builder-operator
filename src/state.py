@@ -352,7 +352,7 @@ class ImageConfig:
 
     arch: Arch
     bases: tuple[BaseImage, ...]
-    juju_channels: tuple[str, ...]
+    juju_channels: set[str]
     prefix: str
     runner_version: str
 
@@ -631,7 +631,7 @@ class JujuChannelInvalidError(CharmConfigInvalidError):
     """Represents invalid Juju channels configuration."""
 
 
-def _parse_juju_channels(charm: ops.CharmBase) -> tuple[str, ...]:
+def _parse_juju_channels(charm: ops.CharmBase) -> set[str]:
     """Parse Juju channels from charm config.
 
     Args:
@@ -646,12 +646,12 @@ def _parse_juju_channels(charm: ops.CharmBase) -> tuple[str, ...]:
     juju_channels_str = typing.cast(str, charm.config.get(JUJU_CHANNELS_CONFIG_NAME, ""))
     try:
         # Add an empty value for image without juju (default).
-        return ("",) + _parse_snap_channels(csv_str=juju_channels_str)
+        return set(("",)).union(_parse_snap_channels(csv_str=juju_channels_str))
     except ValueError as exc:
         raise JujuChannelInvalidError from exc
 
 
-def _parse_snap_channels(csv_str: str) -> tuple[str, ...]:
+def _parse_snap_channels(csv_str: str) -> set[str]:
     """Parse snap channels from comma separated string value.
 
     The snap channel should be in <track>/<risk> format.
@@ -665,7 +665,7 @@ def _parse_snap_channels(csv_str: str) -> tuple[str, ...]:
     Returns:
         Valid snap channel strings.
     """
-    channels = tuple(channel.strip().lower() for channel in csv_str.split(",") if channel)
+    channels = set(channel.strip().lower() for channel in csv_str.split(",") if channel)
     for channel in channels:
         risk_track = channel.split("/")
         if len(risk_track) != 2 or any(not value for value in risk_track):
