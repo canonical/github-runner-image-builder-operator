@@ -66,7 +66,7 @@ class Observer(ops.Object):
         if not unit_cloud_auth_config:
             logger.warning("Unit relation data not yet ready.")
             return
-        builder.install_clouds_yaml(build_config.cloud_config)
+        builder.install_clouds_yaml(build_config.cloud_config.openstack_clouds_config)
         cloud_images = builder.get_latest_images(
             config=build_config, cloud_id=unit_cloud_auth_config.get_id()
         )
