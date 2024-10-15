@@ -290,9 +290,9 @@ DEBIAN_FRONTEND=noninteractive apt-get update -y
 
     yield ssh_connection
 
-    # openstack_metadata.connection.delete_server(server_name, wait=True)
-    # for openstack_image in images:
-    #     openstack_metadata.connection.delete_image(openstack_image.id, wait=True)
+    openstack_metadata.connection.delete_server(server_name, wait=True)
+    for openstack_image in images:
+        openstack_metadata.connection.delete_image(openstack_image.id, wait=True)
 
 
 def get_image_relation_data(app: Application) -> None | dict[str, str]:
