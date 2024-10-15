@@ -391,39 +391,44 @@ def ssh_key_fixture(
 def openstack_security_group_fixture(openstack_connection: Connection):
     """An ssh-connectable security group."""
     security_group_name = "github-runner-image-builder-operator-test-security-group"
-    security_group: SecurityGroup = openstack_connection.create_security_group(
-        name=security_group_name,
-        description="For servers managed by the github-runner charm.",
-    )
-    # For ping
-    openstack_connection.create_security_group_rule(
-        secgroup_name_or_id=security_group_name,
-        protocol="icmp",
-        direction="ingress",
-        ethertype="IPv4",
-    )
-    # For SSH
-    openstack_connection.create_security_group_rule(
-        secgroup_name_or_id=security_group_name,
-        port_range_min="22",
-        port_range_max="22",
-        protocol="tcp",
-        direction="ingress",
-        ethertype="IPv4",
-    )
-    # For tmate
-    openstack_connection.create_security_group_rule(
-        secgroup_name_or_id=security_group_name,
-        port_range_min="10022",
-        port_range_max="10022",
-        protocol="tcp",
-        direction="egress",
-        ethertype="IPv4",
-    )
-
-    yield security_group
-
-    openstack_connection.delete_security_group(security_group_name)
+    if security_groups := openstack_connection.search_security_groups(
+        name_or_id=security_group_name
+    ):
+        yield security_groups[0]
+        for security_group in security_groups[1:]:
+            openstack_connection.delete_security_group(name_or_id=security_group.id)
+    else:
+        security_group: SecurityGroup = openstack_connection.create_security_group(
+            name=security_group_name,
+            description="For servers managed by the github-runner charm.",
+        )
+        # For ping
+        openstack_connection.create_security_group_rule(
+            secgroup_name_or_id=security_group_name,
+            protocol="icmp",
+            direction="ingress",
+            ethertype="IPv4",
+        )
+        # For SSH
+        openstack_connection.create_security_group_rule(
+            secgroup_name_or_id=security_group_name,
+            port_range_min="22",
+            port_range_max="22",
+            protocol="tcp",
+            direction="ingress",
+            ethertype="IPv4",
+        )
+        # For tmate
+        openstack_connection.create_security_group_rule(
+            secgroup_name_or_id=security_group_name,
+            port_range_min="10022",
+            port_range_max="10022",
+            protocol="tcp",
+            direction="egress",
+            ethertype="IPv4",
+        )
+        yield security_group
+        openstack_connection.delete_security_group(security_group_name)
 
 
 @pytest.fixture(scope="module", name="openstack_metadata")
