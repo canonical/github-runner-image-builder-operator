@@ -398,6 +398,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
                     config.cloud.proxy.removeprefix("http://").removeprefix("https://"),
                 ]
             )
+        logger.info("Run build command: %s", commands)
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
             args=commands,
