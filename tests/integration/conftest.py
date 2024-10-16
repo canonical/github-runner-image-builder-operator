@@ -322,7 +322,7 @@ def image_configs_fixture():
     return ImageConfigs(
         bases=("jammy", "noble"),
         juju_channels=("3.5/stable",),
-        microk8s_channels=("1.29-strict/stable"),
+        microk8s_channels=("1.29-strict/stable",),
     )
 
 
