@@ -683,6 +683,18 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
             "app-name-jammy-arm64-juju-3.1-stable",
             id="juju",
         ),
+        pytest.param(
+            builder._RunImageConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                juju="",
+                microk8s="1.29-strict/stable",
+                runner_version="",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64-mk8s-1.29-strict-stable",
+            id="microk8s",
+        ),
     ],
 )
 def test__run_image_config_image_name(config: builder._RunImageConfig, expected_name: str):
@@ -719,6 +731,18 @@ def test__run_image_config_image_name(config: builder._RunImageConfig, expected_
                 prefix="app-name",
             ),
             "app-name-jammy-arm64-juju-3.1-stable",
+            id="juju",
+        ),
+        pytest.param(
+            builder.FetchConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="",
+                juju="",
+                microk8s="1.29-strict/stable",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64-mk8s-1.29-strict-stable",
             id="juju",
         ),
     ],
