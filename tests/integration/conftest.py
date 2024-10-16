@@ -321,6 +321,7 @@ def image_configs_fixture():
     return ImageConfigs(
         bases=("jammy", "noble"),
         juju_channels=("3.5/stable",),
+        microk8s_channels=("1.29-strict/stable"),
     )
 
 
@@ -457,7 +458,13 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
         for juju in image_configs.juju_channels:
-            image_names.append(f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}")
+            for microk8s in image_configs.microk8s_channels:
+                image_names.append(
+                    (
+                        f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}"
+                        f"-mk8s-{microk8s.replace('/','-')}"
+                    )
+                )
     return image_names
 
 
@@ -498,7 +505,8 @@ async def juju_image_id_fixture(
             image_created_from_dispatch,
             image_name=(
                 f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}"
+                f"{image_configs.juju_channels[0].replace('/','-')}-"
+                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
             ),
             connection=openstack_connection,
             dispatch_time=dispatch_time,

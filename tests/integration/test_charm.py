@@ -113,7 +113,12 @@ sudo microk8s stop && sudo microk8s start""",
 
 JUJU_RUNNER_COMMANDS = (
     *TEST_RUNNER_COMMANDS,
-    Commands(name="juju bootstrapped test", command="juju status"),
+    Commands(name="juju bootstrapped test", command="juju controllers | grep localhost"),
+)
+
+MICROK8S_RUNNER_COMMANDS = (
+    *JUJU_RUNNER_COMMANDS,
+    Commands(name="microk8s bootstrapped test", command="juju controllers | grep microk8s"),
 )
 
 
@@ -163,6 +168,30 @@ async def test_juju_image(
             test_id=f"juju-{test_id}",
         ),
         test_commands=JUJU_RUNNER_COMMANDS,
+    )
+
+
+async def test_microk8s_image(
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+    test_id: str,
+    openstack_metadata: OpenstackMeta,
+    microk8s_image_id: str,
+):
+    """
+    arrange: given a latest microk8s_image_id image build, a ssh-key and a server.
+    act: when commands are run through ssh.
+    assert: all binaries are present and run without errors.
+    """
+    await run_image_test(
+        openstack_metadata=openstack_metadata,
+        image_id=microk8s_image_id,
+        image_test_meta=ImageTestMeta(
+            proxy=proxy,
+            dockerhub_mirror=dockerhub_mirror,
+            test_id=f"microk8s-{test_id}",
+        ),
+        test_commands=MICROK8S_RUNNER_COMMANDS,
     )
 
 
