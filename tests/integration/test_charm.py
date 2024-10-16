@@ -114,11 +114,13 @@ sudo microk8s stop && sudo microk8s start""",
 JUJU_RUNNER_COMMANDS = (
     *TEST_RUNNER_COMMANDS,
     Commands(name="juju bootstrapped test", command="juju controllers | grep localhost"),
+    Commands(name="localhost model test", command="juju switch localhost && juju status"),
 )
 
 MICROK8S_RUNNER_COMMANDS = (
     *JUJU_RUNNER_COMMANDS,
     Commands(name="microk8s bootstrapped test", command="juju controllers | grep microk8s"),
+    Commands(name="microk8s model test", command="juju switch microk8s && juju status"),
 )
 
 
