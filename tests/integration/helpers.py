@@ -9,6 +9,7 @@ import logging
 import time
 import urllib
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncIterator, Awaitable, Callable, Iterable, ParamSpec, TypeVar, cast
 
@@ -19,11 +20,42 @@ from juju.application import Application
 from juju.unit import Unit
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
+from openstack.image.v2.image import Image
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
+
+
+def image_created_from_dispatch(
+    image_name: str, connection: Connection, dispatch_time: datetime
+) -> Image:
+    """Return whether there is an image created after dispatch has been called.
+
+    Args:
+        image_name: The image name to check for.
+        connection: The OpenStack connection instance.
+        dispatch_time: Time when the image build was dispatched.
+
+    Returns:
+        Whether there exists an image that has been created after dispatch time.
+    """
+    images: list[Image] = connection.search_images(image_name)
+    logger.info(
+        "Image name: %s, Images: %s",
+        image_name,
+        tuple((image.id, image.name, image.created_at) for image in images),
+    )
+    # split logs, the image log is long and gets cut off.
+    logger.info("Dispatch time: %s", dispatch_time)
+    for image in images:
+        if (
+            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            >= dispatch_time
+        ):
+            return image
+    return None
 
 
 def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):

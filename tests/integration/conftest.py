@@ -3,7 +3,6 @@
 
 """Fixtures for github runner charm integration tests."""
 import functools
-import json
 import logging
 import platform
 import secrets
@@ -25,6 +24,7 @@ from juju.application import Application
 from juju.model import Model
 from openstack.compute.v2.keypair import Keypair
 from openstack.connection import Connection
+from openstack.image.v2.image import Image
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
@@ -46,7 +46,11 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import get_image_relation_data, wait_for
+from tests.integration.helpers import (
+    get_image_relation_data,
+    image_created_from_dispatch,
+    wait_for,
+)
 from tests.integration.types import (
     ImageConfigs,
     OpenstackMeta,
@@ -462,34 +466,49 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
 
 
 @pytest_asyncio.fixture(scope="module", name="bare_image_id")
-async def bare_image_id_fixture(test_charm: Application):
+async def bare_image_id_fixture(
+    openstack_connection: Connection,
+    dispatch_time: datetime,
+    image_configs: ImageConfigs,
+    app: Application,
+):
     """The bare image expected from builder application."""
-    await wait_for(
-        functools.partial(get_image_relation_data, app=test_charm, key="id"),
+    arch = _get_supported_arch()
+    image: Image | None = await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_name=f"{app.name}-{image_configs.bases[0]}-{arch.value}",
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
         timeout=60 * 30,
         check_interval=30,
     )
-    assert (
-        image_relation_data := get_image_relation_data(app=test_charm)
-    ), "Image relation data not yet setup."
-    logger.info("Image relation data for bare image: %s", image_relation_data)
-    return image_relation_data["id"]
+    assert image, "Bare image not found"
+    return image.id
 
 
 @pytest_asyncio.fixture(scope="module", name="juju_image_id")
-async def juju_image_id_fixture(image_configs: ImageConfigs, test_charm: Application):
+async def juju_image_id_fixture(
+    openstack_connection: Connection,
+    dispatch_time: datetime,
+    image_configs: ImageConfigs,
+    app: Application,
+):
     """The Juju bootstrapped image expected from builder application."""
-    await wait_for(
-        functools.partial(get_image_relation_data, app=test_charm, key="images"),
+    arch = _get_supported_arch()
+    image: Image | None = await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_name=(
+                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
+                f"{image_configs.juju_channels[0].replace('/','-')}"
+            ),
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
         timeout=60 * 30,
         check_interval=30,
     )
-    assert (
-        image_relation_data := get_image_relation_data(app=test_charm)
-    ), "Image relation data not yet setup."
-    logger.info("Image relation data for juju image: %s", image_relation_data)
-    images = json.loads(image_relation_data["images"])
-    for image in images:
-        if image_configs.juju_channels[0] in image["tags"]:
-            return image["id"]
-    raise ValueError("Juju image not found in built images on relation data.")
+    assert image, "Juju image not found"
+    return image.id

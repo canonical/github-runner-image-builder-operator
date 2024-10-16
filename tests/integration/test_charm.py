@@ -7,16 +7,20 @@
 
 import functools
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
 from openstack.connection import Connection
-from openstack.image.v2.image import Image
 
-from tests.integration.helpers import ImageTestMeta, run_image_test, wait_for
+from tests.integration.helpers import (
+    ImageTestMeta,
+    image_created_from_dispatch,
+    run_image_test,
+    wait_for,
+)
 from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
@@ -32,34 +36,6 @@ async def test_image_relation(app: Application, test_charm: Application):
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
     await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
-
-
-def image_created_from_dispatch(
-    image_name: str, connection: Connection, dispatch_time: datetime
-) -> bool:
-    """Return whether there is an image created after dispatch has been called.
-
-    Args:
-        image_name: The image name to check for.
-        connection: The OpenStack connection instance.
-        dispatch_time: Time when the image build was dispatched.
-
-    Returns:
-        Whether there exists an image that has been created after dispatch time.
-    """
-    images: list[Image] = connection.search_images(image_name)
-    logger.info(
-        "Image name: %s, Images: %s",
-        image_name,
-        tuple((image.id, image.name, image.created_at) for image in images),
-    )
-    # split logs, the image log is long and gets cut off.
-    logger.info("Dispatch time: %s", dispatch_time)
-    return any(
-        datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        >= dispatch_time
-        for image in images
-    )
 
 
 @pytest.mark.asyncio
