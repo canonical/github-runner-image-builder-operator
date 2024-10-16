@@ -46,11 +46,7 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     _get_supported_arch,
 )
-from tests.integration.helpers import (
-    get_image_relation_data,
-    image_created_from_dispatch,
-    wait_for,
-)
+from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (
     ImageConfigs,
     OpenstackMeta,

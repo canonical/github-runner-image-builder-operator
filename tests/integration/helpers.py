@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def image_created_from_dispatch(
     image_name: str, connection: Connection, dispatch_time: datetime
-) -> Image:
+) -> Image | None:
     """Return whether there is an image created after dispatch has been called.
 
     Args:
