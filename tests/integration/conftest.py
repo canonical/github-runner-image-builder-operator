@@ -369,9 +369,8 @@ async def app_fixture(
 
     yield app
 
-    # logger.info("Removing application.")
-    # await test_configs.model.remove_application(app_name=app.name, force=True, no_wait=True)
-    # logger.info("Application removed.")
+    # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
+    # required on private-endpoint OpenStack resources.
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -388,9 +387,9 @@ def ssh_key_fixture(
 
     yield SSHKey(keypair=keypair, private_key=ssh_key_path)
 
-    # logger.info("Cleaning up keypair.")
-    # openstack_connection.delete_keypair(name=keypair.name)
-    # logger.info("Keypair deleted.")
+    logger.info("Cleaning up keypair.")
+    openstack_connection.delete_keypair(name=keypair.name)
+    logger.info("Keypair deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_security_group")
@@ -401,8 +400,8 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         name_or_id=security_group_name
     ):
         yield security_groups[0]
-        # for security_group in security_groups[1:]:
-        #     openstack_connection.delete_security_group(name_or_id=security_group.id)
+        for security_group in security_groups[1:]:
+            openstack_connection.delete_security_group(name_or_id=security_group.id)
     else:
         security_group = openstack_connection.create_security_group(
             name=security_group_name,
@@ -435,9 +434,9 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         )
         yield security_group
 
-        # logger.info("Cleaning up security group.")
-        # openstack_connection.delete_security_group(security_group_name)
-        # logger.info("Security group deleted.")
+        logger.info("Cleaning up security group.")
+        openstack_connection.delete_security_group(security_group_name)
+        logger.info("Security group deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_metadata")
