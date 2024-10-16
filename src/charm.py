@@ -54,7 +54,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
@@ -65,7 +67,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
             self._run()
         self.unit.status = ops.ActiveStatus()
@@ -77,7 +81,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         self._run()
         self.unit.status = ops.ActiveStatus()
 
@@ -111,7 +117,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Returns:
             Whether the image relation is ready.
         """
-        if not config.upload_cloud_ids:
+        if not config.cloud_config.upload_cloud_ids:
             self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
             return False
         return True

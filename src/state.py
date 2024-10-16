@@ -27,6 +27,7 @@ BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
 EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
+JUJU_CHANNELS_CONFIG_NAME = "juju-channels"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
@@ -122,6 +123,10 @@ def _get_supported_arch() -> Arch:
             raise UnsupportedArchitectureError(msg=f"Unsupported {arch=}")
 
 
+class InvalidBaseImageError(CharmConfigInvalidError):
+    """Represents an error with invalid charm base image configuration."""
+
+
 class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
 
@@ -148,24 +153,29 @@ class BaseImage(str, Enum):
         Args:
             charm: The charm instance.
 
+        Raises:
+            InvalidBaseImageError: If there was an invalid BaseImage configuration value.
+
         Returns:
             The base image configuration of the charm.
         """
-        image_names = (
+        image_names = tuple(
             image_name.lower().strip()
             for image_name in typing.cast(
                 str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")
             ).split(",")
         )
-
-        return tuple(
-            (
-                cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
-                if image_name in LTS_IMAGE_VERSION_TAG_MAP
-                else cls(image_name)
+        try:
+            return tuple(
+                (
+                    cls(LTS_IMAGE_VERSION_TAG_MAP[image_name])
+                    if image_name in LTS_IMAGE_VERSION_TAG_MAP
+                    else cls(image_name)
+                )
+                for image_name in image_names
             )
-            for image_name in image_names
-        )
+        except ValueError as exc:
+            raise InvalidBaseImageError(f"Invalid bases: {image_names}") from exc
 
 
 @dataclasses.dataclass
@@ -329,29 +339,63 @@ class BuildConfigInvalidError(CharmConfigInvalidError):
 
 
 @dataclasses.dataclass
-class BuilderRunConfig:
-    """Configurations for running builder periodically.
+class ImageConfig:
+    """Image configuration parameters.
 
     Attributes:
         arch: The machine architecture of the image to build with.
         bases: Ubuntu OS images to build from.
-        cloud_config: The OpenStack clouds.yaml passed as charm config.
-        cloud_name: The OpenStack cloud name to connect to from clouds.yaml.
-        upload_cloud_ids: The OpenStack cloud ids to connect to, where the image should be \
-            made available.
-        external_build_config: The external builder configuration values.
-        num_revisions: Number of images to keep before deletion.
+        juju_channels: The Juju channels to install on the images.
         prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
     """
 
     arch: Arch
     bases: tuple[BaseImage, ...]
-    cloud_config: OpenstackCloudsConfig
-    external_build_config: ExternalBuildConfig | None
-    num_revisions: int
+    juju_channels: set[str]
     prefix: str
     runner_version: str
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
+        """Initialize image config state from current charm instance.
+
+        Args:
+            charm: The running charm instance.
+
+        Returns:
+            Image configuration state.
+        """
+        arch = Arch.from_charm(charm=charm)
+        base_images = BaseImage.from_charm(charm)
+        juju_channels = _parse_juju_channels(charm=charm)
+        runner_version = _parse_runner_version(charm=charm)
+
+        return cls(
+            arch=arch,
+            bases=base_images,
+            juju_channels=juju_channels,
+            prefix=charm.app.name,
+            runner_version=runner_version,
+        )
+
+
+@dataclasses.dataclass
+class CloudConfig:
+    """Cloud configuration parameters.
+
+    Attributes:
+        cloud_name: The OpenStack cloud name to connect to from clouds.yaml.
+        external_build_config: The external builder configuration values.
+        num_revisions: Number of images to keep before deletion.
+        openstack_clouds_config: The OpenStack clouds.yaml passed as charm config.
+        upload_cloud_ids: The OpenStack cloud ids to connect to, where the image should be \
+            made available.
+    """
+
+    openstack_clouds_config: OpenstackCloudsConfig
+    external_build_config: ExternalBuildConfig | None
+    num_revisions: int
 
     @property
     def cloud_name(self) -> str:
@@ -362,8 +406,48 @@ class BuilderRunConfig:
     def upload_cloud_ids(self) -> list[str]:
         """The cloud name from cloud_config."""
         return list(
-            cloud_id for cloud_id in self.cloud_config.clouds.keys() if cloud_id != CLOUD_NAME
+            cloud_id
+            for cloud_id in self.openstack_clouds_config.clouds.keys()
+            if cloud_id != CLOUD_NAME
         )
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "CloudConfig":
+        """Initialize cloud config state from current charm instance.
+
+        Args:
+            charm: The running charm instance.
+
+        Returns:
+            Cloud configuration state.
+        """
+        cloud_config = _parse_openstack_clouds_config(charm)
+        external_build_enabled = typing.cast(
+            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
+        )
+        external_build_config = (
+            ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
+        )
+        revision_history_limit = _parse_revision_history_limit(charm)
+
+        return cls(
+            openstack_clouds_config=cloud_config,
+            external_build_config=external_build_config,
+            num_revisions=revision_history_limit,
+        )
+
+
+@dataclasses.dataclass
+class BuilderRunConfig:
+    """Configurations for running builder periodically.
+
+    Attributes:
+        image_config: Image configuration parameters.
+        cloud_config: Cloud configuration parameters.
+    """
+
+    image_config: ImageConfig
+    cloud_config: CloudConfig
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
@@ -372,53 +456,19 @@ class BuilderRunConfig:
         Args:
             charm: The running charm instance.
 
-        Raises:
-            BuildConfigInvalidError: If there was an invalid configuration on the charm.
-
         Returns:
             Current charm state.
         """
-        try:
-            arch = Arch.from_charm(charm=charm)
-        except UnsupportedArchitectureError as exc:
-            raise BuildConfigInvalidError("Unsupported architecture") from exc
-
-        try:
-            base_images = BaseImage.from_charm(charm)
-        except ValueError as exc:
-            raise BuildConfigInvalidError(
-                (
-                    "Unsupported input option for base-image, please re-configure the base-image "
-                    "option."
-                )
-            ) from exc
-
-        try:
-            cloud_config = _parse_openstack_clouds_config(charm)
-        except InvalidCloudConfigError as exc:
-            raise BuildConfigInvalidError(msg=str(exc)) from exc
-
-        try:
-            revision_history_limit = _parse_revision_history_limit(charm)
-            runner_version = _parse_runner_version(charm=charm)
-        except ValueError as exc:
-            raise BuildConfigInvalidError(msg=str(exc)) from exc
-
-        external_build_enabled = typing.cast(
-            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
-        )
-
+        cloud_config = CloudConfig.from_charm(charm=charm)
+        image_config = ImageConfig.from_charm(charm=charm)
         return cls(
-            arch=arch,
-            bases=base_images,
             cloud_config=cloud_config,
-            external_build_config=(
-                ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
-            ),
-            num_revisions=revision_history_limit,
-            prefix=charm.app.name,
-            runner_version=runner_version,
+            image_config=image_config,
         )
+
+
+class BuildIntervalConfigError(CharmConfigInvalidError):
+    """Represents an error with invalid interval configuration."""
 
 
 def _parse_build_interval(charm: ops.CharmBase) -> int:
@@ -428,7 +478,7 @@ def _parse_build_interval(charm: ops.CharmBase) -> int:
         charm: The charm instance.
 
     Raises:
-        ValueError: If an invalid build interval is configured.
+        BuildIntervalConfigError: If an invalid build interval is configured.
 
     Returns:
         Build interval in hours.
@@ -436,10 +486,16 @@ def _parse_build_interval(charm: ops.CharmBase) -> int:
     try:
         build_interval = int(charm.config.get(BUILD_INTERVAL_CONFIG_NAME, 6))
     except ValueError as exc:
-        raise ValueError("An integer value for build-interval is expected.") from exc
+        raise BuildIntervalConfigError("An integer value for build-interval is expected.") from exc
     if build_interval < 1 or build_interval > 24:
-        raise ValueError("Build interval must not be smaller than 1 or greater than 24")
+        raise BuildIntervalConfigError(
+            "Build interval must not be smaller than 1 or greater than 24"
+        )
     return build_interval
+
+
+class InvalidRevisionHistoryLimitError(CharmConfigInvalidError):
+    """Represents an error with invalid revision history limit configuration value."""
 
 
 def _parse_revision_history_limit(charm: ops.CharmBase) -> int:
@@ -449,7 +505,7 @@ def _parse_revision_history_limit(charm: ops.CharmBase) -> int:
         charm: The charm instance.
 
     Raises:
-        ValueError: If an invalid revision-history-limit is configured.
+        InvalidRevisionHistoryLimitError: If an invalid revision-history-limit is configured.
 
     Returns:
         Number of revisions to keep before deletion.
@@ -457,9 +513,13 @@ def _parse_revision_history_limit(charm: ops.CharmBase) -> int:
     try:
         revision_history = int(charm.config.get(REVISION_HISTORY_LIMIT_CONFIG_NAME, 5))
     except ValueError as exc:
-        raise ValueError("An integer value for revision history is expected.") from exc
+        raise InvalidRevisionHistoryLimitError(
+            "An integer value for revision history is expected."
+        ) from exc
     if revision_history < 2 or revision_history > 99:
-        raise ValueError("Revision history must be greater than 1 and less than 100")
+        raise InvalidRevisionHistoryLimitError(
+            "Revision history must be greater than 1 and less than 100"
+        )
     return revision_history
 
 
@@ -494,7 +554,7 @@ def _parse_runner_version(charm: ops.CharmBase) -> str:
     return version_str
 
 
-class InvalidCloudConfigError(Exception):
+class InvalidCloudConfigError(CharmConfigInvalidError):
     """Represents an error with openstack cloud config."""
 
 
@@ -567,6 +627,52 @@ def _parse_openstack_clouds_auth_configs_from_relation(
     return clouds_config
 
 
+class JujuChannelInvalidError(CharmConfigInvalidError):
+    """Represents invalid Juju channels configuration."""
+
+
+def _parse_juju_channels(charm: ops.CharmBase) -> set[str]:
+    """Parse Juju channels from charm config.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        JujuChannelInvalidError: If there was an error parsing Juju channels config.
+
+    Returns:
+        Juju channels to install on the image.
+    """
+    juju_channels_str = typing.cast(str, charm.config.get(JUJU_CHANNELS_CONFIG_NAME, ""))
+    try:
+        # Add an empty value for image without juju (default).
+        return set(("",)).union(_parse_snap_channels(csv_str=juju_channels_str))
+    except ValueError as exc:
+        raise JujuChannelInvalidError from exc
+
+
+def _parse_snap_channels(csv_str: str) -> set[str]:
+    """Parse snap channels from comma separated string value.
+
+    The snap channel should be in <track>/<risk> format.
+
+    Args:
+        csv_str: The comma separated snap channel values.
+
+    Raises:
+        ValueError: If an invalid snap channel string was provided.
+
+    Returns:
+        Valid snap channel strings.
+    """
+    channels = set(channel.strip().lower() for channel in csv_str.split(",") if channel)
+    for channel in channels:
+        risk_track = channel.split("/")
+        if len(risk_track) != 2 or any(not value for value in risk_track):
+            raise ValueError(f"Invalid snap channel: {channel}")
+    return channels
+
+
 class BuilderAppChannelInvalidError(CharmConfigInvalidError):
     """Represents invalid builder app channel configuration."""
 
@@ -634,19 +740,12 @@ class BuilderInitConfig:
         Args:
             charm: The running charm instance.
 
-        Raises:
-            BuilderSetupConfigInvalidError: If there was an invalid configuration on the charm.
-
         Returns:
             Current charm state.
         """
         channel = BuilderAppChannel.from_charm(charm=charm)
         run_config = BuilderRunConfig.from_charm(charm=charm)
-
-        try:
-            build_interval = _parse_build_interval(charm)
-        except ValueError as exc:
-            raise BuilderSetupConfigInvalidError(msg=str(exc)) from exc
+        build_interval = _parse_build_interval(charm)
 
         return cls(
             app_name=charm.app.name,

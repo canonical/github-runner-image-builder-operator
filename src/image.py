@@ -55,7 +55,7 @@ class Observer(ops.Object):
             event: The event emitted when a relation is joined.
         """
         build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
-        if not build_config.upload_cloud_ids:
+        if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
             )
@@ -66,7 +66,7 @@ class Observer(ops.Object):
         if not unit_cloud_auth_config:
             logger.warning("Unit relation data not yet ready.")
             return
-        builder.install_clouds_yaml(build_config.cloud_config)
+        builder.install_clouds_yaml(build_config.cloud_config.openstack_clouds_config)
         cloud_images = builder.get_latest_images(
             config=build_config, cloud_id=unit_cloud_auth_config.get_id()
         )
@@ -159,4 +159,7 @@ def _format_tags(image: builder.CloudImage) -> str:
     Returns:
         The CSV formatted tags.
     """
-    return ",".join((image.arch.value, image.base.value))
+    tag_str = ",".join(tag for tag in (image.arch.value, image.base.value) if tag)
+    if image.juju:
+        tag_str += f",juju={image.juju}"
+    return tag_str

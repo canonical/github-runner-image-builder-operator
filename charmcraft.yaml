@@ -99,6 +99,12 @@ config:
       description: |
         (Experimental) The network to launch the builder VM machine on. Will default to whatever
         network with accessible subnet is available.
+    juju-channels:
+      type: string
+      default: ""
+      description: |
+        The comma separated Juju versions to download in <track>/<risk> format. E.g. to create
+        images with Juju version 2.9/stable and 3.1/edge, juju-channel="2.9/stable,3.1/edge".
     openstack-auth-url:
       type: string
       default: ""
