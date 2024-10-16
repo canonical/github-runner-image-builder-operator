@@ -525,3 +525,30 @@ async def juju_image_id_fixture(
     )
     assert image, "Juju image not found"
     return image.id
+
+
+@pytest_asyncio.fixture(scope="module", name="microk8s_image_id")
+async def microk8s_image_id_fixture(
+    openstack_connection: Connection,
+    dispatch_time: datetime,
+    image_configs: ImageConfigs,
+    app: Application,
+):
+    """The Juju bootstrapped image expected from builder application."""
+    arch = _get_supported_arch()
+    image: Image | None = await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_name=(
+                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
+                f"{image_configs.juju_channels[0].replace('/','-')}-"
+                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
+            ),
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
+        timeout=60 * 30,
+        check_interval=30,
+    )
+    assert image, "Microk8s image not found"
+    return image.id
