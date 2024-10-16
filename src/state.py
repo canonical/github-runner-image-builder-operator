@@ -28,6 +28,7 @@ EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
 EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
 JUJU_CHANNELS_CONFIG_NAME = "juju-channels"
+MICROK8S_CHANNELS_CONFIG_NAME = "microk8s-channels"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
@@ -346,6 +347,7 @@ class ImageConfig:
         arch: The machine architecture of the image to build with.
         bases: Ubuntu OS images to build from.
         juju_channels: The Juju channels to install on the images.
+        microk8s_channels: The Microk8s channels to install on the images.
         prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
     """
@@ -353,6 +355,7 @@ class ImageConfig:
     arch: Arch
     bases: tuple[BaseImage, ...]
     juju_channels: set[str]
+    microk8s_channels: set[str]
     prefix: str
     runner_version: str
 
@@ -369,12 +372,14 @@ class ImageConfig:
         arch = Arch.from_charm(charm=charm)
         base_images = BaseImage.from_charm(charm)
         juju_channels = _parse_juju_channels(charm=charm)
+        microk8s_channels = _parse_microk8s_channels(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
 
         return cls(
             arch=arch,
             bases=base_images,
             juju_channels=juju_channels,
+            microk8s_channels=microk8s_channels,
             prefix=charm.app.name,
             runner_version=runner_version,
         )
@@ -649,6 +654,30 @@ def _parse_juju_channels(charm: ops.CharmBase) -> set[str]:
         return set(("",)).union(_parse_snap_channels(csv_str=juju_channels_str))
     except ValueError as exc:
         raise JujuChannelInvalidError from exc
+
+
+class Microk8sChannelInvalidError(CharmConfigInvalidError):
+    """Represents invalid Microk8s channels configuration."""
+
+
+def _parse_microk8s_channels(charm: ops.CharmBase) -> set[str]:
+    """Parse Microk8s channels from charm config.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        Microk8sChannelInvalidError: If there was an error parsing Microk8s channels config.
+
+    Returns:
+        Microk8s channels to install on the image.
+    """
+    microk8s_channels_str = typing.cast(str, charm.config.get(MICROK8S_CHANNELS_CONFIG_NAME, ""))
+    try:
+        # Add an empty value for image without Microk8s (default).
+        return set(("",)).union(_parse_snap_channels(csv_str=microk8s_channels_str))
+    except ValueError as exc:
+        raise Microk8sChannelInvalidError from exc
 
 
 def _parse_snap_channels(csv_str: str) -> set[str]:

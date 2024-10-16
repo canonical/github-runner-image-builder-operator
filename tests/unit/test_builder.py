@@ -432,6 +432,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     arch=state.Arch.ARM64,
                     bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
                     juju_channels=("3.1/stable", "2.9/stable"),
+                    microk8s_channels=("",),
                     prefix="",
                     runner_version="",
                 ),
@@ -442,6 +443,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         arch=state.Arch.ARM64,
                         base=state.BaseImage.JAMMY,
                         juju="3.1/stable",
+                        microk8s="",
                         runner_version="",
                         prefix="",
                     ),
@@ -460,6 +462,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         arch=state.Arch.ARM64,
                         base=state.BaseImage.JAMMY,
                         juju="2.9/stable",
+                        microk8s="",
                         runner_version="",
                         prefix="",
                     ),
@@ -478,6 +481,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         arch=state.Arch.ARM64,
                         base=state.BaseImage.NOBLE,
                         juju="3.1/stable",
+                        microk8s="",
                         runner_version="",
                         prefix="",
                     ),
@@ -496,6 +500,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         arch=state.Arch.ARM64,
                         base=state.BaseImage.NOBLE,
                         juju="2.9/stable",
+                        microk8s="",
                         runner_version="",
                         prefix="",
                     ),
@@ -572,6 +577,7 @@ def test__run_error(
                     base=state.BaseImage.JAMMY,
                     runner_version="1.2.3",
                     juju="3.1/stable",
+                    microk8s="",
                     prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
@@ -593,6 +599,7 @@ def test__run_error(
                     base=state.BaseImage.JAMMY,
                     runner_version=None,
                     juju="3.1/stable",
+                    microk8s="",
                     prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
@@ -614,6 +621,7 @@ def test__run_error(
                     base=state.BaseImage.JAMMY,
                     runner_version=None,
                     juju="",
+                    microk8s="",
                     prefix="app-name",
                 ),
                 cloud=builder._RunCloudConfig(
@@ -656,6 +664,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 juju="",
+                microk8s="",
                 runner_version="",
                 prefix="app-name",
             ),
@@ -667,6 +676,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 juju="3.1/stable",
+                microk8s="",
                 runner_version="",
                 prefix="app-name",
             ),
@@ -693,6 +703,7 @@ def test__run_image_config_image_name(config: builder._RunImageConfig, expected_
                 base=state.BaseImage.JAMMY,
                 cloud_id="",
                 juju="",
+                microk8s="",
                 prefix="app-name",
             ),
             "app-name-jammy-arm64",
@@ -704,6 +715,7 @@ def test__run_image_config_image_name(config: builder._RunImageConfig, expected_
                 base=state.BaseImage.JAMMY,
                 cloud_id="",
                 juju="3.1/stable",
+                microk8s="",
                 prefix="app-name",
             ),
             "app-name-jammy-arm64-juju-3.1-stable",
@@ -729,6 +741,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     arch=state.Arch.ARM64,
                     bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
                     juju_channels=("3.1/stable", "2.9/stable"),
+                    microk8s_channels=("",),
                     prefix="",
                     runner_version="",
                 ),
@@ -744,6 +757,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     base=state.BaseImage.JAMMY,
                     cloud_id="",
                     juju="3.1/stable",
+                    microk8s="",
                     prefix="",
                 ),
                 builder.FetchConfig(
@@ -751,6 +765,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     base=state.BaseImage.JAMMY,
                     cloud_id="",
                     juju="2.9/stable",
+                    microk8s="",
                     prefix="",
                 ),
                 builder.FetchConfig(
@@ -758,6 +773,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     base=state.BaseImage.NOBLE,
                     cloud_id="",
                     juju="3.1/stable",
+                    microk8s="",
                     prefix="",
                 ),
                 builder.FetchConfig(
@@ -765,6 +781,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     base=state.BaseImage.NOBLE,
                     cloud_id="",
                     juju="2.9/stable",
+                    microk8s="",
                     prefix="",
                 ),
             ),
@@ -849,6 +866,7 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
             base=state.BaseImage.JAMMY,
             cloud_id="test-cloud",
             juju="3.1/stable",
+            microk8s="",
             prefix="app-name",
         )
     ) == builder.CloudImage(
@@ -857,6 +875,7 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
         cloud_id="test-cloud",
         image_id="test-image",
         juju="3.1/stable",
+        microk8s="",
     )
 
 

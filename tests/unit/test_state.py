@@ -226,6 +226,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                 arch=state.Arch.X64,
                 bases=(state.BaseImage.JAMMY,),
                 juju_channels=set(("", "3.1/stable", "2.9/stable")),
+                microk8s_channels=set(("",)),
                 prefix=charm.app.name,
                 runner_version="1.234.5",
             ),

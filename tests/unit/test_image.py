@@ -110,6 +110,7 @@ def test_update_image_data_no_unit_data(harness: Harness, image_observer: image.
                     cloud_id="test_test",
                     image_id="test",
                     juju="3.1/stable",
+                    microk8s="",
                 )
             ]
         ],
@@ -205,6 +206,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
                     cloud_id="test_test",
                     image_id="test",
                     juju="3.1/stable",
+                    microk8s="",
                 )
             ]
         ],
@@ -214,15 +216,15 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         relation_id=first_relation_id, app_or_unit=image_observer.model.unit.name
     ) == {
         "id": "test",
-        "tags": "arm64,jammy,3.1/stable",
-        "images": '[{"id": "test", "tags": "arm64,jammy,3.1/stable"}]',
+        "tags": "arm64,jammy,juju=3.1/stable",
+        "images": '[{"id": "test", "tags": "arm64,jammy,juju=3.1/stable"}]',
     }
     assert harness.get_relation_data(
         relation_id=second_relation_id, app_or_unit=image_observer.model.unit.name
     ) == {
         "id": "test",
-        "tags": "arm64,jammy,3.1/stable",
-        "images": '[{"id": "test", "tags": "arm64,jammy,3.1/stable"}]',
+        "tags": "arm64,jammy,juju=3.1/stable",
+        "images": '[{"id": "test", "tags": "arm64,jammy,juju=3.1/stable"}]',
     }
 
 
@@ -240,6 +242,7 @@ def test__build_cloud_to_images_map():
                 cloud_id="cloud-1",
                 image_id="image-1",
                 juju="3.1/stable",
+                microk8s="",
             ),
             image_2 := builder.CloudImage(
                 arch=state.Arch.ARM64,
@@ -247,6 +250,7 @@ def test__build_cloud_to_images_map():
                 cloud_id="cloud-1",
                 image_id="image-2",
                 juju="3.1/stable",
+                microk8s="",
             ),
         ],
     ]

@@ -81,7 +81,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -115,7 +115,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L447"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_images`
 
@@ -146,7 +146,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L563"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -177,6 +177,7 @@ The cloud ID to uploaded image ID pair.
  - <b>`cloud_id`</b>:  The cloud ID that the image was uploaded to. 
  - <b>`image_id`</b>:  The uploaded image ID. 
  - <b>`juju`</b>:  The juju snap channel. 
+ - <b>`microk8s`</b>:  The microk8s snap channel. 
 
 
 
@@ -195,6 +196,7 @@ Fetch image configuration parameters.
  - <b>`base`</b>:  The Ubuntu base OS image to build the image on. 
  - <b>`cloud_id`</b>:  The cloud ID to fetch the image from. 
  - <b>`juju`</b>:  The Juju channel to fetch the image for. 
+ - <b>`microk8s`</b>:  The Microk8s channel to fetch the image for. 
  - <b>`prefix`</b>:  The image name prefix. 
  - <b>`image_name`</b>:  The image name derived from image configuration attributes. 
 
