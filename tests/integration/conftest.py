@@ -169,6 +169,7 @@ async def test_charm_fixture(
 
     logger.info("Cleaning up test charm.")
     await model.remove_application(app_name=app_name, force=True, no_wait=True)
+    logger.info("Test charm removed.")
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -368,7 +369,7 @@ async def app_fixture(
     yield app
 
     logger.info("Removing application.")
-    await test_configs.model.remove_application(app_name=app.name)
+    await test_configs.model.remove_application(app_name=app.name, force=True, no_wait=True)
     logger.info("Application removed.")
 
 
