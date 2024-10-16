@@ -168,7 +168,7 @@ async def test_charm_fixture(
     yield app
 
     logger.info("Cleaning up test charm.")
-    await model.remove_application(app_name=app_name)
+    await model.remove_application(app_name=app_name, force=True, no_wait=True)
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -367,7 +367,9 @@ async def app_fixture(
 
     yield app
 
+    logger.info("Removing application.")
     await test_configs.model.remove_application(app_name=app.name)
+    logger.info("Application removed.")
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -384,7 +386,9 @@ def ssh_key_fixture(
 
     yield SSHKey(keypair=keypair, private_key=ssh_key_path)
 
+    logger.info("Cleaning up keypair.")
     openstack_connection.delete_keypair(name=keypair.name)
+    logger.info("Keypair deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_security_group")
@@ -428,7 +432,10 @@ def openstack_security_group_fixture(openstack_connection: Connection):
             ethertype="IPv4",
         )
         yield security_group
+
+        logger.info("Cleaning up security group.")
         openstack_connection.delete_security_group(security_group_name)
+        logger.info("Security group deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_metadata")
