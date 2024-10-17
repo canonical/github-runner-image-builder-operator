@@ -204,6 +204,7 @@ class CloudImage:
         cloud_id: The cloud ID that the image was uploaded to.
         image_id: The uploaded image ID.
         juju: The juju snap channel.
+        microk8s: The microk8s snap channel.
     """
 
     arch: state.Arch
@@ -211,6 +212,7 @@ class CloudImage:
     cloud_id: str
     image_id: str
     juju: str
+    microk8s: str
 
 
 def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[list[CloudImage]]:
@@ -243,6 +245,7 @@ class _RunImageConfig:
         arch: The architecture to build the image for.
         base: The Ubuntu base OS image to build the image on.
         juju: The Juju channel to install and bootstrap on the image.
+        microk8s: The Microk8s channel to install and bootstrap on the image.
         runner_version: The GitHub runner version to pin, defaults to latest.
         prefix: The image prefix.
         image_name: The image name derived from image configuration attributes.
@@ -251,6 +254,7 @@ class _RunImageConfig:
     arch: state.Arch
     base: state.BaseImage
     juju: str
+    microk8s: str
     runner_version: str | None
     prefix: str
 
@@ -264,6 +268,8 @@ class _RunImageConfig:
         image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
         if self.juju:
             image_name += f"-juju-{self.juju.replace('/','-')}"
+        if self.microk8s:
+            image_name += f"-mk8s-{self.microk8s.replace('/', '-')}"
         return image_name
 
 
@@ -318,26 +324,28 @@ def _parametrize_build(
     configs = []
     for base in config.image_config.bases:
         for juju in config.image_config.juju_channels:
-            configs.append(
-                RunConfig(
-                    image=_RunImageConfig(
-                        arch=config.image_config.arch,
-                        base=base,
-                        juju=juju,
-                        runner_version=config.image_config.runner_version,
-                        prefix=config.image_config.prefix,
-                    ),
-                    cloud=_RunCloudConfig(
-                        build_cloud=config.cloud_config.cloud_name,
-                        build_flavor=config.cloud_config.external_build_config.flavor,
-                        build_network=config.cloud_config.external_build_config.network,
-                        resource_prefix=config.image_config.prefix,
-                        num_revisions=config.cloud_config.num_revisions,
-                        proxy=proxy.http if proxy else None,
-                        upload_clouds=config.cloud_config.upload_cloud_ids,
-                    ),
+            for microk8s in config.image_config.microk8s_channels:
+                configs.append(
+                    RunConfig(
+                        image=_RunImageConfig(
+                            arch=config.image_config.arch,
+                            base=base,
+                            juju=juju,
+                            microk8s=microk8s,
+                            runner_version=config.image_config.runner_version,
+                            prefix=config.image_config.prefix,
+                        ),
+                        cloud=_RunCloudConfig(
+                            build_cloud=config.cloud_config.cloud_name,
+                            build_flavor=config.cloud_config.external_build_config.flavor,
+                            build_network=config.cloud_config.external_build_config.network,
+                            resource_prefix=config.image_config.prefix,
+                            num_revisions=config.cloud_config.num_revisions,
+                            proxy=proxy.http if proxy else None,
+                            upload_clouds=config.cloud_config.upload_cloud_ids,
+                        ),
+                    )
                 )
-            )
     return tuple(configs)
 
 
@@ -375,6 +383,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
             commands.extend(["--runner-version", config.image.runner_version])
         if config.image.juju:
             commands.extend(["--juju", config.image.juju])
+        if config.image.microk8s:
+            commands.extend(["--microk8s", config.image.microk8s])
         commands.extend(
             [
                 "--experimental-external",
@@ -415,6 +425,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 cloud_id=cloud_id,
                 image_id=image_id,
                 juju=config.image.juju,
+                microk8s=config.image.microk8s,
             )
             for (cloud_id, image_id) in zip(
                 config.cloud.upload_clouds, stdout.split()[-1].split(",")
@@ -464,6 +475,7 @@ class FetchConfig:
         base: The Ubuntu base OS image to build the image on.
         cloud_id: The cloud ID to fetch the image from.
         juju: The Juju channel to fetch the image for.
+        microk8s: The Microk8s channel to fetch the image for.
         prefix: The image name prefix.
         image_name: The image name derived from image configuration attributes.
     """
@@ -472,6 +484,7 @@ class FetchConfig:
     base: state.BaseImage
     cloud_id: str
     juju: str
+    microk8s: str
     prefix: str
 
     @property
@@ -484,6 +497,8 @@ class FetchConfig:
         image_name = f"{self.prefix}-{self.base.value}-{self.arch.value}"
         if self.juju:
             image_name += f"-juju-{self.juju.replace('/', '-')}"
+        if self.microk8s:
+            image_name += f"-mk8s-{self.microk8s.replace('/', '-')}"
         return image_name
 
 
@@ -500,15 +515,17 @@ def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[F
     configs = []
     for base in config.image_config.bases:
         for juju in config.image_config.juju_channels:
-            configs.append(
-                FetchConfig(
-                    arch=config.image_config.arch,
-                    base=base,
-                    cloud_id=cloud_id,
-                    prefix=config.image_config.prefix,
-                    juju=juju,
+            for microk8s in config.image_config.microk8s_channels:
+                configs.append(
+                    FetchConfig(
+                        arch=config.image_config.arch,
+                        base=base,
+                        cloud_id=cloud_id,
+                        prefix=config.image_config.prefix,
+                        juju=juju,
+                        microk8s=microk8s,
+                    )
                 )
-            )
     return tuple(configs)
 
 
@@ -547,6 +564,7 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
             cloud_id=config.cloud_id,
             image_id=image_id,
             juju=config.juju,
+            microk8s=config.microk8s,
         )
     except subprocess.CalledProcessError as exc:
         logger.error(

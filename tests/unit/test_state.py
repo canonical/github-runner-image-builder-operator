@@ -226,6 +226,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                 arch=state.Arch.X64,
                 bases=(state.BaseImage.JAMMY,),
                 juju_channels=set(("", "3.1/stable", "2.9/stable")),
+                microk8s_channels=set(("",)),
                 prefix=charm.app.name,
                 runner_version="1.234.5",
             ),
@@ -491,6 +492,27 @@ def test__parse_juju_channels_error(juju_config_value: str):
 
     with pytest.raises(state.JujuChannelInvalidError):
         state._parse_juju_channels(charm=charm)
+
+
+@pytest.mark.parametrize(
+    "juju_config_value",
+    [
+        pytest.param("3.1/stable/", id="multiple slashes"),
+        pytest.param("3.1", id="no risk"),
+        pytest.param("/stable", id="no track"),
+    ],
+)
+def test__parse_microk8s_channels_error(juju_config_value: str):
+    """
+    arrange: given invalid charm juju channel configurations.
+    act: when _parse_microk8s_channels is called.
+    assert: Microk8sChannelInvalidError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.MICROK8S_CHANNELS_CONFIG_NAME] = juju_config_value
+
+    with pytest.raises(state.Microk8sChannelInvalidError):
+        state._parse_microk8s_channels(charm=charm)
 
 
 @pytest.mark.parametrize(

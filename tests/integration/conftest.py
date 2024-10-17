@@ -37,6 +37,7 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     JUJU_CHANNELS_CONFIG_NAME,
+    MICROK8S_CHANNELS_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -320,8 +321,9 @@ def test_configs_fixture(
 def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
-        bases=("jammy", "noble"),
+        bases=("noble",),
         juju_channels=("3.5/stable",),
+        microk8s_channels=("1.29-strict/stable",),
     )
 
 
@@ -339,6 +341,7 @@ async def app_fixture(
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         JUJU_CHANNELS_CONFIG_NAME: ",".join(image_configs.juju_channels),
+        MICROK8S_CHANNELS_CONFIG_NAME: ",".join(image_configs.microk8s_channels),
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
@@ -350,12 +353,11 @@ async def app_fixture(
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
-    base_machine_constraint = (
-        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=50G"
-    )
-    # if local LXD testing model, make the machine of VM type
-    if not use_private_endpoint:
-        base_machine_constraint += " virt-type=virtual-machine"
+    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores=4 mem=16G"
+    if use_private_endpoint:
+        base_machine_constraint += " root-disk=100G"
+    else:
+        base_machine_constraint += " root-disk=80G"
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
     app: Application = await test_configs.model.deploy(
         test_configs.charm_file,
@@ -368,9 +370,8 @@ async def app_fixture(
 
     yield app
 
-    # logger.info("Removing application.")
-    # await test_configs.model.remove_application(app_name=app.name, force=True, no_wait=True)
-    # logger.info("Application removed.")
+    # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
+    # required on private-endpoint OpenStack resources.
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -387,9 +388,9 @@ def ssh_key_fixture(
 
     yield SSHKey(keypair=keypair, private_key=ssh_key_path)
 
-    # logger.info("Cleaning up keypair.")
-    # openstack_connection.delete_keypair(name=keypair.name)
-    # logger.info("Keypair deleted.")
+    logger.info("Cleaning up keypair.")
+    openstack_connection.delete_keypair(name=keypair.name)
+    logger.info("Keypair deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_security_group")
@@ -400,8 +401,8 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         name_or_id=security_group_name
     ):
         yield security_groups[0]
-        # for security_group in security_groups[1:]:
-        #     openstack_connection.delete_security_group(name_or_id=security_group.id)
+        for security_group in security_groups[1:]:
+            openstack_connection.delete_security_group(name_or_id=security_group.id)
     else:
         security_group = openstack_connection.create_security_group(
             name=security_group_name,
@@ -434,9 +435,9 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         )
         yield security_group
 
-        # logger.info("Cleaning up security group.")
-        # openstack_connection.delete_security_group(security_group_name)
-        # logger.info("Security group deleted.")
+        logger.info("Cleaning up security group.")
+        openstack_connection.delete_security_group(security_group_name)
+        logger.info("Security group deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_metadata")
@@ -465,7 +466,13 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
         for juju in image_configs.juju_channels:
-            image_names.append(f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}")
+            for microk8s in image_configs.microk8s_channels:
+                image_names.append(
+                    (
+                        f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}"
+                        f"-mk8s-{microk8s.replace('/','-')}"
+                    )
+                )
     return image_names
 
 
@@ -506,7 +513,8 @@ async def juju_image_id_fixture(
             image_created_from_dispatch,
             image_name=(
                 f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}"
+                f"{image_configs.juju_channels[0].replace('/','-')}-"
+                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
             ),
             connection=openstack_connection,
             dispatch_time=dispatch_time,
@@ -515,4 +523,31 @@ async def juju_image_id_fixture(
         check_interval=30,
     )
     assert image, "Juju image not found"
+    return image.id
+
+
+@pytest_asyncio.fixture(scope="module", name="microk8s_image_id")
+async def microk8s_image_id_fixture(
+    openstack_connection: Connection,
+    dispatch_time: datetime,
+    image_configs: ImageConfigs,
+    app: Application,
+):
+    """The Juju bootstrapped image expected from builder application."""
+    arch = _get_supported_arch()
+    image: Image | None = await wait_for(
+        functools.partial(
+            image_created_from_dispatch,
+            image_name=(
+                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
+                f"{image_configs.juju_channels[0].replace('/','-')}-"
+                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
+            ),
+            connection=openstack_connection,
+            dispatch_time=dispatch_time,
+        ),
+        timeout=60 * 30,
+        check_interval=30,
+    )
+    assert image, "Microk8s image not found"
     return image.id

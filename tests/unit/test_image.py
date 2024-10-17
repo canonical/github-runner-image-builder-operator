@@ -110,6 +110,7 @@ def test_update_image_data_no_unit_data(harness: Harness, image_observer: image.
                     cloud_id="test_test",
                     image_id="test",
                     juju="3.1/stable",
+                    microk8s="",
                 )
             ]
         ],
@@ -205,6 +206,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
                     cloud_id="test_test",
                     image_id="test",
                     juju="3.1/stable",
+                    microk8s="",
                 )
             ]
         ],
@@ -240,6 +242,7 @@ def test__build_cloud_to_images_map():
                 cloud_id="cloud-1",
                 image_id="image-1",
                 juju="3.1/stable",
+                microk8s="",
             ),
             image_2 := builder.CloudImage(
                 arch=state.Arch.ARM64,
@@ -247,6 +250,7 @@ def test__build_cloud_to_images_map():
                 cloud_id="cloud-1",
                 image_id="image-2",
                 juju="3.1/stable",
+                microk8s="",
             ),
         ],
     ]
@@ -276,6 +280,7 @@ def test__cloud_images_to_relation_data_no_images():
                 cloud_id="",
                 image_id="",
                 juju="",
+                microk8s="",
             ),
             "arm64,jammy",
             id="bare",
@@ -287,9 +292,22 @@ def test__cloud_images_to_relation_data_no_images():
                 cloud_id="",
                 image_id="",
                 juju="3.1/stable",
+                microk8s="",
             ),
             "arm64,jammy,juju=3.1/stable",
             id="juju",
+        ),
+        pytest.param(
+            builder.CloudImage(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="",
+                image_id="",
+                juju="",
+                microk8s="1.29-strict/stable",
+            ),
+            "arm64,jammy,microk8s=1.29-strict/stable",
+            id="microk8s",
         ),
     ],
 )
