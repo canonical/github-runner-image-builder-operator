@@ -353,12 +353,12 @@ async def app_fixture(
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
-    base_machine_constraint = (
-        f"arch={private_endpoint_configs['arch']} cores=4 mem=16G root-disk=50G"
-    )
+    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores=4 mem=16G"
     # if local LXD testing model, make the machine of VM type
-    if not use_private_endpoint:
-        base_machine_constraint += " virt-type=virtual-machine"
+    if use_private_endpoint:
+        base_machine_constraint += " root-disk=100G virt-type=virtual-machine"
+    else:
+        base_machine_constraint += " root-disk=80G"
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
     app: Application = await test_configs.model.deploy(
         test_configs.charm_file,
