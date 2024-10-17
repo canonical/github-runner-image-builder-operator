@@ -354,9 +354,8 @@ async def app_fixture(
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores=4 mem=16G"
-    # if local LXD testing model, make the machine of VM type
     if use_private_endpoint:
-        base_machine_constraint += " root-disk=100G virt-type=virtual-machine"
+        base_machine_constraint += " root-disk=100G"
     else:
         base_machine_constraint += " root-disk=80G"
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
