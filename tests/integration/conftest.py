@@ -321,7 +321,7 @@ def test_configs_fixture(
 def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
-        bases=("jammy", "noble"),
+        bases=("noble",),
         juju_channels=("3.5/stable",),
         microk8s_channels=("1.29-strict/stable",),
     )
