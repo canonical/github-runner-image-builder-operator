@@ -745,6 +745,18 @@ def test__run_image_config_image_name(config: builder._RunImageConfig, expected_
             "app-name-jammy-arm64-mk8s-1.29-strict-stable",
             id="juju",
         ),
+        pytest.param(
+            builder.FetchConfig(
+                arch=state.Arch.ARM64,
+                base=state.BaseImage.JAMMY,
+                cloud_id="",
+                juju="3.1/stable",
+                microk8s="1.29-strict/stable",
+                prefix="app-name",
+            ),
+            "app-name-jammy-arm64-juju-3.1-stable-mk8s-1.29-strict-stable",
+            id="juju and microk8s",
+        ),
     ],
 )
 def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: str):

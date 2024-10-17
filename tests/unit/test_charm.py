@@ -41,7 +41,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                         arch=state.Arch.ARM64,
                         bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
                         juju_channels=("2.9/stable", "3.1/stable"),
-                        microk8s_channels=("",),
+                        microk8s_channels=("1.29-strict/stable",),
                         prefix="app-name",
                         runner_version="",
                     ),
