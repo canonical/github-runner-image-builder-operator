@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `image.py`
 The Github-runner-image-builder-operator image relation observer. 
 
-**Global Variables**
----------------
-- **IMAGE_RELATION**
 
 
 ---
@@ -21,6 +18,7 @@ Relation data for providing image ID.
  
  - <b>`id`</b>:  The latest image ID to provide. 
  - <b>`tags`</b>:  The comma separated tags of the image, e.g. x64, jammy. 
+ - <b>`images`</b>:  JSON formatted list of image dictionary {id: str, tags: str}. 
 
 
 
@@ -31,7 +29,7 @@ Relation data for providing image ID.
 ## <kbd>class</kbd> `Observer`
 The image relation observer. 
 
-<a href="../src/image.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L37"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -58,22 +56,20 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
 ```python
-update_image_data(image_id: str, arch: Arch, base: BaseImage) → None
+update_image_data(cloud_images: list[list[CloudImage]]) → None
 ```
 
-Update the relation data if exists. 
+Update relation data for each cloud coming from image requires side of relation. 
 
 
 
 **Args:**
  
- - <b>`image_id`</b>:  The latest image ID to propagate. 
- - <b>`arch`</b>:  The architecture in which the image was built for. 
- - <b>`base`</b>:  The OS base image. 
+ - <b>`cloud_images`</b>:  The cloud id and image ids to propagate via relation data. 
 
 
