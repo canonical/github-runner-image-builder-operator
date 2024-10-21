@@ -4,6 +4,7 @@
 """Fixtures for github runner charm integration tests."""
 import functools
 import logging
+import multiprocessing
 import platform
 import secrets
 import string
@@ -353,7 +354,8 @@ async def app_fixture(
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
-    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores=4 mem=16G"
+    num_cores = multiprocessing.cpu_count() - 1
+    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
     if use_private_endpoint:
         base_machine_constraint += " root-disk=100G"
     else:
