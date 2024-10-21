@@ -1,0 +1,4 @@
+scan:
+  skip-files:
+    # skip this file due to dockerhub rate limiting issue.  
+    - /etc/ssl/private/ssl-cert-snakeoil.key
