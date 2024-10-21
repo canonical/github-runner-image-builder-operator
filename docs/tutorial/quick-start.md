@@ -44,7 +44,7 @@ openstack image list | grep noble-x64
 
 - Integrate with GitHub runners. 
 ```
-juju relate github-runner-image-builder github-runner
+juju integrate github-runner-image-builder github-runner
 ```
 
 ## Cleanup
