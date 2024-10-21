@@ -168,9 +168,9 @@ async def test_charm_fixture(
 
     yield app
 
-    # logger.info("Cleaning up test charm.")
-    # await model.remove_application(app_name=app_name, force=True, no_wait=True)
-    # logger.info("Test charm removed.")
+    logger.info("Cleaning up test charm.")
+    await model.remove_application(app_name=app_name)
+    logger.info("Test charm removed.")
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -372,6 +372,7 @@ async def app_fixture(
 
     # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
     # required on private-endpoint OpenStack resources.
+    await test_configs.model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
