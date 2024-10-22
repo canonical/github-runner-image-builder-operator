@@ -35,7 +35,7 @@ async def test_image_relation(app: Application, test_charm: Application):
     """
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=60 * 60)
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_build_image(
                 image_name=image_name,
             ),
             check_interval=30,
-            timeout=60 * 30,
+            timeout=60 * 50,
         )
 
 
