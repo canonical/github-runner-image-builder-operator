@@ -8,12 +8,20 @@
 ## Requirements
 
 - A working station, e.g., a laptop, with amd64 architecture.
-- Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish this process by 
+- Juju 3 installed and bootstrapped to a LXD controller. You can accomplish this process by 
 using a Multipass VM as outlined in this guide: 
 [Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
 - A running instance of [OpenStack](https://microstack.run/docs/single-node).
 
 ## Steps
+
+### Shell into the Multipass VM
+> NOTE: If you're working locally, you don't need to do this step.
+
+To be able to work inside the Multipass VM first you need to log in with the following command:
+```
+multipass shell my-juju-vm
+```
 
 - Deploy the [GitHub runner charm in OpenStack mode](https://charmhub.io/github-runner/docs/how-to-openstack-runner).
 
@@ -56,6 +64,11 @@ juju integrate github-runner-image-builder github-runner
 - Remove the github-runner-image-builder charm
 ```
 juju remove-application github-runner-image-builder
+```
+
+- If you used Multipass, to remove the Multipass instance you created for this tutorial, use the following command.
+```
+multipass delete --purge my-juju-vm
 ```
 
 - Remove the images built by the charm
