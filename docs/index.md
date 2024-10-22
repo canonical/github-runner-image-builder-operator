@@ -1,7 +1,7 @@
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) for building VM
 images for [GitHub self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
 
-This charm simplifies the initial deployment and "day N" operations of building images for GitHub
+This charm simplifies the initial deployment and building images for GitHub
 self-hosted runners.
 
 Some of the charm dependencies upgrades on a schedule to migrate security risks. The 
