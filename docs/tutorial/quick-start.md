@@ -7,6 +7,10 @@
 
 ## Requirements
 
+- A working station, e.g., a laptop, with amd64 architecture.
+- Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish this process by 
+using a Multipass VM as outlined in this guide: 
+[Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
 - A running instance of [OpenStack](https://microstack.run/docs/single-node).
 
 ## Steps
