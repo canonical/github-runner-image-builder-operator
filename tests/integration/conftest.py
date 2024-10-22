@@ -4,6 +4,7 @@
 """Fixtures for github runner charm integration tests."""
 import functools
 import logging
+import multiprocessing
 import platform
 import secrets
 import string
@@ -168,9 +169,9 @@ async def test_charm_fixture(
 
     yield app
 
-    # logger.info("Cleaning up test charm.")
-    # await model.remove_application(app_name=app_name, force=True, no_wait=True)
-    # logger.info("Test charm removed.")
+    logger.info("Cleaning up test charm.")
+    await model.remove_application(app_name=app_name)
+    logger.info("Test charm removed.")
 
 
 @pytest.fixture(scope="module", name="openstack_clouds_yaml")
@@ -353,7 +354,8 @@ async def app_fixture(
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
     }
-    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores=4 mem=16G"
+    num_cores = multiprocessing.cpu_count() - 1
+    base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
     if use_private_endpoint:
         base_machine_constraint += " root-disk=100G"
     else:
@@ -372,6 +374,7 @@ async def app_fixture(
 
     # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
     # required on private-endpoint OpenStack resources.
+    await test_configs.model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
