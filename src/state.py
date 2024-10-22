@@ -5,6 +5,7 @@
 
 import dataclasses
 import logging
+import multiprocessing
 import os
 import platform
 import typing
@@ -449,10 +450,12 @@ class BuilderRunConfig:
     Attributes:
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
+        parallel_build: The number of images to build in parallel.
     """
 
     image_config: ImageConfig
     cloud_config: CloudConfig
+    parallel_build: int
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
@@ -466,10 +469,35 @@ class BuilderRunConfig:
         """
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
+        parallel_build = _get_num_parallel_build(charm=charm)
         return cls(
-            cloud_config=cloud_config,
-            image_config=image_config,
+            cloud_config=cloud_config, image_config=image_config, parallel_build=parallel_build
         )
+
+
+class InsufficientCoresError(CharmConfigInvalidError):
+    """Represents an error with invalid charm resource configuration."""
+
+
+def _get_num_parallel_build(charm: ops.CharmBase) -> int:
+    """Determine the number of parallel build that the charm can run.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        InsufficientCoresError: If not sufficient number of cores were allocated to the charm.
+
+    Returns:
+        The number of cores to use for parallel building of images.
+    """
+    num_cores = multiprocessing.cpu_count() - 1
+    if num_cores < 1:
+        raise InsufficientCoresError(
+            "Please allocate more cores "
+            f"`juju set-constraints {charm.app.name} cores=<more than 2 cores>`"
+        )
+    return num_cores
 
 
 class BuildIntervalConfigError(CharmConfigInvalidError):

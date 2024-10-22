@@ -18,4 +18,4 @@ class Observer(ops.Object):
             charm: The parent charm to attach the observer to.
         """
         super().__init__(charm, "cos-observer")
-        self._grafana_agent = COSAgentProvider(self)
+        self._grafana_agent = COSAgentProvider(charm=charm)
