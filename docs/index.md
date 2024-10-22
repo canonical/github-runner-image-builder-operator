@@ -17,7 +17,7 @@ SRE teams through Juju's clean interface.
 
 | | |
 |--|--|
-|  [Tutorials](https://charmhub.io/github-runner-image-builder/docs/quick-start)</br>  Get started - a hands-on introduction to using the GitHub runner charm for new users </br> | [How-to guides](https://charmhub.io/github-runner-image-builder/docs/configure-base-image) </br> Step-by-step guides covering key operations and common tasks |
+|  [Tutorials](https://charmhub.io/github-runner-image-builder/docs/quick-start)</br>  Get started - a hands-on introduction to using the GitHub runner image builder charm for new users </br> | [How-to guides](https://charmhub.io/github-runner-image-builder/docs/configure-base-image) </br> Step-by-step guides covering key operations and common tasks |
 
 
 ## Contributing to this documentation
@@ -28,14 +28,14 @@ If there's a particular area of documentation that you'd like to see that's miss
 
 ## Project and community
 
-The GitHub runner charm is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
+The GitHub runner image builder charm is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](Contribute)
 
-Thinking about using the GitHub runner charm for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
+Thinking about using the GitHub runner image builder charm for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 # Contents
 
