@@ -305,7 +305,7 @@ async def _get_ssh_connection_for_image(
 hostnamectl set-hostname github-runner
 DEBIAN_FRONTEND=noninteractive apt-get update -y
 """,
-        timeout=120,
+        timeout=60 * 10,
         wait=True,
     )
 
