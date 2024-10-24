@@ -436,6 +436,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     prefix="",
                     runner_version="",
                 ),
+                parallel_build=1,
             ),
             (
                 builder.RunConfig(
@@ -786,6 +787,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
                 ),
+                parallel_build=1,
             ),
             (
                 builder.FetchConfig(

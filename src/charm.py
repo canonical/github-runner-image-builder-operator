@@ -12,6 +12,7 @@ import ops
 
 import builder
 import charm_utils
+import cos
 import image
 import proxy
 import state
@@ -36,6 +37,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.on.define_event("run", RunEvent)
 
         self.image_observer = image.Observer(self)
+        self.cos_observer = cos.Observer(self)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run, self._on_run)
