@@ -209,6 +209,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     """
     monkeypatch.setattr(platform, "machine", lambda: "x86_64")
     monkeypatch.setattr(os, "environ", {})
+    monkeypatch.setattr(state, "_get_num_parallel_build", MagicMock(return_value=1))
 
     charm = factories.MockCharmFactory()
     result = state.BuilderInitConfig.from_charm(charm)
@@ -230,11 +231,24 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                 prefix=charm.app.name,
                 runner_version="1.234.5",
             ),
+            parallel_build=1,
         ),
         interval=6,
         unit_name=charm.unit.name,
     )
     assert result.run_config.cloud_config.cloud_name == state.CLOUD_NAME
+
+
+def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched multiprocessing.cpu_count() function thatt returns 1 core.
+    act: when _get_num_parallel_build is called.
+    assert: InsufficientCoresError is raised.
+    """
+    monkeypatch.setattr(state.multiprocessing, "cpu_count", MagicMock(return_value=1))
+
+    with pytest.raises(state.InsufficientCoresError):
+        state._get_num_parallel_build(charm=MagicMock())
 
 
 @pytest.mark.parametrize(

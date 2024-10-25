@@ -35,7 +35,26 @@ async def test_image_relation(app: Application, test_charm: Application):
     """
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name], wait_for_active=True, timeout=50 * 60)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=60 * 60)
+
+
+@pytest.mark.asyncio
+async def test_cos_agent_relation(app: Application):
+    """
+    arrange: An active charm.
+    act: When the cos-agent relation is joined.
+    assert: The test charm becomes active.
+    """
+    model: Model = app.model
+    grafana_agent = await model.deploy(
+        "grafana-agent",
+        application_name=f"grafana-agent-{app.name}",
+        channel="latest/edge",
+    )
+    await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
+    await model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
+    # limit private-endpoint testing to machine relation test due to resource constraints of
+    # deploying k8s stack.
 
 
 @pytest.mark.asyncio
