@@ -134,7 +134,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
-        cloud_images = builder.run(config=run_config, proxy=proxy.ProxyConfig.from_env())
+        cloud_images = builder.run(config=run_config)
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
 

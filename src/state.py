@@ -9,6 +9,7 @@ import multiprocessing
 import os
 import platform
 import typing
+import urllib.parse
 from enum import Enum
 
 import ops
@@ -25,6 +26,7 @@ ARCHITECTURE_CONFIG_NAME = "architecture"
 APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
+DOCKERHUB_CACHE_CONFIG_NAME = "dockerhub-cache"
 EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
 EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
@@ -444,17 +446,71 @@ class CloudConfig:
 
 
 @dataclasses.dataclass
+class ServiceConfig:
+    """External service configuration values.
+
+    Attributes:
+        dockerhub_cache: The DockerHub cache to use for microk8s installation.
+        proxy: The Juju proxy in which the charm should use to build the image.
+    """
+
+    dockerhub_cache: str | None
+    proxy: ProxyConfig | None
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "ServiceConfig":
+        """Initialize the external service configurations from charm.
+
+        Args:
+            charm: The running charm instance.
+
+        Returns:
+            The external service configurations used to build images.
+        """
+        dockerhub_cache = _parse_dockerhub_cache_config(charm=charm)
+        proxy = ProxyConfig.from_env()
+        return cls(dockerhub_cache=dockerhub_cache, proxy=proxy)
+
+
+class InvalidDockerHubCacheURLError(CharmConfigInvalidError):
+    """Represents an error with DockerHub cache URL."""
+
+
+def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
+    """Parse the dockerhub cache URL config from charm.
+
+    Args:
+        charm: The charm instance.
+
+    Raises:
+        InvalidDockerHubCacheURLError: If an invalid URL string was passed to the charm.
+
+    Returns:
+        The valid DockerHub cache URL string.
+    """
+    dockerhub_cache_url_str = typing.cast(str, charm.config.get(DOCKERHUB_CACHE_CONFIG_NAME))
+    if not dockerhub_cache_url_str:
+        return None
+    parsed_result = urllib.parse.urlparse(dockerhub_cache_url_str)
+    if not all((parsed_result.scheme, parsed_result.hostname)):
+        raise InvalidDockerHubCacheURLError("DockerHub scheme or hostname not provided.")
+    return parsed_result.geturl()
+
+
+@dataclasses.dataclass
 class BuilderRunConfig:
     """Configurations for running builder periodically.
 
     Attributes:
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
+        service_config: The external dependent service configurations to build the image.
         parallel_build: The number of images to build in parallel.
     """
 
     image_config: ImageConfig
     cloud_config: CloudConfig
+    service_config: ServiceConfig
     parallel_build: int
 
     @classmethod
@@ -469,9 +525,13 @@ class BuilderRunConfig:
         """
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
+        service_config = ServiceConfig.from_charm(charm=charm)
         parallel_build = _get_num_parallel_build(charm=charm)
         return cls(
-            cloud_config=cloud_config, image_config=image_config, parallel_build=parallel_build
+            cloud_config=cloud_config,
+            image_config=image_config,
+            service_config=service_config,
+            parallel_build=parallel_build,
         )
 
 

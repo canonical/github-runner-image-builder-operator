@@ -45,6 +45,9 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                         prefix="app-name",
                         runner_version="",
                     ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
                     parallel_build=1,
                 ),
                 unit_name="test-unit",
@@ -177,6 +180,9 @@ def test__on_config_changed(
                         external_build_config=factories.ExternalBuildConfigFactory(),
                         num_revisions=1,
                     ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
                     parallel_build=1,
                 ),
             ),
@@ -265,6 +271,9 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
                 ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
                 parallel_build=1,
             ),
             False,
@@ -289,6 +298,9 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     ),
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                 ),
                 parallel_build=1,
             ),
