@@ -34,6 +34,7 @@ from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
+    DOCKERHUB_CACHE_CONFIG_NAME,
     EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
@@ -297,9 +298,9 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
 
 
 @pytest.fixture(scope="module", name="dockerhub_mirror")
-def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str | None:
+def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str:
     """Dockerhub mirror URL."""
-    return pytestconfig.getoption("--dockerhub-mirror")
+    return pytestconfig.getoption("--dockerhub-mirror", default="")
 
 
 @pytest.fixture(scope="module", name="test_id")
@@ -310,11 +311,15 @@ def test_id_fixture() -> str:
 
 @pytest.fixture(scope="module", name="test_configs")
 def test_configs_fixture(
-    model: Model, charm_file: str, test_id: str, dispatch_time: datetime
+    model: Model, charm_file: str, test_id: str, dispatch_time: datetime, dockerhub_mirror: str
 ) -> TestConfigs:
     """The test configuration values."""
     return TestConfigs(
-        model=model, charm_file=charm_file, dispatch_time=dispatch_time, test_id=test_id
+        model=model,
+        charm_file=charm_file,
+        dispatch_time=dispatch_time,
+        test_id=test_id,
+        dockerhub_mirror=dockerhub_mirror,
     )
 
 
@@ -341,6 +346,7 @@ async def app_fixture(
         APP_CHANNEL_CONFIG_NAME: "edge",
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
+        DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,
         JUJU_CHANNELS_CONFIG_NAME: ",".join(image_configs.juju_channels),
         MICROK8S_CHANNELS_CONFIG_NAME: ",".join(image_configs.microk8s_channels),
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
