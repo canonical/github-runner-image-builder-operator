@@ -26,9 +26,9 @@ parts:
     build-snaps:
       - rustup
     build-packages:
-      - libffi-dev  # for cffi
-      - libssl-dev  # for cryptography
-      - rust-all  # for cryptography
+      - libffi-dev # for cffi
+      - libssl-dev # for cryptography
+      - rust-all # for cryptography
       - pkg-config # for cryptography
     override-build: |
       rustup default stable
@@ -82,6 +82,11 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
+    dockerhub-cache:
+      type: string
+      default: ""
+      description: |
+        The DockerHub cache to use to enable cached image pull requests for initializing MicroK8s.
     experimental-external-build:
       type: boolean
       default: false

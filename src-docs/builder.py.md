@@ -86,10 +86,7 @@ Configure cron to run builder.
 ## <kbd>function</kbd> `run`
 
 ```python
-run(
-    config: BuilderRunConfig,
-    proxy: ProxyConfig | None
-) → list[list[CloudImage]]
+run(config: BuilderRunConfig) → list[list[CloudImage]]
 ```
 
 Run a build immediately. 
@@ -99,7 +96,6 @@ Run a build immediately.
 **Args:**
  
  - <b>`config`</b>:  The configuration values for running image builder. 
- - <b>`proxy`</b>:  The proxy configuration to apply on the builder. 
 
 
 
@@ -115,7 +111,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L448"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L466"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_images`
 
@@ -146,7 +142,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -226,6 +222,7 @@ Builder run configuration parameters.
  
  - <b>`image`</b>:  The image configuration parameters. 
  - <b>`cloud`</b>:  The cloud configuration parameters. 
+ - <b>`external_service`</b>:  The external service dependencies for building the image. 
 
 
 
