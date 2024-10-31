@@ -231,12 +231,37 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                 prefix=charm.app.name,
                 runner_version="1.234.5",
             ),
+            service_config=state.ServiceConfig(
+                dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+            ),
             parallel_build=1,
         ),
         interval=6,
         unit_name=charm.unit.name,
     )
     assert result.run_config.cloud_config.cloud_name == state.CLOUD_NAME
+
+
+@pytest.mark.parametrize(
+    "dockerhub_cache_url",
+    [
+        pytest.param("www.cache-url.com", id="no scheme"),
+        pytest.param("https://", id="no host"),
+    ],
+)
+def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
+    """
+    arrange: given an invalid dockerhub URL config set.
+    act: when _parse_dockerhub_cache_config is called.
+    assert: InvalidDockerHubCacheURLError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
+
+    with pytest.raises(state.InvalidDockerHubCacheURLError) as exc:
+        state._parse_dockerhub_cache_config(charm)
+
+    assert "DockerHub scheme or hostname not provided." in str(exc)
 
 
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):

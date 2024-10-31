@@ -384,7 +384,7 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
     pool_context_mock.return_value.__enter__.return_value = (pool_mock := MagicMock())
     pool_mock.map = MagicMock(side_effect=builder.multiprocessing.ProcessError("Process Error"))
     with pytest.raises(builder.BuilderRunError):
-        builder.run(config=MagicMock(), proxy=None)
+        builder.run(config=MagicMock())
 
 
 def _patched_test_func(*_args, **_kwargs):
@@ -409,7 +409,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_run", _patched_test_func)
 
-    assert ["test", "test"] == builder.run(config=MagicMock(), proxy=None)
+    assert ["test", "test"] == builder.run(config=MagicMock())
 
 
 # pylint doesn't quite understand walrus operators
@@ -436,6 +436,9 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     prefix="",
                     runner_version="",
                 ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
                 parallel_build=1,
             ),
             (
@@ -454,8 +457,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         build_network=external_build_config.network,
                         resource_prefix="",
                         num_revisions=1,
-                        proxy=None,
                         upload_clouds=[],
+                    ),
+                    external_service=builder._ExternalServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                     ),
                 ),
                 builder.RunConfig(
@@ -473,8 +478,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         build_network=external_build_config.network,
                         resource_prefix="",
                         num_revisions=1,
-                        proxy=None,
                         upload_clouds=[],
+                    ),
+                    external_service=builder._ExternalServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                     ),
                 ),
                 builder.RunConfig(
@@ -492,8 +499,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         build_network=external_build_config.network,
                         resource_prefix="",
                         num_revisions=1,
-                        proxy=None,
                         upload_clouds=[],
+                    ),
+                    external_service=builder._ExternalServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                     ),
                 ),
                 builder.RunConfig(
@@ -511,8 +520,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         build_network=external_build_config.network,
                         resource_prefix="",
                         num_revisions=1,
-                        proxy=None,
                         upload_clouds=[],
+                    ),
+                    external_service=builder._ExternalServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                     ),
                 ),
             ),
@@ -527,7 +538,7 @@ def test__parametrize_build(
     act: when _parametrize_build is called.
     assert: expected build configurations are returned.
     """
-    assert builder._parametrize_build(config=builder_run_config, proxy=None) == expected_configs
+    assert builder._parametrize_build(config=builder_run_config) == expected_configs
 
 
 # pylint: enable=unused-variable,undefined-variable
@@ -588,8 +599,8 @@ def test__run_error(
                     upload_clouds=["test"],
                     resource_prefix="app-name",
                     num_revisions=1,
-                    proxy=None,
                 ),
+                external_service=state.ServiceConfig(dockerhub_cache=None, proxy=None),
             ),
             id="runner version config set",
         ),
@@ -610,7 +621,10 @@ def test__run_error(
                     upload_clouds=["test"],
                     resource_prefix="app-name",
                     num_revisions=1,
-                    proxy="test",
+                ),
+                external_service=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000",
+                    proxy="http://proxy.test:3128",
                 ),
             ),
             id="proxy config set",
@@ -632,7 +646,9 @@ def test__run_error(
                     upload_clouds=["test"],
                     resource_prefix="app-name",
                     num_revisions=1,
-                    proxy="test",
+                ),
+                external_service=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                 ),
             ),
             id="juju unset",
@@ -786,6 +802,9 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
                     external_build_config=factories.ExternalBuildConfigFactory(),
                     num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
                 ),
                 parallel_build=1,
             ),
