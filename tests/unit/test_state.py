@@ -266,7 +266,7 @@ def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
 
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: given monkeypatched multiprocessing.cpu_count() function thatt returns 1 core.
+    arrange: given monkeypatched multiprocessing.cpu_count() function that returns 1 core.
     act: when _get_num_parallel_build is called.
     assert: InsufficientCoresError is raised.
     """
