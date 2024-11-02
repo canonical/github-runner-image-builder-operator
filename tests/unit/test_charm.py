@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import ops
@@ -16,18 +15,65 @@ import builder
 import image
 import proxy
 import state
-from charm import BUILD_SUCCESS_EVENT_NAME, GithubRunnerImageBuilderCharm, os
+from charm import GithubRunnerImageBuilderCharm
+from tests.unit import factories
 
 
-@pytest.fixture(name="charm", scope="module")
-def charm_fixture():
-    """Mock charm fixture w/ framework."""
-    # this is required since current ops does not support charmcraft.yaml
-    mock_framework = MagicMock(spec=ops.framework.Framework)
-    mock_framework.meta.actions = ["build-image"]
-    mock_framework.meta.relations = ["image"]
-    charm = GithubRunnerImageBuilderCharm(mock_framework)
-    return charm
+@pytest.fixture(name="patch_builder_init_config_from_charm", scope="function")
+def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
+    """Fixture to patch builder init config."""
+    monkeypatch.setattr(
+        state.BuilderInitConfig,
+        "from_charm",
+        MagicMock(
+            return_value=state.BuilderInitConfig(
+                app_name="app-name",
+                channel=MagicMock(),
+                external_build=True,
+                interval=1,
+                run_config=state.BuilderRunConfig(
+                    cloud_config=state.CloudConfig(
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
+                        external_build_config=factories.ExternalBuildConfigFactory(),
+                        num_revisions=1,
+                    ),
+                    image_config=state.ImageConfig(
+                        arch=state.Arch.ARM64,
+                        bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                        juju_channels=("2.9/stable", "3.1/stable"),
+                        microk8s_channels=("1.29-strict/stable",),
+                        prefix="app-name",
+                        runner_version="",
+                    ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
+                    parallel_build=1,
+                ),
+                unit_name="test-unit",
+            ),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("_on_config_changed", id="config_changed"),
+        pytest.param("_on_run_action", id="run_action"),
+        pytest.param("_on_run", id="run event"),
+        pytest.param("_on_image_relation_changed", id="image_relation_changed"),
+    ],
+)
+def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm, hook: str):
+    """
+    arrange: given hooks that should not run build when image relation is not yet ready.
+    act: when the hook is called.
+    assert: the charm falls into BlockedStatus.
+    """
+    getattr(charm, hook)(MagicMock())
+
+    assert charm.unit.status == ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
 
 
 @pytest.mark.parametrize(
@@ -35,6 +81,7 @@ def charm_fixture():
     [
         pytest.param("_on_install", id="_on_install"),
         pytest.param("_on_config_changed", id="_on_config_changed"),
+        pytest.param("_on_run_action", id="_on_run_action"),
     ],
 )
 def test_block_on_state_error(
@@ -46,10 +93,13 @@ def test_block_on_state_error(
     assert: charm is in blocked status.
     """
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", MagicMock())
-    monkeypatch.setattr(state, "FAILED_CALLBACK_SCRIPT_PATH", MagicMock())
     monkeypatch.setattr(
         state.BuilderInitConfig,
+        "from_charm",
+        MagicMock(side_effect=state.CharmConfigInvalidError("Invalid config")),
+    )
+    monkeypatch.setattr(
+        state.BuilderRunConfig,
         "from_charm",
         MagicMock(side_effect=state.CharmConfigInvalidError("Invalid config")),
     )
@@ -59,38 +109,6 @@ def test_block_on_state_error(
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
 
 
-def test__create_callback_script(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given monkeypatched CALLBACK_SCRIPT_PATH.
-    act: when _create_callback_script is called.
-    assert: expected contents are written to path.
-    """
-    test_path = tmp_path / "test"
-    charm.unit.name = (test_unit_name := "test_unit_name")
-    charm.model.name = (test_model_name := "test_model_name")
-    monkeypatch.setattr(state, "SUCCESS_CALLBACK_SCRIPT_PATH", test_path)
-    monkeypatch.setattr(os, "getenv", MagicMock(return_value=(test_dir := "test_charm_dir")))
-
-    charm._create_success_callback_script()
-
-    contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""#! /bin/bash
-OPENSTACK_IMAGE_ID="$1"
-
-/usr/bin/juju-exec {test_unit_name} \
-JUJU_DISPATCH_PATH="hooks/{BUILD_SUCCESS_EVENT_NAME}" \
-JUJU_MODEL_NAME="{test_model_name}" \
-JUJU_UNIT_NAME="{test_unit_name}" \
-OPENSTACK_IMAGE_ID="$OPENSTACK_IMAGE_ID" \
-{test_dir}/dispatch
-"""
-    )
-
-
 def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
     arrange: given a monekypatched builder.setup_builder function.
@@ -98,23 +116,20 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     assert: setup_builder is called.
     """
     monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
-    monkeypatch.setattr(builder, "run", (run_mock := MagicMock()))
-    charm._create_success_callback_script = (create_callback := MagicMock())
-    charm._create_failed_callback_script = (failed_callback := MagicMock())
 
     charm._on_install(MagicMock())
 
-    create_callback.assert_called_once()
-    failed_callback.assert_called_once()
     setup_mock.assert_called_once()
-    run_mock.assert_called_once()
     assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
 
 
+@pytest.mark.usefixtures("patch_builder_init_config_from_charm")
 @pytest.mark.parametrize(
     "configure_cron",
     [
@@ -130,7 +145,49 @@ def test__on_config_changed(
     act: when _on_config_changed is called.
     assert: charm is in active status.
     """
-    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(
+        state.BuilderInitConfig,
+        "from_charm",
+        MagicMock(
+            return_value=state.BuilderInitConfig(
+                app_name="test-app",
+                channel=state.BuilderAppChannel.STABLE,
+                external_build=True,
+                interval=6,
+                unit_name="test-app/0",
+                run_config=state.BuilderRunConfig(
+                    image_config=state.ImageConfig(
+                        arch=state.Arch.ARM64,
+                        bases=(state.BaseImage.JAMMY,),
+                        juju_channels=("",),
+                        microk8s_channels=("",),
+                        prefix="",
+                        runner_version="",
+                    ),
+                    cloud_config=state.CloudConfig(
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
+                            clouds={
+                                "builder": factories._CloudsConfig(
+                                    auth=factories.CloudAuthFactory()
+                                ),
+                                "uploader": factories._CloudsConfig(
+                                    auth=factories.CloudAuthFactory(
+                                        project_name="uploader", username="uploader"
+                                    )
+                                ),
+                            }
+                        ),
+                        external_build_config=factories.ExternalBuildConfigFactory(),
+                        num_revisions=1,
+                    ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
+                    parallel_build=1,
+                ),
+            ),
+        ),
+    )
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
@@ -138,6 +195,7 @@ def test__on_config_changed(
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=configure_cron))
     monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
     charm.image_observer = image_observer_mock
 
     charm._on_config_changed(MagicMock())
@@ -145,51 +203,120 @@ def test__on_config_changed(
     assert charm.unit.status == ops.ActiveStatus()
 
 
-def test__on_build_success_error(
+def test__on_image_relation_changed(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
     """
-    arrange: given a monkeypatched mock os.getenv function that returns no value.
-    act: when _on_build_success is called.
-    assert: the charm is in ActiveStatus with a message.
+    arrange: given monkeypatched builder, openstack manager, image_observer.
+    act: when _on_image_relation_changed is called.
+    assert: charm is in active status.
     """
-    monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
+    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
+    charm.image_observer = MagicMock()
 
-    charm._on_build_success(MagicMock)
-
-    assert isinstance(charm.unit.status, ops.ActiveStatus)
-    assert "Failed to build image." in charm.unit.status.message
-
-
-def test__on_build_success(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
-    """
-    arrange: given a monkeypatched mock os.getenv function.
-    act: when _on_build_success is called.
-    assert: the charm is in active status.
-    """
-    monkeypatch.setattr(os, "getenv", MagicMock())
-    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
-    monkeypatch.setattr(builder.state.BuilderRunConfig, "from_charm", MagicMock())
-    charm.image_observer.update_image_data = (update_mock := MagicMock())
-
-    charm._on_build_success(MagicMock)
+    charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
-    upgrade_mock.assert_called_once()
-    update_mock.assert_called_once()
 
 
-def test__on_build_fail(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+@pytest.mark.usefixtures("patch_builder_init_config_from_charm")
+def test__on_run_action(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
-    arrange: given monkeypatched mock builder upgrade_app function.
-    act: when _on_build_failed is called.
-    assert: the charm is in active status and the upgrade_app is called.
+    arrange: given a mocked functions of _on_run_action.
+    act: when _on_run_action is called.
+    assert: subfunctions are called.
     """
-    monkeypatch.setattr(builder, "upgrade_app", upgrade_mock := MagicMock())
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    charm._run = (run_mock := MagicMock())
 
-    charm._on_build_failed(MagicMock)
+    charm._on_run_action(MagicMock())
 
-    assert charm.unit.status == ops.ActiveStatus(
-        f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
-    )
-    upgrade_mock.assert_called_once()
+    run_mock.assert_called()
+
+
+@pytest.mark.usefixtures("patch_builder_init_config_from_charm")
+def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a mocked functions of _on_run.
+    act: when _on_run is called.
+    assert: subfunctions are called.
+    """
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    charm._run = (run_mock := MagicMock())
+
+    charm._on_run(MagicMock())
+
+    run_mock.assert_called()
+
+
+@pytest.mark.parametrize(
+    "config, expected_return",
+    [
+        pytest.param(
+            state.BuilderRunConfig(
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY,),
+                    juju_channels=("",),
+                    microk8s_channels=("",),
+                    prefix="",
+                    runner_version="",
+                ),
+                cloud_config=state.CloudConfig(
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(clouds={}),
+                    external_build_config=factories.ExternalBuildConfigFactory(),
+                    num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
+                parallel_build=1,
+            ),
+            False,
+            id="missing integration",
+        ),
+        pytest.param(
+            state.BuilderRunConfig(
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY,),
+                    juju_channels=("",),
+                    microk8s_channels=("",),
+                    prefix="",
+                    runner_version="",
+                ),
+                cloud_config=state.CloudConfig(
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
+                        clouds={
+                            "builder": factories._CloudsConfig(auth=factories.CloudAuthFactory()),
+                            "uploader": factories._CloudsConfig(auth=factories.CloudAuthFactory()),
+                        }
+                    ),
+                    external_build_config=factories.ExternalBuildConfigFactory(),
+                    num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
+                parallel_build=1,
+            ),
+            True,
+            id="integration ready",
+        ),
+    ],
+)
+def test__is_image_relation_ready_set_status(
+    charm: GithubRunnerImageBuilderCharm,
+    config: state.BuilderRunConfig,
+    expected_return: bool,
+):
+    """
+    arrange: given builder run config state.
+    act: when _is_image_relation_ready_set_status is called.
+    assert: expected boolean value is returned.
+    """
+    assert charm._is_image_relation_ready_set_status(config=config) == expected_return

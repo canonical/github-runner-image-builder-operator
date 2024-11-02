@@ -60,7 +60,7 @@ def pytest_addoption(parser: Parser):
         help="The Openstack user domain name to use.",
     )
     parser.addoption(
-        "--openstack-user-name-arm64",
+        "--openstack-username-arm64",
         action="store",
         help="The Openstack user to authenticate as.",
     )
@@ -106,7 +106,7 @@ def pytest_addoption(parser: Parser):
         help="The Openstack user domain name to use.",
     )
     parser.addoption(
-        "--openstack-user-name-amd64",
+        "--openstack-username-amd64",
         action="store",
         help="The Openstack user to authenticate as.",
     )
