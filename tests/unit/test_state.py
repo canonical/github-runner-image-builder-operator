@@ -16,7 +16,7 @@ from ops.testing import Harness
 
 import state
 from charm import GithubRunnerImageBuilderCharm
-from tests.unit.factories import MockCharmFactory
+from tests.unit import factories
 
 
 @pytest.mark.parametrize(
@@ -40,6 +40,25 @@ def test__get_supported_arch_unsupported_arch(arch: str, monkeypatch: pytest.Mon
         state._get_supported_arch()
 
     assert arch in str(exc.getrepr())
+
+
+@pytest.mark.parametrize(
+    "arch, expected",
+    [
+        pytest.param("arm64", state.Arch.ARM64, id="arm64"),
+        pytest.param("amd64", state.Arch.X64, id="amd64"),
+    ],
+)
+def test_arch_from_charm(arch: str, expected: state.Arch):
+    """
+    arrange: given charm with architecture configurations.
+    act: when Arch.from_charm is called.
+    assert: expected architecture is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = arch
+
+    assert state.Arch.from_charm(charm=charm) == expected
 
 
 @pytest.mark.parametrize(
@@ -91,12 +110,12 @@ def test_base_image_invalid(image: str):
     """
     arrange: given invalid or unsupported base image names as config value.
     act: when state.BaseImage.from_charm is called.
-    assert: ValueError is raised.
+    assert: InvalidBaseImageError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.BASE_IMAGE_CONFIG_NAME] = image
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(state.InvalidBaseImageError) as exc:
         state.BaseImage.from_charm(charm)
 
     assert image in str(exc)
@@ -105,8 +124,8 @@ def test_base_image_invalid(image: str):
 @pytest.mark.parametrize(
     "image, expected_base_image",
     [
-        pytest.param("jammy", state.BaseImage.JAMMY, id="jammy"),
-        pytest.param("22.04", state.BaseImage.JAMMY, id="22.04"),
+        pytest.param("jammy", (state.BaseImage.JAMMY,), id="jammy"),
+        pytest.param("22.04", (state.BaseImage.JAMMY,), id="22.04"),
     ],
 )
 def test_base_image(image: str, expected_base_image: state.BaseImage):
@@ -115,7 +134,7 @@ def test_base_image(image: str, expected_base_image: state.BaseImage):
     act: when state.BaseImage.from_charm is called.
     assert: expected base image is returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.BASE_IMAGE_CONFIG_NAME] = image
 
     assert state.BaseImage.from_charm(charm) == expected_base_image
@@ -175,77 +194,11 @@ def test_external_build_config(
     act: when ExternalBuildConfig.from_charm is called.
     assert: expected build configs are returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.EXTERNAL_BUILD_FLAVOR_CONFIG_NAME] = flavor
     charm.config[state.EXTERNAL_BUILD_NETWORK_CONFIG_NAME] = network
 
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
-
-
-@pytest.mark.parametrize(
-    "module, patch_func, exception, message",
-    [
-        pytest.param(
-            state,
-            "_get_supported_arch",
-            state.UnsupportedArchitectureError(),
-            "Unsupported architecture",
-            id="unsupported arch",
-        ),
-        pytest.param(
-            state.BaseImage,
-            "from_charm",
-            ValueError,
-            "Unsupported input option for base-image",
-            id="invalid base image",
-        ),
-        pytest.param(
-            state,
-            "_parse_openstack_clouds_config",
-            state.InvalidCloudConfigError,
-            "",
-            id="invalid cloud config",
-        ),
-        pytest.param(
-            state,
-            "_parse_revision_history_limit",
-            ValueError,
-            "",
-            id="invalid revision history",
-        ),
-        pytest.param(
-            state,
-            "_parse_runner_version",
-            ValueError,
-            "",
-            id="invalid runner version",
-        ),
-    ],
-)
-def test_builder_run_config_invalid_configs(
-    monkeypatch: pytest.MonkeyPatch,
-    module: typing.Any,
-    patch_func: typing.Any,
-    exception: typing.Type[Exception],
-    message: str,
-):
-    """
-    arrange: given a valid charm configurations.
-    act: when BuilderRunConfig.from_charm is called.
-    assert: expected BuilderRunConfig is returned.
-    """
-    monkeypatch.setattr(state, "_get_supported_arch", MagicMock())
-    monkeypatch.setattr(state.BaseImage, "from_charm", MagicMock())
-    monkeypatch.setattr(state, "_parse_openstack_clouds_config", MagicMock())
-    monkeypatch.setattr(state, "_parse_revision_history_limit", MagicMock())
-    monkeypatch.setattr(state, "_parse_runner_version", MagicMock())
-    monkeypatch.setattr(module, patch_func, MagicMock(side_effect=exception))
-
-    charm = MockCharmFactory()
-    with pytest.raises(state.BuildConfigInvalidError) as exc:
-        state.BuilderRunConfig.from_charm(charm)
-
-    assert message in str(exc.getrepr())
 
 
 def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
@@ -256,37 +209,71 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
     """
     monkeypatch.setattr(platform, "machine", lambda: "x86_64")
     monkeypatch.setattr(os, "environ", {})
+    monkeypatch.setattr(state, "_get_num_parallel_build", MagicMock(return_value=1))
 
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     result = state.BuilderInitConfig.from_charm(charm)
     assert result == state.BuilderInitConfig(
+        app_name=charm.app.name,
         channel=state.BuilderAppChannel.EDGE,
-        external_build=False,
+        external_build=True,
         run_config=state.BuilderRunConfig(
-            arch=state.Arch.X64,
-            base=state.BaseImage.JAMMY,
-            cloud_config=state.OpenstackCloudsConfig(
-                clouds={
-                    state.CLOUD_NAME: {
-                        "auth": {
-                            "auth_url": "http://testing-auth/keystone",
-                            "password": "testingvalue",
-                            "project_domain_name": "project_domain_name",
-                            "project_name": "project_name",
-                            "user_domain_name": "user_domain_name",
-                            "username": "username",
-                        }
-                    },
-                }
+            cloud_config=state.CloudConfig(
+                openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
+                external_build_config=factories.ExternalBuildConfigFactory(),
+                num_revisions=5,
             ),
-            external_build_config=None,
-            runner_version="1.234.5",
-            num_revisions=5,
+            image_config=state.ImageConfig(
+                arch=state.Arch.X64,
+                bases=(state.BaseImage.JAMMY,),
+                juju_channels=set(("", "3.1/stable", "2.9/stable")),
+                microk8s_channels=set(("",)),
+                prefix=charm.app.name,
+                runner_version="1.234.5",
+            ),
+            service_config=state.ServiceConfig(
+                dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+            ),
+            parallel_build=1,
         ),
-        unit_name=charm.unit.name,
         interval=6,
+        unit_name=charm.unit.name,
     )
-    assert result.run_config.cloud_name == state.CLOUD_NAME
+    assert result.run_config.cloud_config.cloud_name == state.CLOUD_NAME
+
+
+@pytest.mark.parametrize(
+    "dockerhub_cache_url",
+    [
+        pytest.param("www.cache-url.com", id="no scheme"),
+        pytest.param("https://", id="no host"),
+    ],
+)
+def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
+    """
+    arrange: given an invalid dockerhub URL config set.
+    act: when _parse_dockerhub_cache_config is called.
+    assert: InvalidDockerHubCacheURLError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
+
+    with pytest.raises(state.InvalidDockerHubCacheURLError) as exc:
+        state._parse_dockerhub_cache_config(charm)
+
+    assert "DockerHub scheme or hostname not provided." in str(exc)
+
+
+def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched multiprocessing.cpu_count() function that returns 1 core.
+    act: when _get_num_parallel_build is called.
+    assert: InsufficientCoresError is raised.
+    """
+    monkeypatch.setattr(state.multiprocessing, "cpu_count", MagicMock(return_value=1))
+
+    with pytest.raises(state.InsufficientCoresError):
+        state._get_num_parallel_build(charm=MagicMock())
 
 
 @pytest.mark.parametrize(
@@ -312,12 +299,12 @@ def test__parse_build_interval_invalid(interval: str, expected_message: str):
     """
     arrange: given an invalid interval.
     act: when _parse_build_interval is called.
-    assert: ValueError is raised.
+    assert: BuildIntervalConfigError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.BUILD_INTERVAL_CONFIG_NAME] = interval
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(state.BuildIntervalConfigError) as exc:
         state._parse_build_interval(charm)
 
     assert expected_message in str(exc)
@@ -338,7 +325,7 @@ def test__parse_build_interval(interval: str, expected: int):
     act: when _parse_build_interval is called.
     assert: expected interval is returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.BUILD_INTERVAL_CONFIG_NAME] = interval
 
     assert state._parse_build_interval(charm) == expected
@@ -364,12 +351,12 @@ def test__parse_revision_history_limit_invalid(revision_history: str, expected_e
     """
     arrange: given an invalid revision history config value.
     act: when _parse_revision_history_limit is called.
-    assert: ValueError is raised.
+    assert: InvalidRevisionHistoryLimitError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(state.InvalidRevisionHistoryLimitError) as exc:
         state._parse_revision_history_limit(charm)
 
     assert expected_err in str(exc)
@@ -389,7 +376,7 @@ def test__parse_revision_history_limit(revision_history: str, expected: int):
     act: when _parse_revision_history_limit is called.
     assert: expected value is returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.REVISION_HISTORY_LIMIT_CONFIG_NAME] = revision_history
 
     assert state._parse_revision_history_limit(charm) == expected
@@ -427,7 +414,7 @@ def test__parse_runner_version_invalid(version: str, expected_message: str):
     act: when _parse_runner_version is called.
     assert: ValueError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.RUNNER_VERSION_CONFIG_NAME] = version
 
     with pytest.raises(ValueError) as exc:
@@ -449,7 +436,7 @@ def test__parse_runner_version(version: str, expected_version: str):
     act: when _parse_runner_version is called.
     assert: expected version number is returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.RUNNER_VERSION_CONFIG_NAME] = version
 
     assert state._parse_runner_version(charm) == expected_version
@@ -472,7 +459,7 @@ def test__parse_openstack_clouds_config_invalid(missing_config: str):
     act: when _parse_openstack_clouds_config is called.
     assert: InvalidCloudConfigError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config.pop(missing_config)
 
     with pytest.raises(state.InvalidCloudConfigError) as exc:
@@ -487,7 +474,7 @@ def test__parse_openstack_clouds_config():
     act: when _parse_openstack_clouds_config is called.
     assert: expected clouds_config is returned.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
 
     cloud_config = state._parse_openstack_clouds_config(charm=charm)
     assert cloud_config == state.OpenstackCloudsConfig(
@@ -496,11 +483,11 @@ def test__parse_openstack_clouds_config():
                 auth=state.CloudsAuthConfig(
                     auth_url="http://testing-auth/keystone",
                     # We're using testing password value from the factory.
-                    password="testingvalue",  # nosec: B106:hardcoded_password_funcarg
-                    project_domain_name="project_domain_name",
-                    project_name="project_name",
-                    user_domain_name="user_domain_name",
-                    username="username",
+                    password="test-password",  # nosec: B106:hardcoded_password_funcarg
+                    project_domain_name="test-project-domain",
+                    project_name="test-project-name",
+                    user_domain_name="test-user-domain",
+                    username="test-username",
                 )
             )
         }
@@ -525,13 +512,77 @@ def test__parse_openstack_clouds_auth_configs_from_relation_no_units(
     assert any("Units not yet joined" in log_line for log_line in caplog.messages)
 
 
+@pytest.mark.parametrize(
+    "juju_config_value",
+    [
+        pytest.param("3.1/stable/", id="multiple slashes"),
+        pytest.param("3.1", id="no risk"),
+        pytest.param("/stable", id="no track"),
+    ],
+)
+def test__parse_juju_channels_error(juju_config_value: str):
+    """
+    arrange: given invalid charm juju channel configurations.
+    act: when _parse_juju_channels is called.
+    assert: JujuChannelInvalidError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.JUJU_CHANNELS_CONFIG_NAME] = juju_config_value
+
+    with pytest.raises(state.JujuChannelInvalidError):
+        state._parse_juju_channels(charm=charm)
+
+
+@pytest.mark.parametrize(
+    "juju_config_value",
+    [
+        pytest.param("3.1/stable/", id="multiple slashes"),
+        pytest.param("3.1", id="no risk"),
+        pytest.param("/stable", id="no track"),
+    ],
+)
+def test__parse_microk8s_channels_error(juju_config_value: str):
+    """
+    arrange: given invalid charm juju channel configurations.
+    act: when _parse_microk8s_channels is called.
+    assert: Microk8sChannelInvalidError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.MICROK8S_CHANNELS_CONFIG_NAME] = juju_config_value
+
+    with pytest.raises(state.Microk8sChannelInvalidError):
+        state._parse_microk8s_channels(charm=charm)
+
+
+@pytest.mark.parametrize(
+    "juju_config_value, expected_channels",
+    [
+        pytest.param("", set(("",)), id="no channels"),
+        pytest.param("3.1/stable", set(("", "3.1/stable")), id="single channel"),
+        pytest.param(
+            "3.1/stable, 2.9/stable", set(("", "3.1/stable", "2.9/stable")), id="multiple channels"
+        ),
+    ],
+)
+def test__parse_juju_channels(juju_config_value: str, expected_channels: tuple[str, ...]):
+    """
+    arrange: given different charm juju channel configurations.
+    act: when _parse_juju_channels is called.
+    assert: expected juju channels are parsed.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.JUJU_CHANNELS_CONFIG_NAME] = juju_config_value
+
+    assert state._parse_juju_channels(charm=charm) == expected_channels
+
+
 def test_builder_app_channel_from_charm_error():
     """
     arrange: given an invalid charm app channel config.
     act: when BuilderAppChannel.from_charm is called.
     assert: BuilderAppChannelInvalidError is raised.
     """
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
     charm.config[state.APP_CHANNEL_CONFIG_NAME] = "invalid"
 
     with pytest.raises(state.BuilderAppChannelInvalidError) as exc:
@@ -546,21 +597,21 @@ def test_builder_app_channel_from_charm_error():
         pytest.param(
             state,
             "_parse_build_interval",
-            ValueError("Invalid build interval"),
+            state.CharmConfigInvalidError("Invalid build interval"),
             "Invalid build interval",
             id="_parse_build_interval error",
         ),
         pytest.param(
             state,
             "_parse_openstack_clouds_config",
-            state.InvalidCloudConfigError("Missing configuration"),
+            state.CharmConfigInvalidError("Missing configuration"),
             "Missing configuration",
             id="_parse_openstack_clouds_config error",
         ),
         pytest.param(
             state,
             "_parse_revision_history_limit",
-            ValueError("Invalid revision history"),
+            state.CharmConfigInvalidError("Invalid revision history"),
             "Invalid revision history",
             id="_parse_revision_history_limit error",
         ),
@@ -580,7 +631,7 @@ def test_builder_init_config_invalid(
     """
     mock_func = MagicMock(side_effect=exception)
     monkeypatch.setattr(patch_obj, sub_func, mock_func)
-    charm = MockCharmFactory()
+    charm = factories.MockCharmFactory()
 
     with pytest.raises(state.CharmConfigInvalidError) as exc:
         state.BuilderInitConfig.from_charm(charm)

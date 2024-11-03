@@ -68,6 +68,7 @@ class RelationCharm(ops.CharmBase):
             not event.unit
             or not event.relation.data[event.unit].get("id", "")
             or not event.relation.data[event.unit].get("tags", "")
+            or not event.relation.data[event.unit].get("images", "")
         ):
             logger.warning("Relation data not yet set.")
             return

@@ -5,23 +5,23 @@
 
 """Integration testing module."""
 
-import dataclasses
+import functools
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
-import invoke.exceptions
 import pytest
-from fabric.connection import Connection as SSHConnection
-from fabric.runners import Result
 from juju.application import Application
 from juju.model import Model
+from juju.unit import Unit
 from openstack.connection import Connection
-from openstack.image.v2.image import Image
 
-from builder import IMAGE_NAME_TMPL
-from state import BASE_IMAGE_CONFIG_NAME, _get_supported_arch
-from tests.integration.helpers import format_dockerhub_mirror_microk8s_command, wait_for
-from tests.integration.types import ProxyConfig
+from tests.integration.helpers import (
+    ImageTestMeta,
+    image_created_from_dispatch,
+    run_image_test,
+    wait_for,
+)
+from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
 
@@ -35,60 +35,48 @@ async def test_image_relation(app: Application, test_charm: Application):
     """
     model: Model = app.model
     await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=60 * 60)
+
+
+@pytest.mark.asyncio
+async def test_cos_agent_relation(app: Application):
+    """
+    arrange: An active charm.
+    act: When the cos-agent relation is joined.
+    assert: The test charm becomes active.
+    """
+    model: Model = app.model
+    grafana_agent = await model.deploy(
+        "grafana-agent",
+        application_name=f"grafana-agent-{app.name}",
+        channel="latest/edge",
+    )
+    await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
+    await model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
 
 
 @pytest.mark.asyncio
 async def test_build_image(
-    app: Application, openstack_connection: Connection, dispatch_time: datetime
+    openstack_connection: Connection,
+    dispatch_time: datetime,
+    image_names: list[str],
 ):
     """
     arrange: A deployed active charm.
     act: When openstack images are listed.
     assert: An image is built successfully.
     """
-    config: dict = await app.get_config()
-    image_base = config[BASE_IMAGE_CONFIG_NAME]["value"]
-
-    def image_created_from_dispatch() -> bool:
-        """Return whether there is an image created after dispatch has been called.
-
-        Returns:
-            Whether there exists an image that has been created after dispatch time.
-        """
-        image_name = IMAGE_NAME_TMPL.format(
-            IMAGE_BASE=image_base, APP_NAME=app.name, ARCH=_get_supported_arch().value
+    for image_name in image_names:
+        await wait_for(
+            functools.partial(
+                image_created_from_dispatch,
+                connection=openstack_connection,
+                dispatch_time=dispatch_time,
+                image_name=image_name,
+            ),
+            check_interval=30,
+            timeout=60 * 50,
         )
-        images: list[Image] = openstack_connection.search_images(image_name)
-        logger.info(
-            "Image name: %s, Images: %s",
-            image_name,
-            tuple((image.id, image.name, image.created_at) for image in images),
-        )
-        # split logs, the image log is long and gets cut off.
-        logger.info("Dispatch time: %s", dispatch_time)
-        return any(
-            datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            >= dispatch_time
-            for image in images
-        )
-
-    await wait_for(image_created_from_dispatch, check_interval=30, timeout=60 * 30)
-
-
-@dataclasses.dataclass
-class Commands:
-    """Test commands to execute.
-
-    Attributes:
-        name: The test name.
-        command: The command to execute.
-        retry: number of times to retry.
-    """
-
-    name: str
-    command: str
-    retry: int = 1
 
 
 # This is matched with E2E test run of github-runner-operator charm.
@@ -140,56 +128,106 @@ sudo microk8s stop && sudo microk8s start""",
     ),
 )
 
+JUJU_RUNNER_COMMANDS = (
+    *TEST_RUNNER_COMMANDS,
+    Commands(name="juju bootstrapped test", command="juju controllers | grep localhost"),
+    Commands(name="localhost model test", command="juju switch localhost && juju status"),
+)
+
+MICROK8S_RUNNER_COMMANDS = (
+    *JUJU_RUNNER_COMMANDS,
+    Commands(name="microk8s bootstrapped test", command="juju controllers | grep microk8s"),
+    Commands(name="microk8s model test", command="juju switch microk8s && juju status"),
+)
+
 
 @pytest.mark.asyncio
-async def test_image(
-    ssh_connection: SSHConnection, proxy: ProxyConfig, dockerhub_mirror: str | None
+async def test_bare_image(
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+    test_id: str,
+    openstack_metadata: OpenstackMeta,
+    bare_image_id: str,
 ):
     """
-    arrange: given a latest image build, a ssh-key and a server.
+    arrange: given a latest bare image build, a ssh-key and a server.
     act: when commands are run through ssh.
     assert: all binaries are present and run without errors.
     """
-    env = (
-        {}
-        if not proxy.http
-        else {
-            "HTTP_PROXY": proxy.http,
-            "HTTPS_PROXY": proxy.https,
-            "NO_PROXY": proxy.no_proxy,
-            "http_proxy": proxy.http,
-            "https_proxy": proxy.https,
-            "no_proxy": proxy.no_proxy,
-        }
+    await run_image_test(
+        openstack_metadata=openstack_metadata,
+        image_id=bare_image_id,
+        image_test_meta=ImageTestMeta(
+            proxy=proxy,
+            dockerhub_mirror=dockerhub_mirror,
+            test_id=f"bare-{test_id}",
+        ),
+        test_commands=TEST_RUNNER_COMMANDS,
     )
-    if dockerhub_mirror:
-        env.update(DOCKERHUB_MIRROR=dockerhub_mirror, CONTAINER_REGISTRY_URL=dockerhub_mirror)
 
-    for command in TEST_RUNNER_COMMANDS:
-        if command.command == "configure dockerhub mirror":
-            if not dockerhub_mirror:
-                continue
-            command.command = format_dockerhub_mirror_microk8s_command(
-                command=command.command, dockerhub_mirror=dockerhub_mirror
-            )
-        logger.info("Running test: %s", command.name)
-        for attempt in range(command.retry):
-            try:
-                result: Result = ssh_connection.run(command.command, env=env if env else None)
-            except invoke.exceptions.UnexpectedExit as exc:
-                logger.info(
-                    "Unexpected exception (retry attempt: %s): %s %s %s %s %s",
-                    attempt,
-                    exc.reason,
-                    exc.args,
-                    exc.result.stdout,
-                    exc.result.stderr,
-                    exc.result.return_code,
-                )
-                continue
-            logger.info(
-                "Command output: %s %s %s", result.return_code, result.stdout, result.stderr
-            )
-            if result.ok:
-                break
-        assert result.ok
+
+async def test_juju_image(
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+    test_id: str,
+    openstack_metadata: OpenstackMeta,
+    juju_image_id: str,
+):
+    """
+    arrange: given a latest juju image build, a ssh-key and a server.
+    act: when commands are run through ssh.
+    assert: all binaries are present and run without errors.
+    """
+    await run_image_test(
+        openstack_metadata=openstack_metadata,
+        image_id=juju_image_id,
+        image_test_meta=ImageTestMeta(
+            proxy=proxy,
+            dockerhub_mirror=dockerhub_mirror,
+            test_id=f"juju-{test_id}",
+        ),
+        test_commands=JUJU_RUNNER_COMMANDS,
+    )
+
+
+async def test_microk8s_image(
+    proxy: ProxyConfig,
+    dockerhub_mirror: str | None,
+    test_id: str,
+    openstack_metadata: OpenstackMeta,
+    microk8s_image_id: str,
+):
+    """
+    arrange: given a latest microk8s_image_id image build, a ssh-key and a server.
+    act: when commands are run through ssh.
+    assert: all binaries are present and run without errors.
+    """
+    await run_image_test(
+        openstack_metadata=openstack_metadata,
+        image_id=microk8s_image_id,
+        image_test_meta=ImageTestMeta(
+            proxy=proxy,
+            dockerhub_mirror=dockerhub_mirror,
+            test_id=f"microk8s-{test_id}",
+        ),
+        test_commands=MICROK8S_RUNNER_COMMANDS,
+    )
+
+
+@pytest.mark.skip(reason="There is an issue with dispatch tests as of now")
+@pytest.mark.asyncio
+async def test_run_dispatch(app: Application):
+    """
+    arrange: A deployed active charm.
+    act: When dispatch command is given.
+    assert: An image is built successfully.
+    """
+    unit: Unit = next(iter(app.units))
+    await unit.ssh(
+        command=(
+            f'sudo -E -b /usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run '
+            'HOME=/home/ubuntu ./dispatch"'
+        ),
+    )
+
+    await wait_for(lambda: unit.latest().agent_status == "executing")

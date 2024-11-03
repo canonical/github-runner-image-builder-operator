@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -17,6 +16,7 @@ import image
 import proxy
 import state
 from charm import GithubRunnerImageBuilderCharm
+from tests.unit import factories
 
 
 @pytest.fixture(name="patch_builder_init_config_from_charm", scope="function")
@@ -27,32 +27,31 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
         "from_charm",
         MagicMock(
             return_value=state.BuilderInitConfig(
+                app_name="app-name",
                 channel=MagicMock(),
                 external_build=True,
                 interval=1,
                 run_config=state.BuilderRunConfig(
-                    arch=MagicMock(),
-                    base=MagicMock(),
-                    cloud_config=state.OpenstackCloudsConfig(
-                        clouds={
-                            "test-builder": state._CloudsConfig(
-                                auth=state.CloudsAuthConfig(
-                                    auth_url="test-url",
-                                    password=secrets.token_hex(16),
-                                    project_domain_name="test_domain",
-                                    project_name="test-project",
-                                    user_domain_name="test_domain",
-                                    username="test-user",
-                                )
-                            )
-                        }
+                    cloud_config=state.CloudConfig(
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
+                        external_build_config=factories.ExternalBuildConfigFactory(),
+                        num_revisions=1,
                     ),
-                    external_build_config=MagicMock(),
-                    num_revisions=1,
-                    runner_version="test-version",
+                    image_config=state.ImageConfig(
+                        arch=state.Arch.ARM64,
+                        bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                        juju_channels=("2.9/stable", "3.1/stable"),
+                        microk8s_channels=("1.29-strict/stable",),
+                        prefix="app-name",
+                        runner_version="",
+                    ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
+                    parallel_build=1,
                 ),
                 unit_name="test-unit",
-            )
+            ),
         ),
     )
 
@@ -62,6 +61,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
     [
         pytest.param("_on_config_changed", id="config_changed"),
         pytest.param("_on_run_action", id="run_action"),
+        pytest.param("_on_run", id="run event"),
         pytest.param("_on_image_relation_changed", id="image_relation_changed"),
     ],
 )
@@ -145,7 +145,49 @@ def test__on_config_changed(
     act: when _on_config_changed is called.
     assert: charm is in active status.
     """
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(
+        state.BuilderInitConfig,
+        "from_charm",
+        MagicMock(
+            return_value=state.BuilderInitConfig(
+                app_name="test-app",
+                channel=state.BuilderAppChannel.STABLE,
+                external_build=True,
+                interval=6,
+                unit_name="test-app/0",
+                run_config=state.BuilderRunConfig(
+                    image_config=state.ImageConfig(
+                        arch=state.Arch.ARM64,
+                        bases=(state.BaseImage.JAMMY,),
+                        juju_channels=("",),
+                        microk8s_channels=("",),
+                        prefix="",
+                        runner_version="",
+                    ),
+                    cloud_config=state.CloudConfig(
+                        openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
+                            clouds={
+                                "builder": factories._CloudsConfig(
+                                    auth=factories.CloudAuthFactory()
+                                ),
+                                "uploader": factories._CloudsConfig(
+                                    auth=factories.CloudAuthFactory(
+                                        project_name="uploader", username="uploader"
+                                    )
+                                ),
+                            }
+                        ),
+                        external_build_config=factories.ExternalBuildConfigFactory(),
+                        num_revisions=1,
+                    ),
+                    service_config=state.ServiceConfig(
+                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    ),
+                    parallel_build=1,
+                ),
+            ),
+        ),
+    )
     monkeypatch.setattr(
         image, "Observer", MagicMock(return_value=(image_observer_mock := MagicMock()))
     )
@@ -182,15 +224,31 @@ def test__on_image_relation_changed(
 
 
 @pytest.mark.usefixtures("patch_builder_init_config_from_charm")
-def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
+def test__on_run_action(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
     arrange: given a mocked functions of _on_run_action.
     act: when _on_run_action is called.
     assert: subfunctions are called.
     """
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
     charm._run = (run_mock := MagicMock())
 
     charm._on_run_action(MagicMock())
+
+    run_mock.assert_called()
+
+
+@pytest.mark.usefixtures("patch_builder_init_config_from_charm")
+def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a mocked functions of _on_run.
+    act: when _on_run is called.
+    assert: subfunctions are called.
+    """
+    monkeypatch.setattr(state.BuilderInitConfig, "from_charm", MagicMock())
+    charm._run = (run_mock := MagicMock())
+
+    charm._on_run(MagicMock())
 
     run_mock.assert_called()
 
@@ -200,38 +258,51 @@ def test__on_run_action(charm: GithubRunnerImageBuilderCharm):
     [
         pytest.param(
             state.BuilderRunConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_config=state.OpenstackCloudsConfig(clouds={}),
-                external_build_config=None,
-                num_revisions=1,
-                runner_version="test",
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY,),
+                    juju_channels=("",),
+                    microk8s_channels=("",),
+                    prefix="",
+                    runner_version="",
+                ),
+                cloud_config=state.CloudConfig(
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(clouds={}),
+                    external_build_config=factories.ExternalBuildConfigFactory(),
+                    num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
+                parallel_build=1,
             ),
             False,
-            id="missiong integration",
+            id="missing integration",
         ),
         pytest.param(
             state.BuilderRunConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_config=state.OpenstackCloudsConfig(
-                    clouds={
-                        "test": state._CloudsConfig(
-                            auth=state.CloudsAuthConfig(
-                                auth_url="test-auth-url",
-                                password=secrets.token_hex(16),
-                                project_domain_name="test-project-domain-name",
-                                project_name="test-project-name",
-                                user_domain_name="test-user-domain",
-                                username="test-user-name",
-                            ),
-                            region_name="test",
-                        )
-                    }
+                image_config=state.ImageConfig(
+                    arch=state.Arch.ARM64,
+                    bases=(state.BaseImage.JAMMY,),
+                    juju_channels=("",),
+                    microk8s_channels=("",),
+                    prefix="",
+                    runner_version="",
                 ),
-                external_build_config=None,
-                num_revisions=1,
-                runner_version="test",
+                cloud_config=state.CloudConfig(
+                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
+                        clouds={
+                            "builder": factories._CloudsConfig(auth=factories.CloudAuthFactory()),
+                            "uploader": factories._CloudsConfig(auth=factories.CloudAuthFactory()),
+                        }
+                    ),
+                    external_build_config=factories.ExternalBuildConfigFactory(),
+                    num_revisions=1,
+                ),
+                service_config=state.ServiceConfig(
+                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                ),
+                parallel_build=1,
             ),
             True,
             id="integration ready",

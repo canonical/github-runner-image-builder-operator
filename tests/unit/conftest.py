@@ -7,8 +7,10 @@ import secrets
 from unittest.mock import MagicMock
 
 import pytest
+import tenacity
 from ops.testing import Harness
 
+import builder
 import image
 import state
 from charm import GithubRunnerImageBuilderCharm
@@ -54,3 +56,9 @@ def charm_fixture(harness: Harness) -> GithubRunnerImageBuilderCharm:
 def image_observer_fixture(charm: GithubRunnerImageBuilderCharm) -> image.Observer:
     """The image observer from harness."""
     return charm.image_observer
+
+
+@pytest.fixture(name="patch_tenacity_wait", autouse=True)
+def patch_tenacity_wait_fixture():
+    """Patch tenacity wait function to speed up testing."""
+    builder._run.retry.wait = tenacity.wait_fixed(0)
