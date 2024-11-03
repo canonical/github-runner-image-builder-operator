@@ -215,12 +215,11 @@ class CloudImage:
     microk8s: str
 
 
-def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list[list[CloudImage]]:
+def run(config: state.BuilderRunConfig) -> list[list[CloudImage]]:
     """Run a build immediately.
 
     Args:
         config: The configuration values for running image builder.
-        proxy: The proxy configuration to apply on the builder.
 
     Raises:
         BuilderRunError: if there was an error while launching the subprocess.
@@ -228,7 +227,7 @@ def run(config: state.BuilderRunConfig, proxy: state.ProxyConfig | None) -> list
     Returns:
         The built image id.
     """
-    build_configs = _parametrize_build(config=config, proxy=proxy)
+    build_configs = _parametrize_build(config=config)
     try:
         num_cores = multiprocessing.cpu_count() - 1
         with multiprocessing.Pool(min(len(build_configs), num_cores)) as pool:
@@ -285,7 +284,6 @@ class _RunCloudConfig:
         resource_prefix: The OpenStack resources prefix to indicate the ownership.
         upload_clouds: The clouds to upload the final image to.
         num_revisions: The number of revisions to keep before deleting the image.
-        proxy: The proxy to use to build the image.
     """
 
     build_cloud: str
@@ -293,8 +291,20 @@ class _RunCloudConfig:
     build_network: str
     resource_prefix: str
     num_revisions: int
-    proxy: str | None
     upload_clouds: typing.Iterable[str]
+
+
+@dataclasses.dataclass
+class _ExternalServiceConfig:
+    """Builder run external service dependencies.
+
+    Attributes:
+        dockerhub_cache: The DockerHub cache URL to use to apply to image building.
+        proxy: The proxy to use to build the image.
+    """
+
+    dockerhub_cache: str | None
+    proxy: str | None
 
 
 @dataclasses.dataclass
@@ -304,20 +314,19 @@ class RunConfig:
     Attributes:
         image: The image configuration parameters.
         cloud: The cloud configuration parameters.
+        external_service: The external service dependencies for building the image.
     """
 
     image: _RunImageConfig
     cloud: _RunCloudConfig
+    external_service: _ExternalServiceConfig
 
 
-def _parametrize_build(
-    config: state.BuilderRunConfig, proxy: state.ProxyConfig | None
-) -> tuple[RunConfig, ...]:
+def _parametrize_build(config: state.BuilderRunConfig) -> tuple[RunConfig, ...]:
     """Get parametrized build configurations.
 
     Args:
         config: The configuration values for running image builder.
-        proxy: The proxy configuration to apply on the builder.
 
     Returns:
         Per image build configuration values.
@@ -342,8 +351,15 @@ def _parametrize_build(
                             build_network=config.cloud_config.external_build_config.network,
                             resource_prefix=config.image_config.prefix,
                             num_revisions=config.cloud_config.num_revisions,
-                            proxy=proxy.http if proxy else None,
                             upload_clouds=config.cloud_config.upload_cloud_ids,
+                        ),
+                        external_service=_ExternalServiceConfig(
+                            dockerhub_cache=config.service_config.dockerhub_cache,
+                            proxy=(
+                                config.service_config.proxy.http
+                                if config.service_config.proxy
+                                else None
+                            ),
                         ),
                     )
                 )
@@ -386,6 +402,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
             commands.extend(["--juju", config.image.juju])
         if config.image.microk8s:
             commands.extend(["--microk8s", config.image.microk8s])
+        if config.external_service.dockerhub_cache:
+            commands.extend(["--dockerhub-cache", config.external_service.dockerhub_cache])
         commands.extend(
             [
                 "--experimental-external",
@@ -402,11 +420,11 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 config.image.prefix,
             ]
         )
-        if config.cloud.proxy:
+        if config.external_service.proxy:
             commands.extend(
                 [
                     "--proxy",
-                    config.cloud.proxy.removeprefix("http://").removeprefix("https://"),
+                    config.external_service.proxy.removeprefix("http://").removeprefix("https://"),
                 ]
             )
         logger.info("Run build command: %s", commands)

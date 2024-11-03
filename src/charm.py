@@ -9,10 +9,10 @@ import logging
 import typing
 
 import ops
+from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 
 import builder
 import charm_utils
-import cos
 import image
 import proxy
 import state
@@ -37,7 +37,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.on.define_event("run", RunEvent)
 
         self.image_observer = image.Observer(self)
-        self.cos_observer = cos.Observer(self)
+        self._grafana_agent = COSAgentProvider(charm=self)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run, self._on_run)
@@ -134,7 +134,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
         run_config = state.BuilderRunConfig.from_charm(self)
-        cloud_images = builder.run(config=run_config, proxy=proxy.ProxyConfig.from_env())
+        cloud_images = builder.run(config=run_config)
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
 

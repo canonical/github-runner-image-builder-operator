@@ -53,8 +53,6 @@ async def test_cos_agent_relation(app: Application):
     )
     await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
     await model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
-    # limit private-endpoint testing to machine relation test due to resource constraints of
-    # deploying k8s stack.
 
 
 @pytest.mark.asyncio
