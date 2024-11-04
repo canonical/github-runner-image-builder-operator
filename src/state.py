@@ -41,6 +41,7 @@ OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
 OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
+SCRIPT_URL_CONFIG_NAME = "script-url"
 
 IMAGE_RELATION = "image"
 
@@ -353,6 +354,7 @@ class ImageConfig:
         microk8s_channels: The Microk8s channels to install on the images.
         prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
+        script_url: The external script to run during cloud-init process.
     """
 
     arch: Arch
@@ -361,6 +363,7 @@ class ImageConfig:
     microk8s_channels: set[str]
     prefix: str
     runner_version: str
+    script_url: str | None
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
@@ -377,6 +380,7 @@ class ImageConfig:
         juju_channels = _parse_juju_channels(charm=charm)
         microk8s_channels = _parse_microk8s_channels(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
+        script_url = _parse_script_url(charm=charm)
 
         return cls(
             arch=arch,
@@ -385,6 +389,7 @@ class ImageConfig:
             microk8s_channels=microk8s_channels,
             prefix=charm.app.name,
             runner_version=runner_version,
+            script_url=script_url,
         )
 
 
@@ -788,6 +793,31 @@ def _parse_snap_channels(csv_str: str) -> set[str]:
         if len(risk_track) != 2 or any(not value for value in risk_track):
             raise ValueError(f"Invalid snap channel: {channel}")
     return channels
+
+
+class InvalidScriptURLError(CharmConfigInvalidError):
+    """Represents script URL configuration."""
+
+
+def _parse_script_url(charm: ops.CharmBase) -> str | None:
+    """Parse script url from charm configuration.
+
+    Args:
+        charm: The running charm instance.
+
+    Raises:
+        InvalidScriptURLError: If an invalid URL has been provided.
+
+    Returns:
+        Valid external script URL.
+    """
+    script_url_str = typing.cast(str, charm.config.get(SCRIPT_URL_CONFIG_NAME, ""))
+    if not script_url_str:
+        return None
+    parsed_url = urllib.parse.urlparse(script_url_str)
+    if not parsed_url.scheme or not parsed_url.hostname:
+        raise InvalidScriptURLError("Invalid script URL, must contain scheme and hostname.")
+    return script_url_str
 
 
 class BuilderAppChannelInvalidError(CharmConfigInvalidError):

@@ -169,6 +169,13 @@ config:
       description: |
         The GitHub runner version to use, e.g. 2.317.0. Empty default value will fetch the latest
         version by default. See https://github.com/actions/runner/releases.
+    script-url:
+      type: string
+      default: ""
+      description: |
+        URL to external script to run during cloud-init. Allows user-defined customization scripts
+        to be run. This script is run as root, within the cloud-init user-data script.
+
 
 provides:
   image:

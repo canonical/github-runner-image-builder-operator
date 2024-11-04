@@ -44,6 +44,7 @@ def patch_builder_init_config_from_charm(monkeypatch: pytest.MonkeyPatch):
                         microk8s_channels=("1.29-strict/stable",),
                         prefix="app-name",
                         runner_version="",
+                        script_url=None,
                     ),
                     service_config=state.ServiceConfig(
                         dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
@@ -163,6 +164,7 @@ def test__on_config_changed(
                         microk8s_channels=("",),
                         prefix="",
                         runner_version="",
+                        script_url=None,
                     ),
                     cloud_config=state.CloudConfig(
                         openstack_clouds_config=factories.OpenstackCloudsConfigFactory(
@@ -265,6 +267,7 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     microk8s_channels=("",),
                     prefix="",
                     runner_version="",
+                    script_url=None,
                 ),
                 cloud_config=state.CloudConfig(
                     openstack_clouds_config=factories.OpenstackCloudsConfigFactory(clouds={}),
@@ -288,6 +291,7 @@ def test__on_run(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilde
                     microk8s_channels=("",),
                     prefix="",
                     runner_version="",
+                    script_url=None,
                 ),
                 cloud_config=state.CloudConfig(
                     openstack_clouds_config=factories.OpenstackCloudsConfigFactory(

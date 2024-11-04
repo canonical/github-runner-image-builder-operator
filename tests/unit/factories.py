@@ -26,6 +26,7 @@ from state import (
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     RUNNER_VERSION_CONFIG_NAME,
+    SCRIPT_URL_CONFIG_NAME,
     ExternalBuildConfig,
     OpenstackCloudsConfig,
     _CloudsConfig,
@@ -98,6 +99,7 @@ class MockCharmFactory(factory.Factory):
             OPENSTACK_USER_CONFIG_NAME: "test-username",
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
             RUNNER_VERSION_CONFIG_NAME: "1.234.5",
+            SCRIPT_URL_CONFIG_NAME: "",
         }
     )
 
