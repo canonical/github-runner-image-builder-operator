@@ -1,2 +1,5 @@
 ops ==2.14.1
 openstacksdk == 3.1.0
+pydantic == 2.9.1
+tenacity == 9.0.0
+cosl ==0.0.42

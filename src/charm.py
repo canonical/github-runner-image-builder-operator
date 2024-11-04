@@ -6,10 +6,10 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
-import os
 import typing
 
 import ops
+from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 
 import builder
 import charm_utils
@@ -20,39 +20,12 @@ import state
 logger = logging.getLogger(__name__)
 
 
-BUILD_SUCCESS_EVENT_NAME = "build_success"
-BUILD_FAIL_EVENT_NAME = "build_fail"
-OPENSTACK_IMAGE_ID_ENV = "OPENSTACK_IMAGE_ID"
-
-
-class BuildSuccessEvent(ops.EventBase):
-    """Represents a successful image build event."""
-
-
-class BuildFailedEvent(ops.EventBase):
-    """Represents a failed image build event."""
-
-
-class BuildEvents(ops.CharmEvents):
-    """Represents events triggered by image builder callback.
-
-    Attributes:
-        build_success: Represents a successful image build event.
-        build_failed: Represents a failed image build event.
-    """
-
-    build_success = ops.EventSource(BuildSuccessEvent)
-    build_failed = ops.EventSource(BuildFailedEvent)
+class RunEvent(ops.EventBase):
+    """Event representing a periodic image builder run."""
 
 
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
-    """Charm GitHubRunner image builder application.
-
-    Attributes:
-        on: Represents custom events managed by cron.
-    """
-
-    on = BuildEvents()
+    """Charm GitHubRunner image builder application."""
 
     def __init__(self, *args: typing.Any):
         """Initialize the charm.
@@ -61,11 +34,17 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             args: The CharmBase initialization arguments.
         """
         super().__init__(*args)
+        self.on.define_event("run", RunEvent)
+
         self.image_observer = image.Observer(self)
+        self._grafana_agent = COSAgentProvider(charm=self)
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.build_success, self._on_build_success)
-        self.framework.observe(self.on.build_failed, self._on_build_failed)
+        self.framework.observe(self.on.run, self._on_run)
+        self.framework.observe(self.on.run_action, self._on_run_action)
+        self.framework.observe(
+            self.on[state.IMAGE_RELATION].relation_changed, self._on_image_relation_changed
+        )
 
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_install(self, _: ops.InstallEvent) -> None:
@@ -76,81 +55,88 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
-        self._create_success_callback_script()
-        self._create_failed_callback_script()
         init_config = state.BuilderInitConfig.from_charm(self)
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        )
         builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
-        builder.run(config=init_config.run_config)
-
-    def _create_success_callback_script(self) -> None:
-        """Create callback script to propagate images."""
-        charm_dir = os.getenv("JUJU_CHARM_DIR")
-        cur_env = {
-            "JUJU_DISPATCH_PATH": f"hooks/{BUILD_SUCCESS_EVENT_NAME}",
-            "JUJU_MODEL_NAME": self.model.name,
-            "JUJU_UNIT_NAME": self.unit.name,
-            OPENSTACK_IMAGE_ID_ENV: "$OPENSTACK_IMAGE_ID",
-        }
-        env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
-        script_contents = f"""#! /bin/bash
-OPENSTACK_IMAGE_ID="$1"
-
-/usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
-"""
-        state.SUCCESS_CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
-        state.SUCCESS_CALLBACK_SCRIPT_PATH.chmod(0o755)
-
-    def _create_failed_callback_script(self) -> None:
-        """Create callback script to propagate images."""
-        charm_dir = os.getenv("JUJU_CHARM_DIR")
-        cur_env = {
-            "JUJU_DISPATCH_PATH": f"hooks/{BUILD_SUCCESS_EVENT_NAME}",
-            "JUJU_MODEL_NAME": self.model.name,
-            "JUJU_UNIT_NAME": self.unit.name,
-        }
-        env = " ".join(f'{key}="{val}"' for (key, val) in cur_env.items())
-        script_contents = f"""#! /bin/bash
-OPENSTACK_IMAGE_ID="$1"
-
-/usr/bin/juju-exec {self.unit.name} {env} {charm_dir}/dispatch
-"""
-        state.FAILED_CALLBACK_SCRIPT_PATH.write_text(script_contents, encoding="utf-8")
-        state.FAILED_CALLBACK_SCRIPT_PATH.chmod(0o755)
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         init_config = state.BuilderInitConfig.from_charm(self)
-        builder.install_clouds_yaml(cloud_config=init_config.run_config.cloud_config)
-        if builder.configure_cron(
-            run_config=init_config.run_config, interval=init_config.interval
-        ):
-            builder.run(config=init_config.run_config)
-        self.unit.status = ops.ActiveStatus()
-
-    def _on_build_success(self, _: BuildSuccessEvent) -> None:
-        """Handle build success event."""
-        image_id = os.getenv(OPENSTACK_IMAGE_ID_ENV, "")
-        if not image_id:
-            self.unit.status = ops.ActiveStatus(
-                f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
-            )
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
             return
-        run_config = state.BuilderRunConfig.from_charm(self)
-        self.image_observer.update_image_data(
-            image_id=image_id, arch=run_config.arch, base=run_config.base
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
         )
-        builder.upgrade_app()
+        if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
+            self._run()
         self.unit.status = ops.ActiveStatus()
 
-    def _on_build_failed(self, _: BuildFailedEvent) -> None:
-        """Handle build failed event."""
-        self.unit.status = ops.ActiveStatus(
-            f"Failed to build image. Check {builder.OUTPUT_LOG_PATH}."
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
+        """Handle charm image relation changed event."""
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
+        builder.install_clouds_yaml(
+            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
         )
+        self._run()
+        self.unit.status = ops.ActiveStatus()
+
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_run(self, _: RunEvent) -> None:
+        """Handle the run event."""
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            return
+        self._run()
+
+    @charm_utils.block_if_invalid_config(defer=False)
+    def _on_run_action(self, event: ops.ActionEvent) -> None:
+        """Handle the run action event.
+
+        Args:
+            event: The run action event.
+        """
+        init_config = state.BuilderInitConfig.from_charm(self)
+        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+            event.fail("Image relation not yet ready.")
+            return
+        self._run()
+
+    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig) -> bool:
+        """Check if image relation is ready and set according status otherwise.
+
+        Args:
+            config: The image builder run configuration.
+
+        Returns:
+            Whether the image relation is ready.
+        """
+        if not config.cloud_config.upload_cloud_ids:
+            self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
+            return False
+        return True
+
+    def _run(self) -> None:
+        """Trigger an image build.
+
+        This method requires that the clouds.yaml are properly installed with build cloud and
+        upload cloud authentication parameters.
+        """
+        self.unit.status = ops.ActiveStatus("Running upgrade.")
         builder.upgrade_app()
+        self.unit.status = ops.ActiveStatus("Building image.")
+        run_config = state.BuilderRunConfig.from_charm(self)
+        cloud_images = builder.run(config=run_config)
+        self.image_observer.update_image_data(cloud_images=cloud_images)
+        self.unit.status = ops.ActiveStatus()
 
     def update_status(self, status: ops.StatusBase) -> None:
         """Update the charm status.
