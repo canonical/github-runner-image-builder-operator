@@ -12,7 +12,7 @@ Entrypoint for GithubRunnerImageBuilder charm.
 ## <kbd>class</kbd> `GithubRunnerImageBuilderCharm`
 Charm GitHubRunner image builder application. 
 
-<a href="../src/charm.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L37"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -69,7 +69,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_status`
 

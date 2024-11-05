@@ -5,6 +5,13 @@
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
+from charm_utils import remove_residual_venv_dirs
+
+# This is a workaround for https://bugs.launchpad.net/juju/+bug/2058335
+# It is important that this is run before importing any other modules.
+# pylint: disable=wrong-import-position,wrong-import-order
+remove_residual_venv_dirs()
+
 import logging
 import typing
 

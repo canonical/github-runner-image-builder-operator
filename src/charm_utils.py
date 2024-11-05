@@ -5,6 +5,8 @@
 
 import functools
 import logging
+import os
+import pathlib
 import typing
 
 import ops
@@ -76,3 +78,18 @@ def block_if_invalid_config(
         return wrapper
 
     return decorator
+
+
+# This is a workaround for https://bugs.launchpad.net/juju/+bug/2058335
+def remove_residual_venv_dirs() -> None:  # pragma: no cover
+    """Remove the residual empty directories from last revision if it exists."""
+    unit_name = os.environ.get("JUJU_UNIT_NAME", "").replace("/", "-")
+    if not unit_name:
+        return
+    venv_dir = pathlib.Path(f"/var/lib/juju/agents/unit-{unit_name}/charm/venv/")
+    if not venv_dir.exists():
+        return
+    for path in venv_dir.iterdir():
+        if path.is_dir() and not os.listdir(path):
+            logger.warning("Removing residual empty dir: %s", path)
+            path.rmdir()
