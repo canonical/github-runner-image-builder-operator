@@ -54,7 +54,7 @@ class Observer(ops.Object):
         Args:
             event: The event emitted when a relation is joined.
         """
-        build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
+        build_config = state.BuilderConfig.from_charm(charm=self.charm)
         if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
@@ -68,7 +68,16 @@ class Observer(ops.Object):
             return
         builder.install_clouds_yaml(build_config.cloud_config.openstack_clouds_config)
         cloud_images = builder.get_latest_images(
-            config=build_config, cloud_id=unit_cloud_auth_config.get_id()
+            config_matrix=builder.ConfigMatrix(
+                bases=build_config.image_config.bases,
+                juju_channels=build_config.image_config.juju_channels,
+                microk8s_channels=build_config.image_config.microk8s_channels,
+            ),
+            static_config=builder.StaticConfigs(
+                arch=build_config.image_config.arch,
+                cloud_id=unit_cloud_auth_config.get_id(),
+                prefix=build_config.app_config.resource_prefix,
+            ),
         )
         if not cloud_images:
             logger.info("Image not yet ready for %s.", event.unit.name)
