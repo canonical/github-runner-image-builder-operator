@@ -22,8 +22,8 @@ from charms.operator_libs_linux.v1 import systemd
 
 import state
 from exceptions import (
+    BuilderInitError,
     BuilderRunError,
-    BuilderSetupError,
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
@@ -78,19 +78,22 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
         app_init_config: Configuration required to initialize the app.
 
     Raises:
-        BuilderSetupError: If there was an error setting up the host device for building images.
+        BuilderInitError: If there was an error initializing the image builder application.
     """
     try:
-        install_clouds_yaml(cloud_config=app_init_config.cloud_config)
+        install_clouds_yaml(cloud_config=app_init_config.cloud_config.openstack_clouds_config)
+        # The following lines should be covered by integration tests.
         _install_dependencies(channel=app_init_config.channel)
-        _initialize_image_builder(
+        _initialize_image_builder(  # pragma: no cover
             cloud_name=app_init_config.cloud_config.cloud_name,
             image_arch=app_init_config.image_arch,
             resource_prefix=app_init_config.resource_prefix,
         )
-        configure_cron(unit_name=app_init_config.unit_name, interval=app_init_config.cron_interval)
+        configure_cron(
+            unit_name=app_init_config.unit_name, interval=app_init_config.cron_interval
+        )  # pragma: no cover
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
-        raise BuilderSetupError from exc
+        raise BuilderInitError from exc
 
 
 def _install_dependencies(channel: state.BuilderAppChannel) -> None:
@@ -156,7 +159,7 @@ def _initialize_image_builder(
 
 
 def _build_init_command(
-    cloud_name: str, image_arch: state.Arch, resource_prefix: str
+    cloud_name: str, image_arch: state.Arch, resource_prefix: str | None
 ) -> list[str]:
     """Build the application init command.
 
@@ -177,7 +180,7 @@ def _build_init_command(
         "--cloud-name",
         cloud_name,
         "--arch",
-        image_arch,
+        image_arch.value,
     ]
     if resource_prefix:
         cmd.extend(["--prefix", resource_prefix])
@@ -378,13 +381,11 @@ class StaticImageConfig:
 
     Attributes:
         arch: The architecture to build the image for.
-        prefix: The image name prefix.
         script_url: The external script to run at the end of the cloud-init.
         runner_version: The GitHub runner version.
     """
 
     arch: state.Arch
-    prefix: str
     script_url: str | None
     runner_version: str | None
 
@@ -450,7 +451,7 @@ def _parametrize_build(
                             base=base,
                             juju=juju,
                             microk8s=microk8s,
-                            prefix=static_config.image_config.prefix,
+                            prefix=static_config.cloud_config.resource_prefix,
                             runner_version=static_config.image_config.runner_version,
                             script_url=static_config.image_config.script_url,
                         ),
@@ -458,7 +459,7 @@ def _parametrize_build(
                             build_cloud=static_config.cloud_config.build_cloud,
                             build_flavor=static_config.cloud_config.build_flavor,
                             build_network=static_config.cloud_config.build_network,
-                            resource_prefix=static_config.image_config.prefix,
+                            resource_prefix=static_config.cloud_config.resource_prefix,
                             num_revisions=static_config.cloud_config.num_revisions,
                             upload_clouds=static_config.cloud_config.upload_clouds,
                         ),
@@ -694,7 +695,7 @@ def _build_run_image_options(image_options: _ImageOptions) -> list[str]:
     if image_options.juju:
         cmd.extend(["--juju", image_options.juju])
     if image_options.microk8s:
-        cmd.extend(["--juju", image_options.microk8s])
+        cmd.extend(["--microk8s", image_options.microk8s])
     if image_options.runner_version:
         cmd.extend(["--runner-version", image_options.runner_version])
     if image_options.script_url:
@@ -717,7 +718,7 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
     if service_options.proxy:
         cmd.extend(
             [
-                "--dockerhub-cache",
+                "--proxy",
                 service_options.proxy.removeprefix("http://").removeprefix("https://"),
             ]
         )

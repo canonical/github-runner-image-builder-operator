@@ -76,13 +76,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             cloud_config=builder_config_state.cloud_config
         ):
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=builder_config_state.cloud_config)
-        if builder.configure_cron(
+        # The following lines should be covered by integration tests.
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
+        builder.install_clouds_yaml(  # pragma: no cover
+            cloud_config=builder_config_state.cloud_config
+        )
+        if builder.configure_cron(  # pragma: no cover
             unit_name=self.unit.name, interval=builder_config_state.app_config.build_interval
         ):
             self._run()
-        self.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
@@ -105,7 +108,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             cloud_config=builder_config_state.cloud_config
         ):
             return
-        self._run()
+        # The following line should be covered by the integration test.
+        self._run()  # pragma: nocover
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
@@ -120,7 +124,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         ):
             event.fail("Image relation not yet ready.")
             return
-        self._run()
+        # The following line should be covered by the integration test.
+        self._run()  # pragma: nocover
 
     def _is_image_relation_ready_set_status(self, cloud_config: state.CloudConfig) -> bool:
         """Check if image relation is ready and set according status otherwise.
@@ -186,10 +191,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 build_network=builder_config.cloud_config.external_build_config.network,
                 resource_prefix=builder_config.app_config.resource_prefix,
                 num_revisions=builder_config.cloud_config.num_revisions,
+                upload_clouds=builder_config.cloud_config.upload_cloud_ids,
             ),
             image_config=builder.StaticImageConfig(
                 arch=builder_config.image_config.arch,
-                prefix=builder_config.app_config.resource_prefix,
                 script_url=builder_config.image_config.script_url,
                 runner_version=builder_config.image_config.runner_version,
             ),

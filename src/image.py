@@ -74,9 +74,27 @@ class Observer(ops.Object):
                 microk8s_channels=build_config.image_config.microk8s_channels,
             ),
             static_config=builder.StaticConfigs(
-                arch=build_config.image_config.arch,
-                cloud_id=unit_cloud_auth_config.get_id(),
-                prefix=build_config.app_config.resource_prefix,
+                cloud_config=builder.CloudConfig(
+                    build_cloud=build_config.cloud_config.cloud_name,
+                    build_flavor=build_config.cloud_config.external_build_config.flavor,
+                    build_network=build_config.cloud_config.external_build_config.network,
+                    resource_prefix=build_config.app_config.resource_prefix,
+                    num_revisions=build_config.cloud_config.num_revisions,
+                    upload_clouds=build_config.cloud_config.upload_cloud_ids,
+                ),
+                image_config=builder.StaticImageConfig(
+                    arch=build_config.image_config.arch,
+                    script_url=build_config.image_config.script_url,
+                    runner_version=build_config.image_config.runner_version,
+                ),
+                service_config=builder.ExternalServiceConfig(
+                    dockerhub_cache=build_config.service_config.dockerhub_cache,
+                    proxy=(
+                        build_config.service_config.proxy.http
+                        if build_config.service_config.proxy
+                        else None
+                    ),
+                ),
             ),
         )
         if not cloud_images:

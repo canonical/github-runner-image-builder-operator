@@ -34,12 +34,12 @@ The application pre-populate OpenStack resources required to build the image.
 
 **Raises:**
  
- - <b>`BuilderSetupError`</b>:  If there was an error setting up the host device for building images. 
+ - <b>`BuilderInitError`</b>:  If there was an error initializing the image builder application. 
 
 
 ---
 
-<a href="../src/builder.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -60,7 +60,7 @@ The application interfaces OpenStack credentials with the charm via the clouds.y
 
 ---
 
-<a href="../src/builder.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -85,7 +85,7 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L407"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L408"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -119,7 +119,7 @@ Run a build immediately.
 
 ---
 
-<a href="../src/builder.py#L727"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L728"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_images`
 
@@ -153,7 +153,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L866"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -374,7 +374,6 @@ Static image configuration values.
 **Attributes:**
  
  - <b>`arch`</b>:  The architecture to build the image for. 
- - <b>`prefix`</b>:  The image name prefix. 
  - <b>`script_url`</b>:  The external script to run at the end of the cloud-init. 
  - <b>`runner_version`</b>:  The GitHub runner version. 
 
