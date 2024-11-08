@@ -26,9 +26,9 @@ parts:
     build-snaps:
       - rustup
     build-packages:
-      - libffi-dev  # for cffi
-      - libssl-dev  # for cryptography
-      - rust-all  # for cryptography
+      - libffi-dev # for cffi
+      - libssl-dev # for cryptography
+      - rust-all # for cryptography
       - pkg-config # for cryptography
     override-build: |
       rustup default stable
@@ -62,6 +62,10 @@ actions:
 
 config:
   options:
+    architecture:
+      type: string
+      default: ""
+      description: The image architecture to build for using external builder (i.e. amd64, arm64).
     app-channel:
       type: string
       default: stable
@@ -78,6 +82,11 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
+    dockerhub-cache:
+      type: string
+      default: ""
+      description: |
+        The DockerHub cache to use to enable cached image pull requests for initializing MicroK8s.
     experimental-external-build:
       type: boolean
       default: false
@@ -95,6 +104,19 @@ config:
       description: |
         (Experimental) The network to launch the builder VM machine on. Will default to whatever
         network with accessible subnet is available.
+    juju-channels:
+      type: string
+      default: ""
+      description: |
+        The comma separated Juju versions to download in <track>/<risk> format. E.g. to create
+        images with Juju version 2.9/stable and 3.1/edge, juju-channels="2.9/stable,3.1/edge".
+    microk8s-channels:
+      type: string
+      default: ""
+      description: |
+        The comma separated Microk8s versions to download in <track>/<risk> format. E.g. to create
+        images with Microk8s version 1.31-strict/stable and 1.28/stable,
+        microk8s-channels="1.31-strict/stable, 1.28/stable".
     openstack-auth-url:
       type: string
       default: ""
@@ -151,3 +173,5 @@ config:
 provides:
   image:
     interface: github_runner_image_v0
+  cos-agent:
+    interface: cos_agent
