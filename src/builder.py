@@ -246,8 +246,9 @@ class _RunImageConfig:
         base: The Ubuntu base OS image to build the image on.
         juju: The Juju channel to install and bootstrap on the image.
         microk8s: The Microk8s channel to install and bootstrap on the image.
-        runner_version: The GitHub runner version to pin, defaults to latest.
         prefix: The image prefix.
+        runner_version: The GitHub runner version to pin, defaults to latest.
+        script_url: The external script to run during cloud-init process.
         image_name: The image name derived from image configuration attributes.
     """
 
@@ -255,8 +256,9 @@ class _RunImageConfig:
     base: state.BaseImage
     juju: str
     microk8s: str
-    runner_version: str | None
     prefix: str
+    script_url: str | None
+    runner_version: str | None
 
     @property
     def image_name(self) -> str:
@@ -342,8 +344,9 @@ def _parametrize_build(config: state.BuilderRunConfig) -> tuple[RunConfig, ...]:
                             base=base,
                             juju=juju,
                             microk8s=microk8s,
-                            runner_version=config.image_config.runner_version,
                             prefix=config.image_config.prefix,
+                            runner_version=config.image_config.runner_version,
+                            script_url=config.image_config.script_url,
                         ),
                         cloud=_RunCloudConfig(
                             build_cloud=config.cloud_config.cloud_name,
@@ -404,6 +407,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
             commands.extend(["--microk8s", config.image.microk8s])
         if config.external_service.dockerhub_cache:
             commands.extend(["--dockerhub-cache", config.external_service.dockerhub_cache])
+        if config.image.script_url:
+            commands.extend(["--script-url", config.image.script_url])
         commands.extend(
             [
                 "--experimental-external",

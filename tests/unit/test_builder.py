@@ -435,6 +435,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     microk8s_channels=("",),
                     prefix="",
                     runner_version="",
+                    script_url=None,
                 ),
                 service_config=state.ServiceConfig(
                     dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
@@ -450,6 +451,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         microk8s="",
                         runner_version="",
                         prefix="",
+                        script_url=None,
                     ),
                     cloud=builder._RunCloudConfig(
                         build_cloud="builder",
@@ -471,6 +473,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         microk8s="",
                         runner_version="",
                         prefix="",
+                        script_url=None,
                     ),
                     cloud=builder._RunCloudConfig(
                         build_cloud="builder",
@@ -492,6 +495,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         microk8s="",
                         runner_version="",
                         prefix="",
+                        script_url=None,
                     ),
                     cloud=builder._RunCloudConfig(
                         build_cloud="builder",
@@ -513,6 +517,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         microk8s="",
                         runner_version="",
                         prefix="",
+                        script_url=None,
                     ),
                     cloud=builder._RunCloudConfig(
                         build_cloud="builder",
@@ -591,6 +596,7 @@ def test__run_error(
                     juju="3.1/stable",
                     microk8s="",
                     prefix="app-name",
+                    script_url=None,
                 ),
                 cloud=builder._RunCloudConfig(
                     build_cloud="test",
@@ -613,6 +619,7 @@ def test__run_error(
                     juju="3.1/stable",
                     microk8s="",
                     prefix="app-name",
+                    script_url=None,
                 ),
                 cloud=builder._RunCloudConfig(
                     build_cloud="test",
@@ -638,6 +645,7 @@ def test__run_error(
                     juju="",
                     microk8s="",
                     prefix="app-name",
+                    script_url=None,
                 ),
                 cloud=builder._RunCloudConfig(
                     build_cloud="test",
@@ -684,6 +692,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
                 microk8s="",
                 runner_version="",
                 prefix="app-name",
+                script_url=None,
             ),
             "app-name-jammy-arm64",
             id="raw",
@@ -696,6 +705,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
                 microk8s="",
                 runner_version="",
                 prefix="app-name",
+                script_url=None,
             ),
             "app-name-jammy-arm64-juju-3.1-stable",
             id="juju",
@@ -708,6 +718,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
                 microk8s="1.29-strict/stable",
                 runner_version="",
                 prefix="app-name",
+                script_url=None,
             ),
             "app-name-jammy-arm64-mk8s-1.29-strict-stable",
             id="microk8s",
@@ -797,6 +808,7 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
                     microk8s_channels=("",),
                     prefix="",
                     runner_version="",
+                    script_url=None,
                 ),
                 cloud_config=state.CloudConfig(
                     openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
