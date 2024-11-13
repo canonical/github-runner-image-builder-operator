@@ -169,7 +169,7 @@ def configure_cron(unit_name: str, interval: int) -> bool:
     ]
 
     builder_exec_command: str = " ".join(commands)
-    cron_text = f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command}"
+    cron_text = f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command}\n"
 
     if not _should_configure_cron(cron_contents=cron_text):
         return False
