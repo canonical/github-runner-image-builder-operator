@@ -230,6 +230,7 @@ def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
                 microk8s_channels=set(("",)),
                 prefix=charm.app.name,
                 runner_version="1.234.5",
+                script_url=None,
             ),
             service_config=state.ServiceConfig(
                 dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
@@ -574,6 +575,48 @@ def test__parse_juju_channels(juju_config_value: str, expected_channels: tuple[s
     charm.config[state.JUJU_CHANNELS_CONFIG_NAME] = juju_config_value
 
     assert state._parse_juju_channels(charm=charm) == expected_channels
+
+
+@pytest.mark.parametrize(
+    "script_url",
+    [
+        pytest.param("invalidurl", id="not url"),
+        pytest.param("invalidurl.com", id="no scheme"),
+        pytest.param("https://", id="no hostname"),
+    ],
+)
+def test__parse_script_url_invalid(script_url: str):
+    """
+    arrange: given an invalid URL.
+    act: when _parse_script_url is called.
+    assert: InvalidScriptURLError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.SCRIPT_URL_CONFIG_NAME] = script_url
+
+    with pytest.raises(state.InvalidScriptURLError):
+        state._parse_script_url(charm=charm)
+
+
+@pytest.mark.parametrize(
+    "script_url, expected_url",
+    [
+        pytest.param("", None, id="no url"),
+        pytest.param(
+            "https://script-url.com/script.sh", "https://script-url.com/script.sh", id="valid url"
+        ),
+    ],
+)
+def test__parse_script_url(script_url: str, expected_url: str | None):
+    """
+    arrange: given an charm script-url config.
+    act: when _parse_script_url is called.
+    assert: expected url is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.SCRIPT_URL_CONFIG_NAME] = script_url
+
+    assert state._parse_script_url(charm=charm) == expected_url
 
 
 def test_builder_app_channel_from_charm_error():
