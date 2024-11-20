@@ -79,7 +79,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         # The following lines should be covered by integration tests.
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
         builder.install_clouds_yaml(  # pragma: no cover
-            cloud_config=builder_config_state.cloud_config
+            cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
         if builder.configure_cron(  # pragma: no cover
             unit_name=self.unit.name, interval=builder_config_state.app_config.build_interval
@@ -96,7 +96,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         ):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(cloud_config=builder_config_state.cloud_config)
+        builder.install_clouds_yaml(
+            cloud_config=builder_config_state.cloud_config.openstack_clouds_config
+        )
         self._run()
         self.unit.status = ops.ActiveStatus()
 
