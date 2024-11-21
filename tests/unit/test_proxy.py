@@ -58,35 +58,10 @@ def test_setup(monkeypatch: pytest.MonkeyPatch):
         [
             call(
                 ["/usr/bin/sudo", "snap", "install", "aproxy", "--channel=latest/edge"],
-                timeout=5 * 60,
+                timeout=300,
                 check=True,
                 user="ubuntu",
-            ),
-            call(
-                """/usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 \
-| grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
-define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
-table ip aproxy
-flush table ip aproxy
-table ip aproxy {
-    chain prerouting {
-            type nat hook prerouting priority dstnat; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-
-    chain output {
-            type nat hook output priority -100; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-}
-EOF""",
-                timeout=5 * 60,
-                check=True,
-                # This is not an actual subprocess call.
-                shell=True,  # nosec: B604
-                user="ubuntu",
-            ),
+            )
         ]
     )
 
@@ -159,4 +134,32 @@ def test_configure_aproxy(
 
     proxy.configure_aproxy(proxy_config)
 
-    run_mock.assert_has_calls([expected_call])
+    run_mock.assert_has_calls(
+        [
+            expected_call,
+            call(
+                """/usr/bin/sudo nft -f - << EOF
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 \
+| grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
+define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+table ip aproxy
+flush table ip aproxy
+table ip aproxy {
+    chain prerouting {
+            type nat hook prerouting priority dstnat; policy accept;
+            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
+    }
+
+    chain output {
+            type nat hook output priority -100; policy accept;
+            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
+    }
+}
+EOF""",
+                timeout=300,
+                check=True,
+                shell=True,
+                user="ubuntu",
+            ),
+        ]
+    )
