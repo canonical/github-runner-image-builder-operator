@@ -158,7 +158,8 @@ table ip aproxy {
 EOF""",
                 timeout=300,
                 check=True,
-                shell=True,
+                # Bandit thinks this is a real subprocess call.
+                shell=True,  # nosec
                 user="ubuntu",
             ),
         ]
