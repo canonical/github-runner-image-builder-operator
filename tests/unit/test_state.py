@@ -8,7 +8,6 @@
 
 import os
 import platform
-import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -201,48 +200,6 @@ def test_external_build_config(
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
 
 
-def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a valid charm configurations.
-    act: when BuilderRunConfig.from_charm is called.
-    assert: expected BuilderRunConfig is returned.
-    """
-    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
-    monkeypatch.setattr(os, "environ", {})
-    monkeypatch.setattr(state, "_get_num_parallel_build", MagicMock(return_value=1))
-
-    charm = factories.MockCharmFactory()
-    result = state.BuilderInitConfig.from_charm(charm)
-    assert result == state.BuilderInitConfig(
-        app_name=charm.app.name,
-        channel=state.BuilderAppChannel.EDGE,
-        external_build=True,
-        run_config=state.BuilderRunConfig(
-            cloud_config=state.CloudConfig(
-                openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
-                external_build_config=factories.ExternalBuildConfigFactory(),
-                num_revisions=5,
-            ),
-            image_config=state.ImageConfig(
-                arch=state.Arch.X64,
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("", "3.1/stable", "2.9/stable")),
-                microk8s_channels=set(("",)),
-                prefix=charm.app.name,
-                runner_version="1.234.5",
-                script_url=None,
-            ),
-            service_config=state.ServiceConfig(
-                dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-            ),
-            parallel_build=1,
-        ),
-        interval=6,
-        unit_name=charm.unit.name,
-    )
-    assert result.run_config.cloud_config.cloud_name == state.CLOUD_NAME
-
-
 @pytest.mark.parametrize(
     "dockerhub_cache_url",
     [
@@ -263,6 +220,27 @@ def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
         state._parse_dockerhub_cache_config(charm)
 
     assert "DockerHub scheme or hostname not provided." in str(exc)
+
+
+@pytest.mark.parametrize(
+    "dockerhub_cache_url, expected_url",
+    [
+        pytest.param(
+            "https://www.cache-url.com:8080", "https://www.cache-url.com:8080", id="with port"
+        ),
+        pytest.param("https://www.cache-url.com", "https://www.cache-url.com", id="without port"),
+    ],
+)
+def test__parse_dockerhub_cache_config(dockerhub_cache_url: str, expected_url: str):
+    """
+    arrange: given a valid dockerhub URL config.
+    act: when _parse_dockerhub_cache_config is called.
+    assert: Expected url is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
+
+    assert state._parse_dockerhub_cache_config(charm) == expected_url
 
 
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
@@ -632,51 +610,3 @@ def test_builder_app_channel_from_charm_error():
         state.BuilderAppChannel.from_charm(charm=charm)
 
     assert "invalid" in str(exc.getrepr())
-
-
-@pytest.mark.parametrize(
-    "patch_obj, sub_func, exception, expected_message",
-    [
-        pytest.param(
-            state,
-            "_parse_build_interval",
-            state.CharmConfigInvalidError("Invalid build interval"),
-            "Invalid build interval",
-            id="_parse_build_interval error",
-        ),
-        pytest.param(
-            state,
-            "_parse_openstack_clouds_config",
-            state.CharmConfigInvalidError("Missing configuration"),
-            "Missing configuration",
-            id="_parse_openstack_clouds_config error",
-        ),
-        pytest.param(
-            state,
-            "_parse_revision_history_limit",
-            state.CharmConfigInvalidError("Invalid revision history"),
-            "Invalid revision history",
-            id="_parse_revision_history_limit error",
-        ),
-    ],
-)
-def test_builder_init_config_invalid(
-    patch_obj: typing.Any,
-    sub_func: str,
-    exception: typing.Type[Exception],
-    expected_message: str,
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """
-    arrange: given a monkeypatched sub functions of CharmState that raises given exceptions.
-    act: when CharmState.from_charm is called.
-    assert: A CharmConfigInvalidError is raised.
-    """
-    mock_func = MagicMock(side_effect=exception)
-    monkeypatch.setattr(patch_obj, sub_func, mock_func)
-    charm = factories.MockCharmFactory()
-
-    with pytest.raises(state.CharmConfigInvalidError) as exc:
-        state.BuilderInitConfig.from_charm(charm)
-
-    assert expected_message in str(exc.getrepr())

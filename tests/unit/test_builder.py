@@ -3,18 +3,19 @@
 
 """Unit tests for builder module."""
 
-# Need access to protected functions for testing
-# pylint:disable=protected-access
+# Need access to protected functions for testing.
+# We are testing extensively with data structures, hence the many lines.
+# pylint:disable=protected-access, too-many-lines
 
 import secrets
 
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
+import typing
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import tenacity
 import yaml
 from charms.operator_libs_linux.v0 import apt
 
@@ -22,58 +23,53 @@ import builder
 import state
 from tests.unit import factories
 
+TEST_STATIC_CONFIG: builder.StaticConfigs = factories.StaticConfigFactory.create()
+TEST_RUN_CONFIG: builder.RunConfig = factories.RunConfigFactory.create()
 
-def test_setup_builder_error(monkeypatch: pytest.MonkeyPatch):
+
+def test_initialize_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched internal funcs that raises an error.
-    act: when setup_builder is called.
-    assert: BuilderSetupError is raised.
+    act: when initialize is called.
+    assert: BuilderInitError is raised.
     """
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(
         builder,
         "_install_dependencies",
         MagicMock(side_effect=builder.DependencyInstallError("Failed to install dependencies.")),
     )
 
-    with pytest.raises(builder.BuilderSetupError) as exc:
-        builder.initialize(init_config=MagicMock())
+    with pytest.raises(builder.BuilderInitError) as exc:
+        builder.initialize(app_init_config=MagicMock())
 
     assert "Failed to install dependencies." in str(exc.getrepr())
 
 
-def test_setup_builder(monkeypatch: pytest.MonkeyPatch):
+def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """
-    arrange: given monkeypatched internal funcs.
-    act: when setup_builder is called.
-    assert: expected mocks are called.
+    arrange: given monkeypatched functions calling external dependencies.
+    act: when initialize is called.
+    assert: clouds.yaml file is written.
     """
-    monkeypatch.setattr(
-        builder,
-        "_install_dependencies",
-        (deps_mock := MagicMock()),
-    )
-    monkeypatch.setattr(
-        builder,
-        "_initialize_image_builder",
-        (image_mock := MagicMock()),
-    )
-    monkeypatch.setattr(
-        builder,
-        "install_clouds_yaml",
-        (install_clouds_yaml_mock := MagicMock()),
-    )
-    monkeypatch.setattr(
-        builder,
-        "configure_cron",
-        (configure_cron_mock := MagicMock()),
+    test_clouds_yaml_path = tmp_path / "clouds.yaml"
+    monkeypatch.setattr(builder, "_install_dependencies", MagicMock())
+    monkeypatch.setattr(builder, "_initialize_image_builder", MagicMock())
+    monkeypatch.setattr(builder, "configure_cron", MagicMock())
+    monkeypatch.setattr(builder, "OPENSTACK_CLOUDS_YAML_PATH", test_clouds_yaml_path)
+
+    builder.initialize(
+        app_init_config=builder.ApplicationInitializationConfig(
+            cloud_config=factories.StateCloudConfigFactory(),
+            channel=MagicMock(),
+            cron_interval=MagicMock(),
+            image_arch=MagicMock(),
+            resource_prefix=MagicMock(),
+            unit_name=MagicMock(),
+        )
     )
 
-    builder.initialize(init_config=MagicMock())
-
-    deps_mock.assert_called_once()
-    image_mock.assert_called_once()
-    install_clouds_yaml_mock.assert_called_once()
-    configure_cron_mock.assert_called_once()
+    assert test_clouds_yaml_path.exists()
 
 
 def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
@@ -132,30 +128,66 @@ def test__initialize_image_builder_error(
     act: when _initialize_image_builder is called.
     assert: ImageBuilderInstallError is raised.
     """
+    monkeypatch.setattr(builder, "_build_init_command", MagicMock(return_value=[]))
     monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
 
     with pytest.raises(builder.ImageBuilderInitializeError):
-        builder._initialize_image_builder(init_config=MagicMock())
+        builder._initialize_image_builder(
+            cloud_name=MagicMock(), image_arch=MagicMock(), resource_prefix=MagicMock()
+        )
 
 
 @pytest.mark.parametrize(
-    "external_build",
+    "resource_prefix, expected_command",
     [
-        pytest.param(True, id="external build"),
-        pytest.param(False, id="chroot build"),
+        pytest.param(
+            None,
+            [
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "init",
+                "--experimental-external",
+                "True",
+                "--cloud-name",
+                "test-cloud-name",
+                "--arch",
+                "arm64",
+            ],
+            id="no resource prefix",
+        ),
+        pytest.param(
+            "test-prefix",
+            [
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "init",
+                "--experimental-external",
+                "True",
+                "--cloud-name",
+                "test-cloud-name",
+                "--arch",
+                "arm64",
+                "--prefix",
+                "test-prefix",
+            ],
+            id="test resource prefix",
+        ),
     ],
 )
-def test__initialize_image_builder(monkeypatch: pytest.MonkeyPatch, external_build: bool):
+def test__build_init_command(resource_prefix: str | None, expected_command: list[str]):
     """
-    arrange: given monkeypatched subprocess.run function.
-    act: when _initialize_image_builder is called.
-    assert: No errors are raised.
+    arrange: given application init command arguments and options.
+    act: when _build_init_command is called.
+    assert: expected CLI command line is constructed.
     """
-    monkeypatch.setattr(subprocess, "run", MagicMock())
-    init_config_mock = MagicMock()
-    init_config_mock.external_build = external_build
-
-    builder._initialize_image_builder(init_config=init_config_mock)
+    assert (
+        builder._build_init_command(
+            cloud_name="test-cloud-name",
+            image_arch=state.Arch.ARM64,
+            resource_prefix=resource_prefix,
+        )
+        == expected_command
+    )
 
 
 def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -384,7 +416,7 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
     pool_context_mock.return_value.__enter__.return_value = (pool_mock := MagicMock())
     pool_mock.map = MagicMock(side_effect=builder.multiprocessing.ProcessError("Process Error"))
     with pytest.raises(builder.BuilderRunError):
-        builder.run(config=MagicMock())
+        builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 def _patched_test_func(*_args, **_kwargs):
@@ -409,141 +441,197 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_run", _patched_test_func)
 
-    assert ["test", "test"] == builder.run(config=MagicMock())
+    assert ["test", "test"] == builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 # pylint doesn't quite understand walrus operators
 # pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
-    "builder_run_config, expected_configs",
+    "config_matrix, expected_configs",
     [
         pytest.param(
-            state.BuilderRunConfig(
-                cloud_config=state.CloudConfig(
-                    openstack_clouds_config=(
-                        cloud_config := factories.OpenstackCloudsConfigFactory()
-                    ),
-                    external_build_config=(
-                        external_build_config := factories.ExternalBuildConfigFactory()
-                    ),
-                    num_revisions=1,
-                ),
-                image_config=state.ImageConfig(
-                    arch=state.Arch.ARM64,
-                    bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-                    juju_channels=("3.1/stable", "2.9/stable"),
-                    microk8s_channels=("",),
-                    prefix="",
-                    runner_version="",
-                    script_url=None,
-                ),
-                service_config=state.ServiceConfig(
-                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-                ),
-                parallel_build=1,
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                juju_channels=set(("",)),
+                microk8s_channels=set(("",)),
             ),
             (
                 builder.RunConfig(
-                    image=builder._RunImageConfig(
-                        arch=state.Arch.ARM64,
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
                         base=state.BaseImage.JAMMY,
-                        juju="3.1/stable",
+                        juju="",
                         microk8s="",
-                        runner_version="",
-                        prefix="",
-                        script_url=None,
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
                     ),
-                    cloud=builder._RunCloudConfig(
-                        build_cloud="builder",
-                        build_flavor=external_build_config.flavor,
-                        build_network=external_build_config.network,
-                        resource_prefix="",
-                        num_revisions=1,
-                        upload_clouds=[],
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
-                    external_service=builder._ExternalServiceConfig(
-                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
                 builder.RunConfig(
-                    image=builder._RunImageConfig(
-                        arch=state.Arch.ARM64,
-                        base=state.BaseImage.JAMMY,
-                        juju="2.9/stable",
-                        microk8s="",
-                        runner_version="",
-                        prefix="",
-                        script_url=None,
-                    ),
-                    cloud=builder._RunCloudConfig(
-                        build_cloud="builder",
-                        build_flavor=external_build_config.flavor,
-                        build_network=external_build_config.network,
-                        resource_prefix="",
-                        num_revisions=1,
-                        upload_clouds=[],
-                    ),
-                    external_service=builder._ExternalServiceConfig(
-                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-                    ),
-                ),
-                builder.RunConfig(
-                    image=builder._RunImageConfig(
-                        arch=state.Arch.ARM64,
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
                         base=state.BaseImage.NOBLE,
-                        juju="3.1/stable",
+                        juju="",
                         microk8s="",
-                        runner_version="",
-                        prefix="",
-                        script_url=None,
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
                     ),
-                    cloud=builder._RunCloudConfig(
-                        build_cloud="builder",
-                        build_flavor=external_build_config.flavor,
-                        build_network=external_build_config.network,
-                        resource_prefix="",
-                        num_revisions=1,
-                        upload_clouds=[],
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
-                    external_service=builder._ExternalServiceConfig(
-                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-                    ),
-                ),
-                builder.RunConfig(
-                    image=builder._RunImageConfig(
-                        arch=state.Arch.ARM64,
-                        base=state.BaseImage.NOBLE,
-                        juju="2.9/stable",
-                        microk8s="",
-                        runner_version="",
-                        prefix="",
-                        script_url=None,
-                    ),
-                    cloud=builder._RunCloudConfig(
-                        build_cloud="builder",
-                        build_flavor=external_build_config.flavor,
-                        build_network=external_build_config.network,
-                        resource_prefix="",
-                        num_revisions=1,
-                        upload_clouds=[],
-                    ),
-                    external_service=builder._ExternalServiceConfig(
-                        dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
             ),
+            id="multiple OS bases",
+        ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY,),
+                juju_channels=set(("", "3.1/stable")),
+                microk8s_channels=set(("",)),
+            ),
+            (
+                builder.RunConfig(
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
+                        base=state.BaseImage.JAMMY,
+                        juju="",
+                        microk8s="",
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
+                    ),
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
+                    ),
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                    ),
+                ),
+                builder.RunConfig(
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
+                        base=state.BaseImage.JAMMY,
+                        juju="3.1/stable",
+                        microk8s="",
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
+                    ),
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
+                    ),
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                    ),
+                ),
+            ),
+            id="multiple Juju channels",
+        ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY,),
+                juju_channels=set(("",)),
+                microk8s_channels=set(("", "1.29-strict/stable")),
+            ),
+            (
+                builder.RunConfig(
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
+                        base=state.BaseImage.JAMMY,
+                        juju="",
+                        microk8s="",
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
+                    ),
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
+                    ),
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                    ),
+                ),
+                builder.RunConfig(
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
+                        base=state.BaseImage.JAMMY,
+                        juju="",
+                        microk8s="1.29-strict/stable",
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_url="https://test-url.com/script.sh",
+                        runner_version="1.2.3",
+                    ),
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
+                    ),
+                    external_service=builder.ExternalServiceConfig(
+                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                    ),
+                ),
+            ),
+            id="multiple Microk8s channels",
         ),
     ],
 )
 def test__parametrize_build(
-    builder_run_config: state.BuilderRunConfig, expected_configs: tuple[builder.RunConfig, ...]
+    config_matrix: builder.ConfigMatrix,
+    expected_configs: tuple[builder.RunConfig, ...],
 ):
     """
-    arrange: given builder run configuration values.
+    arrange: given configurable builder run configuration matrix.
     act: when _parametrize_build is called.
     assert: expected build configurations are returned.
     """
-    assert builder._parametrize_build(config=builder_run_config) == expected_configs
+    assert (
+        builder._parametrize_build(config_matrix=config_matrix, static_config=TEST_STATIC_CONFIG)
+        == expected_configs
+    )
 
 
 # pylint: enable=unused-variable,undefined-variable
@@ -585,107 +673,241 @@ def test__run_error(
 
 
 @pytest.mark.parametrize(
-    "run_config",
+    "upload_clouds, output_image_ids, expected_cloud_images",
     [
         pytest.param(
-            builder.RunConfig(
-                image=builder._RunImageConfig(
-                    arch=state.Arch.ARM64,
-                    base=state.BaseImage.JAMMY,
-                    runner_version="1.2.3",
-                    juju="3.1/stable",
-                    microk8s="",
-                    prefix="app-name",
-                    script_url=None,
-                ),
-                cloud=builder._RunCloudConfig(
-                    build_cloud="test",
-                    build_flavor="test",
-                    build_network="test",
-                    upload_clouds=["test"],
-                    resource_prefix="app-name",
-                    num_revisions=1,
-                ),
-                external_service=state.ServiceConfig(dockerhub_cache=None, proxy=None),
-            ),
-            id="runner version config set",
+            ("test-upload-cloud-a",),
+            ("image-id-a",),
+            [
+                builder.CloudImage(
+                    arch=TEST_RUN_CONFIG.image.arch,
+                    base=TEST_RUN_CONFIG.image.base,
+                    cloud_id="test-upload-cloud-a",
+                    image_id="image-id-a",
+                    juju=TEST_RUN_CONFIG.image.juju,
+                    microk8s=TEST_RUN_CONFIG.image.microk8s,
+                )
+            ],
+            id="single upload cloud",
         ),
         pytest.param(
-            builder.RunConfig(
-                image=builder._RunImageConfig(
-                    arch=state.Arch.ARM64,
-                    base=state.BaseImage.JAMMY,
-                    runner_version=None,
-                    juju="3.1/stable",
-                    microk8s="",
-                    prefix="app-name",
-                    script_url=None,
+            ("test-upload-cloud-a", "test-upload-cloud-b"),
+            ("image-id-a", "image-id-b"),
+            [
+                builder.CloudImage(
+                    arch=TEST_RUN_CONFIG.image.arch,
+                    base=TEST_RUN_CONFIG.image.base,
+                    cloud_id="test-upload-cloud-a",
+                    image_id="image-id-a",
+                    juju=TEST_RUN_CONFIG.image.juju,
+                    microk8s=TEST_RUN_CONFIG.image.microk8s,
                 ),
-                cloud=builder._RunCloudConfig(
-                    build_cloud="test",
-                    build_flavor="test",
-                    build_network="test",
-                    upload_clouds=["test"],
-                    resource_prefix="app-name",
-                    num_revisions=1,
+                builder.CloudImage(
+                    arch=TEST_RUN_CONFIG.image.arch,
+                    base=TEST_RUN_CONFIG.image.base,
+                    cloud_id="test-upload-cloud-b",
+                    image_id="image-id-b",
+                    juju=TEST_RUN_CONFIG.image.juju,
+                    microk8s=TEST_RUN_CONFIG.image.microk8s,
                 ),
-                external_service=state.ServiceConfig(
-                    dockerhub_cache="https://dockerhub-cache.internal:5000",
-                    proxy="http://proxy.test:3128",
-                ),
-            ),
-            id="proxy config set",
-        ),
-        pytest.param(
-            builder.RunConfig(
-                image=builder._RunImageConfig(
-                    arch=state.Arch.ARM64,
-                    base=state.BaseImage.JAMMY,
-                    runner_version=None,
-                    juju="",
-                    microk8s="",
-                    prefix="app-name",
-                    script_url=None,
-                ),
-                cloud=builder._RunCloudConfig(
-                    build_cloud="test",
-                    build_flavor="test",
-                    build_network="test",
-                    upload_clouds=["test"],
-                    resource_prefix="app-name",
-                    num_revisions=1,
-                ),
-                external_service=state.ServiceConfig(
-                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-                ),
-            ),
-            id="juju unset",
+            ],
+            id="multiple upload clouds",
         ),
     ],
 )
-def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
+def test__run(
+    monkeypatch: pytest.MonkeyPatch,
+    upload_clouds: typing.Iterable[str],
+    output_image_ids: typing.Iterable[str],
+    expected_cloud_images: list[builder.CloudImage],
+):
     """
     arrange: given a monkeypatched subprocess call.
     act: when _run is called.
     assert: the call to image builder is made.
     """
+    # Mock the image builder output.
     monkeypatch.setattr(
         builder.subprocess,
         "check_output",
-        check_output_mock := MagicMock(return_value="Image build success\ntest-image-id"),
+        MagicMock(return_value=f"Image build success:\n{','.join(output_image_ids)}"),
     )
-    monkeypatch.setattr(builder._run.retry, "wait", tenacity.wait_fixed(0))
+    test_run_config: builder.RunConfig = factories.RunConfigFactory.create()
+    test_run_config.cloud.upload_clouds = upload_clouds
 
-    builder._run(config=run_config)
+    assert builder._run(config=test_run_config) == expected_cloud_images
 
-    check_output_mock.assert_called_once()
+
+@pytest.mark.parametrize(
+    "run_args, cloud_options, image_options, service_options, expected_command",
+    [
+        pytest.param(
+            builder._RunArgs(cloud_name="test-build-cloud", image_name="test-output-image-name"),
+            builder._CloudOptions(
+                flavor=None, keep_revisions=None, network=None, prefix=None, upload_clouds=None
+            ),
+            builder._ImageOptions(
+                arch=None,
+                image_base=None,
+                juju=None,
+                microk8s=None,
+                runner_version=None,
+                script_url=None,
+            ),
+            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            [
+                "/usr/bin/run-one",
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "run",
+                "test-build-cloud",
+                "test-output-image-name",
+                "--experimental-external",
+                "True",
+            ],
+            id="Run args only",
+        ),
+        pytest.param(
+            builder._RunArgs(cloud_name="test-build-cloud", image_name="test-output-image-name"),
+            builder._CloudOptions(
+                flavor="test-flavor",
+                keep_revisions=5,
+                network="test-network",
+                prefix="test-prefix-",
+                upload_clouds=("test-upload-cloud-a", "test-upload-cloud-b"),
+            ),
+            builder._ImageOptions(
+                arch=None,
+                image_base=None,
+                juju=None,
+                microk8s=None,
+                runner_version=None,
+                script_url=None,
+            ),
+            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            [
+                "/usr/bin/run-one",
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "run",
+                "test-build-cloud",
+                "test-output-image-name",
+                "--experimental-external",
+                "True",
+                "--flavor",
+                "test-flavor",
+                "--keep-revisions",
+                "5",
+                "--network",
+                "test-network",
+                "--prefix",
+                "test-prefix-",
+                "--upload-clouds",
+                "test-upload-cloud-a,test-upload-cloud-b",
+            ],
+            id="With cloud options",
+        ),
+        pytest.param(
+            builder._RunArgs(cloud_name="test-build-cloud", image_name="test-output-image-name"),
+            builder._CloudOptions(
+                flavor=None, keep_revisions=None, network=None, prefix=None, upload_clouds=None
+            ),
+            builder._ImageOptions(
+                arch=state.Arch.ARM64,
+                image_base=state.BaseImage.JAMMY,
+                juju="3.1/stable",
+                microk8s="1.29-strict/stable",
+                runner_version="1.2.3",
+                script_url="https://test-script-url.com/script.sh",
+            ),
+            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            [
+                "/usr/bin/run-one",
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "run",
+                "test-build-cloud",
+                "test-output-image-name",
+                "--experimental-external",
+                "True",
+                "--arch",
+                "arm64",
+                "--base-image",
+                "jammy",
+                "--juju",
+                "3.1/stable",
+                "--microk8s",
+                "1.29-strict/stable",
+                "--runner-version",
+                "1.2.3",
+                "--script-url",
+                "https://test-script-url.com/script.sh",
+            ],
+            id="With image options",
+        ),
+        pytest.param(
+            builder._RunArgs(cloud_name="test-build-cloud", image_name="test-output-image-name"),
+            builder._CloudOptions(
+                flavor=None, keep_revisions=None, network=None, prefix=None, upload_clouds=None
+            ),
+            builder._ImageOptions(
+                arch=None,
+                image_base=None,
+                juju=None,
+                microk8s=None,
+                runner_version=None,
+                script_url=None,
+            ),
+            builder._ServiceOptions(
+                dockerhub_cache="https://dockerhub-cache.com:5000",
+                proxy="https://test-proxy.com:3128",
+            ),
+            [
+                "/usr/bin/run-one",
+                "/usr/bin/sudo",
+                "/home/ubuntu/.local/bin/github-runner-image-builder",
+                "run",
+                "test-build-cloud",
+                "test-output-image-name",
+                "--experimental-external",
+                "True",
+                "--dockerhub-cache",
+                "https://dockerhub-cache.com:5000",
+                "--proxy",
+                "test-proxy.com:3128",
+            ],
+            id="With service options",
+        ),
+    ],
+)
+def test__build_run_command(
+    run_args: builder._RunArgs,
+    cloud_options: builder._CloudOptions,
+    image_options: builder._ImageOptions,
+    service_options: builder._ServiceOptions,
+    expected_command: list[str],
+):
+    """
+    arrange: given CLI component options.
+    act: when _build_run_command is called.
+    assert: expected CLI call is built.
+    """
+    assert (
+        builder._build_run_command(
+            run_args=run_args,
+            cloud_options=cloud_options,
+            image_options=image_options,
+            service_options=service_options,
+        )
+        == expected_command
+    )
 
 
 @pytest.mark.parametrize(
     "config, expected_name",
     [
         pytest.param(
-            builder._RunImageConfig(
+            builder.ImageConfig(
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 juju="",
@@ -698,7 +920,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
             id="raw",
         ),
         pytest.param(
-            builder._RunImageConfig(
+            builder.ImageConfig(
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 juju="3.1/stable",
@@ -711,7 +933,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
             id="juju",
         ),
         pytest.param(
-            builder._RunImageConfig(
+            builder.ImageConfig(
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 juju="",
@@ -725,7 +947,7 @@ def test__run(monkeypatch: pytest.MonkeyPatch, run_config: builder.RunConfig):
         ),
     ],
 )
-def test__run_image_config_image_name(config: builder._RunImageConfig, expected_name: str):
+def test__run_image_config_image_name(config: builder.ImageConfig, expected_name: str):
     """
     arrange: given _RunImageConfig.
     act: when image_name property is accessed.
@@ -797,75 +1019,100 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
 
 
 @pytest.mark.parametrize(
-    "builder_run_config, expected_configs",
+    "config_matrix, expected_configs",
     [
         pytest.param(
-            state.BuilderRunConfig(
-                image_config=state.ImageConfig(
-                    arch=state.Arch.ARM64,
-                    bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-                    juju_channels=("3.1/stable", "2.9/stable"),
-                    microk8s_channels=("",),
-                    prefix="",
-                    runner_version="",
-                    script_url=None,
-                ),
-                cloud_config=state.CloudConfig(
-                    openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
-                    external_build_config=factories.ExternalBuildConfigFactory(),
-                    num_revisions=1,
-                ),
-                service_config=state.ServiceConfig(
-                    dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-                ),
-                parallel_build=1,
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                juju_channels=set(("",)),
+                microk8s_channels=set(("",)),
             ),
             (
                 builder.FetchConfig(
-                    arch=state.Arch.ARM64,
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.JAMMY,
-                    cloud_id="",
-                    juju="3.1/stable",
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="",
                     microk8s="",
-                    prefix="",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
-                    arch=state.Arch.ARM64,
-                    base=state.BaseImage.JAMMY,
-                    cloud_id="",
-                    juju="2.9/stable",
-                    microk8s="",
-                    prefix="",
-                ),
-                builder.FetchConfig(
-                    arch=state.Arch.ARM64,
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.NOBLE,
-                    cloud_id="",
-                    juju="3.1/stable",
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="",
                     microk8s="",
-                    prefix="",
-                ),
-                builder.FetchConfig(
-                    arch=state.Arch.ARM64,
-                    base=state.BaseImage.NOBLE,
-                    cloud_id="",
-                    juju="2.9/stable",
-                    microk8s="",
-                    prefix="",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
             ),
+            id="multiple OS bases",
+        ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY,),
+                juju_channels=set(("", "3.1/stable")),
+                microk8s_channels=set(("",)),
+            ),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="",
+                    microk8s="",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="3.1/stable",
+                    microk8s="",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple Juju channels",
+        ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.JAMMY,),
+                juju_channels=set(("",)),
+                microk8s_channels=set(("", "1.29-strict/stable")),
+            ),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="",
+                    microk8s="",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    juju="",
+                    microk8s="1.29-strict/stable",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple Microk8s channels",
         ),
     ],
 )
 def test__parametrize_fetch(
-    builder_run_config: state.BuilderRunConfig, expected_configs: tuple[builder.FetchConfig, ...]
+    config_matrix: builder.ConfigMatrix, expected_configs: tuple[builder.FetchConfig, ...]
 ):
     """
     arrange: given fetch configuration values.
     act: when _parametrize_fetch is called.
     assert: expected fetch configurations are returned.
     """
-    assert builder._parametrize_fetch(config=builder_run_config, cloud_id="") == expected_configs
+    assert (
+        builder._parametrize_fetch(config_matrix=config_matrix, static_config=TEST_STATIC_CONFIG)
+        == expected_configs
+    )
 
 
 def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
@@ -878,7 +1125,7 @@ def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
     pool_context_mock.return_value.__enter__.return_value = (pool_mock := MagicMock())
     pool_mock.map = MagicMock(side_effect=builder.multiprocessing.ProcessError("Process Error"))
     with pytest.raises(builder.GetLatestImageError):
-        builder.get_latest_images(config=MagicMock(), cloud_id="test")
+        builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
@@ -890,7 +1137,9 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test", "test"]))
     monkeypatch.setattr(builder, "_get_latest_image", _patched_test_func)
 
-    assert ["test", "test"] == builder.get_latest_images(config=MagicMock(), cloud_id="test")
+    assert ["test", "test"] == builder.get_latest_images(
+        config_matrix=MagicMock(), static_config=MagicMock()
+    )
 
 
 @pytest.mark.parametrize(

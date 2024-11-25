@@ -8,6 +8,8 @@ from unittest.mock import MagicMock
 
 import factory
 
+import builder
+import state
 from state import (
     APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
@@ -139,3 +141,100 @@ class ExternalBuildConfigFactory(factory.Factory):
 
     flavor = "test-flavor"
     network = "test-network"
+
+
+class StateCloudConfigFactory(factory.Factory):
+    """Cloud config factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = state.CloudConfig
+
+    openstack_clouds_config: OpenstackCloudsConfig = OpenstackCloudsConfigFactory()
+    external_build_config: ExternalBuildConfig = ExternalBuildConfigFactory()
+    num_revisions: int = 6
+
+
+class CloudConfigFactory(factory.Factory):
+    """Cloud config factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.CloudConfig
+
+    build_cloud: str = "test-build-cloud"
+    build_flavor: str = "test-build-flavor"
+    build_network: str = "test-build-network"
+    resource_prefix: str = "test-app-name"
+    num_revisions: int = 5
+    upload_clouds: typing.Iterable[str] = {"test-upload-cloud-1", "test-upload-cloud-2"}
+
+
+class StaticImageConfigFactory(factory.Factory):
+    """Static image config factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.StaticImageConfig
+
+    arch: state.Arch = state.Arch.ARM64
+    script_url: str | None = "https://test-url.com/script.sh"
+    runner_version: str | None = "1.2.3"
+
+
+class ExternalServiceConfigFactory(factory.Factory):
+    """External service config factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.ExternalServiceConfig
+
+    dockerhub_cache: str | None = "https://test-dockerhub-cache.com:5000"
+    proxy: str | None = "http://proxy.internal:3128"
+
+
+class StaticConfigFactory(factory.Factory):
+    """Static image builder configuration factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.StaticConfigs
+
+    cloud_config: builder.CloudConfig = CloudConfigFactory()
+    image_config: builder.StaticImageConfig = StaticImageConfigFactory()
+    service_config: builder.ExternalServiceConfig = ExternalServiceConfigFactory()
+
+
+class ImageConfigFactory(factory.Factory):
+    """Image configuration factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.ImageConfig
+
+    arch: state.Arch = state.Arch.ARM64
+    base: state.BaseImage = state.BaseImage.JAMMY
+    juju: str = "3.1/stable"
+    microk8s: str = "1.29-strict/stable"
+    prefix: str = "test-prefix-"
+    script_url: str | None = "https://test-url.com/script.sh"
+    runner_version: str | None = "1.2.3"
+
+
+class RunConfigFactory(factory.Factory):
+    """Image builder run configuration factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.RunConfig
+
+    image: builder.ImageConfig = ImageConfigFactory()
+    cloud: builder.CloudConfig = CloudConfigFactory()
+    external_service: builder.ExternalServiceConfig = ExternalServiceConfigFactory()

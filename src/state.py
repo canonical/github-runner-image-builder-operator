@@ -352,7 +352,6 @@ class ImageConfig:
         bases: Ubuntu OS images to build from.
         juju_channels: The Juju channels to install on the images.
         microk8s_channels: The Microk8s channels to install on the images.
-        prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         script_url: The external script to run during cloud-init process.
     """
@@ -361,7 +360,6 @@ class ImageConfig:
     bases: tuple[BaseImage, ...]
     juju_channels: set[str]
     microk8s_channels: set[str]
-    prefix: str
     runner_version: str
     script_url: str | None
 
@@ -387,7 +385,6 @@ class ImageConfig:
             bases=base_images,
             juju_channels=juju_channels,
             microk8s_channels=microk8s_channels,
-            prefix=charm.app.name,
             runner_version=runner_version,
             script_url=script_url,
         )
@@ -502,24 +499,78 @@ def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
     return parsed_result.geturl()
 
 
+class BuilderAppChannelInvalidError(CharmConfigInvalidError):
+    """Represents invalid builder app channel configuration."""
+
+
+class BuilderAppChannel(str, Enum):
+    """Image builder application channel.
+
+    This is managed by the application's git tag and versioning tag in pyproject.toml.
+
+    Attributes:
+        EDGE: Edge application channel.
+        STABLE: Stable application channel.
+    """
+
+    EDGE = "edge"
+    STABLE = "stable"
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
+        """Retrieve the app channel from charm.
+
+        Args:
+            charm: The charm instance.
+
+        Raises:
+            BuilderAppChannelInvalidError: If an invalid application channel was selected.
+
+        Returns:
+            The application channel to deploy.
+        """
+        try:
+            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
+        except ValueError as exc:
+            raise BuilderAppChannelInvalidError from exc
+
+
 @dataclasses.dataclass
-class BuilderRunConfig:
+class ApplicationConfig:
+    """Image builder application related configuration values.
+
+    Attributes:
+        build_interval: Hours between regular build jobs.
+        channel: The application channel to install.
+        parallel_build: Number of parallel number of applications to spawn.
+        resource_prefix: The prefix of the resource saved on the repository for this application \
+            manager.
+    """
+
+    build_interval: int
+    channel: BuilderAppChannel
+    parallel_build: int
+    resource_prefix: str
+
+
+@dataclasses.dataclass
+class BuilderConfig:
     """Configurations for running builder periodically.
 
     Attributes:
+        app_config: Application configuration parameters.
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
         service_config: The external dependent service configurations to build the image.
-        parallel_build: The number of images to build in parallel.
     """
 
+    app_config: ApplicationConfig
     image_config: ImageConfig
     cloud_config: CloudConfig
     service_config: ServiceConfig
-    parallel_build: int
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderConfig":
         """Initialize build state from current charm instance.
 
         Args:
@@ -531,12 +582,16 @@ class BuilderRunConfig:
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
         service_config = ServiceConfig.from_charm(charm=charm)
-        parallel_build = _get_num_parallel_build(charm=charm)
         return cls(
+            app_config=ApplicationConfig(
+                build_interval=_parse_build_interval(charm=charm),
+                channel=BuilderAppChannel.from_charm(charm=charm),
+                parallel_build=_get_num_parallel_build(charm=charm),
+                resource_prefix=charm.app.name,
+            ),
             cloud_config=cloud_config,
             image_config=image_config,
             service_config=service_config,
-            parallel_build=parallel_build,
         )
 
 
@@ -818,87 +873,3 @@ def _parse_script_url(charm: ops.CharmBase) -> str | None:
     if not parsed_url.scheme or not parsed_url.hostname:
         raise InvalidScriptURLError("Invalid script URL, must contain scheme and hostname.")
     return script_url_str
-
-
-class BuilderAppChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid builder app channel configuration."""
-
-
-class BuilderAppChannel(str, Enum):
-    """Image builder application channel.
-
-    This is managed by the application's git tag and versioning tag in pyproject.toml.
-
-    Attributes:
-        EDGE: Edge application channel.
-        STABLE: Stable application channel.
-    """
-
-    EDGE = "edge"
-    STABLE = "stable"
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
-        """Retrieve the app channel from charm.
-
-        Args:
-            charm: The charm instance.
-
-        Raises:
-            BuilderAppChannelInvalidError: If an invalid application channel was selected.
-
-        Returns:
-            The application channel to deploy.
-        """
-        try:
-            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
-        except ValueError as exc:
-            raise BuilderAppChannelInvalidError from exc
-
-
-class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
-    """Raised when charm config related to image build setup config is invalid."""
-
-
-@dataclasses.dataclass(frozen=True)
-class BuilderInitConfig:
-    """The image builder setup config.
-
-    Attributes:
-        app_name: The current charm's application name.
-        channel: The application installation channel.
-        external_build: Whether the image builder should run in external build mode.
-        interval: The interval in hours between each scheduled image builds.
-        run_config: The configuration required to build the image.
-        unit_name: The charm unit name in which the builder is running on.
-    """
-
-    app_name: str
-    channel: BuilderAppChannel
-    external_build: bool
-    interval: int
-    run_config: BuilderRunConfig
-    unit_name: str
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderInitConfig":
-        """Initialize charm state from current charm instance.
-
-        Args:
-            charm: The running charm instance.
-
-        Returns:
-            Current charm state.
-        """
-        channel = BuilderAppChannel.from_charm(charm=charm)
-        run_config = BuilderRunConfig.from_charm(charm=charm)
-        build_interval = _parse_build_interval(charm)
-
-        return cls(
-            app_name=charm.app.name,
-            channel=channel,
-            external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
-            run_config=run_config,
-            interval=build_interval,
-            unit_name=charm.unit.name,
-        )
