@@ -35,6 +35,24 @@ Module for interacting with charm state and configurations.
 
 ---
 
+## <kbd>class</kbd> `ApplicationConfig`
+Image builder application related configuration values. 
+
+
+
+**Attributes:**
+ 
+ - <b>`build_interval`</b>:  Hours between regular build jobs. 
+ - <b>`channel`</b>:  The application channel to install. 
+ - <b>`parallel_build`</b>:  Number of parallel number of applications to spawn. 
+ - <b>`resource_prefix`</b>:  The prefix of the resource saved on the repository for this application             manager. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `Arch`
 Supported system architectures. 
 
@@ -160,72 +178,29 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 
 ---
 
-## <kbd>class</kbd> `BuilderInitConfig`
-The image builder setup config. 
-
-
-
-**Attributes:**
- 
- - <b>`app_name`</b>:  The current charm's application name. 
- - <b>`channel`</b>:  The application installation channel. 
- - <b>`external_build`</b>:  Whether the image builder should run in external build mode. 
- - <b>`interval`</b>:  The interval in hours between each scheduled image builds. 
- - <b>`run_config`</b>:  The configuration required to build the image. 
- - <b>`unit_name`</b>:  The charm unit name in which the builder is running on. 
-
-
-
-
----
-
-<a href="../src/state.py#L883"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `from_charm`
-
-```python
-from_charm(charm: CharmBase) → BuilderInitConfig
-```
-
-Initialize charm state from current charm instance. 
-
-
-
-**Args:**
- 
- - <b>`charm`</b>:  The running charm instance. 
-
-
-
-**Returns:**
- Current charm state. 
-
-
----
-
-## <kbd>class</kbd> `BuilderRunConfig`
+## <kbd>class</kbd> `BuilderConfig`
 Configurations for running builder periodically. 
 
 
 
 **Attributes:**
  
+ - <b>`app_config`</b>:  Application configuration parameters. 
  - <b>`image_config`</b>:  Image configuration parameters. 
  - <b>`cloud_config`</b>:  Cloud configuration parameters. 
  - <b>`service_config`</b>:  The external dependent service configurations to build the image. 
- - <b>`parallel_build`</b>:  The number of images to build in parallel. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L521"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
 ```python
-from_charm(charm: CharmBase) → BuilderRunConfig
+from_charm(charm: CharmBase) → BuilderConfig
 ```
 
 Initialize build state from current charm instance. 
@@ -240,31 +215,6 @@ Initialize build state from current charm instance.
 
 **Returns:**
  Current charm state. 
-
-
----
-
-## <kbd>class</kbd> `BuilderSetupConfigInvalidError`
-Raised when charm config related to image build setup config is invalid. 
-
-<a href="../src/state.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
-
-```python
-__init__(msg: str | None = None)
-```
-
-Initialize a new instance of the CharmConfigInvalidError exception. 
-
-
-
-**Args:**
- 
- - <b>`msg`</b>:  Explanation of the error. 
-
-
-
 
 
 ---
@@ -330,7 +280,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -486,7 +436,6 @@ Image configuration parameters.
  - <b>`bases`</b>:  Ubuntu OS images to build from. 
  - <b>`juju_channels`</b>:  The Juju channels to install on the images. 
  - <b>`microk8s_channels`</b>:  The Microk8s channels to install on the images. 
- - <b>`prefix`</b>:  The image name prefix (application name). 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
  - <b>`script_url`</b>:  The external script to run during cloud-init process. 
 
@@ -495,7 +444,7 @@ Image configuration parameters.
 
 ---
 
-<a href="../src/state.py#L368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -805,7 +754,7 @@ External service configuration values.
 
 ---
 
-<a href="../src/state.py#L465"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L462"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

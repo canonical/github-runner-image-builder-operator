@@ -22,8 +22,8 @@ from charms.operator_libs_linux.v1 import systemd
 
 import state
 from exceptions import (
+    BuilderInitError,
     BuilderRunError,
-    BuilderSetupError,
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
@@ -48,24 +48,52 @@ GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 
 
-def initialize(init_config: state.BuilderInitConfig) -> None:
+@dataclasses.dataclass
+class ApplicationInitializationConfig:
+    """Required application initialization configurations.
+
+    Attributes:
+        cloud_config: The OpenStack cloud config the application should interact with.
+        channel: The application channel.
+        cron_interval: The number of hours to retrigger build.
+        image_arch: The image architecture to initialize build resources for.
+        resource_prefix: The prefix of application resources.
+        unit_name: The Juju unit name to trigger the CRON with.
+    """
+
+    cloud_config: state.CloudConfig
+    channel: state.BuilderAppChannel
+    cron_interval: int
+    image_arch: state.Arch
+    resource_prefix: str
+    unit_name: str
+
+
+def initialize(app_init_config: ApplicationInitializationConfig) -> None:
     """Configure the host machine to build images.
 
+    The application pre-populate OpenStack resources required to build the image.
+
     Args:
-        init_config: Configuration values required to initialize the builder.
+        app_init_config: Configuration required to initialize the app.
 
     Raises:
-        BuilderSetupError: If there was an error setting up the host device for building images.
+        BuilderInitError: If there was an error initializing the image builder application.
     """
     try:
-        _install_dependencies(channel=init_config.channel)
-        _initialize_image_builder(init_config=init_config)
-        install_clouds_yaml(
-            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        install_clouds_yaml(cloud_config=app_init_config.cloud_config.openstack_clouds_config)
+        # The following lines should be covered by integration tests.
+        _install_dependencies(channel=app_init_config.channel)
+        _initialize_image_builder(  # pragma: no cover
+            cloud_name=app_init_config.cloud_config.cloud_name,
+            image_arch=app_init_config.image_arch,
+            resource_prefix=app_init_config.resource_prefix,
         )
-        configure_cron(unit_name=init_config.unit_name, interval=init_config.interval)
+        configure_cron(
+            unit_name=app_init_config.unit_name, interval=app_init_config.cron_interval
+        )  # pragma: no cover
     except (DependencyInstallError, ImageBuilderInitializeError) as exc:
-        raise BuilderSetupError from exc
+        raise BuilderInitError from exc
 
 
 def _install_dependencies(channel: state.BuilderAppChannel) -> None:
@@ -93,29 +121,22 @@ def _install_dependencies(channel: state.BuilderAppChannel) -> None:
         raise DependencyInstallError from exc
 
 
-def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
+def _initialize_image_builder(
+    cloud_name: str, image_arch: state.Arch, resource_prefix: str
+) -> None:
     """Initialize github-runner-image-builder app.
 
     Args:
-        init_config: Imagebuilder initialization configuration parameters.
+        cloud_name: The OpenStack cloud to pre-populate OpenStack image builder resources.
+        image_arch: The architecture of the image to build.
+        resource_prefix: The resource prefix for artefacts saved in the image repository.
 
     Raises:
         ImageBuilderInitializeError: If there was an error Initialize the app.
     """
-    init_cmd = ["/usr/bin/sudo", str(GITHUB_RUNNER_IMAGE_BUILDER_PATH), "init"]
-    if init_config.external_build:
-        init_cmd.extend(
-            [
-                "--experimental-external",
-                "True",
-                "--cloud-name",
-                init_config.run_config.cloud_config.cloud_name,
-                "--arch",
-                init_config.run_config.image_config.arch.value,
-                "--prefix",
-                init_config.app_name,
-            ]
-        )
+    init_cmd = _build_init_command(
+        cloud_name=cloud_name, image_arch=image_arch, resource_prefix=resource_prefix
+    )
     try:
         subprocess.run(
             init_cmd,
@@ -137,8 +158,41 @@ def _initialize_image_builder(init_config: state.BuilderInitConfig) -> None:
         raise ImageBuilderInitializeError from exc
 
 
+def _build_init_command(
+    cloud_name: str, image_arch: state.Arch, resource_prefix: str | None
+) -> list[str]:
+    """Build the application init command.
+
+    Args:
+        cloud_name: The OpenStack cloud to pre-populate OpenStack image builder resources.
+        image_arch: The architecture of the image to build.
+        resource_prefix: The resource prefix for artefacts saved in the image repository.
+
+    Returns:
+        The GitHub runner application init command.
+    """
+    cmd = [
+        "/usr/bin/sudo",
+        str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+        "init",
+        "--experimental-external",
+        "True",
+        "--cloud-name",
+        cloud_name,
+        "--arch",
+        image_arch.value,
+    ]
+    if resource_prefix:
+        cmd.extend(["--prefix", resource_prefix])
+    return cmd
+
+
 def install_clouds_yaml(cloud_config: state.OpenstackCloudsConfig) -> None:
     """Install clouds.yaml for Openstack used by the image builder.
+
+    The application interfaces OpenStack credentials with the charm via the clouds.yaml since each
+    of the parameters being passed on (i.e. --openstack-username --openstack-password \
+    --upload-openstack-username --upload-openstack-password ...) is too verbose.
 
     Args:
         cloud_config: The contents of clouds.yaml parsed as dict.
@@ -215,30 +269,8 @@ class CloudImage:
     microk8s: str
 
 
-def run(config: state.BuilderRunConfig) -> list[list[CloudImage]]:
-    """Run a build immediately.
-
-    Args:
-        config: The configuration values for running image builder.
-
-    Raises:
-        BuilderRunError: if there was an error while launching the subprocess.
-
-    Returns:
-        The built image id.
-    """
-    build_configs = _parametrize_build(config=config)
-    try:
-        num_cores = multiprocessing.cpu_count() - 1
-        with multiprocessing.Pool(min(len(build_configs), num_cores)) as pool:
-            build_results = pool.map(_run, build_configs)
-    except multiprocessing.ProcessError as exc:
-        raise BuilderRunError("Failed to run parallel build") from exc
-    return build_results
-
-
 @dataclasses.dataclass
-class _RunImageConfig:
+class ImageConfig:
     """Builder run image related configuration parameters.
 
     Attributes:
@@ -276,7 +308,7 @@ class _RunImageConfig:
 
 
 @dataclasses.dataclass
-class _RunCloudConfig:
+class CloudConfig:
     """Builder run cloud related configuration parameters.
 
     Attributes:
@@ -297,7 +329,7 @@ class _RunCloudConfig:
 
 
 @dataclasses.dataclass
-class _ExternalServiceConfig:
+class ExternalServiceConfig:
     """Builder run external service dependencies.
 
     Attributes:
@@ -319,48 +351,123 @@ class RunConfig:
         external_service: The external service dependencies for building the image.
     """
 
-    image: _RunImageConfig
-    cloud: _RunCloudConfig
-    external_service: _ExternalServiceConfig
+    image: ImageConfig
+    cloud: CloudConfig
+    external_service: ExternalServiceConfig
 
 
-def _parametrize_build(config: state.BuilderRunConfig) -> tuple[RunConfig, ...]:
+@dataclasses.dataclass
+class ConfigMatrix:
+    """Configurable image parameters matrix.
+
+    This is just a wrapper DTO on parameterizable variables.
+
+    Attributes:
+        bases: The ubuntu OS bases.
+        juju_channels: The juju snap channels to iterate during parametrization. e.g. \
+            {"3.1/stable", "2.9/stable"}
+        microk8s_channels: The microk8s snap channels to iterate during parametrization. e.g. \
+            {"1.28-strict/stable", "1.29-strict/edge"}
+    """
+
+    bases: tuple[state.BaseImage, ...]
+    juju_channels: set[str]
+    microk8s_channels: set[str]
+
+
+@dataclasses.dataclass
+class StaticImageConfig:
+    """Static image configuration values.
+
+    Attributes:
+        arch: The architecture to build the image for.
+        script_url: The external script to run at the end of the cloud-init.
+        runner_version: The GitHub runner version.
+    """
+
+    arch: state.Arch
+    script_url: str | None
+    runner_version: str | None
+
+
+@dataclasses.dataclass
+class StaticConfigs:
+    """Static configurations that are used to interact with the image repository.
+
+    Attributes:
+        cloud_config: The OpenStack cloud configuration.
+        image_config: The output image configuration.
+        service_config: The helper services to build the image.
+    """
+
+    cloud_config: CloudConfig
+    image_config: StaticImageConfig
+    service_config: ExternalServiceConfig
+
+
+def run(config_matrix: ConfigMatrix, static_config: StaticConfigs) -> list[list[CloudImage]]:
+    """Run a build immediately.
+
+    Args:
+        config_matrix: The configurable values matrix for running image builder.
+        static_config: The static configurations values to run the image builder.
+
+    Raises:
+        BuilderRunError: if there was an error while launching the subprocess.
+
+    Returns:
+        The built image metadata.
+    """
+    build_configs = _parametrize_build(config_matrix=config_matrix, static_config=static_config)
+    try:
+        num_cores = multiprocessing.cpu_count() - 1
+        with multiprocessing.Pool(min(len(build_configs), num_cores)) as pool:
+            build_results = pool.map(_run, build_configs)
+    except multiprocessing.ProcessError as exc:
+        raise BuilderRunError("Failed to run parallel build") from exc
+    return build_results
+
+
+def _parametrize_build(
+    config_matrix: ConfigMatrix, static_config: StaticConfigs
+) -> tuple[RunConfig, ...]:
     """Get parametrized build configurations.
 
     Args:
-        config: The configuration values for running image builder.
+        config_matrix: The configuration values for running image builder.
+        static_config: The static configurations values to run the image builder.
 
     Returns:
         Per image build configuration values.
     """
-    configs = []
-    for base in config.image_config.bases:
-        for juju in config.image_config.juju_channels:
-            for microk8s in config.image_config.microk8s_channels:
+    configs: list[RunConfig] = []
+    for base in config_matrix.bases:
+        for juju in config_matrix.juju_channels:
+            for microk8s in config_matrix.microk8s_channels:
                 configs.append(
                     RunConfig(
-                        image=_RunImageConfig(
-                            arch=config.image_config.arch,
+                        image=ImageConfig(
+                            arch=static_config.image_config.arch,
                             base=base,
                             juju=juju,
                             microk8s=microk8s,
-                            prefix=config.image_config.prefix,
-                            runner_version=config.image_config.runner_version,
-                            script_url=config.image_config.script_url,
+                            prefix=static_config.cloud_config.resource_prefix,
+                            runner_version=static_config.image_config.runner_version,
+                            script_url=static_config.image_config.script_url,
                         ),
-                        cloud=_RunCloudConfig(
-                            build_cloud=config.cloud_config.cloud_name,
-                            build_flavor=config.cloud_config.external_build_config.flavor,
-                            build_network=config.cloud_config.external_build_config.network,
-                            resource_prefix=config.image_config.prefix,
-                            num_revisions=config.cloud_config.num_revisions,
-                            upload_clouds=config.cloud_config.upload_cloud_ids,
+                        cloud=CloudConfig(
+                            build_cloud=static_config.cloud_config.build_cloud,
+                            build_flavor=static_config.cloud_config.build_flavor,
+                            build_network=static_config.cloud_config.build_network,
+                            resource_prefix=static_config.cloud_config.resource_prefix,
+                            num_revisions=static_config.cloud_config.num_revisions,
+                            upload_clouds=static_config.cloud_config.upload_clouds,
                         ),
-                        external_service=_ExternalServiceConfig(
-                            dockerhub_cache=config.service_config.dockerhub_cache,
+                        external_service=ExternalServiceConfig(
+                            dockerhub_cache=static_config.service_config.dockerhub_cache,
                             proxy=(
-                                config.service_config.proxy.http
-                                if config.service_config.proxy
+                                static_config.service_config.proxy
+                                if static_config.service_config.proxy
                                 else None
                             ),
                         ),
@@ -387,55 +494,34 @@ def _run(config: RunConfig) -> list[CloudImage]:
         The build result with build configuration data and output image ID.
     """
     try:
-        commands = [
-            "/usr/bin/run-one",
-            "/usr/bin/sudo",
-            str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-            "run",
-            config.cloud.build_cloud,
-            config.image.image_name,
-            "--base-image",
-            config.image.base.value,
-            "--keep-revisions",
-            str(config.cloud.num_revisions),
-        ]
-        if config.image.runner_version:
-            commands.extend(["--runner-version", config.image.runner_version])
-        if config.image.juju:
-            commands.extend(["--juju", config.image.juju])
-        if config.image.microk8s:
-            commands.extend(["--microk8s", config.image.microk8s])
-        if config.external_service.dockerhub_cache:
-            commands.extend(["--dockerhub-cache", config.external_service.dockerhub_cache])
-        if config.image.script_url:
-            commands.extend(["--script-url", config.image.script_url])
-        commands.extend(
-            [
-                "--experimental-external",
-                "True",
-                "--arch",
-                config.image.arch.value,
-                "--flavor",
-                config.cloud.build_flavor,
-                "--network",
-                config.cloud.build_network,
-                "--upload-clouds",
-                ",".join(config.cloud.upload_clouds),
-                "--prefix",
-                config.image.prefix,
-            ]
+        run_command = _build_run_command(
+            run_args=_RunArgs(
+                cloud_name=config.cloud.build_cloud, image_name=config.image.image_name
+            ),
+            cloud_options=_CloudOptions(
+                flavor=config.cloud.build_flavor,
+                keep_revisions=config.cloud.num_revisions,
+                network=config.cloud.build_network,
+                prefix=config.cloud.resource_prefix,
+                upload_clouds=config.cloud.upload_clouds,
+            ),
+            image_options=_ImageOptions(
+                arch=config.image.arch,
+                image_base=config.image.base,
+                juju=config.image.juju,
+                microk8s=config.image.microk8s,
+                runner_version=config.image.runner_version,
+                script_url=config.image.script_url,
+            ),
+            service_options=_ServiceOptions(
+                dockerhub_cache=config.external_service.dockerhub_cache,
+                proxy=config.external_service.proxy,
+            ),
         )
-        if config.external_service.proxy:
-            commands.extend(
-                [
-                    "--proxy",
-                    config.external_service.proxy.removeprefix("http://").removeprefix("https://"),
-                ]
-            )
-        logger.info("Run build command: %s", commands)
+        logger.info("Run build command: %s", run_command)
         # The arg "user" exists but pylint disagrees.
         stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
-            args=commands,
+            args=run_command,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             encoding="utf-8",
@@ -468,12 +554,185 @@ def _run(config: RunConfig) -> list[CloudImage]:
         raise BuilderRunError from exc
 
 
-def get_latest_images(config: state.BuilderRunConfig, cloud_id: str) -> list[CloudImage]:
+@dataclasses.dataclass
+class _RunArgs:
+    """Builder application run arguments.
+
+    Attributes:
+        cloud_name: The cloud to run the builder VMs on.
+        image_name: The output image name.
+    """
+
+    cloud_name: str
+    image_name: str
+
+
+@dataclasses.dataclass
+class _CloudOptions:
+    """Builder application run optional arguments related to OpenStack cloud.
+
+    Attributes:
+        flavor: The OpenStack flavor to launch the VM with.
+        keep_revisions: The number of image revisions to keep before deletion from the image \
+            repository.
+        network: The OpenStack network to launch the builder VMs in.
+        prefix: The OpenStack artefacts resource prefix.
+        upload_clouds: The name of clouds in clouds.yaml to upload the final images to.
+    """
+
+    flavor: str | None
+    keep_revisions: int | None
+    network: str | None
+    prefix: str | None
+    upload_clouds: typing.Iterable[str] | None
+
+
+@dataclasses.dataclass
+class _ImageOptions:
+    """Builder application run optional arguments related to image.
+
+    Attributes:
+        arch: The architecture of the final image build.
+        image_base: The Ubuntu OS base.
+        juju: The Juju snap channel, e.g. 3.1/stable.
+        microk8s: The Microk8s snap channel, e.g. 1.29-strict/stable.
+        runner_version: The GitHub runner version, e.g. 1.2.3.
+        script_url: The URL of the script to run at the end of cloud-init.
+    """
+
+    arch: state.Arch | None
+    image_base: state.BaseImage | None
+    juju: str | None
+    microk8s: str | None
+    runner_version: str | None
+    script_url: str | None
+
+
+@dataclasses.dataclass
+class _ServiceOptions:
+    """Builder application run optional arguments related to external helper services.
+
+    Attributes:
+        dockerhub_cache: The DockerHub cache to use when initializing microk8s.
+        proxy: The proxy to use when building the image.
+    """
+
+    dockerhub_cache: str | None
+    proxy: str | None
+
+
+def _build_run_command(
+    run_args: _RunArgs,
+    cloud_options: _CloudOptions,
+    image_options: _ImageOptions,
+    service_options: _ServiceOptions,
+) -> list[str]:
+    """Build the application run command.
+
+    Args:
+        run_args: Image builder application runner required arguments.
+        cloud_options: Optional arguments related to OpenStack cloud.
+        image_options: Optional arguments related to image.
+        service_options: Optional arguments related to external helper services.
+
+    Returns:
+        The application run command.
+    """
+    cmd = [
+        "/usr/bin/run-one",
+        "/usr/bin/sudo",
+        str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+        "run",
+        run_args.cloud_name,
+        run_args.image_name,
+        # This option is to be deprecated when the application only supports external build mode.
+        "--experimental-external",
+        "True",
+    ]
+    cmd.extend(_build_run_cloud_options(cloud_options=cloud_options))
+    cmd.extend(_build_run_image_options(image_options=image_options))
+    cmd.extend(_build_run_service_options(service_options=service_options))
+    return cmd
+
+
+def _build_run_cloud_options(cloud_options: _CloudOptions) -> list[str]:
+    """Build the application run command cloud options.
+
+    Args:
+        cloud_options: Optional arguments related to OpenStack cloud.
+
+    Returns:
+        The application run options related to OpenStack cloud.
+    """
+    cmd: list[str] = []
+    if cloud_options.flavor:
+        cmd.extend(["--flavor", cloud_options.flavor])
+    if cloud_options.keep_revisions:
+        cmd.extend(["--keep-revisions", str(cloud_options.keep_revisions)])
+    if cloud_options.network:
+        cmd.extend(["--network", cloud_options.network])
+    if cloud_options.prefix:
+        cmd.extend(["--prefix", cloud_options.prefix])
+    if cloud_options.upload_clouds:
+        cmd.extend(["--upload-clouds", ",".join(cloud_options.upload_clouds)])
+    return cmd
+
+
+def _build_run_image_options(image_options: _ImageOptions) -> list[str]:
+    """Build the application run command image options.
+
+    Args:
+        image_options: Optional arguments related to output image.
+
+    Returns:
+        The application run options related to output image.
+    """
+    cmd: list[str] = []
+    if image_options.arch:
+        cmd.extend(["--arch", image_options.arch.value])
+    if image_options.image_base:
+        cmd.extend(["--base-image", image_options.image_base.value])
+    if image_options.juju:
+        cmd.extend(["--juju", image_options.juju])
+    if image_options.microk8s:
+        cmd.extend(["--microk8s", image_options.microk8s])
+    if image_options.runner_version:
+        cmd.extend(["--runner-version", image_options.runner_version])
+    if image_options.script_url:
+        cmd.extend(["--script-url", image_options.script_url])
+    return cmd
+
+
+def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
+    """Build the application run command service options.
+
+    Args:
+        service_options: Optional arguments related to image building helper services.
+
+    Returns:
+        The application run options related to helper services.
+    """
+    cmd: list[str] = []
+    if service_options.dockerhub_cache:
+        cmd.extend(["--dockerhub-cache", service_options.dockerhub_cache])
+    if service_options.proxy:
+        cmd.extend(
+            [
+                "--proxy",
+                service_options.proxy.removeprefix("http://").removeprefix("https://"),
+            ]
+        )
+    return cmd
+
+
+def get_latest_images(
+    config_matrix: ConfigMatrix, static_config: StaticConfigs
+) -> list[CloudImage]:
     """Fetch the latest image build ID.
 
     Args:
-        config: The configuration values for fetching latest image id.
-        cloud_id: The cloud the fetch the images for.
+        config_matrix: Matricized values of configurable image parameters.
+        static_config: Static configurations that are used to interact with the image repository.
 
     Raises:
         GetLatestImageError: If there was an error fetching the latest image.
@@ -481,7 +740,7 @@ def get_latest_images(config: state.BuilderRunConfig, cloud_id: str) -> list[Clo
     Returns:
         The latest successful image build information.
     """
-    fetch_configs = _parametrize_fetch(config=config, cloud_id=cloud_id)
+    fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
     try:
         num_cores = multiprocessing.cpu_count() - 1
         with multiprocessing.Pool(min(len(fetch_configs), num_cores)) as pool:
@@ -527,26 +786,28 @@ class FetchConfig:
         return image_name
 
 
-def _parametrize_fetch(config: state.BuilderRunConfig, cloud_id: str) -> tuple[FetchConfig, ...]:
+def _parametrize_fetch(
+    config_matrix: ConfigMatrix, static_config: StaticConfigs
+) -> tuple[FetchConfig, ...]:
     """Get parametrized fetch configurations.
 
     Args:
-        config: The configuration values for running image builder.
-        cloud_id: The cloud ID to fetch image for.
+        config_matrix: Parametrizable configuration values matrix.
+        static_config: Static configurations that are used to interact with the image repository.
 
     Returns:
         Per image fetch configuration values.
     """
     configs = []
-    for base in config.image_config.bases:
-        for juju in config.image_config.juju_channels:
-            for microk8s in config.image_config.microk8s_channels:
+    for base in config_matrix.bases:
+        for juju in config_matrix.juju_channels:
+            for microk8s in config_matrix.microk8s_channels:
                 configs.append(
                     FetchConfig(
-                        arch=config.image_config.arch,
+                        arch=static_config.image_config.arch,
                         base=base,
-                        cloud_id=cloud_id,
-                        prefix=config.image_config.prefix,
+                        cloud_id=static_config.cloud_config.build_cloud,
+                        prefix=static_config.cloud_config.resource_prefix,
                         juju=juju,
                         microk8s=microk8s,
                     )
