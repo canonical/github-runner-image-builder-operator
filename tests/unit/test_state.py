@@ -10,6 +10,7 @@ import os
 import platform
 from unittest.mock import MagicMock
 
+import ops
 import pytest
 from ops.testing import Harness
 
@@ -610,3 +611,41 @@ def test_builder_app_channel_from_charm_error():
         state.BuilderAppChannel.from_charm(charm=charm)
 
     assert "invalid" in str(exc.getrepr())
+
+
+@pytest.mark.parametrize(
+    "exception, expected_error",
+    [
+        pytest.param(ops.SecretNotFoundError, "Secret label not found:"),
+        pytest.param(ops.ModelError, "Please grant the charm read access to the secret."),
+    ],
+)
+def test__parse_script_secrets_error(exception: Exception, expected_error: str):
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_script_secrets is called.
+    assert: InvalidSecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.model = MagicMock()
+    mock_charm.model.get_secret = MagicMock(side_effect=exception)
+
+    with pytest.raises(state.InvalidSecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert expected_error in str(exc)
+
+
+def test__parse_script_secrets():
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_script_secrets is called.
+    assert: expected secret is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config.get = MagicMock(return_value="test")
+    mock_secret = MagicMock()
+    mock_secret.get_content = MagicMock(return_value={"test": "secret"})
+    mock_charm.model.get_secret = MagicMock(return_value=mock_secret)
+
+    assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}

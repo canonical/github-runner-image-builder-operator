@@ -85,6 +85,7 @@ class Observer(ops.Object):
                 image_config=builder.StaticImageConfig(
                     arch=build_config.image_config.arch,
                     script_url=build_config.image_config.script_url,
+                    script_secrets=build_config.image_config.script_secrets,
                     runner_version=build_config.image_config.runner_version,
                 ),
                 service_config=builder.ExternalServiceConfig(

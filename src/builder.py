@@ -47,6 +47,9 @@ CRON_BUILD_SCHEDULE_PATH = CRON_PATH / "build-runner-image"
 GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image-builder"
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 
+# Bandit thinks this is a hardcoded secret
+IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: B105
+
 
 @dataclasses.dataclass
 class ApplicationInitializationConfig:
@@ -270,6 +273,20 @@ class CloudImage:
 
 
 @dataclasses.dataclass
+class ScriptConfig:
+    """User custom script related configurations.
+
+    Attributes:
+        script_url: The external script to run during cloud-init process.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
+    """
+
+    script_url: str | None
+    script_secrets: dict[str, str] | None
+
+
+@dataclasses.dataclass
 class ImageConfig:
     """Builder run image related configuration parameters.
 
@@ -280,7 +297,7 @@ class ImageConfig:
         microk8s: The Microk8s channel to install and bootstrap on the image.
         prefix: The image prefix.
         runner_version: The GitHub runner version to pin, defaults to latest.
-        script_url: The external script to run during cloud-init process.
+        script_config: User script related configurations.
         image_name: The image name derived from image configuration attributes.
     """
 
@@ -289,7 +306,7 @@ class ImageConfig:
     juju: str
     microk8s: str
     prefix: str
-    script_url: str | None
+    script_config: ScriptConfig
     runner_version: str | None
 
     @property
@@ -382,11 +399,14 @@ class StaticImageConfig:
     Attributes:
         arch: The architecture to build the image for.
         script_url: The external script to run at the end of the cloud-init.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
         runner_version: The GitHub runner version.
     """
 
     arch: state.Arch
     script_url: str | None
+    script_secrets: dict[str, str] | None
     runner_version: str | None
 
 
@@ -453,7 +473,10 @@ def _parametrize_build(
                             microk8s=microk8s,
                             prefix=static_config.cloud_config.resource_prefix,
                             runner_version=static_config.image_config.runner_version,
-                            script_url=static_config.image_config.script_url,
+                            script_config=ScriptConfig(
+                                script_url=static_config.image_config.script_url,
+                                script_secrets=static_config.image_config.script_secrets,
+                            ),
                         ),
                         cloud=CloudConfig(
                             build_cloud=static_config.cloud_config.build_cloud,
@@ -511,7 +534,8 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 juju=config.image.juju,
                 microk8s=config.image.microk8s,
                 runner_version=config.image.runner_version,
-                script_url=config.image.script_url,
+                script_url=config.image.script_config.script_url,
+                script_secrets=config.image.script_config.script_secrets,
             ),
             service_options=_ServiceOptions(
                 dockerhub_cache=config.external_service.dockerhub_cache,
@@ -525,7 +549,10 @@ def _run(config: RunConfig) -> list[CloudImage]:
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             encoding="utf-8",
-            env={"HOME": str(UBUNTU_HOME)},
+            env={
+                "HOME": str(UBUNTU_HOME),
+                **_transform_secrets(secrets=config.image.script_config.script_secrets),
+            },
         )
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
         return list(
@@ -552,6 +579,22 @@ def _run(config: RunConfig) -> list[CloudImage]:
         raise BuilderRunError from exc
     except subprocess.SubprocessError as exc:
         raise BuilderRunError from exc
+
+
+def _transform_secrets(secrets: dict[str, str] | None) -> dict[str, str]:
+    """Transform secrets to be prefixed with IMAGE_BUILDER_SECRET_.
+
+    Args:
+        secrets: The secrets to load as environment variables.
+
+    Returns:
+        Secrets to load as environment variables for image builder application.
+    """
+    return (
+        {f"{IMAGE_BUILDER_SECRET_PREFIX}{key}": value for (key, value) in secrets.items()}
+        if secrets
+        else {}
+    )
 
 
 @dataclasses.dataclass
@@ -598,6 +641,8 @@ class _ImageOptions:
         microk8s: The Microk8s snap channel, e.g. 1.29-strict/stable.
         runner_version: The GitHub runner version, e.g. 1.2.3.
         script_url: The URL of the script to run at the end of cloud-init.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
     """
 
     arch: state.Arch | None
@@ -606,6 +651,7 @@ class _ImageOptions:
     microk8s: str | None
     runner_version: str | None
     script_url: str | None
+    script_secrets: dict[str, str] | None
 
 
 @dataclasses.dataclass

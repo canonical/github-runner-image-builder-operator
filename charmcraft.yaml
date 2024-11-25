@@ -175,7 +175,15 @@ config:
       description: |
         URL to external script to run during cloud-init. Allows user-defined customization scripts
         to be run. This script is run as root, within the cloud-init user-data script.
-
+    script-url:
+      type: string
+      default: ""
+      description: |
+        URL to external script to run during cloud-init. Allows user-defined customization scripts
+        to be run. This script is run as root, within the cloud-init user-data script.
+    script-secret-label:
+      type: secret
+      description: Environment variables to be loaded for execution of the script-url.
 
 provides:
   image:

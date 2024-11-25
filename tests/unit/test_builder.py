@@ -463,7 +463,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="",
                         microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -486,7 +489,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="",
                         microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -519,7 +525,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="",
                         microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -542,7 +551,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="3.1/stable",
                         microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -575,7 +587,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="",
                         microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -598,7 +613,10 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         juju="",
                         microk8s="1.29-strict/stable",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_url="https://test-url.com/script.sh",
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
                         runner_version="1.2.3",
                     ),
                     cloud=builder.CloudConfig(
@@ -753,6 +771,7 @@ def test__run(
                 microk8s=None,
                 runner_version=None,
                 script_url=None,
+                script_secrets=None,
             ),
             builder._ServiceOptions(dockerhub_cache=None, proxy=None),
             [
@@ -783,6 +802,7 @@ def test__run(
                 microk8s=None,
                 runner_version=None,
                 script_url=None,
+                script_secrets=None,
             ),
             builder._ServiceOptions(dockerhub_cache=None, proxy=None),
             [
@@ -819,6 +839,7 @@ def test__run(
                 microk8s="1.29-strict/stable",
                 runner_version="1.2.3",
                 script_url="https://test-script-url.com/script.sh",
+                script_secrets=None,
             ),
             builder._ServiceOptions(dockerhub_cache=None, proxy=None),
             [
@@ -857,6 +878,7 @@ def test__run(
                 microk8s=None,
                 runner_version=None,
                 script_url=None,
+                script_secrets=None,
             ),
             builder._ServiceOptions(
                 dockerhub_cache="https://dockerhub-cache.com:5000",
@@ -914,7 +936,7 @@ def test__build_run_command(
                 microk8s="",
                 runner_version="",
                 prefix="app-name",
-                script_url=None,
+                script_config=builder.ScriptConfig(script_url=None, script_secrets=None),
             ),
             "app-name-jammy-arm64",
             id="raw",
@@ -927,7 +949,10 @@ def test__build_run_command(
                 microk8s="",
                 runner_version="",
                 prefix="app-name",
-                script_url=None,
+                script_config=builder.ScriptConfig(
+                    script_url=None,
+                    script_secrets=None,
+                ),
             ),
             "app-name-jammy-arm64-juju-3.1-stable",
             id="juju",
@@ -940,7 +965,10 @@ def test__build_run_command(
                 microk8s="1.29-strict/stable",
                 runner_version="",
                 prefix="app-name",
-                script_url=None,
+                script_config=builder.ScriptConfig(
+                    script_url=None,
+                    script_secrets=None,
+                ),
             ),
             "app-name-jammy-arm64-mk8s-1.29-strict-stable",
             id="microk8s",

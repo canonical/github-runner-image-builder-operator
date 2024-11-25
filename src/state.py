@@ -42,6 +42,8 @@ OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
+# Bandit thinks this is a hardcoded password
+SCRIPT_SECRET_LABEL_CONFIG_NAME = "script-secret-label"  # nosec: B105
 
 IMAGE_RELATION = "image"
 
@@ -354,6 +356,8 @@ class ImageConfig:
         microk8s_channels: The Microk8s channels to install on the images.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         script_url: The external script to run during cloud-init process.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
     """
 
     arch: Arch
@@ -362,6 +366,7 @@ class ImageConfig:
     microk8s_channels: set[str]
     runner_version: str
     script_url: str | None
+    script_secrets: dict[str, str] | None
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
@@ -379,6 +384,7 @@ class ImageConfig:
         microk8s_channels = _parse_microk8s_channels(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
         script_url = _parse_script_url(charm=charm)
+        script_secrets = _parse_script_secrets(charm=charm)
 
         return cls(
             arch=arch,
@@ -387,6 +393,7 @@ class ImageConfig:
             microk8s_channels=microk8s_channels,
             runner_version=runner_version,
             script_url=script_url,
+            script_secrets=script_secrets,
         )
 
 
@@ -873,3 +880,31 @@ def _parse_script_url(charm: ops.CharmBase) -> str | None:
     if not parsed_url.scheme or not parsed_url.hostname:
         raise InvalidScriptURLError("Invalid script URL, must contain scheme and hostname.")
     return script_url_str
+
+
+class InvalidSecretError(CharmConfigInvalidError):
+    """Represents an error when fetching secrets."""
+
+
+def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
+    """Parse secrets to load as environment variables for the external script.
+
+    Args:
+        charm: The running charm instance.
+
+    Raises:
+        InvalidSecretError: If a secret of invalid format (secrets separated by space)
+    """
+    script_secret_label = typing.cast(str, charm.config.get(SCRIPT_SECRET_LABEL_CONFIG_NAME, ""))
+    if not script_secret_label:
+        return None
+    try:
+        secret = charm.model.get_secret(id=SCRIPT_SECRET_LABEL_CONFIG_NAME)
+    except ops.SecretNotFoundError as exc:
+        raise InvalidSecretError(f"Secret label not found: {script_secret_label}.") from exc
+    except ops.ModelError as exc:
+        raise InvalidSecretError(
+            "Charm does not have access to read secrets. "
+            "Please grant the charm read access to the secret."
+        ) from exc
+    return secret.get_content(refresh=True)
