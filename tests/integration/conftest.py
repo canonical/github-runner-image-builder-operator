@@ -368,8 +368,7 @@ async def app_fixture(
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
-        "github-runner-image-builder/eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/"
-        "testdata/test_script.sh",
+        "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
     }
     num_cores = multiprocessing.cpu_count() - 1
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
