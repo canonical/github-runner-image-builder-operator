@@ -44,6 +44,7 @@ RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
 # Bandit thinks this is a hardcoded password
 SCRIPT_SECRET_LABEL_CONFIG_NAME = "script-secret-label"  # nosec: B105
+SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
 
 IMAGE_RELATION = "image"
 
@@ -896,15 +897,25 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
         InvalidSecretError: If a secret of invalid format (secrets separated by space)
     """
     script_secret_label = typing.cast(str, charm.config.get(SCRIPT_SECRET_LABEL_CONFIG_NAME, ""))
-    if not script_secret_label:
+    script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
+    logger.info("script secret label: %s, secret: %s", script_secret_label, script_secret)
+    if not script_secret_label and not script_secret:
         return None
-    try:
-        secret = charm.model.get_secret(id=SCRIPT_SECRET_LABEL_CONFIG_NAME)
-    except ops.SecretNotFoundError as exc:
-        raise InvalidSecretError(f"Secret label not found: {script_secret_label}.") from exc
-    except ops.ModelError as exc:
-        raise InvalidSecretError(
-            "Charm does not have access to read secrets. "
-            "Please grant the charm read access to the secret."
-        ) from exc
-    return secret.get_content(refresh=True)
+    if script_secret_label:
+        try:
+            secret = charm.model.get_secret(id=SCRIPT_SECRET_LABEL_CONFIG_NAME)
+        except ops.SecretNotFoundError as exc:
+            raise InvalidSecretError(f"Secret label not found: {script_secret_label}.") from exc
+        except ops.ModelError as exc:
+            raise InvalidSecretError(
+                "Charm does not have access to read secrets. "
+                "Please grant the charm read access to the secret."
+            ) from exc
+        return secret.get_content(refresh=True)
+    secret_map = {}
+    for key_value_pair in script_secret.split(" "):
+        key_value = key_value_pair.split("=")
+        if len(key_value) != 2:
+            raise InvalidSecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
+        secret_map[key_value[0]] = key_value[1]
+    return secret_map

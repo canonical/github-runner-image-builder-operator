@@ -620,13 +620,14 @@ def test_builder_app_channel_from_charm_error():
         pytest.param(ops.ModelError, "Please grant the charm read access to the secret."),
     ],
 )
-def test__parse_script_secrets_error(exception: Exception, expected_error: str):
+def test__parse_script_secrets_invalid_secret(exception: Exception, expected_error: str):
     """
     arrange: given a mocked model get_secret method that raises a given error.
     act: when _parse_script_secrets is called.
     assert: InvalidSecretError is raised.
     """
     mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_LABEL_CONFIG_NAME: "secret-label"}
     mock_charm.model = MagicMock()
     mock_charm.model.get_secret = MagicMock(side_effect=exception)
 
@@ -636,16 +637,44 @@ def test__parse_script_secrets_error(exception: Exception, expected_error: str):
     assert expected_error in str(exc)
 
 
-def test__parse_script_secrets():
+def test__parse_script_secrets_invalid_key_value_pair():
+    """
+    arrange: given a mocked model config that contains an invalid key value pair.
+    act: when _parse_script_secrets is called.
+    assert: InvalidSecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "invalidconfig"}
+    mock_charm.model = MagicMock()
+
+    with pytest.raises(state.InvalidSecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Invalid secret" in str(exc)
+
+
+def test__parse_script_secrets_from_user_secret():
     """
     arrange: given a mocked model get_secret method that raises a given error.
     act: when _parse_script_secrets is called.
     assert: expected secret is returned.
     """
     mock_charm = MagicMock()
-    mock_charm.config.get = MagicMock(return_value="test")
+    mock_charm.config = {state.SCRIPT_SECRET_LABEL_CONFIG_NAME: "secret-label"}
     mock_secret = MagicMock()
     mock_secret.get_content = MagicMock(return_value={"test": "secret"})
     mock_charm.model.get_secret = MagicMock(return_value=mock_secret)
+
+    assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}
+
+
+def test__parse_script_secrets_from_config():
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_script_secrets is called.
+    assert: expected secret is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "test=secret"}
 
     assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}

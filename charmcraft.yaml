@@ -178,6 +178,10 @@ config:
     script-secret-label:
       type: secret
       description: Environment variables to be loaded for execution of the script-url.
+    script-secret:
+      type: string
+      default: ""
+      description: Environment variables to be loaded for execution of the script-url.
 
 provides:
   image:
