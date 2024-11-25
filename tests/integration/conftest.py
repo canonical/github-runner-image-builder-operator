@@ -47,6 +47,7 @@ from state import (
     OPENSTACK_USER_CONFIG_NAME,
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
+    SCRIPT_URL_CONFIG_NAME,
     _get_supported_arch,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
@@ -167,11 +168,18 @@ async def test_charm_fixture(
             "openstack-user-name": private_endpoint_configs["username"],
         },
     )
+    secret_name = f"image-builder-{test_id}"
+    secret_id = await model.add_secret(
+        secret_name, ["TEST_SECRET=TEST_VALUE"], info="testing secret"
+    )
+    logger.info("SECRET ADDED: %s", secret_id)
+    await model.grant_secret(secret_name=secret_id, application=app_name)
 
     yield app
 
     logger.info("Cleaning up test charm.")
     await model.remove_application(app_name=app_name)
+    await model.remove_secret(secret_name=secret_name)
     logger.info("Test charm removed.")
 
 
@@ -359,6 +367,9 @@ async def app_fixture(
         EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
+        SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
+        "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
+        "test_script.sh",
     }
     num_cores = multiprocessing.cpu_count() - 1
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
