@@ -47,6 +47,7 @@ from state import (
     OPENSTACK_USER_CONFIG_NAME,
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
+    SCRIPT_SECRET_CONFIG_NAME,
     SCRIPT_URL_CONFIG_NAME,
     _get_supported_arch,
 )
@@ -168,18 +169,11 @@ async def test_charm_fixture(
             "openstack-user-name": private_endpoint_configs["username"],
         },
     )
-    secret_name = f"image-builder-{test_id}"
-    secret_id = await model.add_secret(
-        secret_name, ["TEST_SECRET=TEST_VALUE"], info="testing secret"
-    )
-    logger.info("SECRET ADDED: %s", secret_id)
-    await model.grant_secret(secret_name=secret_id, application=app_name)
 
     yield app
 
     logger.info("Cleaning up test charm.")
     await model.remove_application(app_name=app_name)
-    await model.remove_secret(secret_name=secret_name)
     logger.info("Test charm removed.")
 
 
@@ -369,6 +363,7 @@ async def app_fixture(
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
         "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
+        SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
     }
     num_cores = multiprocessing.cpu_count() - 1
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
