@@ -687,6 +687,7 @@ def _build_run_command(
     cmd = [
         "/usr/bin/run-one",
         "/usr/bin/sudo",
+        "--preserve-env",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "run",
         run_args.cloud_name,

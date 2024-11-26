@@ -777,6 +777,7 @@ def test__run(
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
+                "--preserve-env",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "run",
                 "test-build-cloud",
@@ -808,6 +809,7 @@ def test__run(
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
+                "--preserve-env",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "run",
                 "test-build-cloud",
@@ -845,6 +847,7 @@ def test__run(
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
+                "--preserve-env",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "run",
                 "test-build-cloud",
@@ -887,6 +890,7 @@ def test__run(
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
+                "--preserve-env",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "run",
                 "test-build-cloud",
