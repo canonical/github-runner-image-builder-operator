@@ -725,14 +725,25 @@ def test__parse_script_secrets_from_user_secret():
     assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}
 
 
+@pytest.mark.parametrize(
+    "secret, expected_secrets_map",
+    [
+        pytest.param("single=secret", {"single": "secret"}, id="single"),
+        pytest.param(
+            "multiple=secret secrets=secret",
+            {"multiple": "secret", "secrets": "secret"},
+            id="multiple",
+        ),
+    ],
+)
 @pytest.mark.usefixtures("patch_juju_version")
-def test__parse_script_secrets_from_config():
+def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: dict[str, str]):
     """
     arrange: given a mocked model get_secret method that raises a given error.
     act: when _parse_script_secrets is called.
     assert: expected secret is returned.
     """
     mock_charm = MagicMock()
-    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "test=secret"}
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
 
-    assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}
+    assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
