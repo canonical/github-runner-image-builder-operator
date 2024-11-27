@@ -28,7 +28,7 @@ from state import (
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     RUNNER_VERSION_CONFIG_NAME,
-    SCRIPT_SECRET_LABEL_CONFIG_NAME,
+    SCRIPT_SECRET_ID_CONFIG_NAME,
     SCRIPT_URL_CONFIG_NAME,
     ExternalBuildConfig,
     OpenstackCloudsConfig,
@@ -103,7 +103,7 @@ class MockCharmFactory(factory.Factory):
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
             RUNNER_VERSION_CONFIG_NAME: "1.234.5",
             SCRIPT_URL_CONFIG_NAME: "",
-            SCRIPT_SECRET_LABEL_CONFIG_NAME: "test-secret-label",
+            SCRIPT_SECRET_ID_CONFIG_NAME: "test-secret-label",
         }
     )
 

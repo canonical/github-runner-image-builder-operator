@@ -43,7 +43,7 @@ REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
 # Bandit thinks this is a hardcoded password
-SCRIPT_SECRET_LABEL_CONFIG_NAME = "script-secret-label"  # nosec: B105
+SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
 SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
 
 IMAGE_RELATION = "image"
@@ -896,16 +896,16 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
     Raises:
         InvalidSecretError: If a secret of invalid format (secrets separated by space)
     """
-    script_secret_label = typing.cast(str, charm.config.get(SCRIPT_SECRET_LABEL_CONFIG_NAME, ""))
+    script_secret_id = typing.cast(str, charm.config.get(SCRIPT_SECRET_ID_CONFIG_NAME, ""))
     script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
-    logger.info("script secret label: %s, secret: %s", script_secret_label, script_secret)
-    if not script_secret_label and not script_secret:
+    logger.info("script secret label: %s, secret: %s", script_secret_id, script_secret)
+    if not script_secret_id and not script_secret:
         return None
-    if script_secret_label:
+    if script_secret_id:
         try:
-            secret = charm.model.get_secret(id=SCRIPT_SECRET_LABEL_CONFIG_NAME)
+            secret = charm.model.get_secret(id=script_secret_id)
         except ops.SecretNotFoundError as exc:
-            raise InvalidSecretError(f"Secret label not found: {script_secret_label}.") from exc
+            raise InvalidSecretError(f"Secret label not found: {script_secret_id}.") from exc
         except ops.ModelError as exc:
             raise InvalidSecretError(
                 "Charm does not have access to read secrets. "

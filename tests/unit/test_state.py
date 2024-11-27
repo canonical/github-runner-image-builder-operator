@@ -627,7 +627,7 @@ def test__parse_script_secrets_invalid_secret(exception: Exception, expected_err
     assert: InvalidSecretError is raised.
     """
     mock_charm = MagicMock()
-    mock_charm.config = {state.SCRIPT_SECRET_LABEL_CONFIG_NAME: "secret-label"}
+    mock_charm.config = {state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret-label"}
     mock_charm.model = MagicMock()
     mock_charm.model.get_secret = MagicMock(side_effect=exception)
 
@@ -660,7 +660,7 @@ def test__parse_script_secrets_from_user_secret():
     assert: expected secret is returned.
     """
     mock_charm = MagicMock()
-    mock_charm.config = {state.SCRIPT_SECRET_LABEL_CONFIG_NAME: "secret-label"}
+    mock_charm.config = {state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret-label"}
     mock_secret = MagicMock()
     mock_secret.get_content = MagicMock(return_value={"test": "secret"})
     mock_charm.model.get_secret = MagicMock(return_value=mock_secret)
