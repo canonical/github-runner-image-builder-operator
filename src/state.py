@@ -48,6 +48,8 @@ SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
 
 IMAGE_RELATION = "image"
 
+MIN_JUJU_VERSION_WITH_SECRET_SUPPORT = ops.JujuVersion("3.3")
+
 
 class CharmConfigInvalidError(Exception):
     """Raised when charm config is invalid.
@@ -900,21 +902,9 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
     script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
     if not script_secret_id and not script_secret:
         return None
-    if script_secret_id and script_secret:
-        raise InvalidSecretError(
-            f"Both {SCRIPT_SECRET_CONFIG_NAME} "
-            f"and {SCRIPT_SECRET_ID_CONFIG_NAME} configuration option set. "
-            "Please remove one."
-        )
-    if script_secret_id and not (
-        juju_version := ops.JujuVersion.from_environ()
-    ) >= ops.JujuVersion("3.3"):
-        raise InvalidSecretError(
-            f"Secrets are not supported in Juju version {juju_version}. "
-            "Please consider upgrading the Juju controller to versions "
-            f">= 3.3 or use the {SCRIPT_SECRET_CONFIG_NAME} configuration "
-            "option."
-        )
+    _validate_juju_secrets_config_support(
+        is_secret_used=bool(script_secret_id), is_config_used=bool(script_secret)
+    )
     if script_secret_id:
         try:
             secret = charm.model.get_secret(id=script_secret_id)
@@ -933,3 +923,39 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
             raise InvalidSecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
         secret_map[key_value[0]] = key_value[1]
     return secret_map
+
+
+def _validate_juju_secrets_config_support(is_secret_used: bool, is_config_used: bool) -> None:
+    """Validate secrets support by Juju.
+
+    If secrets are supported and secret config option is unused, raise an error.
+    If secrets are not supported and secret config option is used, raise an error.
+    If secrets are supported and config option is used, raised an error.
+    If secrets are not supported and config option is used, pass.
+
+    Args:
+        is_secret_used: Whether the secret configuration option is used.
+        is_config_used: Whether the configuration option is used.
+
+    Raises:
+        InvalidSecretError: If the usage of configuration option involving secrets are not valid.
+    """
+    if is_secret_used and is_config_used:
+        raise InvalidSecretError(
+            f"Both {SCRIPT_SECRET_CONFIG_NAME} "
+            f"and {SCRIPT_SECRET_ID_CONFIG_NAME} configuration option set. "
+            "Please remove one."
+        )
+    juju_version = ops.JujuVersion.from_environ()
+    if is_secret_used and juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise InvalidSecretError(
+            f"Secrets are not supported in Juju version {juju_version}. "
+            "Please consider upgrading the Juju controller to versions "
+            f">= 3.3 or use the {SCRIPT_SECRET_CONFIG_NAME} configuration "
+            "option."
+        )
+    if not is_secret_used and juju_version >= MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise InvalidSecretError(
+            f"Please use Juju secrets via {SCRIPT_SECRET_ID_CONFIG_NAME} and unset the "
+            f"{SCRIPT_SECRET_CONFIG_NAME} configuration option."
+        )

@@ -19,11 +19,19 @@ from charm import GithubRunnerImageBuilderCharm
 from tests.unit import factories
 
 
-@pytest.fixture(name="patch_juju_version")
-def patch_juju_version_fixture(monkeypatch: pytest.MonkeyPatch):
+@pytest.fixture(name="patch_juju_version_33")
+def patch_juju_version_33_fixture(monkeypatch: pytest.MonkeyPatch):
     """Patch Juju version from_environ to return 3.5."""
     monkeypatch.setattr(
         ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.5"))
+    )
+
+
+@pytest.fixture(name="patch_juju_version_29")
+def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
+    """Patch Juju version from_environ to return 2.9."""
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("2.9"))
     )
 
 
@@ -628,7 +636,7 @@ def test_builder_app_channel_from_charm_error():
         pytest.param(ops.ModelError, "Please grant the charm read access to the secret."),
     ],
 )
-@pytest.mark.usefixtures("patch_juju_version")
+@pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_script_secrets_invalid_secret(exception: Exception, expected_error: str):
     """
     arrange: given a mocked model get_secret method that raises a given error.
@@ -646,7 +654,7 @@ def test__parse_script_secrets_invalid_secret(exception: Exception, expected_err
     assert expected_error in str(exc)
 
 
-@pytest.mark.usefixtures("patch_juju_version")
+@pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_script_secrets_secret_and_config_set():
     """
     arrange: given a config option where both secret and the config is set.
@@ -672,7 +680,7 @@ def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatc
     assert: InvalidSecretError is raised.
     """
     monkeypatch.setattr(
-        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("2.9"))
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.2"))
     )
     mock_charm = MagicMock()
     mock_charm.config = {
@@ -685,6 +693,24 @@ def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatc
     assert "Secrets are not supported in Juju version" in str(exc)
 
 
+def test__parse_script_prefer_secrets(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a Juju version > 3.3 and secret config option set.
+    act: when _parse_script_secrets is called.
+    assert: InvalidSecretError is raised.
+    """
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.5"))
+    )
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "test-secret"}
+
+    with pytest.raises(state.InvalidSecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Please use Juju secrets" in str(exc)
+
+
 @pytest.mark.parametrize(
     "secret",
     [
@@ -692,7 +718,7 @@ def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatc
         pytest.param("a= b=", id="no values"),
     ],
 )
-@pytest.mark.usefixtures("patch_juju_version")
+@pytest.mark.usefixtures("patch_juju_version_29")
 def test__parse_script_secrets_invalid_key_value_pair(secret: str):
     """
     arrange: given a mocked model config that contains an invalid key value pair.
@@ -709,7 +735,7 @@ def test__parse_script_secrets_invalid_key_value_pair(secret: str):
     assert "Invalid secret" in str(exc)
 
 
-@pytest.mark.usefixtures("patch_juju_version")
+@pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_script_secrets_from_user_secret():
     """
     arrange: given a mocked model get_secret method that raises a given error.
@@ -736,7 +762,7 @@ def test__parse_script_secrets_from_user_secret():
         ),
     ],
 )
-@pytest.mark.usefixtures("patch_juju_version")
+@pytest.mark.usefixtures("patch_juju_version_29")
 def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: dict[str, str]):
     """
     arrange: given a mocked model get_secret method that raises a given error.
