@@ -19,6 +19,14 @@ from charm import GithubRunnerImageBuilderCharm
 from tests.unit import factories
 
 
+@pytest.fixture(name="patch_juju_version")
+def patch_juju_version_fixture(monkeypatch: pytest.MonkeyPatch):
+    """Patch Juju version from_environ to return 3.5."""
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.5"))
+    )
+
+
 @pytest.mark.parametrize(
     "arch",
     [
@@ -620,6 +628,7 @@ def test_builder_app_channel_from_charm_error():
         pytest.param(ops.ModelError, "Please grant the charm read access to the secret."),
     ],
 )
+@pytest.mark.usefixtures("patch_juju_version")
 def test__parse_script_secrets_invalid_secret(exception: Exception, expected_error: str):
     """
     arrange: given a mocked model get_secret method that raises a given error.
@@ -637,14 +646,61 @@ def test__parse_script_secrets_invalid_secret(exception: Exception, expected_err
     assert expected_error in str(exc)
 
 
-def test__parse_script_secrets_invalid_key_value_pair():
+@pytest.mark.usefixtures("patch_juju_version")
+def test__parse_script_secrets_secret_and_config_set():
+    """
+    arrange: given a config option where both secret and the config is set.
+    act: when _parse_script_secrets is called.
+    assert: InvalidSecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret:test-secret-id",
+        state.SCRIPT_SECRET_CONFIG_NAME: "test-secret",
+    }
+
+    with pytest.raises(state.InvalidSecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Both script-secret and script-secret-id configuration option set." in str(exc)
+
+
+def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a Juju version < 3.3 and secret config option set.
+    act: when _parse_script_secrets is called.
+    assert: InvalidSecretError is raised.
+    """
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("2.9"))
+    )
+    mock_charm = MagicMock()
+    mock_charm.config = {
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret:test-secret-id",
+    }
+
+    with pytest.raises(state.InvalidSecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Secrets are not supported in Juju version" in str(exc)
+
+
+@pytest.mark.parametrize(
+    "secret",
+    [
+        pytest.param("invalidconfig", id="no pair"),
+        pytest.param("a= b=", id="no values"),
+    ],
+)
+@pytest.mark.usefixtures("patch_juju_version")
+def test__parse_script_secrets_invalid_key_value_pair(secret: str):
     """
     arrange: given a mocked model config that contains an invalid key value pair.
     act: when _parse_script_secrets is called.
     assert: InvalidSecretError is raised.
     """
     mock_charm = MagicMock()
-    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "invalidconfig"}
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
     mock_charm.model = MagicMock()
 
     with pytest.raises(state.InvalidSecretError) as exc:
@@ -653,6 +709,7 @@ def test__parse_script_secrets_invalid_key_value_pair():
     assert "Invalid secret" in str(exc)
 
 
+@pytest.mark.usefixtures("patch_juju_version")
 def test__parse_script_secrets_from_user_secret():
     """
     arrange: given a mocked model get_secret method that raises a given error.
@@ -668,6 +725,7 @@ def test__parse_script_secrets_from_user_secret():
     assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}
 
 
+@pytest.mark.usefixtures("patch_juju_version")
 def test__parse_script_secrets_from_config():
     """
     arrange: given a mocked model get_secret method that raises a given error.
