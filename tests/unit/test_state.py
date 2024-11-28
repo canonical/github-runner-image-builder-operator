@@ -673,6 +673,7 @@ def test__parse_script_secrets_secret_and_config_set():
     assert "Both script-secret and script-secret-id configuration option set." in str(exc)
 
 
+@pytest.mark.usefixtures("patch_juju_version_29")
 def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given a Juju version < 3.3 and secret config option set.
@@ -693,15 +694,13 @@ def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatc
     assert "Secrets are not supported in Juju version" in str(exc)
 
 
-def test__parse_script_prefer_secrets(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_script_prefer_secrets():
     """
-    arrange: given a Juju version > 3.3 and secret config option set.
+    arrange: given a Juju version >= 3.3 and secret config option set.
     act: when _parse_script_secrets is called.
     assert: SecretError is raised.
     """
-    monkeypatch.setattr(
-        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.5"))
-    )
     mock_charm = MagicMock()
     mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "test-secret"}
 
@@ -738,7 +737,7 @@ def test__parse_script_secrets_invalid_key_value_pair(secret: str):
 @pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_script_secrets_from_user_secret():
     """
-    arrange: given a mocked model get_secret method that raises a given error.
+    arrange: given a mocked model that has script ID configured.
     act: when _parse_script_secrets is called.
     assert: expected secret is returned.
     """
@@ -765,7 +764,7 @@ def test__parse_script_secrets_from_user_secret():
 @pytest.mark.usefixtures("patch_juju_version_29")
 def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: dict[str, str]):
     """
-    arrange: given a mocked model get_secret method that raises a given error.
+    arrange: given a mocked model that has secret configuration option set.
     act: when _parse_script_secrets is called.
     assert: expected secret is returned.
     """
