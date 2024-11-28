@@ -28,6 +28,7 @@ from state import (
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     RUNNER_VERSION_CONFIG_NAME,
+    SCRIPT_SECRET_ID_CONFIG_NAME,
     SCRIPT_URL_CONFIG_NAME,
     ExternalBuildConfig,
     OpenstackCloudsConfig,
@@ -102,6 +103,7 @@ class MockCharmFactory(factory.Factory):
             REVISION_HISTORY_LIMIT_CONFIG_NAME: "5",
             RUNNER_VERSION_CONFIG_NAME: "1.234.5",
             SCRIPT_URL_CONFIG_NAME: "",
+            SCRIPT_SECRET_ID_CONFIG_NAME: "test-secret-label",
         }
     )
 
@@ -182,6 +184,7 @@ class StaticImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     script_url: str | None = "https://test-url.com/script.sh"
+    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
     runner_version: str | None = "1.2.3"
 
 
@@ -210,6 +213,18 @@ class StaticConfigFactory(factory.Factory):
     service_config: builder.ExternalServiceConfig = ExternalServiceConfigFactory()
 
 
+class ScriptConfigFactory(factory.Factory):
+    """Image builder script configuration factory."""  # noqa: DCO060
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = builder.ScriptConfig
+
+    script_url: str | None = "https://test-url.com/script.sh"
+    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
+
+
 class ImageConfigFactory(factory.Factory):
     """Image configuration factory."""  # noqa: DCO060
 
@@ -223,7 +238,7 @@ class ImageConfigFactory(factory.Factory):
     juju: str = "3.1/stable"
     microk8s: str = "1.29-strict/stable"
     prefix: str = "test-prefix-"
-    script_url: str | None = "https://test-url.com/script.sh"
+    script_config = ScriptConfigFactory()
     runner_version: str | None = "1.2.3"
 
 

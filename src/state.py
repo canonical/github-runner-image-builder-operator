@@ -42,8 +42,13 @@ OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
+# Bandit thinks this is a hardcoded password
+SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
+SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
 
 IMAGE_RELATION = "image"
+
+MIN_JUJU_VERSION_WITH_SECRET_SUPPORT = ops.JujuVersion("3.3")
 
 
 class CharmConfigInvalidError(Exception):
@@ -354,6 +359,8 @@ class ImageConfig:
         microk8s_channels: The Microk8s channels to install on the images.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         script_url: The external script to run during cloud-init process.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
     """
 
     arch: Arch
@@ -362,6 +369,7 @@ class ImageConfig:
     microk8s_channels: set[str]
     runner_version: str
     script_url: str | None
+    script_secrets: dict[str, str]
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
@@ -379,6 +387,7 @@ class ImageConfig:
         microk8s_channels = _parse_microk8s_channels(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
         script_url = _parse_script_url(charm=charm)
+        script_secrets = _parse_script_secrets(charm=charm)
 
         return cls(
             arch=arch,
@@ -387,6 +396,7 @@ class ImageConfig:
             microk8s_channels=microk8s_channels,
             runner_version=runner_version,
             script_url=script_url,
+            script_secrets=script_secrets,
         )
 
 
@@ -873,3 +883,79 @@ def _parse_script_url(charm: ops.CharmBase) -> str | None:
     if not parsed_url.scheme or not parsed_url.hostname:
         raise InvalidScriptURLError("Invalid script URL, must contain scheme and hostname.")
     return script_url_str
+
+
+class SecretError(CharmConfigInvalidError):
+    """Represents an error when fetching secrets."""
+
+
+def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
+    """Parse secrets to load as environment variables for the external script.
+
+    Args:
+        charm: The running charm instance.
+
+    Raises:
+        SecretError: If a secret of invalid format (secrets separated by space)
+    """
+    script_secret_id = typing.cast(str, charm.config.get(SCRIPT_SECRET_ID_CONFIG_NAME, ""))
+    script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
+    if not script_secret_id and not script_secret:
+        return {}
+    _validate_juju_secrets_config_support(
+        is_secret_used=bool(script_secret_id), is_config_used=bool(script_secret)
+    )
+    if script_secret_id:
+        try:
+            secret = charm.model.get_secret(id=script_secret_id)
+        except ops.SecretNotFoundError as exc:
+            raise SecretError(f"Secret label not found: {script_secret_id}.") from exc
+        except ops.ModelError as exc:
+            raise SecretError(
+                "Charm does not have access to read secrets. "
+                "Please grant the charm read access to the secret."
+            ) from exc
+        return secret.get_content(refresh=True)
+    secret_map = {}
+    for key_value_pair in script_secret.split(" "):
+        key_value = key_value_pair.split("=")
+        if len(key_value) != 2 or not all(value for value in key_value):
+            raise SecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
+        secret_map[key_value[0]] = key_value[1]
+    return secret_map
+
+
+def _validate_juju_secrets_config_support(is_secret_used: bool, is_config_used: bool) -> None:
+    """Validate secrets support by Juju.
+
+    If secrets are supported and secret config option is unused, raise an error.
+    If secrets are not supported and secret config option is used, raise an error.
+    If secrets are supported and config option is used, raised an error.
+    If secrets are not supported and config option is used, pass.
+
+    Args:
+        is_secret_used: Whether the secret configuration option is used.
+        is_config_used: Whether the configuration option is used.
+
+    Raises:
+        SecretError: If the usage of configuration option involving secrets are not valid.
+    """
+    if is_secret_used and is_config_used:
+        raise SecretError(
+            f"Both {SCRIPT_SECRET_CONFIG_NAME} "
+            f"and {SCRIPT_SECRET_ID_CONFIG_NAME} configuration option set. "
+            "Please remove one."
+        )
+    juju_version = ops.JujuVersion.from_environ()
+    if is_secret_used and juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise SecretError(
+            f"Secrets are not supported in Juju version {juju_version}. "
+            "Please consider upgrading the Juju controller to versions "
+            f">= 3.3 or use the {SCRIPT_SECRET_CONFIG_NAME} configuration "
+            "option."
+        )
+    if not is_secret_used and juju_version >= MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise SecretError(
+            f"Please use Juju secrets via {SCRIPT_SECRET_ID_CONFIG_NAME} and unset the "
+            f"{SCRIPT_SECRET_CONFIG_NAME} configuration option."
+        )
