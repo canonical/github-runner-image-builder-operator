@@ -178,15 +178,15 @@ config:
     script-secret-id:
       type: secret
       description: |
-      Environment variables to be loaded for execution of the script-url. Juju user secret ID
-      should be passed in in the format of secret:<secret-id>.
-      See https://juju.is/docs/juju/manage-secrets.
+        Environment variables to be loaded for execution of the script-url. Juju user secret ID
+        should be passed in in the format of secret:<secret-id>.
+        See https://juju.is/docs/juju/manage-secrets.
     script-secret:
       type: string
       default: ""
       description: |
-      Environment variables to be loaded for execution of the script-url. Multiple secrets can be
-      passed in, delimited by space. i.e. firstsecret=first secondsecret=second
+        Environment variables to be loaded for execution of the script-url. Multiple secrets can be
+        passed in, delimited by space. i.e. firstsecret=first secondsecret=second
 
 provides:
   image:
