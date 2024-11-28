@@ -621,31 +621,6 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 
 ---
 
-## <kbd>class</kbd> `InvalidSecretError`
-Represents an error when fetching secrets. 
-
-<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
-
-```python
-__init__(msg: str | None = None)
-```
-
-Initialize a new instance of the CharmConfigInvalidError exception. 
-
-
-
-**Args:**
- 
- - <b>`msg`</b>:  Explanation of the error. 
-
-
-
-
-
----
-
 ## <kbd>class</kbd> `JujuChannelInvalidError`
 Represents invalid Juju channels configuration. 
 
@@ -763,6 +738,31 @@ Initialize the proxy config from charm.
 
 **Returns:**
   Current proxy config of the charm. 
+
+
+---
+
+## <kbd>class</kbd> `SecretError`
+Represents an error when fetching secrets. 
+
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(msg: str | None = None)
+```
+
+Initialize a new instance of the CharmConfigInvalidError exception. 
+
+
+
+**Args:**
+ 
+ - <b>`msg`</b>:  Explanation of the error. 
+
+
+
 
 
 ---

@@ -885,7 +885,7 @@ def _parse_script_url(charm: ops.CharmBase) -> str | None:
     return script_url_str
 
 
-class InvalidSecretError(CharmConfigInvalidError):
+class SecretError(CharmConfigInvalidError):
     """Represents an error when fetching secrets."""
 
 
@@ -896,7 +896,7 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
         charm: The running charm instance.
 
     Raises:
-        InvalidSecretError: If a secret of invalid format (secrets separated by space)
+        SecretError: If a secret of invalid format (secrets separated by space)
     """
     script_secret_id = typing.cast(str, charm.config.get(SCRIPT_SECRET_ID_CONFIG_NAME, ""))
     script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
@@ -909,9 +909,9 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
         try:
             secret = charm.model.get_secret(id=script_secret_id)
         except ops.SecretNotFoundError as exc:
-            raise InvalidSecretError(f"Secret label not found: {script_secret_id}.") from exc
+            raise SecretError(f"Secret label not found: {script_secret_id}.") from exc
         except ops.ModelError as exc:
-            raise InvalidSecretError(
+            raise SecretError(
                 "Charm does not have access to read secrets. "
                 "Please grant the charm read access to the secret."
             ) from exc
@@ -920,7 +920,7 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
     for key_value_pair in script_secret.split(" "):
         key_value = key_value_pair.split("=")
         if len(key_value) != 2 or not all(value for value in key_value):
-            raise InvalidSecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
+            raise SecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
         secret_map[key_value[0]] = key_value[1]
     return secret_map
 
@@ -938,24 +938,24 @@ def _validate_juju_secrets_config_support(is_secret_used: bool, is_config_used: 
         is_config_used: Whether the configuration option is used.
 
     Raises:
-        InvalidSecretError: If the usage of configuration option involving secrets are not valid.
+        SecretError: If the usage of configuration option involving secrets are not valid.
     """
     if is_secret_used and is_config_used:
-        raise InvalidSecretError(
+        raise SecretError(
             f"Both {SCRIPT_SECRET_CONFIG_NAME} "
             f"and {SCRIPT_SECRET_ID_CONFIG_NAME} configuration option set. "
             "Please remove one."
         )
     juju_version = ops.JujuVersion.from_environ()
     if is_secret_used and juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
-        raise InvalidSecretError(
+        raise SecretError(
             f"Secrets are not supported in Juju version {juju_version}. "
             "Please consider upgrading the Juju controller to versions "
             f">= 3.3 or use the {SCRIPT_SECRET_CONFIG_NAME} configuration "
             "option."
         )
     if not is_secret_used and juju_version >= MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
-        raise InvalidSecretError(
+        raise SecretError(
             f"Please use Juju secrets via {SCRIPT_SECRET_ID_CONFIG_NAME} and unset the "
             f"{SCRIPT_SECRET_CONFIG_NAME} configuration option."
         )
