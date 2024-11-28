@@ -369,7 +369,7 @@ class ImageConfig:
     microk8s_channels: set[str]
     runner_version: str
     script_url: str | None
-    script_secrets: dict[str, str] | None
+    script_secrets: dict[str, str]
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
@@ -889,7 +889,7 @@ class InvalidSecretError(CharmConfigInvalidError):
     """Represents an error when fetching secrets."""
 
 
-def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
+def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
     """Parse secrets to load as environment variables for the external script.
 
     Args:
@@ -901,7 +901,7 @@ def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str] | None:
     script_secret_id = typing.cast(str, charm.config.get(SCRIPT_SECRET_ID_CONFIG_NAME, ""))
     script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
     if not script_secret_id and not script_secret:
-        return None
+        return {}
     _validate_juju_secrets_config_support(
         is_secret_used=bool(script_secret_id), is_config_used=bool(script_secret)
     )

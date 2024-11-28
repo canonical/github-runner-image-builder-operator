@@ -283,7 +283,7 @@ class ScriptConfig:
     """
 
     script_url: str | None
-    script_secrets: dict[str, str] | None
+    script_secrets: dict[str, str]
 
 
 @dataclasses.dataclass
@@ -406,7 +406,7 @@ class StaticImageConfig:
 
     arch: state.Arch
     script_url: str | None
-    script_secrets: dict[str, str] | None
+    script_secrets: dict[str, str]
     runner_version: str | None
 
 
@@ -651,7 +651,7 @@ class _ImageOptions:
     microk8s: str | None
     runner_version: str | None
     script_url: str | None
-    script_secrets: dict[str, str] | None
+    script_secrets: dict[str, str]
 
 
 @dataclasses.dataclass
