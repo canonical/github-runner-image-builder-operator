@@ -56,7 +56,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/image.py#L105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/image.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_image_data`
 
