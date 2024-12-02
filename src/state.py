@@ -42,8 +42,13 @@ OPENSTACK_USER_CONFIG_NAME = "openstack-user-name"
 REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
+# Bandit thinks this is a hardcoded password
+SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
+SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
 
 IMAGE_RELATION = "image"
+
+MIN_JUJU_VERSION_WITH_SECRET_SUPPORT = ops.JujuVersion("3.3")
 
 
 class CharmConfigInvalidError(Exception):
@@ -352,18 +357,19 @@ class ImageConfig:
         bases: Ubuntu OS images to build from.
         juju_channels: The Juju channels to install on the images.
         microk8s_channels: The Microk8s channels to install on the images.
-        prefix: The image name prefix (application name).
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         script_url: The external script to run during cloud-init process.
+        script_secrets: The script secrets to load as environment variables before executing the \
+            script.
     """
 
     arch: Arch
     bases: tuple[BaseImage, ...]
     juju_channels: set[str]
     microk8s_channels: set[str]
-    prefix: str
     runner_version: str
     script_url: str | None
+    script_secrets: dict[str, str]
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "ImageConfig":
@@ -381,15 +387,16 @@ class ImageConfig:
         microk8s_channels = _parse_microk8s_channels(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
         script_url = _parse_script_url(charm=charm)
+        script_secrets = _parse_script_secrets(charm=charm)
 
         return cls(
             arch=arch,
             bases=base_images,
             juju_channels=juju_channels,
             microk8s_channels=microk8s_channels,
-            prefix=charm.app.name,
             runner_version=runner_version,
             script_url=script_url,
+            script_secrets=script_secrets,
         )
 
 
@@ -502,24 +509,78 @@ def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
     return parsed_result.geturl()
 
 
+class BuilderAppChannelInvalidError(CharmConfigInvalidError):
+    """Represents invalid builder app channel configuration."""
+
+
+class BuilderAppChannel(str, Enum):
+    """Image builder application channel.
+
+    This is managed by the application's git tag and versioning tag in pyproject.toml.
+
+    Attributes:
+        EDGE: Edge application channel.
+        STABLE: Stable application channel.
+    """
+
+    EDGE = "edge"
+    STABLE = "stable"
+
+    @classmethod
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
+        """Retrieve the app channel from charm.
+
+        Args:
+            charm: The charm instance.
+
+        Raises:
+            BuilderAppChannelInvalidError: If an invalid application channel was selected.
+
+        Returns:
+            The application channel to deploy.
+        """
+        try:
+            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
+        except ValueError as exc:
+            raise BuilderAppChannelInvalidError from exc
+
+
 @dataclasses.dataclass
-class BuilderRunConfig:
+class ApplicationConfig:
+    """Image builder application related configuration values.
+
+    Attributes:
+        build_interval: Hours between regular build jobs.
+        channel: The application channel to install.
+        parallel_build: Number of parallel number of applications to spawn.
+        resource_prefix: The prefix of the resource saved on the repository for this application \
+            manager.
+    """
+
+    build_interval: int
+    channel: BuilderAppChannel
+    parallel_build: int
+    resource_prefix: str
+
+
+@dataclasses.dataclass
+class BuilderConfig:
     """Configurations for running builder periodically.
 
     Attributes:
+        app_config: Application configuration parameters.
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
         service_config: The external dependent service configurations to build the image.
-        parallel_build: The number of images to build in parallel.
     """
 
+    app_config: ApplicationConfig
     image_config: ImageConfig
     cloud_config: CloudConfig
     service_config: ServiceConfig
-    parallel_build: int
 
     @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderRunConfig":
+    def from_charm(cls, charm: ops.CharmBase) -> "BuilderConfig":
         """Initialize build state from current charm instance.
 
         Args:
@@ -531,12 +592,16 @@ class BuilderRunConfig:
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
         service_config = ServiceConfig.from_charm(charm=charm)
-        parallel_build = _get_num_parallel_build(charm=charm)
         return cls(
+            app_config=ApplicationConfig(
+                build_interval=_parse_build_interval(charm=charm),
+                channel=BuilderAppChannel.from_charm(charm=charm),
+                parallel_build=_get_num_parallel_build(charm=charm),
+                resource_prefix=charm.app.name,
+            ),
             cloud_config=cloud_config,
             image_config=image_config,
             service_config=service_config,
-            parallel_build=parallel_build,
         )
 
 
@@ -820,85 +885,77 @@ def _parse_script_url(charm: ops.CharmBase) -> str | None:
     return script_url_str
 
 
-class BuilderAppChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid builder app channel configuration."""
+class SecretError(CharmConfigInvalidError):
+    """Represents an error when fetching secrets."""
 
 
-class BuilderAppChannel(str, Enum):
-    """Image builder application channel.
+def _parse_script_secrets(charm: ops.CharmBase) -> dict[str, str]:
+    """Parse secrets to load as environment variables for the external script.
 
-    This is managed by the application's git tag and versioning tag in pyproject.toml.
+    Args:
+        charm: The running charm instance.
 
-    Attributes:
-        EDGE: Edge application channel.
-        STABLE: Stable application channel.
+    Raises:
+        SecretError: If a secret of invalid format (secrets separated by space)
     """
-
-    EDGE = "edge"
-    STABLE = "stable"
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
-        """Retrieve the app channel from charm.
-
-        Args:
-            charm: The charm instance.
-
-        Raises:
-            BuilderAppChannelInvalidError: If an invalid application channel was selected.
-
-        Returns:
-            The application channel to deploy.
-        """
+    script_secret_id = typing.cast(str, charm.config.get(SCRIPT_SECRET_ID_CONFIG_NAME, ""))
+    script_secret = typing.cast(str, charm.config.get(SCRIPT_SECRET_CONFIG_NAME, ""))
+    if not script_secret_id and not script_secret:
+        return {}
+    _validate_juju_secrets_config_support(
+        is_secret_used=bool(script_secret_id), is_config_used=bool(script_secret)
+    )
+    if script_secret_id:
         try:
-            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
-        except ValueError as exc:
-            raise BuilderAppChannelInvalidError from exc
+            secret = charm.model.get_secret(id=script_secret_id)
+        except ops.SecretNotFoundError as exc:
+            raise SecretError(f"Secret label not found: {script_secret_id}.") from exc
+        except ops.ModelError as exc:
+            raise SecretError(
+                "Charm does not have access to read secrets. "
+                "Please grant the charm read access to the secret."
+            ) from exc
+        return secret.get_content(refresh=True)
+    secret_map = {}
+    for key_value_pair in script_secret.split(" "):
+        key_value = key_value_pair.split("=")
+        if len(key_value) != 2 or not all(value for value in key_value):
+            raise SecretError(f"Invalid secret <Key>=<Value> pair {key_value}")
+        secret_map[key_value[0]] = key_value[1]
+    return secret_map
 
 
-class BuilderSetupConfigInvalidError(CharmConfigInvalidError):
-    """Raised when charm config related to image build setup config is invalid."""
+def _validate_juju_secrets_config_support(is_secret_used: bool, is_config_used: bool) -> None:
+    """Validate secrets support by Juju.
 
+    If secrets are supported and secret config option is unused, raise an error.
+    If secrets are not supported and secret config option is used, raise an error.
+    If secrets are supported and config option is used, raised an error.
+    If secrets are not supported and config option is used, pass.
 
-@dataclasses.dataclass(frozen=True)
-class BuilderInitConfig:
-    """The image builder setup config.
+    Args:
+        is_secret_used: Whether the secret configuration option is used.
+        is_config_used: Whether the configuration option is used.
 
-    Attributes:
-        app_name: The current charm's application name.
-        channel: The application installation channel.
-        external_build: Whether the image builder should run in external build mode.
-        interval: The interval in hours between each scheduled image builds.
-        run_config: The configuration required to build the image.
-        unit_name: The charm unit name in which the builder is running on.
+    Raises:
+        SecretError: If the usage of configuration option involving secrets are not valid.
     """
-
-    app_name: str
-    channel: BuilderAppChannel
-    external_build: bool
-    interval: int
-    run_config: BuilderRunConfig
-    unit_name: str
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderInitConfig":
-        """Initialize charm state from current charm instance.
-
-        Args:
-            charm: The running charm instance.
-
-        Returns:
-            Current charm state.
-        """
-        channel = BuilderAppChannel.from_charm(charm=charm)
-        run_config = BuilderRunConfig.from_charm(charm=charm)
-        build_interval = _parse_build_interval(charm)
-
-        return cls(
-            app_name=charm.app.name,
-            channel=channel,
-            external_build=typing.cast(bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)),
-            run_config=run_config,
-            interval=build_interval,
-            unit_name=charm.unit.name,
+    if is_secret_used and is_config_used:
+        raise SecretError(
+            f"Both {SCRIPT_SECRET_CONFIG_NAME} "
+            f"and {SCRIPT_SECRET_ID_CONFIG_NAME} configuration option set. "
+            "Please remove one."
+        )
+    juju_version = ops.JujuVersion.from_environ()
+    if is_secret_used and juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise SecretError(
+            f"Secrets are not supported in Juju version {juju_version}. "
+            "Please consider upgrading the Juju controller to versions "
+            f">= 3.3 or use the {SCRIPT_SECRET_CONFIG_NAME} configuration "
+            "option."
+        )
+    if not is_secret_used and juju_version >= MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+        raise SecretError(
+            f"Please use Juju secrets via {SCRIPT_SECRET_ID_CONFIG_NAME} and unset the "
+            f"{SCRIPT_SECRET_CONFIG_NAME} configuration option."
         )

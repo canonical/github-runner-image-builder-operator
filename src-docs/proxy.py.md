@@ -36,7 +36,7 @@ Install and configure aproxy.
 
 ---
 
-<a href="../src/proxy.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/proxy.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_aproxy`
 

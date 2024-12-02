@@ -126,6 +126,7 @@ sudo microk8s stop && sudo microk8s start""",
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
+    Commands(name="test secrets", command='grep -q "TEST_VALUE" /home/ubuntu/secret.txt'),
 )
 
 JUJU_RUNNER_COMMANDS = (

@@ -16,7 +16,7 @@ class ImageBuilderInitializeError(BuilderBaseError):
     """Represents an error while initializing github-runner-image-builder app."""
 
 
-class BuilderSetupError(BuilderBaseError):
+class BuilderInitError(BuilderBaseError):
     """Represents an error while setting up host machine as builder."""
 
 

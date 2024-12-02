@@ -31,6 +31,29 @@ def setup(proxy: ProxyConfig | None) -> None:
             user=UBUNTU_USER,
         )
         configure_aproxy(proxy=proxy)
+    except subprocess.SubprocessError as exc:
+        raise ProxyInstallError from exc
+
+
+def configure_aproxy(proxy: ProxyConfig | None) -> None:
+    """Configure aproxy.
+
+    Args:
+        proxy: The charm proxy configuration.
+
+    Raises:
+        ProxyInstallError: If there was an error configuring aproxy.
+    """
+    if not proxy:
+        return
+    proxy_str = (proxy.http or proxy.https).replace("http://", "").replace("https://", "")
+    try:
+        subprocess.run(  # nosec: B603
+            ["/usr/bin/sudo", "snap", "set", "aproxy", f"proxy={proxy_str}"],
+            timeout=5 * 60,
+            check=True,
+            user=UBUNTU_USER,
+        )
         # Ignore shell=True rule since it is safe
         subprocess.run(  # nosec: B602, B603
             """/usr/bin/sudo nft -f - << EOF
@@ -57,27 +80,4 @@ EOF""",
             user=UBUNTU_USER,
         )
     except subprocess.SubprocessError as exc:
-        raise ProxyInstallError from exc
-
-
-def configure_aproxy(proxy: ProxyConfig | None) -> None:
-    """Configure aproxy.
-
-    Args:
-        proxy: The charm proxy configuration.
-
-    Raises:
-        ProxyInstallError: If there was an error configuring aproxy.
-    """
-    if not proxy:
-        return
-    proxy_str = (proxy.http or proxy.https).replace("http://", "").replace("https://", "")
-    try:
-        subprocess.run(  # nosec: B603
-            ["/usr/bin/sudo", "snap", "set", "aproxy", f"proxy={proxy_str}"],
-            timeout=5 * 60,
-            check=True,
-            user=UBUNTU_USER,
-        )
-    except subprocess.SubprocessError as exc:
-        raise ProxyInstallError from exc
+        raise ProxyInstallError("Error insttalling ") from exc

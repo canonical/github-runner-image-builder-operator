@@ -34,7 +34,7 @@ def test__on_image_relation_joined_unit_data_not_ready(
     act: when _on_image_relation_joined hook is fired.
     assert: image not ready warning is logged.
     """
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(
         state.CloudsAuthConfig, "from_unit_relation_data", MagicMock(return_value=None)
     )
@@ -54,7 +54,7 @@ def test__on_image_relation_joined_no_image(
     act: when _on_image_relation_joined hook is fired.
     assert: image not ready warning is logged.
     """
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock(return_value=""))
     monkeypatch.setattr(image.builder, "get_latest_images", MagicMock(return_value=""))
@@ -76,7 +76,7 @@ def test__on_image_relation_joined(
     act: when _on_image_relation_joined hook is fired.
     assert: update_relation_data is called.
     """
-    monkeypatch.setattr(state.BuilderRunConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value="test-id"))
