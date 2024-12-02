@@ -54,7 +54,7 @@ class Observer(ops.Object):
         Args:
             event: The event emitted when a relation is joined.
         """
-        build_config = state.BuilderRunConfig.from_charm(charm=self.charm)
+        build_config = state.BuilderConfig.from_charm(charm=self.charm)
         if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
@@ -68,7 +68,35 @@ class Observer(ops.Object):
             return
         builder.install_clouds_yaml(build_config.cloud_config.openstack_clouds_config)
         cloud_images = builder.get_latest_images(
-            config=build_config, cloud_id=unit_cloud_auth_config.get_id()
+            config_matrix=builder.ConfigMatrix(
+                bases=build_config.image_config.bases,
+                juju_channels=build_config.image_config.juju_channels,
+                microk8s_channels=build_config.image_config.microk8s_channels,
+            ),
+            static_config=builder.StaticConfigs(
+                cloud_config=builder.CloudConfig(
+                    build_cloud=build_config.cloud_config.cloud_name,
+                    build_flavor=build_config.cloud_config.external_build_config.flavor,
+                    build_network=build_config.cloud_config.external_build_config.network,
+                    resource_prefix=build_config.app_config.resource_prefix,
+                    num_revisions=build_config.cloud_config.num_revisions,
+                    upload_clouds=build_config.cloud_config.upload_cloud_ids,
+                ),
+                image_config=builder.StaticImageConfig(
+                    arch=build_config.image_config.arch,
+                    script_url=build_config.image_config.script_url,
+                    script_secrets=build_config.image_config.script_secrets,
+                    runner_version=build_config.image_config.runner_version,
+                ),
+                service_config=builder.ExternalServiceConfig(
+                    dockerhub_cache=build_config.service_config.dockerhub_cache,
+                    proxy=(
+                        build_config.service_config.proxy.http
+                        if build_config.service_config.proxy
+                        else None
+                    ),
+                ),
+            ),
         )
         if not cloud_images:
             logger.info("Image not yet ready for %s.", event.unit.name)

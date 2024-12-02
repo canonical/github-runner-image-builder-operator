@@ -8,15 +8,31 @@
 
 import os
 import platform
-import typing
 from unittest.mock import MagicMock
 
+import ops
 import pytest
 from ops.testing import Harness
 
 import state
 from charm import GithubRunnerImageBuilderCharm
 from tests.unit import factories
+
+
+@pytest.fixture(name="patch_juju_version_33")
+def patch_juju_version_33_fixture(monkeypatch: pytest.MonkeyPatch):
+    """Patch Juju version from_environ to return 3.3."""
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.3"))
+    )
+
+
+@pytest.fixture(name="patch_juju_version_29")
+def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
+    """Patch Juju version from_environ to return 2.9."""
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("2.9"))
+    )
 
 
 @pytest.mark.parametrize(
@@ -201,48 +217,6 @@ def test_external_build_config(
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
 
 
-def test_builder_run_config(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a valid charm configurations.
-    act: when BuilderRunConfig.from_charm is called.
-    assert: expected BuilderRunConfig is returned.
-    """
-    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
-    monkeypatch.setattr(os, "environ", {})
-    monkeypatch.setattr(state, "_get_num_parallel_build", MagicMock(return_value=1))
-
-    charm = factories.MockCharmFactory()
-    result = state.BuilderInitConfig.from_charm(charm)
-    assert result == state.BuilderInitConfig(
-        app_name=charm.app.name,
-        channel=state.BuilderAppChannel.EDGE,
-        external_build=True,
-        run_config=state.BuilderRunConfig(
-            cloud_config=state.CloudConfig(
-                openstack_clouds_config=factories.OpenstackCloudsConfigFactory(),
-                external_build_config=factories.ExternalBuildConfigFactory(),
-                num_revisions=5,
-            ),
-            image_config=state.ImageConfig(
-                arch=state.Arch.X64,
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("", "3.1/stable", "2.9/stable")),
-                microk8s_channels=set(("",)),
-                prefix=charm.app.name,
-                runner_version="1.234.5",
-                script_url=None,
-            ),
-            service_config=state.ServiceConfig(
-                dockerhub_cache="https://dockerhub-cache.internal:5000", proxy=None
-            ),
-            parallel_build=1,
-        ),
-        interval=6,
-        unit_name=charm.unit.name,
-    )
-    assert result.run_config.cloud_config.cloud_name == state.CLOUD_NAME
-
-
 @pytest.mark.parametrize(
     "dockerhub_cache_url",
     [
@@ -263,6 +237,27 @@ def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
         state._parse_dockerhub_cache_config(charm)
 
     assert "DockerHub scheme or hostname not provided." in str(exc)
+
+
+@pytest.mark.parametrize(
+    "dockerhub_cache_url, expected_url",
+    [
+        pytest.param(
+            "https://www.cache-url.com:8080", "https://www.cache-url.com:8080", id="with port"
+        ),
+        pytest.param("https://www.cache-url.com", "https://www.cache-url.com", id="without port"),
+    ],
+)
+def test__parse_dockerhub_cache_config(dockerhub_cache_url: str, expected_url: str):
+    """
+    arrange: given a valid dockerhub URL config.
+    act: when _parse_dockerhub_cache_config is called.
+    assert: Expected url is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
+
+    assert state._parse_dockerhub_cache_config(charm) == expected_url
 
 
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
@@ -635,48 +630,145 @@ def test_builder_app_channel_from_charm_error():
 
 
 @pytest.mark.parametrize(
-    "patch_obj, sub_func, exception, expected_message",
+    "exception, expected_error",
     [
+        pytest.param(ops.SecretNotFoundError, "Secret label not found:"),
+        pytest.param(ops.ModelError, "Please grant the charm read access to the secret."),
+    ],
+)
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_script_secrets_invalid_secret(exception: Exception, expected_error: str):
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_script_secrets is called.
+    assert: SecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret-label"}
+    mock_charm.model = MagicMock()
+    mock_charm.model.get_secret = MagicMock(side_effect=exception)
+
+    with pytest.raises(state.SecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert expected_error in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_script_secrets_secret_and_config_set():
+    """
+    arrange: given a config option where both secret and the config is set.
+    act: when _parse_script_secrets is called.
+    assert: SecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret:test-secret-id",
+        state.SCRIPT_SECRET_CONFIG_NAME: "test-secret",
+    }
+
+    with pytest.raises(state.SecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Both script-secret and script-secret-id configuration option set." in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_29")
+def test__parse_script_secrets_secret_unsupported(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a Juju version < 3.3 and secret config option set.
+    act: when _parse_script_secrets is called.
+    assert: SecretError is raised.
+    """
+    monkeypatch.setattr(
+        ops.JujuVersion, "from_environ", MagicMock(return_value=ops.JujuVersion("3.2"))
+    )
+    mock_charm = MagicMock()
+    mock_charm.config = {
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret:test-secret-id",
+    }
+
+    with pytest.raises(state.SecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Secrets are not supported in Juju version" in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_script_prefer_secrets():
+    """
+    arrange: given a Juju version >= 3.3 and secret config option set.
+    act: when _parse_script_secrets is called.
+    assert: SecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: "test-secret"}
+
+    with pytest.raises(state.SecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Please use Juju secrets" in str(exc)
+
+
+@pytest.mark.parametrize(
+    "secret",
+    [
+        pytest.param("invalidconfig", id="no pair"),
+        pytest.param("a= b=", id="no values"),
+    ],
+)
+@pytest.mark.usefixtures("patch_juju_version_29")
+def test__parse_script_secrets_invalid_key_value_pair(secret: str):
+    """
+    arrange: given a mocked model config that contains an invalid key value pair.
+    act: when _parse_script_secrets is called.
+    assert: SecretError is raised.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
+    mock_charm.model = MagicMock()
+
+    with pytest.raises(state.SecretError) as exc:
+        state._parse_script_secrets(charm=mock_charm)
+
+    assert "Invalid secret" in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_script_secrets_from_user_secret():
+    """
+    arrange: given a mocked model that has script ID configured.
+    act: when _parse_script_secrets is called.
+    assert: expected secret is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_ID_CONFIG_NAME: "secret-label"}
+    mock_secret = MagicMock()
+    mock_secret.get_content = MagicMock(return_value={"test": "secret"})
+    mock_charm.model.get_secret = MagicMock(return_value=mock_secret)
+
+    assert state._parse_script_secrets(charm=mock_charm) == {"test": "secret"}
+
+
+@pytest.mark.parametrize(
+    "secret, expected_secrets_map",
+    [
+        pytest.param("single=secret", {"single": "secret"}, id="single"),
         pytest.param(
-            state,
-            "_parse_build_interval",
-            state.CharmConfigInvalidError("Invalid build interval"),
-            "Invalid build interval",
-            id="_parse_build_interval error",
-        ),
-        pytest.param(
-            state,
-            "_parse_openstack_clouds_config",
-            state.CharmConfigInvalidError("Missing configuration"),
-            "Missing configuration",
-            id="_parse_openstack_clouds_config error",
-        ),
-        pytest.param(
-            state,
-            "_parse_revision_history_limit",
-            state.CharmConfigInvalidError("Invalid revision history"),
-            "Invalid revision history",
-            id="_parse_revision_history_limit error",
+            "multiple=secret secrets=secret",
+            {"multiple": "secret", "secrets": "secret"},
+            id="multiple",
         ),
     ],
 )
-def test_builder_init_config_invalid(
-    patch_obj: typing.Any,
-    sub_func: str,
-    exception: typing.Type[Exception],
-    expected_message: str,
-    monkeypatch: pytest.MonkeyPatch,
-):
+@pytest.mark.usefixtures("patch_juju_version_29")
+def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: dict[str, str]):
     """
-    arrange: given a monkeypatched sub functions of CharmState that raises given exceptions.
-    act: when CharmState.from_charm is called.
-    assert: A CharmConfigInvalidError is raised.
+    arrange: given a mocked model that has secret configuration option set.
+    act: when _parse_script_secrets is called.
+    assert: expected secret is returned.
     """
-    mock_func = MagicMock(side_effect=exception)
-    monkeypatch.setattr(patch_obj, sub_func, mock_func)
-    charm = factories.MockCharmFactory()
+    mock_charm = MagicMock()
+    mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
 
-    with pytest.raises(state.CharmConfigInvalidError) as exc:
-        state.BuilderInitConfig.from_charm(charm)
-
-    assert expected_message in str(exc.getrepr())
+    assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map

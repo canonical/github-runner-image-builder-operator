@@ -47,6 +47,8 @@ from state import (
     OPENSTACK_USER_CONFIG_NAME,
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
+    SCRIPT_SECRET_CONFIG_NAME,
+    SCRIPT_URL_CONFIG_NAME,
     _get_supported_arch,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
@@ -359,6 +361,9 @@ async def app_fixture(
         EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
+        SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
+        "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
+        SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
     }
     num_cores = multiprocessing.cpu_count() - 1
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
