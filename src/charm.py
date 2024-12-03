@@ -55,36 +55,49 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         proxy.setup(proxy=state.ProxyConfig.from_env())
-        init_config = state.BuilderInitConfig.from_charm(self)
-        builder.install_clouds_yaml(
-            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        builder.initialize(
+            app_init_config=builder.ApplicationInitializationConfig(
+                cloud_config=builder_config_state.cloud_config,
+                channel=builder_config_state.app_config.channel,
+                cron_interval=builder_config_state.app_config.build_interval,
+                image_arch=builder_config_state.image_config.arch,
+                resource_prefix=builder_config_state.app_config.resource_prefix,
+                unit_name=self.unit.name,
+            )
         )
-        builder.initialize(init_config=init_config)
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
-        init_config = state.BuilderInitConfig.from_charm(self)
-        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        if not self._is_image_relation_ready_set_status(
+            cloud_config=builder_config_state.cloud_config
+        ):
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(
-            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+        # The following lines should be covered by integration tests.
+        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
+        builder.install_clouds_yaml(  # pragma: no cover
+            cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
-        if builder.configure_cron(unit_name=self.unit.name, interval=init_config.interval):
+        if builder.configure_cron(  # pragma: no cover
+            unit_name=self.unit.name, interval=builder_config_state.app_config.build_interval
+        ):
             self._run()
-        self.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
-        init_config = state.BuilderInitConfig.from_charm(self)
-        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        if not self._is_image_relation_ready_set_status(
+            cloud_config=builder_config_state.cloud_config
+        ):
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(
-            cloud_config=init_config.run_config.cloud_config.openstack_clouds_config
+            cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
         self._run()
         self.unit.status = ops.ActiveStatus()
@@ -92,10 +105,13 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
-        init_config = state.BuilderInitConfig.from_charm(self)
-        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        if not self._is_image_relation_ready_set_status(
+            cloud_config=builder_config_state.cloud_config
+        ):
             return
-        self._run()
+        # The following line should be covered by the integration test.
+        self._run()  # pragma: nocover
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
@@ -104,22 +120,25 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Args:
             event: The run action event.
         """
-        init_config = state.BuilderInitConfig.from_charm(self)
-        if not self._is_image_relation_ready_set_status(config=init_config.run_config):
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        if not self._is_image_relation_ready_set_status(
+            cloud_config=builder_config_state.cloud_config
+        ):
             event.fail("Image relation not yet ready.")
             return
-        self._run()
+        # The following line should be covered by the integration test.
+        self._run()  # pragma: nocover
 
-    def _is_image_relation_ready_set_status(self, config: state.BuilderRunConfig) -> bool:
+    def _is_image_relation_ready_set_status(self, cloud_config: state.CloudConfig) -> bool:
         """Check if image relation is ready and set according status otherwise.
 
         Args:
-            config: The image builder run configuration.
+            cloud_config: The cloud configuration state.
 
         Returns:
             Whether the image relation is ready.
         """
-        if not config.cloud_config.upload_cloud_ids:
+        if not cloud_config.upload_cloud_ids:
             self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
             return False
         return True
@@ -133,10 +152,64 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus("Running upgrade.")
         builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
-        run_config = state.BuilderRunConfig.from_charm(self)
-        cloud_images = builder.run(config=run_config)
+        builder_config = state.BuilderConfig.from_charm(self)
+        cloud_images = builder.run(
+            config_matrix=self._get_configuration_matrix(builder_config=builder_config),
+            static_config=self._get_static_config(builder_config=builder_config),
+        )
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
+
+    def _get_configuration_matrix(
+        self, builder_config: state.BuilderConfig
+    ) -> builder.ConfigMatrix:
+        """Transform builder_config state to builder configuration matrix.
+
+        Args:
+            builder_config: The builder run configuration from state.
+
+        Returns:
+            Configurable image parameters to matricize.
+        """
+        return builder.ConfigMatrix(
+            bases=builder_config.image_config.bases,
+            juju_channels=builder_config.image_config.juju_channels,
+            microk8s_channels=builder_config.image_config.microk8s_channels,
+        )
+
+    def _get_static_config(self, builder_config: state.BuilderConfig) -> builder.StaticConfigs:
+        """Transform builder_config state to builder static configuration.
+
+        Args:
+            builder_config: The builder run configuration from state.
+
+        Returns:
+            Static configurations required to build the image.
+        """
+        return builder.StaticConfigs(
+            cloud_config=builder.CloudConfig(
+                build_cloud=builder_config.cloud_config.cloud_name,
+                build_flavor=builder_config.cloud_config.external_build_config.flavor,
+                build_network=builder_config.cloud_config.external_build_config.network,
+                resource_prefix=builder_config.app_config.resource_prefix,
+                num_revisions=builder_config.cloud_config.num_revisions,
+                upload_clouds=builder_config.cloud_config.upload_cloud_ids,
+            ),
+            image_config=builder.StaticImageConfig(
+                arch=builder_config.image_config.arch,
+                script_url=builder_config.image_config.script_url,
+                script_secrets=builder_config.image_config.script_secrets,
+                runner_version=builder_config.image_config.runner_version,
+            ),
+            service_config=builder.ExternalServiceConfig(
+                dockerhub_cache=builder_config.service_config.dockerhub_cache,
+                proxy=(
+                    builder_config.service_config.proxy.http
+                    if builder_config.service_config.proxy
+                    else None
+                ),
+            ),
+        )
 
     def update_status(self, status: ops.StatusBase) -> None:
         """Update the charm status.

@@ -9,35 +9,38 @@ Module for interacting with qemu image builder.
 ---------------
 - **UBUNTU_USER**
 - **APT_DEPENDENCIES**
+- **IMAGE_BUILDER_SECRET_PREFIX**
 
 ---
 
-<a href="../src/builder.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `initialize`
 
 ```python
-initialize(init_config: BuilderInitConfig) → None
+initialize(app_init_config: ApplicationInitializationConfig) → None
 ```
 
 Configure the host machine to build images. 
+
+The application pre-populate OpenStack resources required to build the image. 
 
 
 
 **Args:**
  
- - <b>`init_config`</b>:  Configuration values required to initialize the builder. 
+ - <b>`app_init_config`</b>:  Configuration required to initialize the app. 
 
 
 
 **Raises:**
  
- - <b>`BuilderSetupError`</b>:  If there was an error setting up the host device for building images. 
+ - <b>`BuilderInitError`</b>:  If there was an error initializing the image builder application. 
 
 
 ---
 
-<a href="../src/builder.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `install_clouds_yaml`
 
@@ -46,6 +49,8 @@ install_clouds_yaml(cloud_config: OpenstackCloudsConfig) → None
 ```
 
 Install clouds.yaml for Openstack used by the image builder. 
+
+The application interfaces OpenStack credentials with the charm via the clouds.yaml since each of the parameters being passed on (i.e. --openstack-username --openstack-password     --upload-openstack-username --upload-openstack-password ...) is too verbose. 
 
 
 
@@ -56,7 +61,7 @@ Install clouds.yaml for Openstack used by the image builder.
 
 ---
 
-<a href="../src/builder.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `configure_cron`
 
@@ -81,12 +86,15 @@ Configure cron to run builder.
 
 ---
 
-<a href="../src/builder.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L428"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
-run(config: BuilderRunConfig) → list[list[CloudImage]]
+run(
+    config_matrix: ConfigMatrix,
+    static_config: StaticConfigs
+) → list[list[CloudImage]]
 ```
 
 Run a build immediately. 
@@ -95,7 +103,8 @@ Run a build immediately.
 
 **Args:**
  
- - <b>`config`</b>:  The configuration values for running image builder. 
+ - <b>`config_matrix`</b>:  The configurable values matrix for running image builder. 
+ - <b>`static_config`</b>:  The static configurations values to run the image builder. 
 
 
 
@@ -106,17 +115,20 @@ Run a build immediately.
 
 
 **Returns:**
- The built image id. 
+ The built image metadata. 
 
 
 ---
 
-<a href="../src/builder.py#L466"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L775"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_latest_images`
 
 ```python
-get_latest_images(config: BuilderRunConfig, cloud_id: str) → list[CloudImage]
+get_latest_images(
+    config_matrix: ConfigMatrix,
+    static_config: StaticConfigs
+) → list[CloudImage]
 ```
 
 Fetch the latest image build ID. 
@@ -125,8 +137,8 @@ Fetch the latest image build ID.
 
 **Args:**
  
- - <b>`config`</b>:  The configuration values for fetching latest image id. 
- - <b>`cloud_id`</b>:  The cloud the fetch the images for. 
+ - <b>`config_matrix`</b>:  Matricized values of configurable image parameters. 
+ - <b>`static_config`</b>:  Static configurations that are used to interact with the image repository. 
 
 
 
@@ -142,7 +154,7 @@ Fetch the latest image build ID.
 
 ---
 
-<a href="../src/builder.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/builder.py#L914"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upgrade_app`
 
@@ -161,6 +173,46 @@ Upgrade the application if newer version is available.
 
 ---
 
+## <kbd>class</kbd> `ApplicationInitializationConfig`
+Required application initialization configurations. 
+
+
+
+**Attributes:**
+ 
+ - <b>`cloud_config`</b>:  The OpenStack cloud config the application should interact with. 
+ - <b>`channel`</b>:  The application channel. 
+ - <b>`cron_interval`</b>:  The number of hours to retrigger build. 
+ - <b>`image_arch`</b>:  The image architecture to initialize build resources for. 
+ - <b>`resource_prefix`</b>:  The prefix of application resources. 
+ - <b>`unit_name`</b>:  The Juju unit name to trigger the CRON with. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `CloudConfig`
+Builder run cloud related configuration parameters. 
+
+
+
+**Attributes:**
+ 
+ - <b>`build_cloud`</b>:  The cloud to build the images on. 
+ - <b>`build_flavor`</b>:  The OpenStack builder flavor to use. 
+ - <b>`build_network`</b>:  The OpenStack builder network to use. 
+ - <b>`resource_prefix`</b>:  The OpenStack resources prefix to indicate the ownership. 
+ - <b>`upload_clouds`</b>:  The clouds to upload the final image to. 
+ - <b>`num_revisions`</b>:  The number of revisions to keep before deleting the image. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `CloudImage`
 The cloud ID to uploaded image ID pair. 
 
@@ -174,6 +226,41 @@ The cloud ID to uploaded image ID pair.
  - <b>`image_id`</b>:  The uploaded image ID. 
  - <b>`juju`</b>:  The juju snap channel. 
  - <b>`microk8s`</b>:  The microk8s snap channel. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `ConfigMatrix`
+Configurable image parameters matrix. 
+
+This is just a wrapper DTO on parameterizable variables. 
+
+
+
+**Attributes:**
+ 
+ - <b>`bases`</b>:  The ubuntu OS bases. 
+ - <b>`juju_channels`</b>:  The juju snap channels to iterate during parametrization. e.g.             {"3.1/stable", "2.9/stable"} 
+ - <b>`microk8s_channels`</b>:  The microk8s snap channels to iterate during parametrization. e.g.             {"1.28-strict/stable", "1.29-strict/edge"} 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `ExternalServiceConfig`
+Builder run external service dependencies. 
+
+
+
+**Attributes:**
+ 
+ - <b>`dockerhub_cache`</b>:  The DockerHub cache URL to use to apply to image building. 
+ - <b>`proxy`</b>:  The proxy to use to build the image. 
 
 
 
@@ -213,6 +300,39 @@ The image name derived from the image configuration attributes.
 
 ---
 
+## <kbd>class</kbd> `ImageConfig`
+Builder run image related configuration parameters. 
+
+
+
+**Attributes:**
+ 
+ - <b>`arch`</b>:  The architecture to build the image for. 
+ - <b>`base`</b>:  The Ubuntu base OS image to build the image on. 
+ - <b>`juju`</b>:  The Juju channel to install and bootstrap on the image. 
+ - <b>`microk8s`</b>:  The Microk8s channel to install and bootstrap on the image. 
+ - <b>`prefix`</b>:  The image prefix. 
+ - <b>`runner_version`</b>:  The GitHub runner version to pin, defaults to latest. 
+ - <b>`script_config`</b>:  User script related configurations. 
+ - <b>`image_name`</b>:  The image name derived from image configuration attributes. 
+
+
+---
+
+#### <kbd>property</kbd> image_name
+
+The image name derived from the image configuration attributes. 
+
+
+
+**Returns:**
+  The image name. 
+
+
+
+
+---
+
 ## <kbd>class</kbd> `RunConfig`
 Builder run configuration parameters. 
 
@@ -223,6 +343,57 @@ Builder run configuration parameters.
  - <b>`image`</b>:  The image configuration parameters. 
  - <b>`cloud`</b>:  The cloud configuration parameters. 
  - <b>`external_service`</b>:  The external service dependencies for building the image. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `ScriptConfig`
+User custom script related configurations. 
+
+
+
+**Attributes:**
+ 
+ - <b>`script_url`</b>:  The external script to run during cloud-init process. 
+ - <b>`script_secrets`</b>:  The script secrets to load as environment variables before executing the             script. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `StaticConfigs`
+Static configurations that are used to interact with the image repository. 
+
+
+
+**Attributes:**
+ 
+ - <b>`cloud_config`</b>:  The OpenStack cloud configuration. 
+ - <b>`image_config`</b>:  The output image configuration. 
+ - <b>`service_config`</b>:  The helper services to build the image. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `StaticImageConfig`
+Static image configuration values. 
+
+
+
+**Attributes:**
+ 
+ - <b>`arch`</b>:  The architecture to build the image for. 
+ - <b>`script_url`</b>:  The external script to run at the end of the cloud-init. 
+ - <b>`script_secrets`</b>:  The script secrets to load as environment variables before executing the             script. 
+ - <b>`runner_version`</b>:  The GitHub runner version. 
 
 
 

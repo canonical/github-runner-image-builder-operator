@@ -73,7 +73,7 @@ def _install_proxy(conn: SSHConnection, proxy: ProxyConfig | None = None):
     assert result.ok, "Failed to install aproxy"
 
     proxy_str = proxy.http.replace("http://", "").replace("https://", "")
-    command = f"sudo snap set aproxy proxy={proxy_str} listen=:8444"
+    command = f"sudo snap set aproxy proxy={proxy_str} listen=:8443"
     logger.info("Running command: %s", command)
     result = conn.run(command)
     assert result.ok, "Failed to setup aproxy"
@@ -87,12 +87,12 @@ flush table ip aproxy
 table ip aproxy {
     chain prerouting {
             type nat hook prerouting priority dstnat; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8444
+            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
     }
 
     chain output {
             type nat hook output priority -100; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8444
+            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
     }
 }
 EOF"""  # noqa: E501

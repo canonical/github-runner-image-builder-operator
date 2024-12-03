@@ -29,7 +29,28 @@ Module for interacting with charm state and configurations.
 - **OPENSTACK_USER_CONFIG_NAME**
 - **REVISION_HISTORY_LIMIT_CONFIG_NAME**
 - **RUNNER_VERSION_CONFIG_NAME**
+- **SCRIPT_URL_CONFIG_NAME**
+- **SCRIPT_SECRET_ID_CONFIG_NAME**
+- **SCRIPT_SECRET_CONFIG_NAME**
 - **IMAGE_RELATION**
+
+
+---
+
+## <kbd>class</kbd> `ApplicationConfig`
+Image builder application related configuration values. 
+
+
+
+**Attributes:**
+ 
+ - <b>`build_interval`</b>:  Hours between regular build jobs. 
+ - <b>`channel`</b>:  The application channel to install. 
+ - <b>`parallel_build`</b>:  Number of parallel number of applications to spawn. 
+ - <b>`resource_prefix`</b>:  The prefix of the resource saved on the repository for this application             manager. 
+
+
+
 
 
 ---
@@ -69,7 +90,7 @@ The ubuntu OS base image to build and deploy runners on.
 ## <kbd>class</kbd> `BuildConfigInvalidError`
 Raised when charm config related to image build config is invalid. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -94,7 +115,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `BuildIntervalConfigError`
 Represents an error with invalid interval configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -137,7 +158,7 @@ This is managed by the application's git tag and versioning tag in pyproject.tom
 ## <kbd>class</kbd> `BuilderAppChannelInvalidError`
 Represents invalid builder app channel configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -159,72 +180,29 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 
 ---
 
-## <kbd>class</kbd> `BuilderInitConfig`
-The image builder setup config. 
-
-
-
-**Attributes:**
- 
- - <b>`app_name`</b>:  The current charm's application name. 
- - <b>`channel`</b>:  The application installation channel. 
- - <b>`external_build`</b>:  Whether the image builder should run in external build mode. 
- - <b>`interval`</b>:  The interval in hours between each scheduled image builds. 
- - <b>`run_config`</b>:  The configuration required to build the image. 
- - <b>`unit_name`</b>:  The charm unit name in which the builder is running on. 
-
-
-
-
----
-
-<a href="../src/state.py#L853"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `from_charm`
-
-```python
-from_charm(charm: CharmBase) → BuilderInitConfig
-```
-
-Initialize charm state from current charm instance. 
-
-
-
-**Args:**
- 
- - <b>`charm`</b>:  The running charm instance. 
-
-
-
-**Returns:**
- Current charm state. 
-
-
----
-
-## <kbd>class</kbd> `BuilderRunConfig`
+## <kbd>class</kbd> `BuilderConfig`
 Configurations for running builder periodically. 
 
 
 
 **Attributes:**
  
+ - <b>`app_config`</b>:  Application configuration parameters. 
  - <b>`image_config`</b>:  Image configuration parameters. 
  - <b>`cloud_config`</b>:  Cloud configuration parameters. 
  - <b>`service_config`</b>:  The external dependent service configurations to build the image. 
- - <b>`parallel_build`</b>:  The number of images to build in parallel. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L516"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L582"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
 ```python
-from_charm(charm: CharmBase) → BuilderRunConfig
+from_charm(charm: CharmBase) → BuilderConfig
 ```
 
 Initialize build state from current charm instance. 
@@ -243,31 +221,6 @@ Initialize build state from current charm instance.
 
 ---
 
-## <kbd>class</kbd> `BuilderSetupConfigInvalidError`
-Raised when charm config related to image build setup config is invalid. 
-
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
-
-```python
-__init__(msg: str | None = None)
-```
-
-Initialize a new instance of the CharmConfigInvalidError exception. 
-
-
-
-**Args:**
- 
- - <b>`msg`</b>:  Explanation of the error. 
-
-
-
-
-
----
-
 ## <kbd>class</kbd> `CharmConfigInvalidError`
 Raised when charm config is invalid. 
 
@@ -277,7 +230,7 @@ Raised when charm config is invalid.
  
  - <b>`msg`</b>:  Explanation of the error. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -329,7 +282,7 @@ The cloud name from cloud_config.
 
 ---
 
-<a href="../src/state.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -394,7 +347,7 @@ Returns the set of fields that have been explicitly set on this model instance.
 
 ---
 
-<a href="../src/state.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L294"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_unit_relation_data`
 
@@ -417,7 +370,7 @@ Get auth data from unit relation data.
 
 ---
 
-<a href="../src/state.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_id`
 
@@ -450,7 +403,7 @@ Configurations for external builder VMs.
 
 ---
 
-<a href="../src/state.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -485,15 +438,16 @@ Image configuration parameters.
  - <b>`bases`</b>:  Ubuntu OS images to build from. 
  - <b>`juju_channels`</b>:  The Juju channels to install on the images. 
  - <b>`microk8s_channels`</b>:  The Microk8s channels to install on the images. 
- - <b>`prefix`</b>:  The image name prefix (application name). 
  - <b>`runner_version`</b>:  The GitHub runner version to embed in the image. Latest version if empty. 
+ - <b>`script_url`</b>:  The external script to run during cloud-init process. 
+ - <b>`script_secrets`</b>:  The script secrets to load as environment variables before executing the             script. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -520,7 +474,7 @@ Initialize image config state from current charm instance.
 ## <kbd>class</kbd> `InsufficientCoresError`
 Represents an error with invalid charm resource configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -545,7 +499,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `InvalidBaseImageError`
 Represents an error with invalid charm base image configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -570,7 +524,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `InvalidCloudConfigError`
 Represents an error with openstack cloud config. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -595,7 +549,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `InvalidDockerHubCacheURLError`
 Represents an error with DockerHub cache URL. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -620,7 +574,32 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `InvalidRevisionHistoryLimitError`
 Represents an error with invalid revision history limit configuration value. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(msg: str | None = None)
+```
+
+Initialize a new instance of the CharmConfigInvalidError exception. 
+
+
+
+**Args:**
+ 
+ - <b>`msg`</b>:  Explanation of the error. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `InvalidScriptURLError`
+Represents script URL configuration. 
+
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -645,7 +624,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `JujuChannelInvalidError`
 Represents invalid Juju channels configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -670,7 +649,7 @@ Initialize a new instance of the CharmConfigInvalidError exception.
 ## <kbd>class</kbd> `Microk8sChannelInvalidError`
 Represents invalid Microk8s channels configuration. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -745,7 +724,7 @@ Proxy configuration.
 
 ---
 
-<a href="../src/state.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_env`
 
@@ -759,6 +738,31 @@ Initialize the proxy config from charm.
 
 **Returns:**
   Current proxy config of the charm. 
+
+
+---
+
+## <kbd>class</kbd> `SecretError`
+Represents an error when fetching secrets. 
+
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(msg: str | None = None)
+```
+
+Initialize a new instance of the CharmConfigInvalidError exception. 
+
+
+
+**Args:**
+ 
+ - <b>`msg`</b>:  Explanation of the error. 
+
+
+
 
 
 ---
@@ -778,7 +782,7 @@ External service configuration values.
 
 ---
 
-<a href="../src/state.py#L460"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -805,7 +809,7 @@ Initialize the external service configurations from charm.
 ## <kbd>class</kbd> `UnsupportedArchitectureError`
 Raised when given machine charm architecture is unsupported. 
 
-<a href="../src/state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
