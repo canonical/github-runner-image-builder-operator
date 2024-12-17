@@ -66,6 +66,7 @@ For a full list, please refer to the full list on [CharmHub](https://charmhub.io
 ## Learn more
 * [Read more](https://charmhub.io/github-runner-image-builder) <!--Link to the charm's official documentation-->
 * [Developer documentation](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md) <!--Link to any developer documentation-->
+* [Troubleshooting](https://matrix.to/#/!DYvOMMMjuXPZRJYHdy:ubuntu.com?via=ubuntu.com&via=matrix.org)
 
 ## Project and community
 * [Issues](https://github.com/canonical/github-runner-image-builder-operator/issues) <!--Link to GitHub issues (if applicable)-->
