@@ -61,7 +61,7 @@ minutes.
 * cos-agent: The COS agent subordinate charm provides observability using the Canonical
 Observability Stack (COS).
 
-For a full list, please refer to the full list on [CharmHub](https://charmhub.io/github-runner-image-builder/integrations).
+For a full list of integrations, please refer to the [Charmhub documentation](https://charmhub.io/github-runner-image-builder/integrations).
 
 ## Learn more
 * [Read more](https://charmhub.io/github-runner-image-builder) <!--Link to the charm's official documentation-->
