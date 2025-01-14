@@ -66,9 +66,9 @@ For a full list of integrations, please refer to the [Charmhub documentation](ht
 ## Learn more
 * [Read more](https://charmhub.io/github-runner-image-builder) <!--Link to the charm's official documentation-->
 * [Developer documentation](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md) <!--Link to any developer documentation-->
-* [Troubleshooting](https://matrix.to/#/!DYvOMMMjuXPZRJYHdy:ubuntu.com?via=ubuntu.com&via=matrix.org)
+* [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Project and community
 * [Issues](https://github.com/canonical/github-runner-image-builder-operator/issues) <!--Link to GitHub issues (if applicable)-->
 * [Contributing](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md) <!--Link to any contribution guides--> 
-* [Matrix](https://matrix.to/#/!DYvOMMMjuXPZRJYHdy:ubuntu.com?via=ubuntu.com&via=matrix.org) <!--Link to contact info (if applicable), e.g. Matrix channel-->
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com) <!--Link to contact info (if applicable), e.g. Matrix channel-->
