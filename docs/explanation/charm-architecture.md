@@ -51,7 +51,7 @@ by a config option. Using an external OpenStack VM instead of the charms machine
 In addition, software that is heavily used in Canonical projects (such as [juju](https://juju.is/) or [microk8s](https://microk8s.io/)) 
 is pre-installed to reduce the actual CI runtime (as users do not have to install this software in their respective CI runs). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
-The image-builder repeatedly checks to see if the cloud-init script has finished running, then snapshots the VM, uploads the image to a specified Openstack project,
+The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified Openstack project,
 and deletes the VM. This specified Openstack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
 The other charm can then use the image to spawn a VM instance with the necessary software preinstalled.
 The charm sets up a cron job to build the images periodically to ensure that the latest software is installed in the images
@@ -61,7 +61,7 @@ The interactions between the charm and the image-builder are performed using CLI
 The image-builder application is not daemonized and stops running after the image has been built
 and uploaded to Openstack.
 
-The image-builder application must be initialized before it can be used. Initialization includes
+The image-builder application is initialized by the charm before it can be used. Initialization includes
 
 - Downloading and validating the base images (e.g. ubuntu 22.04 or 24.04)
 - Uploading the base images to Openstack
