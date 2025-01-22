@@ -31,18 +31,36 @@ The charm is setting up a cron job to periodically build the images.
 
 ```mermaid
 
-graph TD;
+C4Container
+title Container diagram for Image Builder System
 
-    subgraph charm[Image Builder Charm]
-        imagebuilder[Image Builder];
-    end;
 
-    imagebuilder -- build Image --> openstack[OpenStack for Building]
+ Container_Boundary(c1, "Image Builder") {
+    Container(imagebuilder, "Image Builder", "", "Provides images to all related charms")
+ }
+    System_Ext(osbuilding, "OpenStack", "OpenStack deployment used for building images")
 
-    charm -- image ID --> githubrunner["Github Runner Charm (GH)"]
-    githubrunner -- OpenStack credentials --> charm
-    githubrunner -- spawn runner VM's --> openstack_ghrunner[OpenStack for GH]
-    imagebuilder -- upload Image --> openstack_ghrunner
+Container_Boundary(c2, "GitHub Runner"){
+
+    Container(githubrunner, "GitHub Runner Charm", "", "Manages self-hosted runners")
+}
+    Rel(imagebuilder, osbuilding, "builds images")
+    UpdateRelStyle(imagebuilder, osbuilding, $offsetY="-30", $offsetX="10")
+    Rel(imagebuilder, osgithubrunner, "uploads images")
+    UpdateRelStyle(imagebuilder, osgithubrunner, $offsetY="-30", $offsetX="-90")
+
+
+
+
+    Rel(imagebuilder, githubrunner, "image ids")
+    UpdateRelStyle(imagebuilder, githubrunner, $offsetY="-10", $offsetX="-30")
+
+    System_Ext(osgithubrunner, "OpenStack", "OpenStack deployment used for spawning runner VMs")
+    Rel(githubrunner, osgithubrunner, "spawns VMs")
+    UpdateRelStyle(githubrunner, osgithubrunner, $offsetY="-30", $offsetX="10")
+
+    Rel(githubrunner, imagebuilder, "OpenStack credentials")
+    UpdateRelStyle(githubrunner, imagebuilder, $offsetY="10", $offsetX="-60")
 ```
 
 
