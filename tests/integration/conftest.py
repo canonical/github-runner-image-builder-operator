@@ -31,7 +31,6 @@ from pytest_operator.plugin import OpsTest
 
 import state
 from state import (
-    APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
@@ -345,7 +344,6 @@ async def app_fixture(
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     config = {
-        APP_CHANNEL_CONFIG_NAME: "edge",
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,

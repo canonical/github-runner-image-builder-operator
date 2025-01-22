@@ -59,7 +59,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
                 cloud_config=builder_config_state.cloud_config,
-                channel=builder_config_state.app_config.channel,
                 cron_interval=builder_config_state.app_config.build_interval,
                 image_arch=builder_config_state.image_config.arch,
                 resource_prefix=builder_config_state.app_config.resource_prefix,

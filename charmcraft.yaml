@@ -33,6 +33,16 @@ parts:
     override-build: |
       rustup default stable
       craftctl default
+#  app:
+#    plugin: nil
+#    build-packages:
+#      - python3-dev
+#      - gcc
+#    override-build: |
+#      pip install wheel
+#      pip wheel app
+#    organize:
+#      app-0.0.1-py3-none-any.whl: app-0.0.1-py3-none-any.whl
 
 bases:
   - build-on:
@@ -66,10 +76,6 @@ config:
       type: string
       default: ""
       description: The image architecture to build for using external builder (i.e. amd64, arm64).
-    app-channel:
-      type: string
-      default: stable
-      description: The application channel to deploy (i.e. stable, edge)
     base-image:
       type: string
       default: noble

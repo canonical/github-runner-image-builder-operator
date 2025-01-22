@@ -86,7 +86,7 @@ def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
     )
 
     with pytest.raises(builder.DependencyInstallError) as exc:
-        builder._install_dependencies(channel=MagicMock())
+        builder._install_dependencies()
 
     assert "error installing deps" in str(exc.getrepr())
 
@@ -100,7 +100,7 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(apt, "add_package", (apt_mock := MagicMock()))
     monkeypatch.setattr(subprocess, "run", (run_mock := MagicMock()))
 
-    builder._install_dependencies(channel=MagicMock())
+    builder._install_dependencies()
 
     apt_mock.assert_called_once()
     run_mock.assert_called_once()

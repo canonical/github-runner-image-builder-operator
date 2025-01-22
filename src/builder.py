@@ -65,7 +65,6 @@ class ApplicationInitializationConfig:
     """
 
     cloud_config: state.CloudConfig
-    channel: state.BuilderAppChannel
     cron_interval: int
     image_arch: state.Arch
     resource_prefix: str
@@ -86,7 +85,7 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
     try:
         install_clouds_yaml(cloud_config=app_init_config.cloud_config.openstack_clouds_config)
         # The following lines should be covered by integration tests.
-        _install_dependencies(channel=app_init_config.channel)
+        _install_dependencies()
         _initialize_image_builder(  # pragma: no cover
             cloud_name=app_init_config.cloud_config.cloud_name,
             image_arch=app_init_config.image_arch,
@@ -99,7 +98,7 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
         raise BuilderInitError from exc
 
 
-def _install_dependencies(channel: state.BuilderAppChannel) -> None:
+def _install_dependencies() -> None:
     """Install required dependencies to run qemu image build.
 
     Args:
@@ -114,7 +113,7 @@ def _install_dependencies(channel: state.BuilderAppChannel) -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                f"git+https://github.com/canonical/github-runner-image-builder@{channel.value}",
+                f"{os.getcwd()}/app",
             ],
             timeout=5 * 60,
             check=True,
