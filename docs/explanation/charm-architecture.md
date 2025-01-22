@@ -34,21 +34,15 @@ The charm is setting up a cron job to periodically build the images.
 graph TD;
 
     subgraph charm[Image Builder Charm]
-        direction TB;
         imagebuilder[Image Builder];
     end;
 
-    imagebuilder -- building --> openstack[OpenStack for Building]
+    imagebuilder -- build Image --> openstack[OpenStack for Building]
 
-    charm --> githubrunner1["Github Runner Charm 1 (GH1)"]
-    githubrunner1 --> charm
-    githubrunner1 --> openstack_ghrunner1[OpenStack for GH1]
-    imagebuilder --> openstack_ghrunner1
-
-    charm --> githubrunner2["Github Runner Charm 2 (GH2)"]
-    githubrunner2 --> charm
-    githubrunner2 --> openstack_ghrunner2[OpenStack for GH2]
-    imagebuilder --> openstack_ghrunner2
+    charm -- image ID --> githubrunner["Github Runner Charm (GH)"]
+    githubrunner -- OpenStack credentials --> charm
+    githubrunner -- spawn runner VM's --> openstack_ghrunner[OpenStack for GH]
+    imagebuilder -- upload Image --> openstack_ghrunner
 ```
 
 
