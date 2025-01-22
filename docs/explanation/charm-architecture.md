@@ -73,7 +73,7 @@ The image-builder application must be initialized before it can be used. Initial
 
 The following Juju [events](https://juju.is/docs/sdk/event) are observed and handled by the charm as follows:
 
-1. [install](https://juju.is/docs/sdk/install-event): The charm is installed on the machine. The charm initialises the machine by installing dependent software packages,
+1. [install](https://juju.is/docs/sdk/install-event): The charm is installed on the machine. The charm initializes the machine by installing dependent software packages,
 storing OpenStack credentials on disk and initializing the image-builder application.
 2. [config-changed](https://juju.is/docs/sdk/config-changed-event): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or openstack credentials).
 3. `run`: This is a [custom event](https://juju.is/docs/sdk/custom-event) that is periodically triggered by a cronjob. It is used to call the image-builder application to build the image.
