@@ -1,11 +1,11 @@
 # Charm architecture
 
 The GitHub Runner Image Builder is a machine charm responsible for managing an application ("image-builder")
-that creates and stores VM images suitable for use by self-hosted GitHub Runners using Openstack. 
+that creates and stores VM images suitable for use by self-hosted GitHub Runners using OpenStack. 
 The image-builder source code is hosted at https://github.com/canonical/github-runner-image-builder.
 
-The image-builder uses an Openstack cloud to build images. 
-Through integration with another Charm, it obtains the credentials to upload the images to a specified Openstack project,
+The image-builder uses an OpenStack cloud to build images. 
+Through integration with another Charm, it obtains the credentials to upload the images to a specified OpenStack project,
 which can then be reused by the other Charm to spawn VM instances with the necessary software preinstalled.
 
 ```mermaid
@@ -43,16 +43,16 @@ Container_Boundary(c2, "GitHub Runner"){
 ```
 
 
-The image-builder uses the [Openstack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
+The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
 by a config option. Using an external OpenStack VM instead of the charms machine allows for more features
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
 [cloud-init](https://cloud-init.io/) is used to install the necessary dependencies for spawning self-hosted runners
 ([github actions runner binary](https://github.com/actions/runner)) and e.g. tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
-In addition, software that is heavily used in Canonical projects (such as [juju](https://juju.is/) or [microk8s](https://microk8s.io/)) 
+In addition, software that is heavily used in Canonical projects (such as [Juju](https://juju.is/) or [MicroK8s](https://microk8s.io/)) 
 can be configured to be pre-installed to reduce the actual CI runtime (as users do not have to install this software in their respective CI runs). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
-The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified Openstack project,
-and deletes the VM. This specified Openstack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
+The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project,
+and deletes the VM. This specified OpenStack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
 
 The other charm can then use the image to create a VM instance with the required software preinstalled. It receives
 the image ID from the Image Builder charm via the integration mentioned above.
@@ -66,13 +66,13 @@ Furthermore, the charm sets up a cron job to build the images periodically to en
 
 The interactions between the charm and the image-builder are performed using CLI commands. 
 The image-builder application is not daemonized and stops running after the image has been built
-and uploaded to Openstack.
+and uploaded to OpenStack.
 
 The image-builder application is initialized by the charm before it can be used. Initialization includes
 
 - Downloading and validating the base images (e.g. ubuntu 22.04 or 24.04)
-- Uploading the base images to Openstack
-- Creating keypairs and security groups in Openstack 
+- Uploading the base images to OpenStack
+- Creating keypairs and security groups in OpenStack 
 
 
 
@@ -86,7 +86,7 @@ storing OpenStack credentials on disk and initializing the image-builder applica
 3. `run`: This is a [custom event](https://juju.is/docs/sdk/custom-event) that is periodically triggered by a cronjob. It is used to call the image-builder application to build the image.
 4. `run-action`: This is an [action event](https://juju.is/docs/sdk/action-name-action-event) fired by the user to manually trigger the image-builder to build the image.
 5. `image-relation-changed`: This is a [relation event](https://juju.is/docs/sdk/relation-events) that fires when relation data changes. It also triggers the image-builder to build the image.
-Once the build is complete, the image-builder will upload the image taking into account the newly changed relation data (e.g. if the Openstack project has changed).
+Once the build is complete, the image-builder will upload the image taking into account the newly changed relation data (e.g. if the OpenStack project has changed).
 
 > See more about events in the Juju docs: [Event](https://juju.is/docs/sdk/event)
 
