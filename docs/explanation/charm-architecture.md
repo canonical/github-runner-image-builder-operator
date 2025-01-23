@@ -41,7 +41,44 @@ Container_Boundary(c2, "GitHub Runner"){
     Rel(githubrunner, imagebuilder, "OpenStack credentials")
     UpdateRelStyle(githubrunner, imagebuilder, $offsetY="10", $offsetX="-60")
 ```
+# TODO: Check which diagram to use
+```mermaid
+C4Component
+title Component diagram for Image Builder Charm
 
+System_Ext(osbuilding, "OpenStack", "OpenStack deployment used for building images")
+System_Ext(osgithubrunner, "OpenStack", "OpenStack deployment used for spawning runner VMs")
+
+
+Container_Boundary(imagebuildercharm), "Image Builder") {
+ Component(builder, "Builder", "", "Builds Images and uploads to clouds")
+ Component(charm, "Charm", "", "Observes events") 
+  Component(image, "Image Observer", "", "Handles changes in image relation data")
+
+  Rel(charm, builder, "init, run")
+  Rel(charm, image, "registers")
+}
+
+Rel(builder, osbuilding, "Build images")
+Rel(builder, osgithubrunner, "Upload images")
+
+Container_Boundary(c2, "GitHub Runner"){
+
+    Container(githubrunner, "GitHub Runner Charm", "", "Manages self-hosted runners")
+}
+
+
+Rel(githubrunner, image, "OpenStack credentials")
+Rel(image, githubrunner, "image ids")
+
+
+
+UpdateRelStyle(charm, builder, $offsetX="0", $offsetY="-10")
+
+
+
+
+```
 
 The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
 by a config option. Using an external OpenStack VM instead of the charm's machine allows for more features
