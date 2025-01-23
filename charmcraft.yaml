@@ -33,6 +33,16 @@ parts:
     override-build: |
       rustup default stable
       craftctl default
+  app:
+    plugin: nil
+    override-build: |
+      cd /root/project
+      tar -cvzf app.tar.gz app
+      cp app.tar.gz /root/stage
+    organize:
+        app.tar.gz: app.tar.gz
+    prime:
+        - app.tar.gz
 #  app:
 #    plugin: nil
 #    build-packages:
@@ -40,9 +50,14 @@ parts:
 #      - gcc
 #    override-build: |
 #      pip install wheel
-#      pip wheel app
+#      pip install --upgrade pip
+#      pip wheel /root/project/app
+#      cp github_runner_image_builder-0.9.2-py3-none-any.whl /root/stage
 #    organize:
-#      app-0.0.1-py3-none-any.whl: app-0.0.1-py3-none-any.whl
+#      "github_runner_image_builder-0.9.2-py3-none-any.whl": github_runner_image_builder-0.9.2-py3-none-any.whl
+#    prime:
+#      - github_runner_image_builder-0.9.2-py3-none-any.whl
+
 
 bases:
   - build-on:

@@ -113,7 +113,7 @@ def _install_dependencies() -> None:
             [
                 "/usr/bin/pipx",
                 "install",
-                f"{os.getcwd()}/app",
+                f"{os.getcwd()}/app.tar.gz",
             ],
             timeout=5 * 60,
             check=True,
