@@ -5,8 +5,8 @@ that creates and stores VM images suitable for use by self-hosted GitHub Runners
 The image-builder source code is hosted at https://github.com/canonical/github-runner-image-builder.
 
 The image-builder uses an OpenStack cloud to build images. 
-Through integration with another Charm, it obtains the credentials to upload the images to a specified OpenStack project,
-which can then be reused by the other Charm to spawn VM instances with the necessary software preinstalled.
+Through integration with another charm, it obtains the credentials to upload the images to a specified OpenStack project,
+which can then be reused by the other charm to spawn VM instances with the necessary software preinstalled.
 
 ```mermaid
 
@@ -44,14 +44,14 @@ Container_Boundary(c2, "GitHub Runner"){
 
 
 The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
-by a config option. Using an external OpenStack VM instead of the charms machine allows for more features
+by a config option. Using an external OpenStack VM instead of the charm's machine allows for more features
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
 [cloud-init](https://cloud-init.io/) is used to install the necessary dependencies for spawning self-hosted runners
-([github actions runner binary](https://github.com/actions/runner)) and e.g. tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
+([github actions runner binary](https://github.com/actions/runner)) and tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
 In addition, software that is heavily used in Canonical projects (such as [Juju](https://juju.is/) or [MicroK8s](https://microk8s.io/)) 
 can be configured to be pre-installed to reduce the actual CI runtime (as users do not have to install this software in their respective CI runs). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
-The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project,
+The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project
 and deletes the VM. This specified OpenStack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
 
 The other charm can then use the image to create a VM instance with the required software preinstalled. It receives
@@ -70,7 +70,7 @@ and uploaded to OpenStack.
 
 The image-builder application is initialized by the charm before it can be used. Initialization includes
 
-- Downloading and validating the base images (e.g. ubuntu 22.04 or 24.04)
+- Downloading and validating the base images (e.g. Ubuntu 22.04 or 24.04)
 - Uploading the base images to OpenStack
 - Creating keypairs and security groups in OpenStack 
 
@@ -82,7 +82,7 @@ The following Juju [events](https://juju.is/docs/sdk/event) are observed and han
 
 1. [install](https://juju.is/docs/sdk/install-event): The charm is installed on the machine. The charm initializes the machine by installing dependent software packages,
 storing OpenStack credentials on disk and initializing the image-builder application.
-2. [config-changed](https://juju.is/docs/sdk/config-changed-event): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or openstack credentials).
+2. [config-changed](https://juju.is/docs/sdk/config-changed-event): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or OpenStack credentials).
 3. `run`: This is a [custom event](https://juju.is/docs/sdk/custom-event) that is periodically triggered by a cronjob. It is used to call the image-builder application to build the image.
 4. `run-action`: This is an [action event](https://juju.is/docs/sdk/action-name-action-event) fired by the user to manually trigger the image-builder to build the image.
 5. `image-relation-changed`: This is a [relation event](https://juju.is/docs/sdk/relation-events) that fires when relation data changes. It also triggers the image-builder to build the image.
@@ -93,7 +93,7 @@ Once the build is complete, the image-builder will upload the image taking into 
 ## Charm code overview
 
 The `src/charm.py` is the default entry point for a charm and has the GithubRunnerImageBuilderCharm Python class which inherits from CharmBase. CharmBase is the base class 
-from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
+from which all charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
 > See more in the Juju docs: [Charm](https://juju.is/docs/sdk/constructs#heading--charm)
 
