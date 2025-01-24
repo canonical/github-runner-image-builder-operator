@@ -61,7 +61,6 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     builder.initialize(
         app_init_config=builder.ApplicationInitializationConfig(
             cloud_config=factories.StateCloudConfigFactory(),
-            channel=MagicMock(),
             cron_interval=MagicMock(),
             image_arch=MagicMock(),
             resource_prefix=MagicMock(),

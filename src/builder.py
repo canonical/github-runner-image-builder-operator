@@ -57,7 +57,6 @@ class ApplicationInitializationConfig:
 
     Attributes:
         cloud_config: The OpenStack cloud config the application should interact with.
-        channel: The application channel.
         cron_interval: The number of hours to retrigger build.
         image_arch: The image architecture to initialize build resources for.
         resource_prefix: The prefix of application resources.
@@ -100,9 +99,6 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
 
 def _install_dependencies() -> None:
     """Install required dependencies to run qemu image build.
-
-    Args:
-        channel: The application channel to install.
 
     Raises:
         DependencyInstallError: If there was an error installing apt packages.
