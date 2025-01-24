@@ -301,7 +301,7 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
 @pytest.fixture(scope="module", name="dockerhub_mirror")
 def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str:
     """Dockerhub mirror URL."""
-    return pytestconfig.getoption("--dockerhub-mirror", default="")
+    return pytestconfig.getoption("--dockerhub-mirror") or ""
 
 
 @pytest.fixture(scope="module", name="test_id")
