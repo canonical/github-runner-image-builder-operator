@@ -42,34 +42,6 @@ The image-builder uses an OpenStack cloud to build images.
 Through integration with another charm, the charm obtains the credentials to upload the images to a specified OpenStack project,
 which can then be reused by the other charm to spawn VM instances with the necessary software preinstalled.
 
-
-```mermaid
-C4Component
-title Component diagram for Image Builder Charm
-
-
-Container_Boundary(ibcharm), "Image Builder Charm") {
-  Component(image, "Image Observer", "", "Handles changes in image relation data")
-   Component(charm, "Charm", "", "Observes events") 
- Component(operator, "Operator", "", "Handles operational logic by calling application")
-
-  Rel(charm, operator, "sets up")
-  Rel(charm, image, "registers events")
-}
-
-Container_Boundary(ibapp), "Image Builder App") {
- Component(builder, "Builder", "", "Builds images and uploads to clouds")
-
-}
-
-Rel(operator, builder, "init, run")
-
-
-UpdateRelStyle(charm, operator, $offsetX="0", $offsetY="-10")
-UpdateRelStyle(charm, image, $offsetX="-40", $offsetY="-20")
-UpdateRelStyle(operator, builder, $offsetX="-20", $offsetY="-10")
-```
-
 The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
 by a config option. Using an external OpenStack VM instead of the charm's machine allows for more features
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
@@ -101,6 +73,33 @@ The image-builder application is initialized by the charm before it can be used.
 - Uploading the base images to OpenStack
 - Creating keypairs and security groups in OpenStack 
 
+
+```mermaid
+C4Component
+title Component diagram for Image Builder Charm
+
+
+Container_Boundary(ibcharm), "Image Builder Charm") {
+  Component(image, "Image Observer", "", "Handles changes in image relation data")
+   Component(charm, "Charm", "", "Observes events") 
+ Component(operator, "Operator", "", "Handles operational logic by calling application")
+
+  Rel(charm, operator, "sets up")
+  Rel(charm, image, "registers events")
+}
+
+Container_Boundary(ibapp), "Image Builder App") {
+ Component(builder, "Builder", "", "Builds images and uploads to clouds")
+
+}
+
+Rel(operator, builder, "init, run")
+
+
+UpdateRelStyle(charm, operator, $offsetX="0", $offsetY="-10")
+UpdateRelStyle(charm, image, $offsetX="-40", $offsetY="-20")
+UpdateRelStyle(operator, builder, $offsetX="-20", $offsetY="-10")
+```
 
 
 ## Juju events
