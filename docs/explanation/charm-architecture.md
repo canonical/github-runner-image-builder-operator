@@ -4,10 +4,6 @@ The GitHub Runner Image Builder is a machine charm responsible for managing an a
 that creates and stores VM images suitable for use by self-hosted GitHub Runners using OpenStack. 
 The image-builder source code is hosted at https://github.com/canonical/github-runner-image-builder.
 
-The image-builder uses an OpenStack cloud to build images. 
-Through integration with another charm, it obtains the credentials to upload the images to a specified OpenStack project,
-which can then be reused by the other charm to spawn VM instances with the necessary software preinstalled.
-
 ```mermaid
 
 C4Container
@@ -41,43 +37,37 @@ Container_Boundary(c2, "GitHub Runner"){
     Rel(githubrunner, imagebuilder, "OpenStack credentials")
     UpdateRelStyle(githubrunner, imagebuilder, $offsetY="10", $offsetX="-60")
 ```
-# TODO: Check which diagram to use
+
+The image-builder uses an OpenStack cloud to build images. 
+Through integration with another charm, the charm obtains the credentials to upload the images to a specified OpenStack project,
+which can then be reused by the other charm to spawn VM instances with the necessary software preinstalled.
+
+
 ```mermaid
 C4Component
 title Component diagram for Image Builder Charm
 
-System_Ext(osbuilding, "OpenStack", "OpenStack deployment used for building images")
-System_Ext(osgithubrunner, "OpenStack", "OpenStack deployment used for spawning runner VMs")
 
-
-Container_Boundary(imagebuildercharm), "Image Builder") {
- Component(builder, "Builder", "", "Builds Images and uploads to clouds")
- Component(charm, "Charm", "", "Observes events") 
+Container_Boundary(ibcharm), "Image Builder Charm") {
   Component(image, "Image Observer", "", "Handles changes in image relation data")
+   Component(charm, "Charm", "", "Observes events") 
+ Component(operator, "Operator", "", "Handles operational logic by calling application")
 
-  Rel(charm, builder, "init, run")
-  Rel(charm, image, "registers")
+  Rel(charm, operator, "sets up")
+  Rel(charm, image, "registers events")
 }
 
-Rel(builder, osbuilding, "Build images")
-Rel(builder, osgithubrunner, "Upload images")
+Container_Boundary(ibapp), "Image Builder App") {
+ Component(builder, "Builder", "", "Builds images and uploads to clouds")
 
-Container_Boundary(c2, "GitHub Runner"){
-
-    Container(githubrunner, "GitHub Runner Charm", "", "Manages self-hosted runners")
 }
 
-
-Rel(githubrunner, image, "OpenStack credentials")
-Rel(image, githubrunner, "image ids")
+Rel(operator, builder, "init, run")
 
 
-
-UpdateRelStyle(charm, builder, $offsetX="0", $offsetY="-10")
-
-
-
-
+UpdateRelStyle(charm, operator, $offsetX="0", $offsetY="-10")
+UpdateRelStyle(charm, image, $offsetX="-40", $offsetY="-20")
+UpdateRelStyle(operator, builder, $offsetX="-20", $offsetY="-10")
 ```
 
 The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
