@@ -2,7 +2,7 @@
 
 The GitHub Runner Image Builder is a machine charm responsible for managing an application ("image-builder")
 that creates and stores VM images suitable for use by self-hosted GitHub Runners using OpenStack. 
-The image-builder source code is hosted at https://github.com/canonical/github-runner-image-builder.
+The image-builder source code is hosted in the [github-runner-image-builder GitHub repository](https://github.com/canonical/github-runner-image-builder).
 
 ```mermaid
 
@@ -139,7 +139,7 @@ self.framework.observe(self.on.config_changed, self._on_config_changed)
 4. The method `_on_config_changed`, for its turn, will take the necessary actions such as updating the cron job's interval to 3 hours.
 
 
-The code is structured according to the best practices described in https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619.
+The code is structured according to the best practices described in [Managing charm complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619).
 Therefore, in addition to `src/charm.py`, there are other modules in the charm that are responsible for specific tasks:
 
 - observe changes to image relations
