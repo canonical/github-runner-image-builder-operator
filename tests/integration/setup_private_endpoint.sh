@@ -6,27 +6,27 @@
 # These need to be set as environment variables in GitHub secrets.
 MISSING_ENV="false"
 if [ -z ${VAULT_APPROLE_ROLE_ID_ALT+x} ]; then
-    echo "VAULT_APPROLE_ROLE_ID needs to be set"
+    echo "VAULT_APPROLE_ROLE_ID_ALT needs to be set"
     MISSING_ENV="true"
 fi
 if [ -z ${VAULT_APPROLE_SECRET_ID_ALT+x} ]; then
-    echo "VAULT_APPROLE_SECRET_ID needs to be set"
+    echo "VAULT_APPROLE_SECRET_ID_ALT needs to be set"
     MISSING_ENV="true"
 fi
 if [ -z ${JUJU_CONTROLLER_ALT+x} ]; then
-    echo "JUJU_CONTROLLER needs to be set"
+    echo "JUJU_CONTROLLER_ALT needs to be set"
     MISSING_ENV="true"
 fi
 if [ -z ${JUJU_MODEL_ALT+x} ]; then
-    echo "JUJU_MODEL needs to be set"
+    echo "JUJU_MODEL_ALT needs to be set"
     MISSING_ENV="true"
 fi
 if [ -z ${PRODSTACK_ALT+x} ]; then
-    echo "PRODSTACK needs to be set"
+    echo "PRODSTACK_ALT needs to be set"
     MISSING_ENV="true"
 fi
 if [ -z ${VAULT_ADDR_ALT+x} ]; then
-    echo "VAULT_ADDR needs to be set"
+    echo "VAULT_ADDR_ALT needs to be set"
     MISSING_ENV="true"
 fi
 
@@ -34,8 +34,8 @@ if [ ${MISSING_ENV} = "true" ]; then
     exit 1
 fi
 
-export VAULT_SECRET_PATH_ROLE=secret/${PRODSTACK}/roles/${JUJU_MODEL##*/}
-export VAULT_SECRET_PATH_COMMON=secret/${PRODSTACK}/juju/common
+export VAULT_SECRET_PATH_ROLE=secret/${PRODSTACK_ALT}/roles/${JUJU_MODEL_ALT##*/}
+export VAULT_SECRET_PATH_COMMON=secret/${PRODSTACK_ALT}/juju/common
 
 function remove_juju_config(){
     if [ -d "${HOME}"/.local/share/juju ]; then
@@ -58,7 +58,7 @@ function vault_auth(){
         fi
         # temporarily disable trace
         set -x
-        VAULT_TOKEN=$(vault write -f -field=token auth/approle/login role_id="${VAULT_APPROLE_ROLE_ID}" secret_id="${VAULT_APPROLE_SECRET_ID}")
+        VAULT_TOKEN=$(vault write -f -field=token auth/approle/login role_id="${VAULT_APPROLE_ROLE_ID_ALT}" secret_id="${VAULT_APPROLE_SECRET_ID_ALT}")
         export VAULT_TOKEN
         # reset trace if it was enabled
         [[ $TRACE_ENABLED -eq 0 ]] && set +x
@@ -67,7 +67,7 @@ function vault_auth(){
 
 function load_juju_controller_config(){
     vault_auth
-    vault read -field=controller_config "${VAULT_SECRET_PATH_COMMON}"/controllers/"${JUJU_CONTROLLER}" | base64 -d - > "${HOME}/.local/share/juju/controllers.yaml"
+    vault read -field=controller_config "${VAULT_SECRET_PATH_COMMON}"/controllers/"${JUJU_CONTROLLER_ALT}" | base64 -d - > "${HOME}/.local/share/juju/controllers.yaml"
 }
 
 function load_juju_account_config(){
@@ -83,7 +83,7 @@ function load_juju_account_config(){
     # which is ignored by the heredoc, to prevent script indentation affecting the written file.
     cat <<- EOF > "${HOME}/.local/share/juju/accounts.yaml"
 	controllers:
-	    ${JUJU_CONTROLLER?}:
+	    ${JUJU_CONTROLLER_ALT?}:
 	        user: ${USERNAME}
 	        password: ${PASSWORD}
 	EOF
@@ -92,7 +92,7 @@ function load_juju_account_config(){
 function switch_juju_model(){
     # cannot switch if these environment variables are set
     # by default, the model is not selected and `juju status` will fail
-    unset JUJU_CONTROLLER JUJU_MODEL
+    unset JUJU_CONTROLLER_ALT JUJU_MODEL_ALT
     juju switch "$(juju models --format json | jq -r '.models[0].name')"
 }
 
