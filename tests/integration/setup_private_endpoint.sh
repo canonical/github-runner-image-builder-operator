@@ -5,27 +5,27 @@
 
 # These need to be set as environment variables in GitHub secrets.
 MISSING_ENV="false"
-if [ -z ${VAULT_APPROLE_ROLE_ID_ALT+x} ]; then
+if [ -z ${VAULT_APPROLE_ROLE_ID+x} ]; then
     echo "VAULT_APPROLE_ROLE_ID needs to be set"
     MISSING_ENV="true"
 fi
-if [ -z ${VAULT_APPROLE_SECRET_ID_ALT+x} ]; then
+if [ -z ${VAULT_APPROLE_SECRET_ID+x} ]; then
     echo "VAULT_APPROLE_SECRET_ID needs to be set"
     MISSING_ENV="true"
 fi
-if [ -z ${JUJU_CONTROLLER_ALT+x} ]; then
+if [ -z ${JUJU_CONTROLLER+x} ]; then
     echo "JUJU_CONTROLLER needs to be set"
     MISSING_ENV="true"
 fi
-if [ -z ${JUJU_MODEL_ALT+x} ]; then
+if [ -z ${JUJU_MODEL+x} ]; then
     echo "JUJU_MODEL needs to be set"
     MISSING_ENV="true"
 fi
-if [ -z ${PRODSTACK_ALT+x} ]; then
+if [ -z ${PRODSTACK+x} ]; then
     echo "PRODSTACK needs to be set"
     MISSING_ENV="true"
 fi
-if [ -z ${VAULT_ADDR_ALT+x} ]; then
+if [ -z ${VAULT_ADDR+x} ]; then
     echo "VAULT_ADDR needs to be set"
     MISSING_ENV="true"
 fi
