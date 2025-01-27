@@ -28,6 +28,6 @@ jobs:
       modules: '["test_charm"]'
       self-hosted-runner: true
       self-hosted-runner-arch: ARM64
-      self-hosted-runner-label: stg-private-endpoint
+      self-hosted-runner-label: self-hosted-linux-arm64-jammy-staging
       builder-runner-label: ARM64
       pre-run-script: tests/integration/setup_private_endpoint.sh
