@@ -109,7 +109,7 @@ The following Juju [events](https://juju.is/docs/sdk/event) are observed and han
 1. [install](https://juju.is/docs/sdk/install-event): The charm is installed on the machine. The charm initializes the machine by installing dependent software packages,
 storing OpenStack credentials on disk and initializing the image-builder application.
 2. [config-changed](https://juju.is/docs/sdk/config-changed-event): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or OpenStack credentials).
-3. `run`: This is a [custom event](https://juju.is/docs/sdk/custom-event) that is periodically triggered by a cronjob. It is used to call the image-builder application to build the image.
+3. `run`: This is a [custom event](https://juju.is/docs/sdk/custom-event) that is periodically triggered by a cron job. It is used to call the image-builder application to build the image.
 4. `run-action`: This is an [action event](https://juju.is/docs/sdk/action-name-action-event) fired by the user to manually trigger the image-builder to build the image.
 5. `image-relation-changed`: This is a [relation event](https://juju.is/docs/sdk/relation-events) that fires when relation data changes. It also triggers the image-builder to build the image.
 Once the build is complete, the image-builder will upload the image taking into account the newly changed relation data (e.g. if the OpenStack project has changed).
