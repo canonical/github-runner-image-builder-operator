@@ -209,8 +209,7 @@ def private_endpoint_configs_fixture(
     """The OpenStack private endpoint configurations."""
     if arch == "arm64":
         auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
-        password = os.getenv("OPENSTACK_PASSWORD_ARM64")
-        assert password is not None, "please specify OPENSTACK_PASSWORD_ARM64 environment var"
+        password = os.getenv("OPENSTACK_PASSWORD_ARM64", "")
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
         project_name = pytestconfig.getoption("--openstack-project-name-arm64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
@@ -218,8 +217,7 @@ def private_endpoint_configs_fixture(
         region_name = pytestconfig.getoption("--openstack-region-name-arm64")
     else:
         auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
-        password = os.getenv("OPENSTACK_PASSWORD_AMD64")
-        assert password is not None, "please specify OPENSTACK_PASSWORD_AMD64 environment var"
+        password = os.getenv("OPENSTACK_PASSWORD_AMD64", "")
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
         project_name = pytestconfig.getoption("--openstack-project-name-amd64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
