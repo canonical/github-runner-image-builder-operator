@@ -178,7 +178,6 @@ async def test_charm_fixture(
     logger.info("Test charm removed.")
 
 
-
 @pytest.fixture(scope="module", name="network_name")
 def network_name_fixture(pytestconfig: pytest.Config, arch: Literal["amd64", "arm64"]) -> str:
     """Network to use to spawn test instances under."""
@@ -211,6 +210,7 @@ def private_endpoint_configs_fixture(
     if arch == "arm64":
         auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
         password = os.getenv("OPENSTACK_PASSWORD_ARM64")
+        assert password is not None, "please specify OPENSTACK_PASSWORD_ARM64 environment var"
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
         project_name = pytestconfig.getoption("--openstack-project-name-arm64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
@@ -219,6 +219,7 @@ def private_endpoint_configs_fixture(
     else:
         auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
         password = os.getenv("OPENSTACK_PASSWORD_AMD64")
+        assert password is not None, "please specify OPENSTACK_PASSWORD_AMD64 environment var"
         project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
         project_name = pytestconfig.getoption("--openstack-project-name-amd64")
         user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
