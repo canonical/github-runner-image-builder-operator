@@ -63,6 +63,11 @@ Observability Stack (COS).
 
 For a full list of integrations, please refer to the [Charmhub documentation](https://charmhub.io/github-runner-image-builder/integrations).
 
+## Repository structure
+
+This repository contains the charm in the root directory and the `github-runner-image-builder`
+application in the `app` directory. Refer to [Contributing](CONTRIBUTING.md) for more information.
+
 ## Learn more
 * [Read more](https://charmhub.io/github-runner-image-builder) <!--Link to the charm's official documentation-->
 * [Developer documentation](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md) <!--Link to any developer documentation-->
