@@ -43,20 +43,6 @@ parts:
         app.tar.gz: app.tar.gz
     prime:
         - app.tar.gz
-#  app:
-#    plugin: nil
-#    build-packages:
-#      - python3-dev
-#      - gcc
-#    override-build: |
-#      pip install wheel
-#      pip install --upgrade pip
-#      pip wheel /root/project/app
-#      cp github_runner_image_builder-0.9.2-py3-none-any.whl /root/stage
-#    organize:
-#      "github_runner_image_builder-0.9.2-py3-none-any.whl": github_runner_image_builder-0.9.2-py3-none-any.whl
-#    prime:
-#      - github_runner_image_builder-0.9.2-py3-none-any.whl
 
 
 bases:
