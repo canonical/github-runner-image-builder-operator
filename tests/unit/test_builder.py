@@ -1228,6 +1228,18 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
     )
 
 
+def test_upgrade_app(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched subprocess.run.
+    act: when upgrade_app is called.
+    assert: expected command is run.
+    """
+    monkeypatch.setattr(subprocess, "run", MagicMock())
+
+    builder.upgrade_app()
+
+    assert subprocess.run.call_count == 2
+
 @pytest.mark.parametrize(
     "error",
     [
