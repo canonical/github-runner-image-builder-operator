@@ -1,4 +1,4 @@
-## [#27 feat: external cloud](https://github.com/canonical/github-runner-image-builder-operator/pull/27) (2021-09-13)
+## [#27 feat: external cloud](https://github.com/canonical/github-runner-image-builder-operator/pull/27) (2024-09-13)
 
 > Builds GitHub runner images on OpenStack VMs.
 
