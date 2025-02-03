@@ -287,6 +287,11 @@ def openstack_security_group_fixture(openstack_connection: Connection):
 @pytest.fixture(scope="module", name="proxy")
 def proxy_fixture(pytestconfig: pytest.Config) -> types.ProxyConfig:
     """The environment proxy to pass on to the charm/testing model."""
-    proxy = pytestconfig.getoption("--proxy")
+
+    # proxy has to be without http:// or https://  prefix
+    if pytestconfig.getoption("--proxy"):
+        proxy = pytestconfig.getoption("--proxy").removeprefix("http://").removeprefix("https://")
+    else:
+        proxy = None
     no_proxy = pytestconfig.getoption("--no-proxy")
     return types.ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
