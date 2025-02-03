@@ -338,8 +338,8 @@ class CloudConfig:
     """
 
     build_cloud: str
-    build_flavor: str
-    build_network: str
+    build_flavor: str | None
+    build_network: str | None
     resource_prefix: str
     num_revisions: int
     upload_clouds: typing.Iterable[str]

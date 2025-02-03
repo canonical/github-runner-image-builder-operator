@@ -189,8 +189,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         return builder.StaticConfigs(
             cloud_config=builder.CloudConfig(
                 build_cloud=builder_config.cloud_config.cloud_name,
-                build_flavor=builder_config.cloud_config.external_build_config.flavor,
-                build_network=builder_config.cloud_config.external_build_config.network,
+                build_flavor=(
+                    builder_config.cloud_config.external_build_config.flavor
+                    if builder_config.cloud_config.external_build_config
+                    else None
+                ),
+                build_network=(
+                    builder_config.cloud_config.external_build_config.network
+                    if builder_config.cloud_config.external_build_config
+                    else None
+                ),
                 resource_prefix=builder_config.app_config.resource_prefix,
                 num_revisions=builder_config.cloud_config.num_revisions,
                 upload_clouds=builder_config.cloud_config.upload_cloud_ids,
