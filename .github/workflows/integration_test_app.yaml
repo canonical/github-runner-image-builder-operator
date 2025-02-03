@@ -14,6 +14,7 @@ jobs:
     name: Integration test (ARM64)
     runs-on: [self-hosted, ARM64, jammy, stg-private-endpoint]
     strategy:
+      fail-fast: false
       matrix:
         image: [jammy, noble]
     steps:
@@ -35,6 +36,7 @@ jobs:
     name: Integration test (X64)
     runs-on: [self-hosted, X64, jammy, stg-private-endpoint]
     strategy:
+      fail-fast: false
       matrix:
         image: [jammy, noble]
     steps:
