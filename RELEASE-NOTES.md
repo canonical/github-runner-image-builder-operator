@@ -3,7 +3,7 @@
 > Include application repository in the charm repository.
 
 ### Upgrade Steps
-* Requires a redeployment.
+* Requires no redeployment (since external cloud feature has been implemented).
 
 ### Breaking Changes
 * No longer supports the `app-channel` configuration option.

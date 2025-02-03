@@ -105,19 +105,22 @@ def _install_dependencies() -> None:
     """
     try:
         apt.add_package(APT_DEPENDENCIES, update_cache=True)
-        subprocess.run(  # nosec: B603
-            [
-                "/usr/bin/pipx",
-                "install",
-                f"{os.getcwd()}/app.tar.gz",
-            ],
-            timeout=5 * 60,
-            check=True,
-            user=UBUNTU_USER,
-        )
-    except (apt.PackageNotFoundError, subprocess.SubprocessError) as exc:
+        _install_app()
+    except (apt.PackageNotFoundError, subprocess.SubprocessError)  as exc:
         raise DependencyInstallError from exc
 
+def _install_app() -> None:
+    """Install the application."""
+    subprocess.run(  # nosec: B603
+        [
+            "/usr/bin/pipx",
+            "install",
+            f"{os.getcwd()}/app.tar.gz",
+        ],
+        timeout=5 * 60,
+        check=True,
+        user=UBUNTU_USER,
+    )
 
 def _initialize_image_builder(
     cloud_name: str, image_arch: state.Arch, resource_prefix: str
@@ -913,20 +916,11 @@ def upgrade_app() -> None:
         UpgradeApplicationError: If there was an error upgrading the application.
     """
     try:
-        subprocess.run(  # nosec: B603
-            [
-                "/usr/bin/run-one",
-                "/usr/bin/pipx",
-                "upgrade",
-                "github-runner-image-builder",
-            ],
-            timeout=5 * 60,
-            check=True,
-            user=UBUNTU_USER,
-        )
+        _uninstall_app()
+        _install_app()
     except subprocess.CalledProcessError as exc:
         logger.error(
-            "Pipx upgrade failed, code: %s, out: %s, err: %s",
+            "Pipx command failed, code: %s, out: %s, err: %s",
             exc.returncode,
             exc.stdout,
             exc.stderr,
@@ -934,3 +928,16 @@ def upgrade_app() -> None:
         raise UpgradeApplicationError from exc
     except subprocess.SubprocessError as exc:
         raise UpgradeApplicationError from exc
+
+def _uninstall_app() -> None:
+    """Uninstall the application."""
+    subprocess.run(  # nosec: B603
+        [
+            "/usr/bin/pipx",
+            "uninstall",
+            "github-runner-image-builder",
+        ],
+        timeout=5 * 60,
+        check=True,
+        user=UBUNTU_USER,
+    )

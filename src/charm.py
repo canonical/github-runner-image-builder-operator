@@ -67,6 +67,17 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         )
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
+
+    @charm_utils.block_if_invalid_config(defer=True)
+    def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
+        """Handle charm upgrade events.
+
+        Upgrades the application and triggers a new image build.
+        """
+        self.unit.status = ops.MaintenanceStatus("Running builder upgrade.")
+        builder.upgrade_app()
+        self.unit.status = ops.ActiveStatus()
+
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
@@ -148,8 +159,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         This method requires that the clouds.yaml are properly installed with build cloud and
         upload cloud authentication parameters.
         """
-        self.unit.status = ops.ActiveStatus("Running upgrade.")
-        builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
         builder_config = state.BuilderConfig.from_charm(self)
         cloud_images = builder.run(
