@@ -19,15 +19,15 @@ jobs:
       self-hosted-runner-arch: X64
       self-hosted-runner-label: stg-private-endpoint
       builder-runner-label: X64
-#  integration-tests-arm:
-#    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
-#    secrets: inherit
-#    with:
-#      juju-channel: 3.2/stable
-#      provider: lxd
-#      modules: '["test_charm"]'
-#      self-hosted-runner: true
-#      self-hosted-runner-arch: ARM64
-#      self-hosted-runner-label: stg-private-endpoint
-#      builder-runner-label: ARM64
-#      pre-run-script: tests/integration/setup_private_endpoint.sh
+  integration-tests-arm:
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    secrets: inherit
+    with:
+      juju-channel: 3.2/stable
+      provider: lxd
+      modules: '["test_charm"]'
+      self-hosted-runner: true
+      self-hosted-runner-arch: ARM64
+      self-hosted-runner-label: stg-private-endpoint
+      builder-runner-label: ARM64
+      pre-run-script: tests/integration/setup_private_endpoint.sh
