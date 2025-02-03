@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner charm."""
@@ -40,11 +40,6 @@ def pytest_addoption(parser: Parser):
         help="The URL to Openstack authentication service, i.e. keystone.",
     )
     parser.addoption(
-        "--openstack-password-arm64",
-        action="store",
-        help="The password to authenticate to Openstack service.",
-    )
-    parser.addoption(
         "--openstack-project-domain-name-arm64",
         action="store",
         help="The Openstack project domain name to use.",
@@ -84,11 +79,6 @@ def pytest_addoption(parser: Parser):
         "--openstack-auth-url-amd64",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
-    )
-    parser.addoption(
-        "--openstack-password-amd64",
-        action="store",
-        help="The password to authenticate to Openstack service.",
     )
     parser.addoption(
         "--openstack-project-domain-name-amd64",
