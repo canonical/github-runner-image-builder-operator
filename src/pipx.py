@@ -8,7 +8,7 @@
 # Code is abstracting process interactions and is currently tested in integration tests.
 
 import logging
-import subprocess
+import subprocess  # nosec
 
 from exceptions import PipXError
 
