@@ -39,6 +39,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.image_observer = image.Observer(self)
         self._grafana_agent = COSAgentProvider(charm=self)
         self.framework.observe(self.on.install, self._on_install)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run, self._on_run)
         self.framework.observe(self.on.run_action, self._on_run_action)
