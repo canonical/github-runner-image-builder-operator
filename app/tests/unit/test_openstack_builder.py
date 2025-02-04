@@ -8,6 +8,7 @@
 # pylint:disable=protected-access,too-many-lines
 
 import pathlib
+import secrets
 import typing
 import urllib.parse
 from unittest.mock import MagicMock
@@ -95,10 +96,12 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch):
         openstack_builder, "_create_security_group", (create_security_group_mock := MagicMock())
     )
 
-    openstack_builder.initialize(MagicMock(), MagicMock(), MagicMock())
+    prefix = secrets.token_hex(8)
+    openstack_builder.initialize(MagicMock(), MagicMock(), prefix=prefix)
 
     download_mock.assert_called()
     upload_mock.assert_called()
+    assert prefix in upload_mock.call_args[1]["image_name"]
     connect_mock.assert_called()
     create_keypair_mock.assert_called()
     create_security_group_mock.assert_called()

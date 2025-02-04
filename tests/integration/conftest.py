@@ -387,14 +387,16 @@ async def app_on_charmhub_fixture(
     app_config: dict,
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
-    """The deployed application fixture."""
+    """Fixture for deploying the charm from charmhub."""
+    # Normally we would use latest/stable without pinning a revision here, but latest
+    # stable is broken, and therefore we are using edge. Change this in the future.
+    charmhub_app_config = app_config | {"app-channel": "edge"}
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
-        channel="edge",  # change this to stable in the future, but atm latest stable is broken
-        revision=47,  # amd revision latest edge
+        config=charmhub_app_config,
+        channel="edge",
     )
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
