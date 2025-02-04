@@ -388,15 +388,29 @@ async def app_on_charmhub_fixture(
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but latest
-    # stable is broken, and therefore we are using edge. Change this in the future.
-    charmhub_app_config = app_config | {"app-channel": "edge"}
+    charmhub_app_config = {
+        k: app_config[k]
+        for k in app_config
+        if k
+        in (
+            BASE_IMAGE_CONFIG_NAME,
+            BUILD_INTERVAL_CONFIG_NAME,
+            OPENSTACK_USER_CONFIG_NAME,
+            OPENSTACK_PASSWORD_CONFIG_NAME,
+            OPENSTACK_PROJECT_CONFIG_NAME,
+            OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
+            OPENSTACK_USER_DOMAIN_CONFIG_NAME,
+            OPENSTACK_AUTH_URL_CONFIG_NAME,
+            REVISION_HISTORY_LIMIT_CONFIG_NAME,
+        )
+    }
+    charmhub_app_base_machine_constraint = "cores=2 mem=2G root-disk=20G virt-type=virtual-machine"
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
-        constraints=base_machine_constraint,
+        constraints=charmhub_app_base_machine_constraint,
         config=charmhub_app_config,
-        channel="edge",
+        channel="stable",
     )
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)

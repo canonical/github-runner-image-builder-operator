@@ -54,4 +54,5 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
         raise_on_error=True,
         timeout=180 * 60,
         check_freq=30,
+        wait_for_active=True,
     )
