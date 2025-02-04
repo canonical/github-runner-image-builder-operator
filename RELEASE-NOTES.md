@@ -3,7 +3,8 @@
 > Include application repository in the charm repository.
 
 ### Upgrade Steps
-* Requires no redeployment (since external cloud feature has been implemented).
+* Requires no redeployment (since revisions containing the experimental external cloud feature,
+others require a redeployment).
 
 ### Breaking Changes
 * No longer supports the `app-channel` configuration option.
@@ -12,7 +13,8 @@
 * None
 
 ### Bug Fixes
-* None
+* Fixed a bug where the base image name was hardcoded leading to issues when multiple builders
+build images concurrently using the same build tenant.
 
 ### Performance Improvements
 * None
