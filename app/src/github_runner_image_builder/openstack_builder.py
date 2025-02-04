@@ -118,7 +118,7 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     store.upload_image(
         arch=arch,
         cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.JAMMY),
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.JAMMY, prefix=prefix),
         image_path=jammy_image_path,
         keep_revisions=1,
     )
@@ -126,7 +126,7 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     store.upload_image(
         arch=arch,
         cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.NOBLE),
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.NOBLE, prefix=prefix),
         image_path=noble_image_path,
         keep_revisions=1,
     )
@@ -137,17 +137,18 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         _create_security_group(conn=conn)
 
 
-def _get_base_image_name(arch: Arch, base: BaseImage) -> str:
+def _get_base_image_name(arch: Arch, base: BaseImage, prefix: str) -> str:
     """Get formatted image name.
 
     Args:
         arch: The architecture of the image to use as build base.
         base: The ubuntu base image.
+        prefix: The prefix to use for the image name.
 
     Returns:
         The ubuntu base image name uploaded to OpenStack.
     """
-    return f"image-builder-base-{base.value}-{arch.value}"
+    return f"{prefix}-image-builder-base-{base.value}-{arch.value}"
 
 
 def _create_keypair(conn: openstack.connection.Connection, prefix: str) -> None:
@@ -272,7 +273,9 @@ def run(
         logger.info("Using network ID: %s.", network)
         builder: openstack.compute.v2.server.Server = conn.create_server(
             name=builder_name,
-            image=_get_base_image_name(arch=image_config.arch, base=image_config.base),
+            image=_get_base_image_name(
+                arch=image_config.arch, base=image_config.base, prefix=cloud_config.prefix
+            ),
             key_name=builder_key_name,
             flavor=flavor,
             network=network,

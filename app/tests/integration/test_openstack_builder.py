@@ -49,14 +49,18 @@ def test_initialize(
     jammy_images = filter(
         functools.partial(
             helpers.has_name,
-            name=openstack_builder._get_base_image_name(arch=arch, base=config.BaseImage.JAMMY),
+            name=openstack_builder._get_base_image_name(
+                arch=arch, base=config.BaseImage.JAMMY, prefix=""
+            ),
         ),
         images,
     )
     noble_images = filter(
         functools.partial(
             helpers.has_name,
-            name=openstack_builder._get_base_image_name(arch=arch, base=config.BaseImage.NOBLE),
+            name=openstack_builder._get_base_image_name(
+                arch=arch, base=config.BaseImage.NOBLE, prefix=""
+            ),
         ),
         images,
     )

@@ -57,7 +57,6 @@ def image_config_fixture(arch: config.Arch, image: str):
     return types.ImageConfig(arch=arch, image=image)
 
 
-
 @pytest.fixture(scope="module", name="private_endpoint_config")
 def private_endpoint_config_fixture(
     pytestconfig: pytest.Config, arch: config.Arch
@@ -145,7 +144,6 @@ def flavor_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
         flavor_name = pytestconfig.getoption("--openstack-flavor-name-amd64")
     assert flavor_name, "Please specify the --openstack-flavor-name command line option"
     return flavor_name
-
 
 
 @pytest.fixture(scope="module", name="cloud_name")
@@ -287,7 +285,6 @@ def openstack_security_group_fixture(openstack_connection: Connection):
 @pytest.fixture(scope="module", name="proxy")
 def proxy_fixture(pytestconfig: pytest.Config) -> types.ProxyConfig:
     """The environment proxy to pass on to the charm/testing model."""
-
     # proxy has to be without http:// or https://  prefix
     if pytestconfig.getoption("--proxy"):
         proxy = pytestconfig.getoption("--proxy").removeprefix("http://").removeprefix("https://")
