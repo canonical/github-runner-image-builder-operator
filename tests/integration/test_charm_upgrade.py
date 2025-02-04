@@ -8,7 +8,6 @@ import logging
 
 import pytest
 from juju.application import Application
-from juju.client import client
 from juju.unit import Unit
 
 from tests.integration.helpers import wait_for
@@ -52,7 +51,7 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
     )
     await app.model.wait_for_idle(
         apps=[app.name],
-        raise_on_error=False,
+        raise_on_error=True,
         timeout=180 * 60,
         check_freq=30,
     )

@@ -909,6 +909,6 @@ def upgrade_app() -> None:
     """
     try:
         pipx.uninstall(APP_NAME)
-        pipx.install(APP_NAME)
+        pipx.install(LOCAL_APP_TAR_PATH)
     except PipXError as exc:
         raise UpgradeApplicationError from exc
