@@ -15,26 +15,20 @@ from tests.integration.types import TestConfigs
 
 
 @pytest.mark.asyncio
-# use ops_test fixture which will work for tests which do not rely on the private endpoint
+#use ops_test fixture which will work for tests which do not rely on the private endpoint
 # for hosting the juju model
-async def test_charm_upgrade(
-    app_on_charmhub: Application, test_configs: TestConfigs, test_charm: Application, ops_test
-):
+async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, ops_test):
     """
     arrange: An active charm deployed from charmhub using latest/stable.
     act: Refresh the charm using the local charm file.
     assert: Upgrade charm hook is emitted and the charm is active.
     """
-    await test_configs.model.integrate(app_on_charmhub.name, test_charm.name)
-    await test_configs.model.wait_for_idle(
-        [app_on_charmhub.name], wait_for_active=True, timeout=60 * 60
-    )
-
     logging.info("Refreshing the charm from the local charm file.")
     unit = app_on_charmhub.units[0]
-    await ops_test.juju("refresh", "--path", test_configs.charm_file, app_on_charmhub.name)
+    await ops_test.juju("refresh", "--path", test_configs.charm_file,  app_on_charmhub.name)
 
     app = app_on_charmhub
+
 
     async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
         """Check if the upgrade_charm event is emitted.
@@ -55,11 +49,9 @@ async def test_charm_upgrade(
     await wait_for(
         functools.partial(is_upgrade_charm_event_emitted, unit), timeout=360, check_interval=60
     )
-
     await app.model.wait_for_idle(
         apps=[app.name],
         raise_on_error=True,
         timeout=180 * 60,
         check_freq=30,
-        wait_for_active=True,
     )
