@@ -20,6 +20,7 @@ import yaml
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1 import systemd
 
+import pipx
 import state
 from exceptions import (
     BuilderInitError,
@@ -27,6 +28,7 @@ from exceptions import (
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
+    PipXError,
     UpgradeApplicationError,
 )
 
@@ -35,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 UBUNTU_USER = "ubuntu"
 UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
+APP_NAME = "github-runner-image-builder"
+LOCAL_APP_TAR_PATH = Path(f"{os.getcwd()}/app.tar.gz")
 
 APT_DEPENDENCIES = [
     "pipx",
@@ -105,22 +109,10 @@ def _install_dependencies() -> None:
     """
     try:
         apt.add_package(APT_DEPENDENCIES, update_cache=True)
-        _install_app()
-    except (apt.PackageNotFoundError, subprocess.SubprocessError)  as exc:
+        pipx.install(str(LOCAL_APP_TAR_PATH))
+    except (apt.PackageNotFoundError, PipXError) as exc:
         raise DependencyInstallError from exc
 
-def _install_app() -> None:
-    """Install the application."""
-    subprocess.run(  # nosec: B603
-        [
-            "/usr/bin/pipx",
-            "install",
-            f"{os.getcwd()}/app.tar.gz",
-        ],
-        timeout=5 * 60,
-        check=True,
-        user=UBUNTU_USER,
-    )
 
 def _initialize_image_builder(
     cloud_name: str, image_arch: state.Arch, resource_prefix: str
@@ -916,28 +908,7 @@ def upgrade_app() -> None:
         UpgradeApplicationError: If there was an error upgrading the application.
     """
     try:
-        _uninstall_app()
-        _install_app()
-    except subprocess.CalledProcessError as exc:
-        logger.error(
-            "Pipx command failed, code: %s, out: %s, err: %s",
-            exc.returncode,
-            exc.stdout,
-            exc.stderr,
-        )
+        pipx.uninstall(APP_NAME)
+        pipx.install(APP_NAME)
+    except PipXError as exc:
         raise UpgradeApplicationError from exc
-    except subprocess.SubprocessError as exc:
-        raise UpgradeApplicationError from exc
-
-def _uninstall_app() -> None:
-    """Uninstall the application."""
-    subprocess.run(  # nosec: B603
-        [
-            "/usr/bin/pipx",
-            "uninstall",
-            "github-runner-image-builder",
-        ],
-        timeout=5 * 60,
-        check=True,
-        user=UBUNTU_USER,
-    )

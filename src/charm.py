@@ -67,7 +67,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         )
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
-
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
         """Handle charm upgrade events.

@@ -99,7 +99,6 @@ def test__on_upgrade_charm(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerI
     upgrade_app_mock.assert_called_once()
 
 
-
 def test__on_image_relation_changed(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
