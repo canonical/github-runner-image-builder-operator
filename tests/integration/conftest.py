@@ -388,8 +388,8 @@ async def app_on_charmhub_fixture(
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but latest
-    # stable is broken, and therefore we are using edge. Change this in the future.
+    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_app_config = app_config | {"app-channel": "edge"}
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
