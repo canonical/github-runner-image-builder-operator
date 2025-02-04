@@ -41,8 +41,9 @@ def test_initialize(
             created.
     """
     test_start_time = datetime.now(tz=timezone.utc)
+    prefix = test_id
 
-    openstack_builder.initialize(arch=arch, cloud_name=cloud_name, prefix=test_id)
+    openstack_builder.initialize(arch=arch, cloud_name=cloud_name, prefix=prefix)
 
     # 1.
     images: list[Image] = openstack_connection.list_images()
@@ -50,7 +51,7 @@ def test_initialize(
         functools.partial(
             helpers.has_name,
             name=openstack_builder._get_base_image_name(
-                arch=arch, base=config.BaseImage.JAMMY, prefix=""
+                arch=arch, base=config.BaseImage.JAMMY, prefix=prefix
             ),
         ),
         images,
@@ -59,7 +60,7 @@ def test_initialize(
         functools.partial(
             helpers.has_name,
             name=openstack_builder._get_base_image_name(
-                arch=arch, base=config.BaseImage.NOBLE, prefix=""
+                arch=arch, base=config.BaseImage.NOBLE, prefix=prefix
             ),
         ),
         images,
@@ -76,7 +77,7 @@ def test_initialize(
         name_or_id=openstack_builder.SHARED_SECURITY_GROUP_NAME
     )
     assert openstack_connection.get_keypair(
-        name_or_id=openstack_builder._get_keypair_name(prefix=test_id)
+        name_or_id=openstack_builder._get_keypair_name(prefix=prefix)
     )
 
 
