@@ -15,13 +15,13 @@ from tests.integration.types import TestConfigs
 
 
 @pytest.mark.asyncio
-async def test_charm_upgrade(app_on_stable_channel: Application, test_configs: TestConfigs):
+async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestConfigs):
     """
     arrange: An active charm deployed from charmhub using latest/stable.
     act: Refresh the charm using the local charm file.
     assert: Upgrade charm hook is emitted and the charm is active.
     """
-    await app_on_stable_channel.local_refresh(
+    await app_on_charmhub.local_refresh(
         path=test_configs.charm_file,
         charm_origin=client.CharmOrigin(),
         force=False,
@@ -29,7 +29,7 @@ async def test_charm_upgrade(app_on_stable_channel: Application, test_configs: T
         force_units=False,
         resources=None,
     )
-    app = app_on_stable_channel
+    app = app_on_charmhub
 
     unit = app.units[0]
 

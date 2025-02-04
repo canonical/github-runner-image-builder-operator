@@ -381,35 +381,20 @@ async def app_fixture(
     await test_configs.model.remove_application(app_name=app.name)
 
 
-@pytest_asyncio.fixture(scope="module", name="app_on_stable_channel")
-async def app_on_stable_channel_fixture(
+@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
+async def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
-    stable_app_config = {
-        k: app_config[k]
-        for k in app_config
-        if k
-        in (
-            BASE_IMAGE_CONFIG_NAME,
-            BUILD_INTERVAL_CONFIG_NAME,
-            OPENSTACK_USER_CONFIG_NAME,
-            OPENSTACK_PASSWORD_CONFIG_NAME,
-            OPENSTACK_PROJECT_CONFIG_NAME,
-            OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
-            OPENSTACK_USER_DOMAIN_CONFIG_NAME,
-            OPENSTACK_AUTH_URL_CONFIG_NAME,
-            REVISION_HISTORY_LIMIT_CONFIG_NAME,
-        )
-    }
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=stable_app_config,
-        channel="stable",
+        config=app_config,
+        channel="edge",  # change this to stable in the future, but atm latest stable is broken
+        revision=47,  # amd revision latest edge
     )
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
