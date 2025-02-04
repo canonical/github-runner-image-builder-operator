@@ -16,7 +16,7 @@ from tests.integration.types import TestConfigs
 
 @pytest.mark.asyncio
 #use ops_test fixture which will work for tests which do not rely on the private endpoint
-# for hosting the juju model
+# for hosting the juju model, see also https://github.com/juju/python-libjuju/issues/1064
 async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, ops_test):
     """
     arrange: An active charm deployed from charmhub using latest/stable.
