@@ -1,0 +1,59 @@
+import functools
+
+import pytest
+from juju.action import Action
+from juju.client import client
+from juju.application import Application
+from juju.model import Model
+from juju.unit import Unit
+
+from tests.integration.helpers import wait_for
+from tests.integration.types import TestConfigs
+
+
+@pytest.mark.asyncio
+async def test_charm_upgrade(app_on_stable_channel: Application, test_configs: TestConfigs):
+    """
+    arrange: An active charm deployed from charmhub using latest/stable.
+    act: Refresh the charm using the local charm file.
+    assert: Upgrade charm hook is emitted and the charm is active.
+    """
+
+    await app_on_stable_channel.local_refresh(
+        path=test_configs.charm_file,
+        charm_origin=client.CharmOrigin(),
+        force=False,
+        force_series=False,
+        force_units=False,
+        resources=None,
+    )
+    app = app_on_stable_channel
+
+    unit = app.units[0]
+
+    async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
+        """Check if the upgrade_charm event is emitted.
+
+        This is to ensure false positives from only waiting for ACTIVE status.
+
+        Args:
+            unit: The unit to check for upgrade charm event.
+
+        Returns:
+            bool: True if the event is emitted, False otherwise.
+        """
+        unit_name_without_slash = unit.name.replace("/", "-")
+        juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
+        stdout = await unit.ssh(command=f"cat {juju_unit_log_file}")
+        return "Emitting Juju event upgrade_charm." in stdout
+
+    await wait_for(
+        functools.partial(is_upgrade_charm_event_emitted, unit), timeout=360, check_interval=60
+    )
+    await app.model.wait_for_idle(
+        apps=[app.name],
+        raise_on_error=False,
+        wait_for_active=True,
+        timeout=180 * 60,
+        check_freq=30,
+    )
