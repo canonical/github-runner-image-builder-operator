@@ -4,6 +4,7 @@
 """Test that no breaking change occurs when upgrading a charm from latest stable."""
 
 import functools
+import logging
 
 import pytest
 from juju.application import Application
@@ -21,17 +22,12 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
     act: Refresh the charm using the local charm file.
     assert: Upgrade charm hook is emitted and the charm is active.
     """
-    await app_on_charmhub.local_refresh(
-        path=test_configs.charm_file,
-        charm_origin=client.CharmOrigin(),
-        force=False,
-        force_series=False,
-        force_units=False,
-        resources=None,
-    )
+    logging.info("Refreshing the charm from the local charm file.")
+    unit = app_on_charmhub.units[0]
+    await unit.ssh(f"juju refresh --path {test_configs.charm_file} {app_on_charmhub.name}")
+
     app = app_on_charmhub
 
-    unit = app.units[0]
 
     async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
         """Check if the upgrade_charm event is emitted.
@@ -55,7 +51,6 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
     await app.model.wait_for_idle(
         apps=[app.name],
         raise_on_error=False,
-        wait_for_active=True,
         timeout=180 * 60,
         check_freq=30,
     )
