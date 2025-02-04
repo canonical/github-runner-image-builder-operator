@@ -236,9 +236,9 @@ def openstack_metadata_fixture(
 
 
 @pytest.fixture(scope="module", name="openstack_security_group")
-def openstack_security_group_fixture(openstack_connection: Connection):
+def openstack_security_group_fixture(openstack_connection: Connection, test_id: str):
     """An ssh-connectable security group."""
-    security_group_name = "github-runner-image-builder-test-security-group"
+    security_group_name = f"github-runner-image-builder-test-security-group-{test_id}"
     security_group: SecurityGroup | None = openstack_connection.get_security_group(
         name_or_id=security_group_name
     )
