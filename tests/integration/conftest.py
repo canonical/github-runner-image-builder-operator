@@ -319,7 +319,7 @@ def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
-) -> dict[str, str]:
+) -> dict:
     """The image builder application config."""
     return {
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
@@ -342,6 +342,7 @@ def app_config_fixture(
         SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
     }
 
+
 @pytest.fixture(scope="module", name="base_machine_constraint")
 def base_machine_constraint_fixture(
     private_endpoint_configs: PrivateEndpointConfigs, use_private_endpoint: bool
@@ -355,14 +356,14 @@ def base_machine_constraint_fixture(
         base_machine_constraint += " root-disk=80G"
     return base_machine_constraint
 
+
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
-    app_config: dict[str, str],
+    app_config: dict,
     base_machine_constraint: str,
     test_configs: TestConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
-
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
     app: Application = await test_configs.model.deploy(
         test_configs.charm_file,
@@ -382,17 +383,32 @@ async def app_fixture(
 
 @pytest_asyncio.fixture(scope="module", name="app_on_stable_channel")
 async def app_on_stable_channel_fixture(
-        test_configs: TestConfigs,
-
-    app_config: dict[str, str],
+    test_configs: TestConfigs,
+    app_config: dict,
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
+    stable_app_config = {
+        k: app_config[k]
+        for k in app_config
+        if k
+        in (
+            BASE_IMAGE_CONFIG_NAME,
+            BUILD_INTERVAL_CONFIG_NAME,
+            OPENSTACK_USER_CONFIG_NAME,
+            OPENSTACK_PASSWORD_CONFIG_NAME,
+            OPENSTACK_PROJECT_CONFIG_NAME,
+            OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
+            OPENSTACK_USER_DOMAIN_CONFIG_NAME,
+            OPENSTACK_AUTH_URL_CONFIG_NAME,
+            REVISION_HISTORY_LIMIT_CONFIG_NAME,
+        )
+    }
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
+        config=stable_app_config,
         channel="stable",
     )
     # This takes long due to having to wait for the machine to come up.

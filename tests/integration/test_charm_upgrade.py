@@ -1,10 +1,13 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Test that no breaking change occurs when upgrading a charm from latest stable."""
+
 import functools
 
 import pytest
-from juju.action import Action
-from juju.client import client
 from juju.application import Application
-from juju.model import Model
+from juju.client import client
 from juju.unit import Unit
 
 from tests.integration.helpers import wait_for
@@ -18,7 +21,6 @@ async def test_charm_upgrade(app_on_stable_channel: Application, test_configs: T
     act: Refresh the charm using the local charm file.
     assert: Upgrade charm hook is emitted and the charm is active.
     """
-
     await app_on_stable_channel.local_refresh(
         path=test_configs.charm_file,
         charm_origin=client.CharmOrigin(),
