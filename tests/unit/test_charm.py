@@ -85,8 +85,8 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
 
 def test__on_upgrade_charm(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
     """
-    arrange: given a monekypatched builder.setup_builder function.
-    act: when _on_upgrade is called.
+    arrange: given a monekypatched builder.upgrade_app function.
+    act: when _on_upgrade_charm is called.
     assert: upgrade_app is called.
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
