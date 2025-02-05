@@ -32,7 +32,10 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
     async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
         """Check if the upgrade_charm event is emitted.
 
-        This is to ensure false positives from only waiting for ACTIVE status.
+        This is to ensure false positives from only waiting for ACTIVE status or
+        relying on the juju status.
+        We cannot rely on the juju status containing revision zero, because it changes instantly,
+        and the hook upgrade-charm can run with a significant delay.
 
         Args:
             unit: The unit to check for upgrade charm event.
