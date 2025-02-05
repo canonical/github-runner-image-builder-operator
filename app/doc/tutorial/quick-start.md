@@ -3,7 +3,7 @@
 ## What you'll do
 
 - Install the CLI
-- Initialise the builder
+- Initialize the builder
 - Run the image build
 
 ## Requirements
@@ -21,7 +21,7 @@
 - Install the CLI
   - `pipx install git+https://github.com/canonical/github-runner-image-builder@stable`
 
-### Initialise the builder
+### Initialize the builder
 
 - Run `github-runner-image-builder init` to install the dependencies for building the image.
 
