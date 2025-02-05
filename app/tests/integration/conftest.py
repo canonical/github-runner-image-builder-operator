@@ -186,7 +186,7 @@ echo $IMAGE_ID | tee {callback_result_path}
 @pytest.fixture(scope="module", name="dockerhub_mirror")
 def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> urllib.parse.ParseResult | None:
     """Dockerhub mirror URL."""
-    dockerhub_mirror_url: str | None = pytestconfig.getoption("--dockerhub-mirror", default=None)
+    dockerhub_mirror_url: str | None = pytestconfig.getoption("--dockerhub-mirror")
     if not dockerhub_mirror_url:
         return None
     parse_result = urllib.parse.urlparse(dockerhub_mirror_url)
