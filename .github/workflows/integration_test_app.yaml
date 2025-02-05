@@ -63,4 +63,4 @@ jobs:
     steps:
       - run: |
           [ '${{ needs.integration-tests-amd.result }}' = 'success' ] || (echo integration-tests-amd failed && false)
-          [ '${{ needs.integration-tests-arm.result }}' = 'success' ] || (echo integration-test-arm failed && false)
+          [ '${{ needs.integration-tests-arm.result }}' = 'success' ] || (echo integration-tests-arm failed && false)
