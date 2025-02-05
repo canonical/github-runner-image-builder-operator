@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [jammy, noble]
+        image: [noble]
     steps:
       - uses: actions/checkout@v4.1.7
       - uses: canonical/setup-lxd@v0.1.1
