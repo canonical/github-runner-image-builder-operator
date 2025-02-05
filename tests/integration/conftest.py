@@ -308,8 +308,8 @@ def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
         bases=("noble",),
-        juju_channels=("3.5/stable",),
-        microk8s_channels=("1.29-strict/stable",),
+        juju_channels=tuple(),  # ("3.5/stable",), juju support will be removed
+        microk8s_channels=tuple(),  # ("1.29-strict/stable",), microk8s support will be removed
     )
 
 

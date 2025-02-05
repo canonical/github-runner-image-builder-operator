@@ -27,6 +27,11 @@ from tests.integration import commands, helpers, types
 
 logger = logging.getLogger(__name__)
 
+pytest.skip(
+    "chroot mode is not used by the operator anymore, and will be removed.",
+    allow_module_level=True,
+)
+
 
 @pytest_asyncio.fixture(scope="module", name="openstack_server")
 async def openstack_server_fixture(

@@ -167,6 +167,7 @@ async def test_bare_image(
     )
 
 
+@pytest.mark.skip(reason="juju support is going to be dropped.")
 async def test_juju_image(
     proxy: ProxyConfig,
     dockerhub_mirror: str | None,
@@ -191,6 +192,7 @@ async def test_juju_image(
     )
 
 
+@pytest.mark.skip(reason="Microk8s support is going to be dropped.")
 async def test_microk8s_image(
     proxy: ProxyConfig,
     dockerhub_mirror: str | None,

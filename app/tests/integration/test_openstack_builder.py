@@ -110,10 +110,10 @@ def image_ids_fixture(
         image_config=config.ImageConfig(
             arch=image_config.arch,
             base=config.BaseImage.from_str(image_config.image),
-            microk8s="1.31-strict/stable",
+            microk8s="",  # "1.31-strict/stable", microk8s support will be removed
             runner_version="",
             name=f"{test_id}-image-builder-test",
-            juju="3.1/stable",
+            juju="",  # "3.1/stable", juju support will be removed
             script_config=config.ScriptConfig(
                 script_url=urllib.parse.urlparse(
                     "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
