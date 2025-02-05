@@ -376,8 +376,6 @@ async def app_fixture(
 
     yield app
 
-    # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
-    # required on private-endpoint OpenStack resources.
     await test_configs.model.remove_application(app_name=app.name)
 
 
@@ -398,13 +396,11 @@ async def app_on_charmhub_fixture(
         config=charmhub_app_config,
         channel="edge",
     )
-    # This takes long due to having to wait for the machine to come up.
+
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
     yield app
 
-    # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
-    # required on private-endpoint OpenStack resources.
     await test_configs.model.remove_application(app_name=app.name)
 
 
