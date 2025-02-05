@@ -37,4 +37,4 @@ class UpgradeApplicationError(BuilderBaseError):
 
 
 class PipXError(Exception):
-    """Represents an error while installing pipx."""
+    """Represents an error while interacting with pipx."""

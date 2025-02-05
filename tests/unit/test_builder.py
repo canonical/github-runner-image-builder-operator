@@ -1232,9 +1232,9 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
 
 def test_upgrade_app(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: given monkeypatched subprocess.run.
+    arrange: given monkeypatched pipx commands.
     act: when upgrade_app is called.
-    assert: expected command is run.
+    assert: expected pipx commands are run.
     """
     monkeypatch.setattr(pipx, "uninstall", MagicMock())
     monkeypatch.setattr(pipx, "install", MagicMock())

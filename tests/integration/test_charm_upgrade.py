@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Test that no breaking change occurs when upgrading a charm from latest stable."""
+"""Test that no breaking change occurs when upgrading the charm."""
 
 import functools
 import logging
@@ -19,9 +19,9 @@ from tests.integration.types import TestConfigs
 # for hosting the juju model, see also https://github.com/juju/python-libjuju/issues/1064
 async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, ops_test):
     """
-    arrange: An active charm deployed from charmhub using latest/stable.
+    arrange: An active charm deployed from charmhub.
     act: Refresh the charm using the local charm file.
-    assert: Upgrade charm hook is emitted and the charm is active.
+    assert: Upgrade charm hook is emitted ran successfully.
     """
     logging.info("Refreshing the charm from the local charm file.")
     unit = app_on_charmhub.units[0]

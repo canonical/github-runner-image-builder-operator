@@ -72,7 +72,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
         """Handle charm upgrade events.
 
-        Upgrades the application and triggers a new image build.
+        Upgrades the application.
         """
         self.unit.status = ops.MaintenanceStatus("Running builder upgrade.")
         builder.upgrade_app()

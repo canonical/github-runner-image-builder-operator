@@ -3,8 +3,8 @@
 > Include application repository in the charm repository.
 
 ### Upgrade Steps
-* Requires no redeployment (since revisions containing the experimental external cloud feature,
-others require a redeployment).
+* Requires no redeployment (since previous revision). Upgrades from revisions only supporting
+the chroot mode require redeployment.
 
 ### Breaking Changes
 * No longer supports the `app-channel` configuration option.
