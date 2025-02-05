@@ -15,7 +15,7 @@ from tests.integration.types import TestConfigs
 
 
 @pytest.mark.asyncio
-#use ops_test fixture which will work for tests which do not rely on the private endpoint
+# use ops_test fixture which will work for tests which do not rely on the private endpoint
 # for hosting the juju model, see also https://github.com/juju/python-libjuju/issues/1064
 async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, ops_test):
     """
@@ -25,10 +25,9 @@ async def test_charm_upgrade(app_on_charmhub: Application, test_configs: TestCon
     """
     logging.info("Refreshing the charm from the local charm file.")
     unit = app_on_charmhub.units[0]
-    await ops_test.juju("refresh", "--path", test_configs.charm_file,  app_on_charmhub.name)
+    await ops_test.juju("refresh", "--path", test_configs.charm_file, app_on_charmhub.name)
 
     app = app_on_charmhub
-
 
     async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
         """Check if the upgrade_charm event is emitted.

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # The timeout is increased to 15 minutes to account for the slow testing infrastructure.
 openstack_builder.CREATE_SERVER_TIMEOUT = 15 * 60
 
+
 @pytest.mark.amd64
 @pytest.mark.arm64
 def test_initialize(
