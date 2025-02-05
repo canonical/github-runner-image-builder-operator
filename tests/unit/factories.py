@@ -11,7 +11,6 @@ import factory
 import builder
 import state
 from state import (
-    APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
@@ -85,7 +84,6 @@ class MockCharmFactory(factory.Factory):
     unit = MockUnitFactory()
     config = factory.Dict(
         {
-            APP_CHANNEL_CONFIG_NAME: "edge",
             BASE_IMAGE_CONFIG_NAME: "jammy",
             BUILD_INTERVAL_CONFIG_NAME: "6",
             DOCKERHUB_CACHE_CONFIG_NAME: "https://dockerhub-cache.internal:5000",

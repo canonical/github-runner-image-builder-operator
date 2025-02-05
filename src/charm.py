@@ -39,6 +39,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.image_observer = image.Observer(self)
         self._grafana_agent = COSAgentProvider(charm=self)
         self.framework.observe(self.on.install, self._on_install)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.run, self._on_run)
         self.framework.observe(self.on.run_action, self._on_run_action)
@@ -59,7 +60,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
                 cloud_config=builder_config_state.cloud_config,
-                channel=builder_config_state.app_config.channel,
                 cron_interval=builder_config_state.app_config.build_interval,
                 image_arch=builder_config_state.image_config.arch,
                 resource_prefix=builder_config_state.app_config.resource_prefix,
@@ -67,6 +67,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             )
         )
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
+
+    @charm_utils.block_if_invalid_config(defer=True)
+    def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
+        """Handle charm upgrade events.
+
+        Upgrades the application.
+        """
+        self.unit.status = ops.MaintenanceStatus("Running builder upgrade.")
+        builder.upgrade_app()
+        self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
@@ -149,8 +159,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         This method requires that the clouds.yaml are properly installed with build cloud and
         upload cloud authentication parameters.
         """
-        self.unit.status = ops.ActiveStatus("Running upgrade.")
-        builder.upgrade_app()
         self.unit.status = ops.ActiveStatus("Building image.")
         builder_config = state.BuilderConfig.from_charm(self)
         cloud_images = builder.run(

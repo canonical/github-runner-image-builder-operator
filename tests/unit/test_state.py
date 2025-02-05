@@ -614,21 +614,6 @@ def test__parse_script_url(script_url: str, expected_url: str | None):
     assert state._parse_script_url(charm=charm) == expected_url
 
 
-def test_builder_app_channel_from_charm_error():
-    """
-    arrange: given an invalid charm app channel config.
-    act: when BuilderAppChannel.from_charm is called.
-    assert: BuilderAppChannelInvalidError is raised.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.APP_CHANNEL_CONFIG_NAME] = "invalid"
-
-    with pytest.raises(state.BuilderAppChannelInvalidError) as exc:
-        state.BuilderAppChannel.from_charm(charm=charm)
-
-    assert "invalid" in str(exc.getrepr())
-
-
 @pytest.mark.parametrize(
     "exception, expected_error",
     [

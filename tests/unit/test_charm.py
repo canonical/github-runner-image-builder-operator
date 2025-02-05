@@ -83,6 +83,22 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
 
 
+def test__on_upgrade_charm(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given a monekypatched builder.upgrade_app function.
+    act: when _on_upgrade_charm is called.
+    assert: upgrade_app is called.
+    """
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(image, "Observer", MagicMock())
+    monkeypatch.setattr(proxy, "setup", MagicMock())
+    monkeypatch.setattr(builder, "upgrade_app", (upgrade_app_mock := MagicMock()))
+
+    charm._on_upgrade_charm(MagicMock())
+
+    upgrade_app_mock.assert_called_once()
+
+
 def test__on_image_relation_changed(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):

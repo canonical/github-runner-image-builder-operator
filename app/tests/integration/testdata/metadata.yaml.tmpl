@@ -1,0 +1,13 @@
+architecture: "$arch"
+creation_date: 1713785675
+properties:
+    architecture: "$arch"
+    description: "Ubuntu $tag LTS server (20240422)"
+    os: "ubuntu"
+    release: "$image"
+templates:
+    /etc/hostname:
+        when:
+            - create
+            - copy
+        template: hostname.tpl

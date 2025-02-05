@@ -1,0 +1,243 @@
+#!/bin/bash
+
+set -e
+
+hostnamectl set-hostname github-runner
+
+function configure_proxy() {
+    local proxy="$1"
+    if [[ -z "$proxy" ]]; then
+        return
+    fi
+    echo "Installing aproxy"
+    /usr/bin/sudo snap install aproxy --edge;
+    /usr/bin/sudo nft -f - << EOF
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
+define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+table ip aproxy
+flush table ip aproxy
+table ip aproxy {
+        chain prerouting {
+                type nat hook prerouting priority dstnat; policy accept;
+                ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8444
+        }
+        chain output {
+                type nat hook output priority -100; policy accept;
+                ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8444
+        }
+}
+EOF
+    echo "Configuring aproxy"
+    /usr/bin/sudo snap set aproxy proxy=${proxy} listen=:8444;
+    echo "Wait for aproxy to start"
+    sleep 5
+}
+
+function install_apt_packages() {
+    local packages="$1"
+    local hwe_version="$2"
+    echo "Updating apt packages"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+    echo "Installing apt packages $packages"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${packages}
+    echo "Installing linux-generic-hwe-${hwe_version}"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${hwe_version}
+}
+
+function disable_unattended_upgrades() {
+    echo "Disabling unattended upgrades"
+    /usr/bin/systemctl disable apt-daily.timer
+    /usr/bin/systemctl disable apt-daily.service
+    /usr/bin/systemctl disable apt-daily-upgrade.timer
+    /usr/bin/systemctl disable apt-daily-upgrade.service
+    /usr/bin/apt-get remove -y unattended-upgrades
+}
+
+function enable_network_fair_queuing_congestion() {
+    /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+EOF
+    /usr/sbin/sysctl -p
+}
+
+function configure_usr_local_bin() {
+    echo "Configuring /usr/local/bin path"
+    /usr/bin/chmod 777 /usr/local/bin
+}
+
+function install_yarn() {
+    echo "Installing yarn"
+    /usr/bin/npm install --global yarn
+    /usr/bin/npm cache clean --force
+}
+
+function install_yq() {
+    /usr/bin/sudo -E /usr/bin/snap install go --classic
+    /usr/bin/sudo -E /usr/bin/git clone https://github.com/mikefarah/yq.git
+    /usr/bin/sudo -E /snap/bin/go mod tidy -C yq
+    /usr/bin/sudo -E /snap/bin/go build -C yq -o /usr/bin/yq
+    /usr/bin/sudo -E /usr/bin/rm -rf yq
+    /usr/bin/sudo -E /usr/bin/snap remove go
+}
+
+function install_github_runner() {
+    version="$1"
+    arch="$2"
+    echo "Installing GitHub runner"
+    if [[ -z "$version" ]]; then
+        # Follow redirectin to get latest version release location
+        # e.g. https://github.com/actions/runner/releases/tag/v2.318.0
+        location=$(curl -sIL "https://github.com/actions/runner/releases/latest" | sed -n 's/^location: *//p' | tr -d '[:space:]')
+        # remove longest prefix from the right that matches the pattern */v
+        # e.g. 2.318.0
+        version=${location##*/v}
+    fi
+    /usr/bin/wget "https://github.com/actions/runner/releases/download/v$version/actions-runner-linux-$arch-$version.tar.gz"
+    /usr/bin/mkdir -p /home/ubuntu/actions-runner
+    /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory /home/ubuntu/actions-runner
+
+    rm "actions-runner-linux-$arch-$version.tar.gz"
+}
+
+function chown_home() {
+    /usr/bin/chown --recursive ubuntu:ubuntu /home/ubuntu/
+}
+
+function install_microk8s() {
+    local channel="$1"
+    local dockerhub_cache_url="$2"
+    local dockerhub_hostname="$3"
+    local dockerhub_port="$4"
+    if [[ -z "$channel" ]]; then
+        echo "Microk8s channel not provided, skipping installation."
+        return
+    fi
+    classic_flag=""
+    if [[ "$channel" != *"strict"* ]]; then
+        classic_flag="--classic"
+    fi
+    /usr/bin/snap install microk8s --channel="$channel" $classic_flag
+    /usr/sbin/usermod --append --groups snap_microk8s ubuntu
+
+    if [[ -z "$dockerhub_cache_url" ]]; then
+        /usr/bin/echo "dockerhub cache not enabled, skipping installation"
+        initialize_microk8s_plugins
+        return
+    fi
+    install_microk8s_dockerhub_cache "$dockerhub_cache_url" "$dockerhub_hostname" "$dockerhub_port"
+    initialize_microk8s_plugins
+}
+
+function initialize_microk8s_plugins() {
+    /snap/bin/microk8s status --wait-ready --timeout=600
+    /snap/bin/microk8s enable dns hostpath-storage registry
+    /snap/bin/microk8s status --wait-ready --timeout=600
+}
+
+function install_microk8s_dockerhub_cache() {
+    local dockerhub_cache_url="$1"
+    local dockerhub_hostname="$2"
+    local dockerhub_port="$3"
+    /usr/bin/mkdir -p /var/snap/microk8s/current/args/certs.d/docker.io/
+    /usr/bin/cat <<EOF | /usr/bin/tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
+server = $dockerhub_cache_url
+
+[host.$dockerhub_hostname:$dockerhub_port]
+    capabilities = ["pull", "resolve"]
+    override_path = true
+EOF
+    /snap/bin/microk8s stop
+    /snap/bin/microk8s start
+}
+
+function install_juju() {
+    local channel="$1"
+    if [[ -z "$channel" ]]; then
+        echo "Juju channel not provided, skipping installation."
+        return
+    fi
+
+    /usr/bin/snap install juju --channel="$channel"
+    if ! lxd --version &> /dev/null; then
+        /usr/bin/snap install lxd
+    fi
+
+    echo "Bootstrapping LXD on Juju"
+    /snap/bin/lxd init --auto
+    /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap localhost localhost
+
+    if command -v microk8s &> /dev/null; then
+        echo "Bootstrapping MicroK8s on Juju"
+        /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap microk8s microk8s
+    fi
+}
+
+function configure_system_users() {
+    echo "Configuring ubuntu user"
+    # only add ubuntu user if ubuntu does not exist
+    /usr/bin/id -u ubuntu &>/dev/null || useradd --create-home ubuntu
+    echo "PATH=\$PATH:/home/ubuntu/.local/bin" >> /home/ubuntu/.profile
+    echo "PATH=\$PATH:/home/ubuntu/.local/bin" >> /home/ubuntu/.bashrc
+    /usr/sbin/groupadd -f microk8s
+    /usr/sbin/groupadd -f docker
+    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+}
+
+function execute_script() {
+    local script_url="$1"
+    local env_vars="$2"
+    if [[ -z "$script_url" ]]; then
+        echo "Script URL not provided, skipping."
+        return
+    fi
+    # Write temp environment variables file, load and delete.
+    TEMP_FILE=$(mktemp)
+    IFS=' ' read -r -a vars <<< "$env_vars"
+    for var in "${vars[@]}"; do
+        echo "$var" >> "$TEMP_FILE"
+    done
+    # Source the temporary file and run the script
+    set -a  # Automatically export all variables
+    source "$TEMP_FILE"
+    rm "$TEMP_FILE"
+    set +a  # Stop automatically exporting variables
+
+    wget "$script_url" -O external.sh
+    chmod +x external.sh
+    ./external.sh
+    rm external.sh
+}
+
+proxy="{{ PROXY_URL }}"
+dockerhub_cache_url="{{ DOCKERHUB_CACHE_URL }}"
+dockerhub_cache_host="{{ DOCKERHUB_CACHE_HOST }}"
+dockerhub_cache_port="{{ DOCKERHUB_CACHE_PORT }}"
+apt_packages="{{ APT_PACKAGES }}"
+hwe_version="{{ HWE_VERSION }}"
+github_runner_version="{{ RUNNER_VERSION }}"
+github_runner_arch="{{ RUNNER_ARCH }}"
+microk8s_channel="{{ MICROK8S_CHANNEL }}"
+juju_channel="{{ JUJU_CHANNEL }}"
+script_url="{{ SCRIPT_URL }}"
+script_secrets="{{ SCRIPT_SECRETS }}"
+
+configure_proxy "$proxy"
+install_apt_packages "$apt_packages" "$hwe_version"
+disable_unattended_upgrades
+enable_network_fair_queuing_congestion
+configure_usr_local_bin
+install_yarn
+# install yq with ubuntu user due to GOPATH related go configuration settings
+export -f install_yq
+su ubuntu -c "bash -c 'install_yq'"
+install_github_runner "$github_runner_version" "$github_runner_arch"
+chown_home
+install_microk8s "$microk8s_channel" "$dockerhub_cache_url" "$dockerhub_cache_host" "$dockerhub_cache_port"
+install_juju "$juju_channel"
+configure_system_users
+execute_script "$script_url" "$script_secrets"
+
+# Make sure the disk is synced for snapshot
+sync
+echo "Finished sync"

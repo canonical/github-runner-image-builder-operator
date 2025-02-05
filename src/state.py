@@ -23,7 +23,6 @@ CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 ARCHITECTURE_CONFIG_NAME = "architecture"
-APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 DOCKERHUB_CACHE_CONFIG_NAME = "dockerhub-cache"
@@ -509,56 +508,18 @@ def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
     return parsed_result.geturl()
 
 
-class BuilderAppChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid builder app channel configuration."""
-
-
-class BuilderAppChannel(str, Enum):
-    """Image builder application channel.
-
-    This is managed by the application's git tag and versioning tag in pyproject.toml.
-
-    Attributes:
-        EDGE: Edge application channel.
-        STABLE: Stable application channel.
-    """
-
-    EDGE = "edge"
-    STABLE = "stable"
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
-        """Retrieve the app channel from charm.
-
-        Args:
-            charm: The charm instance.
-
-        Raises:
-            BuilderAppChannelInvalidError: If an invalid application channel was selected.
-
-        Returns:
-            The application channel to deploy.
-        """
-        try:
-            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
-        except ValueError as exc:
-            raise BuilderAppChannelInvalidError from exc
-
-
 @dataclasses.dataclass
 class ApplicationConfig:
     """Image builder application related configuration values.
 
     Attributes:
         build_interval: Hours between regular build jobs.
-        channel: The application channel to install.
         parallel_build: Number of parallel number of applications to spawn.
         resource_prefix: The prefix of the resource saved on the repository for this application \
             manager.
     """
 
     build_interval: int
-    channel: BuilderAppChannel
     parallel_build: int
     resource_prefix: str
 
@@ -595,7 +556,6 @@ class BuilderConfig:
         return cls(
             app_config=ApplicationConfig(
                 build_interval=_parse_build_interval(charm=charm),
-                channel=BuilderAppChannel.from_charm(charm=charm),
                 parallel_build=_get_num_parallel_build(charm=charm),
                 resource_prefix=charm.app.name,
             ),

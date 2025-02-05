@@ -20,7 +20,9 @@ import yaml
 from charms.operator_libs_linux.v0 import apt
 
 import builder
+import pipx
 import state
+from exceptions import PipXError
 from tests.unit import factories
 
 TEST_STATIC_CONFIG: builder.StaticConfigs = factories.StaticConfigFactory.create()
@@ -61,7 +63,6 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     builder.initialize(
         app_init_config=builder.ApplicationInitializationConfig(
             cloud_config=factories.StateCloudConfigFactory(),
-            channel=MagicMock(),
             cron_interval=MagicMock(),
             image_arch=MagicMock(),
             resource_prefix=MagicMock(),
@@ -80,13 +81,13 @@ def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
     """
     monkeypatch.setattr(apt, "add_package", MagicMock())
     monkeypatch.setattr(
-        subprocess,
-        "run",
-        MagicMock(side_effect=subprocess.CalledProcessError(1, [], "", "error installing deps")),
+        pipx,
+        "install",
+        MagicMock(side_effect=PipXError("error installing deps")),
     )
 
     with pytest.raises(builder.DependencyInstallError) as exc:
-        builder._install_dependencies(channel=MagicMock())
+        builder._install_dependencies()
 
     assert "error installing deps" in str(exc.getrepr())
 
@@ -98,12 +99,12 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     assert: mocked functions are called.
     """
     monkeypatch.setattr(apt, "add_package", (apt_mock := MagicMock()))
-    monkeypatch.setattr(subprocess, "run", (run_mock := MagicMock()))
+    monkeypatch.setattr(pipx, "install", (install_mock := MagicMock()))
 
-    builder._install_dependencies(channel=MagicMock())
+    builder._install_dependencies()
 
     apt_mock.assert_called_once()
-    run_mock.assert_called_once()
+    install_mock.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -1229,29 +1230,47 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
     )
 
 
+def test_upgrade_app(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched pipx commands.
+    act: when upgrade_app is called.
+    assert: expected pipx commands are run.
+    """
+    monkeypatch.setattr(pipx, "uninstall", MagicMock())
+    monkeypatch.setattr(pipx, "install", MagicMock())
+
+    builder.upgrade_app()
+
+    # pylint does not recognize that these are MagicMock objects
+    pipx.uninstall.assert_called_once()  # pylint: disable=no-member
+    pipx.install.assert_called_once()  # pylint: disable=no-member
+
+
 @pytest.mark.parametrize(
-    "error",
+    "fct",
     [
         pytest.param(
-            subprocess.CalledProcessError(1, [], "", "error running image builder install"),
-            id="process error",
+            "uninstall",
+            id="uninstall error",
         ),
         pytest.param(
-            subprocess.SubprocessError("Something happened"),
-            id="general error",
+            "install",
+            id="install error",
         ),
     ],
 )
 def test_upgrade_app_error(
     monkeypatch: pytest.MonkeyPatch,
-    error: subprocess.CalledProcessError | subprocess.SubprocessError,
+    fct: str,
 ):
     """
     arrange: given monkeypatched subprocess.run that raises an error.
     act: when upgrade_app is called.
     assert: UpgradeApplicationError is raised.
     """
-    monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=error))
+    monkeypatch.setattr(pipx, "uninstall", MagicMock())
+    monkeypatch.setattr(pipx, "install", MagicMock())
+    monkeypatch.setattr(pipx, fct, MagicMock(side_effect=PipXError))
 
     with pytest.raises(builder.UpgradeApplicationError):
         builder.upgrade_app()
