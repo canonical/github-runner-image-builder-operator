@@ -2,8 +2,6 @@ name: Integration tests for application
 
 on:
   pull_request:
-    paths:
-      - 'app/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
