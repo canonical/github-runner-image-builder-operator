@@ -14,6 +14,7 @@ import typing
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
+from subprocess import CalledProcessError
 
 import pytest
 import pytest_asyncio
@@ -49,17 +50,21 @@ def test_initialize(
     prefix = test_id
 
     # This is a locally built application - we can trust it.
-    subprocess.check_call(  # nosec: B603
-        [
-            "/usr/bin/sudo",
-            Path.home() / ".local/bin/github-runner-image-builder",
-            "init",
-            "--cloud",
-            cloud_name,
-            "--prefix",
-            prefix,
-        ]
-    )
+    try:
+        subprocess.check_call(  # nosec: B603
+            [
+                "/usr/bin/sudo",
+                Path.home() / ".local/bin/github-runner-image-builder",
+                "init",
+                "--cloud-name",
+                cloud_name,
+                "--prefix",
+                prefix,
+            ]
+        )
+    except CalledProcessError as exc:
+        logger.error(exc.output)
+        assert False, "Failed to initialize the openstack builder."
 
     # 1.
     images: list[Image] = openstack_connection.list_images()
@@ -144,13 +149,17 @@ def image_ids_fixture(
     if dockerhub_mirror_url:
         cli_args.extend(["--dockerhub-cache", dockerhub_mirror_url])
 
-    stdout = subprocess.check_output(
-        cli_args,  # nosec: B603,
-        env={
-            "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
-            "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
-        },
-    )
+    try:
+        stdout = subprocess.check_output(
+            cli_args,  # nosec: B603,
+            env={
+                "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
+                "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+            },
+        )
+    except CalledProcessError as exc:
+        logger.error(exc.output)
+        assert False, "Failed to run the CLI."
     image_ids = str(stdout)
     return image_ids.split(",")
 
