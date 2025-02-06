@@ -191,6 +191,7 @@ def dockerhub_mirror_url_fixture(pytestconfig: pytest.Config) -> str | None:
         return None
     return dockerhub_mirror_url
 
+
 @pytest.fixture(scope="module", name="dockerhub_mirror")
 def dockerhub_mirror_fixture(dockerhub_mirror_url: str) -> urllib.parse.ParseResult | None:
     """Dockerhub mirror URL."""

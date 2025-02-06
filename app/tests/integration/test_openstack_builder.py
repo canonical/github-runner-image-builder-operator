@@ -61,7 +61,7 @@ def test_initialize(
                 "--prefix",
                 prefix,
             ],
-            capture_output=True,
+            stderr=subprocess.PIPE,
         )
     except CalledProcessError as exc:
         logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
@@ -159,13 +159,13 @@ def image_ids_fixture(
             },
             text=True,
             encoding="utf-8",
-            capture_output=True
+            stderr=subprocess.PIPE,
         )
     except CalledProcessError as exc:
         logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
         assert False, "Failed to run the CLI."
     image_ids = stdout.strip().splitlines(keepends=False)[-1]
-    logger.info(f"Image IDs: {image_ids}")
+    logger.info("Image IDs: %s", image_ids)
     return image_ids.split(",")
 
 
