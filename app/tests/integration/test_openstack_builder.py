@@ -156,11 +156,13 @@ def image_ids_fixture(
                 "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
                 "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
             },
+            text=True,
+            encoding="utf-8",
         )
     except CalledProcessError as exc:
         logger.error(exc.stderr)
         assert False, "Failed to run the CLI."
-    image_ids = str(stdout).strip()
+    image_ids = stdout.strip().splitlines(keepends=False)[-1]
     logger.info(f"Image IDs: {image_ids}")
     return image_ids.split(",")
 
