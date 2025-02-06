@@ -63,7 +63,7 @@ def test_initialize(
             ]
         )
     except CalledProcessError as exc:
-        logger.error(exc.output)
+        logger.error(exc.stderr)
         assert False, "Failed to initialize the openstack builder."
 
     # 1.
@@ -158,7 +158,7 @@ def image_ids_fixture(
             },
         )
     except CalledProcessError as exc:
-        logger.error(exc.output)
+        logger.error(exc.stderr)
         assert False, "Failed to run the CLI."
     image_ids = str(stdout).strip()
     logger.info(f"Image IDs: {image_ids}")
