@@ -160,7 +160,8 @@ def image_ids_fixture(
     except CalledProcessError as exc:
         logger.error(exc.output)
         assert False, "Failed to run the CLI."
-    image_ids = str(stdout)
+    image_ids = str(stdout).strip()
+    logger.info(f"Image IDs: {image_ids}")
     return image_ids.split(",")
 
 
