@@ -51,7 +51,7 @@ def test_initialize(
 
     # This is a locally built application - we can trust it.
     try:
-        subprocess.check_call(  # nosec: B603
+        subprocess.check_output(  # nosec: B603
             [
                 "/usr/bin/sudo",
                 Path.home() / ".local/bin/github-runner-image-builder",
@@ -60,10 +60,11 @@ def test_initialize(
                 cloud_name,
                 "--prefix",
                 prefix,
-            ]
+            ],
+            capture_output=True,
         )
     except CalledProcessError as exc:
-        logger.error(exc.stderr)
+        logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
         assert False, "Failed to initialize the openstack builder."
 
     # 1.
@@ -158,9 +159,10 @@ def image_ids_fixture(
             },
             text=True,
             encoding="utf-8",
+            capture_output=True
         )
     except CalledProcessError as exc:
-        logger.error(exc.stderr)
+        logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
         assert False, "Failed to run the CLI."
     image_ids = stdout.strip().splitlines(keepends=False)[-1]
     logger.info(f"Image IDs: {image_ids}")
