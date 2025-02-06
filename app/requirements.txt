@@ -1,6 +1,6 @@
 click==8.1.8
 fabric==3.2.2
-Jinja2==3.1.4
+Jinja2==3.1.5
 openstacksdk @ git+https://github.com/yanksyoon/openstacksdk.git@fix/download_image_stream
 pyyaml==6.0.2
 tenacity==9.0.0
