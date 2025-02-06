@@ -32,7 +32,6 @@ from pytest_operator.plugin import OpsTest
 
 import state
 from state import (
-    APP_CHANNEL_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
@@ -281,7 +280,7 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
 @pytest.fixture(scope="module", name="dockerhub_mirror")
 def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str:
     """Dockerhub mirror URL."""
-    return pytestconfig.getoption("--dockerhub-mirror", default="")
+    return pytestconfig.getoption("--dockerhub-mirror") or ""
 
 
 @pytest.fixture(scope="module", name="test_id")
@@ -309,22 +308,20 @@ def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
         bases=("noble",),
-        juju_channels=("3.5/stable",),
-        microk8s_channels=("1.29-strict/stable",),
+        juju_channels=tuple(),  # ("3.5/stable",), juju support will be removed
+        microk8s_channels=tuple(),  # ("1.29-strict/stable",), microk8s support will be removed
     )
 
 
-@pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(
+@pytest.fixture(scope="module", name="app_config")
+def app_config_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
-    use_private_endpoint: bool,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
-) -> AsyncGenerator[Application, None]:
-    """The deployed application fixture."""
-    config = {
-        APP_CHANNEL_CONFIG_NAME: "edge",
+) -> dict:
+    """The image builder application config."""
+    return {
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,
@@ -344,26 +341,66 @@ async def app_fixture(
         "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
         SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
     }
+
+
+@pytest.fixture(scope="module", name="base_machine_constraint")
+def base_machine_constraint_fixture(
+    private_endpoint_configs: PrivateEndpointConfigs, use_private_endpoint: bool
+) -> str:
+    """The base machine constraint."""
     num_cores = multiprocessing.cpu_count() - 1
     base_machine_constraint = f"arch={private_endpoint_configs['arch']} cores={num_cores} mem=16G"
     if use_private_endpoint:
         base_machine_constraint += " root-disk=100G"
     else:
         base_machine_constraint += " root-disk=80G"
+    return base_machine_constraint
+
+
+@pytest_asyncio.fixture(scope="module", name="app")
+async def app_fixture(
+    app_config: dict,
+    base_machine_constraint: str,
+    test_configs: TestConfigs,
+) -> AsyncGenerator[Application, None]:
+    """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
     app: Application = await test_configs.model.deploy(
         test_configs.charm_file,
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=config,
+        config=app_config,
     )
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
     yield app
 
-    # Do not clean up due to Juju bug in model.remove_application. However, manual cleanup is
-    # required on private-endpoint OpenStack resources.
+    await test_configs.model.remove_application(app_name=app.name)
+
+
+@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
+async def app_on_charmhub_fixture(
+    test_configs: TestConfigs,
+    app_config: dict,
+    base_machine_constraint: str,
+) -> AsyncGenerator[Application, None]:
+    """Fixture for deploying the charm from charmhub."""
+    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_app_config = app_config | {"app-channel": "edge"}
+    app: Application = await test_configs.model.deploy(
+        "github-runner-image-builder",
+        application_name=f"image-builder-operator-{test_configs.test_id}",
+        constraints=base_machine_constraint,
+        config=charmhub_app_config,
+        channel="edge",
+    )
+
+    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
+
+    yield app
+
     await test_configs.model.remove_application(app_name=app.name)
 
 
