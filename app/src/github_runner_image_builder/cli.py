@@ -39,8 +39,7 @@ def main(log_level: str | int) -> None:
     "--arch",
     type=click.Choice((config.Arch.ARM64, config.Arch.X64)),
     default=None,
-    help="Image architecture to initialize for. Defaults the host architecture. "
-    "Ignored if --experimental-external is not enabled",
+    help="Image architecture to initialize for. Defaults the host architecture.",
 )
 @click.option(
     "--cloud-name",
@@ -215,13 +214,12 @@ def _parse_url(
     "--prefix",
     default="",
     help="Name of the OpenStack resources to prefix with. Used to run the image builder in "
-    "parallel under same OpenStack project. Ignored if --experimental-external is not enabled",
+    "parallel under same OpenStack project.",
 )
 @click.option(
     "--proxy",
     default="",
-    help="EXPERIMENTAL: Proxy to use for external build VMs in host:port format (without scheme). "
-    "Ignored if --experimental-external is not enabled",
+    help="Proxy to use for external build VMs in host:port format (without scheme). ",
 )
 @click.option(
     "--script-url",
