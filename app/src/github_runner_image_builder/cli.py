@@ -51,7 +51,7 @@ def main(log_level: str | int) -> None:
     "--prefix",
     default="",
     help="Name of the OpenStack resources to prefix with. Used to run the image builder in "
-    "parallel under same OpenStack project. Ignored if --experimental-external is not enabled",
+    "parallel under same OpenStack project.",
 )
 def initialize(arch: config.Arch | None, cloud_name: str, prefix: str) -> None:
     """Initialize builder CLI function wrapper.
