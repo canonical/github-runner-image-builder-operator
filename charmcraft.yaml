@@ -33,6 +33,17 @@ parts:
     override-build: |
       rustup default stable
       craftctl default
+  app:
+    plugin: nil
+    override-build: |
+      cd /root/project
+      tar -cvzf app.tar.gz app
+      cp app.tar.gz /root/stage
+    organize:
+        app.tar.gz: app.tar.gz
+    prime:
+        - app.tar.gz
+
 
 bases:
   - build-on:
@@ -66,10 +77,6 @@ config:
       type: string
       default: ""
       description: The image architecture to build for using external builder (i.e. amd64, arm64).
-    app-channel:
-      type: string
-      default: stable
-      description: The application channel to deploy (i.e. stable, edge)
     base-image:
       type: string
       default: noble

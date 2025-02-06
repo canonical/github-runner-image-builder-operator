@@ -26,4 +26,6 @@ header:
     - '.woke.yaml'
     - 'lib/**'
     - 'tests/integration/data/clouds.yaml.tmpl'
+    - 'app/tests/integration/testdata/**'
+    - 'app/tests/integration/data/**'
   comment: on-failure
