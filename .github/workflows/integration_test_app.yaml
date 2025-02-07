@@ -16,8 +16,8 @@ jobs:
       matrix:
         image: [noble]
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: canonical/setup-lxd@v0.1.1
+      - uses: actions/checkout@v4.2.2
+      - uses: canonical/setup-lxd@v0.1.2
       - name: Install tox
         run: |
           sudo apt-get update
@@ -29,7 +29,7 @@ jobs:
           OPENSTACK_PASSWORD_ARM64: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
         run: |
          cd app
-         tox -e integration -- -m arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS }}
+         tox -e integration -- -m arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
   integration-tests-amd:
     name: Integration test (X64)
     runs-on: [self-hosted, X64, jammy, stg-private-endpoint]
@@ -38,8 +38,8 @@ jobs:
       matrix:
         image: [jammy, noble]
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: canonical/setup-lxd@v0.1.1
+      - uses: actions/checkout@v4.2.2
+      - uses: canonical/setup-lxd@v0.1.2
       - name: Install tox
         run: |
           sudo apt-get update
@@ -51,7 +51,7 @@ jobs:
           OPENSTACK_PASSWORD_AMD64: ${{ secrets.OPENSTACK_PASSWORD_AMD64 }}
         run: |
          cd app 
-         tox -e integration -- -m amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS }}
+         tox -e integration -- -m amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest
