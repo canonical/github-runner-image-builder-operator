@@ -1,4 +1,4 @@
-## Drop ARM support (2025-02-07)
+## [#81 Drop arm charm support](https://github.com/canonical/github-runner-image-builder-operator/pull/81) (2025-02-07)
 
 > Drop ARM support from the charm.
 
