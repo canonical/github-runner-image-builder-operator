@@ -33,7 +33,6 @@ from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
-    EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     JUJU_CHANNELS_CONFIG_NAME,
@@ -272,7 +271,6 @@ def app_config_fixture(
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
-        EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
