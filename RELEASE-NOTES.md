@@ -1,4 +1,29 @@
-## [#65 chore: Include application repo](https://github.com/canonical/github-runner-image-builder-operator/pull/65)
+## [#81 Drop arm charm support](https://github.com/canonical/github-runner-image-builder-operator/pull/81) (2025-02-07)
+
+> Drop ARM support from the charm.
+
+
+### Upgrade Steps
+* Non, for amd64 only.
+
+### Breaking Changes
+* No longer supports the `arm64` architecture for the charm (note that building ARM images is still supported,
+the charm is agnostic about the build architecture as this is done in an external VM).
+
+### New Features
+* None
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
+
+## [#65 chore: Include application repo](https://github.com/canonical/github-runner-image-builder-operator/pull/65) (2025-02-06)
 
 > Include application repository in the charm repository.
 
