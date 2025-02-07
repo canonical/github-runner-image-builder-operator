@@ -285,7 +285,7 @@ def app_config_fixture(
 def base_machine_constraint_fixture() -> str:
     """The base machine constraint."""
     num_cores = multiprocessing.cpu_count() - 1
-    base_machine_constraint = f"arch=amd64 cores={num_cores} mem=16G root-disk=80G"
+    base_machine_constraint = f"arch=amd64 cores={num_cores} mem=4G root-disk=20G"
     return base_machine_constraint
 
 
