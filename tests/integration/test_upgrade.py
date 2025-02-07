@@ -7,12 +7,11 @@ import functools
 import logging
 
 import pytest
-from integration.types import OpenstackMeta
 from juju.application import Application
 from juju.unit import Unit
 
 from tests.integration.helpers import wait_for
-from tests.integration.types import TestConfigs
+from tests.integration.types import OpenstackMeta, TestConfigs
 
 
 @pytest.mark.asyncio
