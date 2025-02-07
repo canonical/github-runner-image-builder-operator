@@ -15,10 +15,7 @@ from juju.model import Model
 from juju.unit import Unit
 from openstack.connection import Connection
 
-from tests.integration.helpers import (
-    image_created_from_dispatch,
-    wait_for,
-)
+from tests.integration.helpers import image_created_from_dispatch, wait_for
 
 logger = logging.getLogger(__name__)
 
