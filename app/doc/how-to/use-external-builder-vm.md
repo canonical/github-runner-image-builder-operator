@@ -11,5 +11,5 @@ Run `openstack list network` to find out what network is available.
 ```
 FLAVOR=<available openstack flavor>
 NETWORK=<openstack network for builder VMs>
-github-runner-image-builder --experimental-external True --flavor $FLAVOR --network $NETWORK
+github-runner-image-builder --flavor $FLAVOR --network $NETWORK
 ```

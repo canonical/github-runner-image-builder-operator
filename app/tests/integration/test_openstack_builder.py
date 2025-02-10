@@ -9,7 +9,9 @@
 import functools
 import itertools
 import logging
-import subprocess
+
+# Subprocess is used to run the application.
+import subprocess  # nosec: B404
 import typing
 import urllib.parse
 from datetime import datetime, timezone
