@@ -327,9 +327,9 @@ async def app_on_charmhub_fixture(
         if k not in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME)
     }
     legacy_config_prefix = "experimental-external-"
-    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = (
-        app_config[EXTERNAL_BUILD_FLAVOR_CONFIG_NAME]
-    )
+    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = app_config[
+        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME
+    ]
     charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_NETWORK_CONFIG_NAME}"] = (
         app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
     )
