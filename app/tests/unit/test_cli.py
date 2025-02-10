@@ -89,35 +89,21 @@ def test_main(cli_runner: CliRunner, action: str):
     assert f"Usage: main {action}" in result.output
 
 
-@pytest.mark.parametrize(
-    "flags",
-    [
-        pytest.param([], id="No flags (chroot builder)"),
-        pytest.param(
-            ["--experimental-external", "true", "--cloud-name", "hello"],
-            id="External flags (openstack builder)",
-        ),
-    ],
-)
-def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, flags: list[str]):
+def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
     """
     arrange: given a monkeypatched builder.initialize function.
     act: when cli init is invoked.
     assert: monkeypatched function is called.
     """
-    monkeypatch.setattr(cli.builder, "initialize", (mock_builder_init_func := MagicMock()))
     monkeypatch.setattr(
         cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
     )
 
-    cli_runner.invoke(main, args=["init", *flags])
+    cli_runner.invoke(main, args=["init", "--cloud-name", "hello"])
 
-    if not flags:
-        mock_builder_init_func.assert_called_with()
-    else:
-        mock_openstack_init_func.assert_called_with(
-            arch=config.Arch.X64, cloud_name="hello", prefix=""
-        )
+    mock_openstack_init_func.assert_called_with(
+        arch=config.Arch.X64, cloud_name="hello", prefix=""
+    )
 
 
 @pytest.mark.parametrize(
@@ -208,10 +194,10 @@ def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args:
 
 
 @pytest.mark.parametrize(
-    "callback_script, flags",
+    "callback_script",
     [
-        pytest.param(None, [], id="No callback script"),
-        pytest.param(Path("tmp_path"), ["--experimental-external", "true"], id="Callback script"),
+        pytest.param(None, id="No callback script"),
+        pytest.param(Path("tmp_path"), id="Callback script"),
     ],
 )
 def test_run(
@@ -219,14 +205,12 @@ def test_run(
     cli_runner: CliRunner,
     tmp_path: Path,
     callback_script: Path | None,
-    flags: list[str],
 ):
     """
     arrange: given a monkeypatched builder.setup_builder function.
     act: when _build is called.
     assert: the mock function is called.
     """
-    monkeypatch.setattr(cli.builder, "run", MagicMock())
     monkeypatch.setattr(cli.openstack_builder, "run", MagicMock())
     monkeypatch.setattr(cli.store, "upload_image", MagicMock())
     monkeypatch.setattr(cli.subprocess, "check_call", MagicMock())
@@ -236,7 +220,6 @@ def test_run(
         "jammy",
         "test-cloud-name",
         "test-image-name",
-        *flags,
     ]
     if callback_script:
         (callback_script_path := tmp_path / callback_script).touch(exist_ok=True)

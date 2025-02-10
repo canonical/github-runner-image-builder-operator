@@ -11,11 +11,16 @@ from juju.application import Application
 from juju.unit import Unit
 
 from tests.integration.helpers import wait_for
-from tests.integration.types import TestConfigs
+from tests.integration.types import OpenstackMeta, TestConfigs
 
 
 @pytest.mark.asyncio
-async def test_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, ops_test):
+async def test_upgrade(
+    app_on_charmhub: Application,
+    test_configs: TestConfigs,
+    ops_test,
+    openstack_metadata: OpenstackMeta,
+):
     """
     arrange: An active charm deployed from charmhub.
     act: Refresh the charm using the local charm file.
@@ -23,7 +28,16 @@ async def test_upgrade(app_on_charmhub: Application, test_configs: TestConfigs, 
     """
     logging.info("Refreshing the charm from the local charm file.")
     unit = app_on_charmhub.units[0]
-    await ops_test.juju("refresh", "--path", test_configs.charm_file, app_on_charmhub.name)
+    await ops_test.juju(
+        "refresh",
+        "--path",
+        test_configs.charm_file,
+        "--config",
+        f"build-flavor={openstack_metadata.flavor}",
+        "--config",
+        f"build-network={openstack_metadata.network}",
+        app_on_charmhub.name,
+    )
 
     app = app_on_charmhub
 

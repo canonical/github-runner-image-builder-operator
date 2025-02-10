@@ -74,6 +74,18 @@ config:
         The base ubuntu OS image to use for the runners. Codename (e.g. "noble") or version tag
         (e.g. 24.04) is supported as input. Currently only supports LTS versions of noble and
         higher, i.e. jammy, noble.
+    build-flavor:
+      type: string
+      default: ""
+      description: |
+        The flavor to use when launching a builder VM machine. Will default to
+        minimum matching flavor: 2 vCPU, 8G Memory, 20G Disk.
+    build-network:
+      type: string
+      default: ""
+      description: |
+        The network to launch the builder VM machine on. Will default to whatever
+        network with accessible subnet is available.
     build-interval:
       type: int
       default: 6
@@ -84,23 +96,6 @@ config:
       default: ""
       description: |
         The DockerHub cache to use to enable cached image pull requests for initializing MicroK8s.
-    experimental-external-build:
-      type: boolean
-      default: false
-      description: |
-        (Experimental) Whether to use external OpenStack builder VM to build a snapshot image.
-    experimental-external-build-flavor:
-      type: string
-      default: ""
-      description: |
-        (Experimental) The flavor to use when launching a builder VM machine. Will default to
-        minimum matching flavor: 2 vCPU, 8G Memory, 20G Disk.
-    experimental-external-build-network:
-      type: string
-      default: ""
-      description: |
-        (Experimental) The network to launch the builder VM machine on. Will default to whatever
-        network with accessible subnet is available.
     juju-channels:
       type: string
       default: ""

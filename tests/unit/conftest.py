@@ -30,7 +30,6 @@ def harness_fixture():
     harness.charm._on_config_changed = MagicMock()
     harness.update_config(
         {
-            state.EXTERNAL_BUILD_CONFIG_NAME: True,
             state.OPENSTACK_AUTH_URL_CONFIG_NAME: "https://test-auth-url.com/",
             state.OPENSTACK_PASSWORD_CONFIG_NAME: secrets.token_hex(16),
             state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test",

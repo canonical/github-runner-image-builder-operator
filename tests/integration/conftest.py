@@ -33,7 +33,6 @@ from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
-    EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     JUJU_CHANNELS_CONFIG_NAME,
@@ -272,7 +271,6 @@ def app_config_fixture(
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
-        EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
@@ -318,14 +316,29 @@ async def app_on_charmhub_fixture(
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel = "edge"
+
+    # We need to test using the legacy config options.
+    charmhub_app_config = {
+        k: v
+        for k, v in app_config.items()
+        if k not in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME)
+    }
+    legacy_config_prefix = "experimental-external-"
+    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = app_config[
+        EXTERNAL_BUILD_FLAVOR_CONFIG_NAME
+    ]
+    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_NETWORK_CONFIG_NAME}"] = (
+        app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
+    )
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
-        channel="edge",
+        config=charmhub_app_config,
+        channel=charmhub_channel,
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)

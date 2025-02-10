@@ -26,9 +26,8 @@ ARCHITECTURE_CONFIG_NAME = "architecture"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
 DOCKERHUB_CACHE_CONFIG_NAME = "dockerhub-cache"
-EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
-EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
-EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
+EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "build-flavor"
+EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 JUJU_CHANNELS_CONFIG_NAME = "juju-channels"
 MICROK8S_CHANNELS_CONFIG_NAME = "microk8s-channels"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
@@ -413,7 +412,7 @@ class CloudConfig:
     """
 
     openstack_clouds_config: OpenstackCloudsConfig
-    external_build_config: ExternalBuildConfig | None
+    external_build_config: ExternalBuildConfig
     num_revisions: int
 
     @property
@@ -441,12 +440,8 @@ class CloudConfig:
             Cloud configuration state.
         """
         cloud_config = _parse_openstack_clouds_config(charm)
-        external_build_enabled = typing.cast(
-            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
-        )
-        external_build_config = (
-            ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
-        )
+        external_build_config = ExternalBuildConfig.from_charm(charm=charm)
+
         revision_history_limit = _parse_revision_history_limit(charm)
 
         return cls(
