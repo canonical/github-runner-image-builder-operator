@@ -104,7 +104,8 @@ def test_initialize(
 
 
 @pytest.fixture(scope="module", name="image_ids")
-def image_ids_fixture(
+# overhead (e.g. to create new fixture) to reduce the amount of arguments seems to be too high.
+def image_ids_fixture(  # pylint: disable=too-many-positional-arguments,too-many-arguments
     image_config: types.ImageConfig,
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
@@ -150,20 +151,17 @@ def image_ids_fixture(
     if dockerhub_mirror_url:
         cli_args.extend(["--dockerhub-cache", dockerhub_mirror_url])
 
-    try:
-        stdout = subprocess.check_output(
-            cli_args,  # nosec: B603,
-            env={
-                "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
-                "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
-            },
-            text=True,
-            encoding="utf-8",
-            stderr=subprocess.PIPE,
-        )
-    except CalledProcessError as exc:
-        logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
-        assert False, "Failed to run the CLI."
+    # We don't log the error output as it may contain sensitive information.
+    stdout = subprocess.check_output(
+        cli_args,  # nosec: B603,
+        env={
+            "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
+            "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+        },
+        text=True,
+        encoding="utf-8",
+        stderr=subprocess.PIPE,
+    )
     image_ids = stdout.strip().splitlines(keepends=False)[-1]
     logger.info("Image IDs: %s", image_ids)
     return image_ids.split(",")
