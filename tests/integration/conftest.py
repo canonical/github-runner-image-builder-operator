@@ -321,7 +321,11 @@ async def app_on_charmhub_fixture(
     charmhub_channel = "edge"
 
     # We need to test using the legacy config options.
-    charmhub_app_config = app_config.copy()
+    charmhub_app_config = {
+        k: v
+        for k, v in app_config.items()
+        if k not in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME)
+    }
     legacy_config_prefix = "experimental-external-"
     charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = (
         charmhub_app_config[EXTERNAL_BUILD_FLAVOR_CONFIG_NAME]
@@ -329,8 +333,6 @@ async def app_on_charmhub_fixture(
     charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_NETWORK_CONFIG_NAME}"] = (
         charmhub_app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
     )
-    del charmhub_app_config[EXTERNAL_BUILD_FLAVOR_CONFIG_NAME]
-    del charmhub_app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
