@@ -1,3 +1,27 @@
+## [#79 Drop chroot mode](https://github.com/canonical/github-runner-image-builder-operator/pull/79) (2025-02-10)
+
+> Drop local image building (chroot) from the charm.
+
+
+### Upgrade Steps
+* The `experimental-build-*` config options have been removed and replaced by `build-flavor`, `build-network`.
+Please specify those options when upgrading the charm.
+
+### Breaking Changes
+* The charm no longer supports local building inside the charm unit using chroot.
+
+### New Features
+* None
+
+### Bug Fixes
+* Fixed a bug where the application log level was not set correctly (due to lower case).
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
 ## [#81 Drop arm charm support](https://github.com/canonical/github-runner-image-builder-operator/pull/81) (2025-02-07)
 
 > Drop ARM support from the charm.
