@@ -32,11 +32,11 @@ async def test_upgrade(
         "refresh",
         "--path",
         test_configs.charm_file,
-        app_on_charmhub.name,
         "--config",
         f"build-flavor={openstack_metadata.flavor}",
         "--config",
         f"build-network={openstack_metadata.network}",
+        app_on_charmhub.name,
     )
 
     app = app_on_charmhub
