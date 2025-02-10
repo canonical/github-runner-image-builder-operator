@@ -316,14 +316,27 @@ async def app_on_charmhub_fixture(
     base_machine_constraint: str,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel = "edge"
+
+    # We need to test dropping the legacy config options.
+    charmhub_app_config = app_config.copy()
+    legacy_config_prefix = "experimental-external-"
+    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = (
+        charmhub_app_config[EXTERNAL_BUILD_FLAVOR_CONFIG_NAME]
+    )
+    charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_NETWORK_CONFIG_NAME}"] = (
+        charmhub_app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
+    )
+    del charmhub_app_config[EXTERNAL_BUILD_FLAVOR_CONFIG_NAME]
+    del charmhub_app_config[EXTERNAL_BUILD_NETWORK_CONFIG_NAME]
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
-        channel="edge",
+        config=charmhub_app_config,
+        channel=charmhub_channel,
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
