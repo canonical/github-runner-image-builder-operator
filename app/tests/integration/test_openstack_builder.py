@@ -14,7 +14,6 @@ import typing
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
-from subprocess import CalledProcessError
 
 import pytest
 import pytest_asyncio
@@ -50,22 +49,18 @@ def test_initialize(
     prefix = test_id
 
     # This is a locally built application - we can trust it.
-    try:
-        subprocess.check_output(  # nosec: B603
-            [
-                "/usr/bin/sudo",
-                Path.home() / ".local/bin/github-runner-image-builder",
-                "init",
-                "--cloud-name",
-                cloud_name,
-                "--prefix",
-                prefix,
-            ],
-            stderr=subprocess.PIPE,
-        )
-    except CalledProcessError as exc:
-        logger.error("stdout: %s, stderr %s", exc.stdout, exc.stderr)
-        assert False, "Failed to initialize the openstack builder."
+    # We don't log the error output as it may contain sensitive information.
+    subprocess.check_output(  # nosec: B603
+        [
+            "/usr/bin/sudo",
+            Path.home() / ".local/bin/github-runner-image-builder",
+            "init",
+            "--cloud-name",
+            cloud_name,
+            "--prefix",
+            prefix,
+        ],
+    )
 
     # 1.
     images: list[Image] = openstack_connection.list_images()
@@ -160,7 +155,6 @@ def image_ids_fixture(  # pylint: disable=too-many-positional-arguments,too-many
         },
         text=True,
         encoding="utf-8",
-        stderr=subprocess.PIPE,
     )
     image_ids = stdout.strip().splitlines(keepends=False)[-1]
     logger.info("Image IDs: %s", image_ids)
