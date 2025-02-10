@@ -320,7 +320,7 @@ async def app_on_charmhub_fixture(
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel = "edge"
 
-    # We need to test dropping the legacy config options.
+    # We need to test using the legacy config options.
     charmhub_app_config = app_config.copy()
     legacy_config_prefix = "experimental-external-"
     charmhub_app_config[f"{legacy_config_prefix}{EXTERNAL_BUILD_FLAVOR_CONFIG_NAME}"] = (
