@@ -321,10 +321,11 @@ async def app_on_charmhub_fixture(
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel = "edge"
-    charmhub_info_str = await ops_test.juju(
+    ret_code, stdout, stderr = await ops_test.juju(
         "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
     )
-    charmhub_info = json.loads(charmhub_info_str)
+    assert ret_code == 0, f"Failed to get charm info: {stderr}"
+    charmhub_info = json.loads(stdout.strip())
     charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
