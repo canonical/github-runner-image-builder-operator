@@ -57,7 +57,9 @@ async def test_upgrade(
         """
         unit_name_without_slash = unit.name.replace("/", "-")
         juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
-        stdout = await unit.ssh(command=f"cat {juju_unit_log_file} | grep 'Emitting Juju event upgrade_charm.'")
+        stdout = await unit.ssh(
+            command=f"cat {juju_unit_log_file} | grep 'Emitting Juju event upgrade_charm.'"
+        )
         return "Emitting Juju event upgrade_charm." in stdout
 
     await wait_for(
