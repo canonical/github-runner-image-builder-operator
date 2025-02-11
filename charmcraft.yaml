@@ -79,7 +79,7 @@ config:
       default: ""
       description: |
         The flavor to use when launching a builder VM machine. Will default to
-        minimum matching flavor: 2 vCPU, 8G Memory, 20G Disk.
+        minimum matching flavor: 2 vCPU, 1G Memory, 20G Disk.
     build-network:
       type: string
       default: ""
