@@ -9,13 +9,9 @@
 import functools
 import itertools
 import logging
-
-# Subprocess is used to run the application.
-import subprocess  # nosec: B404
 import typing
 import urllib.parse
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -50,21 +46,7 @@ def test_initialize(
     test_start_time = datetime.now(tz=timezone.utc)
     prefix = test_id
 
-    # This is a locally built application - we can trust it.
-    # We don't log the error output as it may contain sensitive information.
-    subprocess.check_output(  # nosec: B603
-        [
-            "/usr/bin/sudo",
-            Path.home() / ".local/bin/github-runner-image-builder",
-            "init",
-            "--arch",
-            arch.value,
-            "--cloud-name",
-            cloud_name,
-            "--prefix",
-            prefix,
-        ],
-    )
+    openstack_builder.initialize(arch=arch, cloud_name=cloud_name, prefix=prefix)
 
     # 1.
     images: list[Image] = openstack_connection.list_images()
@@ -103,65 +85,49 @@ def test_initialize(
 
 
 @pytest.fixture(scope="module", name="image_ids")
-# overhead (e.g. to create new fixture) to reduce the amount of arguments seems to be too high.
-def image_ids_fixture(  # pylint: disable=too-many-positional-arguments,too-many-arguments
+def image_ids_fixture(
     image_config: types.ImageConfig,
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
     proxy: types.ProxyConfig,
-    callback_script: Path,
-    dockerhub_mirror_url: str,
+    dockerhub_mirror: urllib.parse.ParseResult | None,
 ) -> list[str]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has
     been installed using pipx. See testenv:integration section of tox.ini.
     """
-    openstack_image_name = f"{test_id}-image-builder-test"
-    cli_args = [
-        "/usr/bin/sudo",
-        Path.home() / ".local/bin/github-runner-image-builder",
-        "run",
-        openstack_metadata.cloud_name,
-        openstack_image_name,
-        "--base-image",
-        image_config.image,
-        "--keep-revisions",
-        "1",
-        "--arch",
-        image_config.arch.value,
-        "--callback-script",
-        str(callback_script.absolute()),
-        "--flavor",
-        openstack_metadata.flavor,
-        "--network",
-        openstack_metadata.network,
-        "--prefix",
-        test_id,
-        "--script-url",
-        "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
-        "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
-        "test_script.sh",
-        "--upload-clouds",
-        openstack_metadata.cloud_name,
-    ]
-    if proxy.http:
-        cli_args.extend(["--proxy", proxy.http])
-    if dockerhub_mirror_url:
-        cli_args.extend(["--dockerhub-cache", dockerhub_mirror_url])
-
-    # We don't log the error output as it may contain sensitive information.
-    stdout = subprocess.check_output(
-        cli_args,  # nosec: B603,
-        env={
-            "IMAGE_BUILDER_TEST_SECRET": "SHOULD_EXIST",
-            "IMAGE_BUILDER_TEST_NON_SECRET": "SHOULD_NOT_EXIST",
-        },
-        text=True,
-        encoding="utf-8",
+    image_ids = openstack_builder.run(
+        cloud_config=openstack_builder.CloudConfig(
+            cloud_name=openstack_metadata.cloud_name,
+            dockerhub_cache=dockerhub_mirror,
+            flavor=openstack_metadata.flavor,
+            network=openstack_metadata.network,
+            proxy=proxy.http,
+            prefix=test_id,
+            upload_cloud_names=[openstack_metadata.cloud_name],
+        ),
+        image_config=config.ImageConfig(
+            arch=image_config.arch,
+            base=config.BaseImage.from_str(image_config.image),
+            microk8s="",  # "1.31-strict/stable", microk8s support will be removed
+            runner_version="",
+            name=f"{test_id}-image-builder-test",
+            juju="",  # "3.1/stable", juju support will be removed
+            script_config=config.ScriptConfig(
+                script_url=urllib.parse.urlparse(
+                    "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
+                    "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
+                    "test_script.sh"
+                ),
+                script_secrets={
+                    "TEST_SECRET": "SHOULD_EXIST",
+                    "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+                },
+            ),
+        ),
+        keep_revisions=1,
     )
-    image_ids = stdout.strip().splitlines(keepends=False)[-1]
-    logger.info("Image IDs: %s", image_ids)
     return image_ids.split(",")
 
 
