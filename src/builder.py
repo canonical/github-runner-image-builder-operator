@@ -20,6 +20,7 @@ import yaml
 from charms.operator_libs_linux.v0 import apt
 from charms.operator_libs_linux.v1 import systemd
 
+import pipx
 import state
 from exceptions import (
     BuilderInitError,
@@ -27,6 +28,7 @@ from exceptions import (
     DependencyInstallError,
     GetLatestImageError,
     ImageBuilderInitializeError,
+    PipXError,
     UpgradeApplicationError,
 )
 
@@ -35,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 UBUNTU_USER = "ubuntu"
 UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
+APP_NAME = "github-runner-image-builder"
+LOCAL_APP_TAR_PATH = Path(f"{os.getcwd()}/app.tar.gz")
 
 APT_DEPENDENCIES = [
     "pipx",
@@ -57,7 +61,6 @@ class ApplicationInitializationConfig:
 
     Attributes:
         cloud_config: The OpenStack cloud config the application should interact with.
-        channel: The application channel.
         cron_interval: The number of hours to retrigger build.
         image_arch: The image architecture to initialize build resources for.
         resource_prefix: The prefix of application resources.
@@ -65,7 +68,6 @@ class ApplicationInitializationConfig:
     """
 
     cloud_config: state.CloudConfig
-    channel: state.BuilderAppChannel
     cron_interval: int
     image_arch: state.Arch
     resource_prefix: str
@@ -86,7 +88,7 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
     try:
         install_clouds_yaml(cloud_config=app_init_config.cloud_config.openstack_clouds_config)
         # The following lines should be covered by integration tests.
-        _install_dependencies(channel=app_init_config.channel)
+        _install_dependencies()
         _initialize_image_builder(  # pragma: no cover
             cloud_name=app_init_config.cloud_config.cloud_name,
             image_arch=app_init_config.image_arch,
@@ -99,28 +101,16 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
         raise BuilderInitError from exc
 
 
-def _install_dependencies(channel: state.BuilderAppChannel) -> None:
+def _install_dependencies() -> None:
     """Install required dependencies to run qemu image build.
-
-    Args:
-        channel: The application channel to install.
 
     Raises:
         DependencyInstallError: If there was an error installing apt packages.
     """
     try:
         apt.add_package(APT_DEPENDENCIES, update_cache=True)
-        subprocess.run(  # nosec: B603
-            [
-                "/usr/bin/pipx",
-                "install",
-                f"git+https://github.com/canonical/github-runner-image-builder@{channel.value}",
-            ],
-            timeout=5 * 60,
-            check=True,
-            user=UBUNTU_USER,
-        )
-    except (apt.PackageNotFoundError, subprocess.SubprocessError) as exc:
+        pipx.install(str(LOCAL_APP_TAR_PATH))
+    except (apt.PackageNotFoundError, PipXError) as exc:
         raise DependencyInstallError from exc
 
 
@@ -918,24 +908,7 @@ def upgrade_app() -> None:
         UpgradeApplicationError: If there was an error upgrading the application.
     """
     try:
-        subprocess.run(  # nosec: B603
-            [
-                "/usr/bin/run-one",
-                "/usr/bin/pipx",
-                "upgrade",
-                "github-runner-image-builder",
-            ],
-            timeout=5 * 60,
-            check=True,
-            user=UBUNTU_USER,
-        )
-    except subprocess.CalledProcessError as exc:
-        logger.error(
-            "Pipx upgrade failed, code: %s, out: %s, err: %s",
-            exc.returncode,
-            exc.stdout,
-            exc.stderr,
-        )
-        raise UpgradeApplicationError from exc
-    except subprocess.SubprocessError as exc:
+        pipx.uninstall(APP_NAME)
+        pipx.install(LOCAL_APP_TAR_PATH)
+    except PipXError as exc:
         raise UpgradeApplicationError from exc

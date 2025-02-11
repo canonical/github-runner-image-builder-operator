@@ -27,6 +27,8 @@ from tests.integration.types import Commands, OpenstackMeta, ProxyConfig
 
 logger = logging.getLogger(__name__)
 
+CREATE_SERVER_TIMEOUT_IN_SECONDS = 15 * 60
+
 
 def image_created_from_dispatch(
     image_name: str, connection: Connection, dispatch_time: datetime
@@ -305,7 +307,7 @@ async def _get_ssh_connection_for_image(
 hostnamectl set-hostname github-runner
 DEBIAN_FRONTEND=noninteractive apt-get update -y
 """,
-        timeout=60 * 10,
+        timeout=CREATE_SERVER_TIMEOUT_IN_SECONDS,
         wait=True,
     )
 
