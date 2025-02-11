@@ -38,8 +38,8 @@ def main(log_level: str | int) -> None:
 @click.option(
     "--arch",
     type=click.Choice((config.Arch.ARM64, config.Arch.X64)),
-    default=None,
-    help="Image architecture to initialize for. Defaults the host architecture.",
+    help="Image architecture to initialize for.",
+    required=True,
 )
 @click.option(
     "--cloud-name",
@@ -61,8 +61,6 @@ def initialize(arch: config.Arch | None, cloud_name: str, prefix: str) -> None:
         cloud_name: The cloud name to use from clouds.yaml.
         prefix: The prefix to use for OpenStack resource names.
     """
-    arch = arch if arch else config.get_supported_arch()
-
     openstack_builder.initialize(
         arch=arch,
         cloud_name=openstack_builder.determine_cloud(cloud_name=cloud_name),
@@ -145,8 +143,8 @@ def _parse_url(
 @click.option(
     "--arch",
     type=click.Choice((config.Arch.ARM64, config.Arch.X64)),
-    default=None,
-    help="Image architecture to initialize for. Defaults the host architecture.",
+    help="Image architecture.",
+    required=True,
 )
 @click.option(
     "-b",
@@ -274,7 +272,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         script_url: The external setup bash script URL.
         upload_clouds: The Openstack cloud to use to upload externally built image.
     """
-    arch = arch if arch else config.get_supported_arch()
     base = config.BaseImage.from_str(base_image)
     upload_cloud_names = (
         [cloud_name.strip() for cloud_name in upload_clouds.split(",")] if upload_clouds else None

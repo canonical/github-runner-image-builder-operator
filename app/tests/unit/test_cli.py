@@ -99,7 +99,7 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
         cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
     )
 
-    cli_runner.invoke(main, args=["init", "--cloud-name", "hello"])
+    cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", "x64"])
 
     mock_openstack_init_func.assert_called_with(
         arch=config.Arch.X64, cloud_name="hello", prefix=""
@@ -216,6 +216,8 @@ def test_run(
     monkeypatch.setattr(cli.subprocess, "check_call", MagicMock())
     command = [
         "run",
+        "--arch",
+        "x64",
         "--base-image",
         "jammy",
         "test-cloud-name",

@@ -57,6 +57,8 @@ def test_initialize(
             "/usr/bin/sudo",
             Path.home() / ".local/bin/github-runner-image-builder",
             "init",
+            "--arch",
+            arch.value,
             "--cloud-name",
             cloud_name,
             "--prefix",
