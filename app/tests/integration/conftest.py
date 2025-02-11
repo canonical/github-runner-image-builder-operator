@@ -162,27 +162,6 @@ def openstack_connection_fixture(cloud_name: str) -> Connection:
     return openstack.connect(cloud_name)
 
 
-@pytest.fixture(scope="module", name="callback_result_path")
-def callback_result_path_fixture() -> Path:
-    """The file created when the callback script is run."""
-    return Path("callback_complete")
-
-
-@pytest.fixture(scope="module", name="callback_script")
-def callback_script_fixture(callback_result_path: Path) -> Path:
-    """The callback script to use with the image builder."""
-    callback_script = Path("callback")
-    callback_script.write_text(
-        f"""#!/bin/bash
-IMAGE_ID=$1
-echo $IMAGE_ID > {callback_result_path}
-""",
-        encoding="utf-8",
-    )
-    callback_script.chmod(0o775)
-    return callback_script
-
-
 @pytest.fixture(scope="module", name="dockerhub_mirror_url")
 def dockerhub_mirror_url_fixture(pytestconfig: pytest.Config) -> str | None:
     """Dockerhub mirror URL."""

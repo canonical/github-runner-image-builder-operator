@@ -18,13 +18,6 @@ from github_runner_image_builder import cli, config
 from github_runner_image_builder.cli import main
 
 
-@pytest.fixture(scope="function", name="callback_path")
-def callback_path_fixture(tmp_path: Path):
-    """The testing callback file path."""
-    test_path = tmp_path / "test"
-    test_path.touch()
-    return test_path
-
 
 @pytest.fixture(scope="function", name="latest_build_id_inputs")
 def latest_build_id_inputs_fixture():
@@ -33,14 +26,13 @@ def latest_build_id_inputs_fixture():
 
 
 @pytest.fixture(scope="function", name="run_inputs")
-def run_inputs_fixture(callback_path: Path):
+def run_inputs_fixture():
     """Valid CLI run mode inputs."""
     return {
         "": "test-cloud-name",
         " ": "test-image-name",
         "--base-image": "noble",
         "--keep-revisions": "5",
-        "--callback-script": str(callback_path),
         "--juju": "3.1/stable",
         "--dockerhub-cache": "https://dockerhub-cache.internal:5000",
     }
@@ -159,9 +151,6 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
     [
         pytest.param({"--base-image": ""}, id="no base-image"),
         pytest.param({"--base-image": "test"}, id="invalid base-image"),
-        pytest.param(
-            {"--callback-script": "non-existant-path"}, id="empty image name positional argument"
-        ),
         pytest.param({"": ""}, id="empty cloud name positional argument"),
         pytest.param({" ": ""}, id="empty image name positional argument"),
         pytest.param({"--juju": "invalid-value"}, id="invalid juju channel value"),
@@ -193,18 +182,9 @@ def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args:
     )
 
 
-@pytest.mark.parametrize(
-    "callback_script",
-    [
-        pytest.param(None, id="No callback script"),
-        pytest.param(Path("tmp_path"), id="Callback script"),
-    ],
-)
 def test_run(
     monkeypatch: pytest.MonkeyPatch,
     cli_runner: CliRunner,
-    tmp_path: Path,
-    callback_script: Path | None,
 ):
     """
     arrange: given a monkeypatched builder.setup_builder function.
@@ -213,7 +193,6 @@ def test_run(
     """
     monkeypatch.setattr(cli.openstack_builder, "run", MagicMock())
     monkeypatch.setattr(cli.store, "upload_image", MagicMock())
-    monkeypatch.setattr(cli.subprocess, "check_call", MagicMock())
     command = [
         "run",
         "--arch",
@@ -223,9 +202,6 @@ def test_run(
         "test-cloud-name",
         "test-image-name",
     ]
-    if callback_script:
-        (callback_script_path := tmp_path / callback_script).touch(exist_ok=True)
-        command.extend(["--callback-script", str(callback_script_path)])
 
     result = cli_runner.invoke(
         main,

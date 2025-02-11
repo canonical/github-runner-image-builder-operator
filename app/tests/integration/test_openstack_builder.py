@@ -278,17 +278,3 @@ async def test_openstack_state(
         name_or_id=openstack_builder._get_keypair_name(prefix=test_id)
     )
     assert keypair, "Keypair not exists."
-
-
-@pytest.mark.amd64
-@pytest.mark.arm64
-@pytest.mark.asyncio
-async def test_script_callback(image_ids: list[str], callback_result_path: Path):
-    """
-    arrange: given a CLI run  with a script that creates a file.
-    act: None.
-    assert: the file contains the image ids produced by the run.
-    """
-    assert callback_result_path.exists()
-    assert len(content := callback_result_path.read_text(encoding="utf-8"))
-    assert ",".join(image_ids) in content

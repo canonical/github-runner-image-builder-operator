@@ -4,11 +4,7 @@
 """Main entrypoint for github-runner-image-builder cli application."""
 
 import os
-
-# Subprocess module is used to execute trusted commands
-import subprocess  # nosec: B404
 import urllib.parse
-from pathlib import Path
 
 import click
 
@@ -164,16 +160,6 @@ def _parse_url(
     ),
 )
 @click.option(
-    "-s",
-    "--callback-script",
-    type=click.Path(exists=True),
-    default=None,
-    help=(
-        "The callback script to trigger after image is built. The callback script is called"
-        "with the first argument as the image ID."
-    ),
-)
-@click.option(
     "-k",
     "--keep-revisions",
     default=5,
@@ -240,7 +226,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
     image_name: str,
     base_image: str,
     keep_revisions: int,
-    callback_script: Path | None,
     runner_version: str,
     flavor: str,
     juju: str,
@@ -261,7 +246,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         image_name: The image name uploaded to Openstack.
         base_image: The Ubuntu base image to use as build base.
         keep_revisions: Number of past revisions to keep before deletion.
-        callback_script: Script to callback after a successful build.
         runner_version: GitHub runner version to pin.
         flavor: The Openstack flavor to create server to build images.
         juju: The Juju channel to install and bootstrap.
@@ -301,9 +285,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         keep_revisions=keep_revisions,
     )
     click.echo(f"Image build success:\n{image_ids}", nl=False)
-    if callback_script:
-        # The callback script is a user trusted script.
-        subprocess.check_call([str(callback_script), image_ids])  # nosec: B603
 
 
 def _load_secrets() -> dict[str, str]:
