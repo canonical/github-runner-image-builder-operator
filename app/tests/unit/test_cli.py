@@ -8,7 +8,6 @@
 
 import itertools
 import os
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -16,7 +15,6 @@ from click.testing import CliRunner
 
 from github_runner_image_builder import cli, config
 from github_runner_image_builder.cli import main
-
 
 
 @pytest.fixture(scope="function", name="latest_build_id_inputs")
