@@ -168,8 +168,6 @@ def _build_init_command(
         "/usr/bin/sudo",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "init",
-        "--experimental-external",
-        "True",
         "--cloud-name",
         cloud_name,
         "--arch",
@@ -682,9 +680,6 @@ def _build_run_command(
         "run",
         run_args.cloud_name,
         run_args.image_name,
-        # This option is to be deprecated when the application only supports external build mode.
-        "--experimental-external",
-        "True",
     ]
     cmd.extend(_build_run_cloud_options(cloud_options=cloud_options))
     cmd.extend(_build_run_image_options(image_options=image_options))

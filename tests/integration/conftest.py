@@ -3,6 +3,7 @@
 
 """Fixtures for github runner charm integration tests."""
 import functools
+import json
 import logging
 import multiprocessing
 import os
@@ -33,7 +34,6 @@ from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     DOCKERHUB_CACHE_CONFIG_NAME,
-    EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     JUJU_CHANNELS_CONFIG_NAME,
@@ -272,7 +272,6 @@ def app_config_fixture(
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
-        EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
@@ -316,16 +315,31 @@ async def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: str,
+    ops_test,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel = "edge"
+    ret_code, stdout, stderr = await ops_test.juju(
+        "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
+    )
+    assert ret_code == 0, f"Failed to get charm info: {stderr}"
+    charmhub_info = json.loads(stdout.strip())
+    charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
+
+    charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
+    # We might need to test using the legacy config options.
+    legacy_config_prefix = "experimental-external-"
+    for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
+        if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
+            charmhub_app_config[legacy_opt] = app_config[opt]
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
-        channel="edge",
+        config=charmhub_app_config,
+        channel=charmhub_channel,
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)

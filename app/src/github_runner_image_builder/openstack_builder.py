@@ -53,7 +53,8 @@ CLOUD_YAML_PATHS = (
 BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
 
-CREATE_SERVER_TIMEOUT = 5 * 60  # seconds
+CREATE_SERVER_TIMEOUT = 20 * 60  # seconds
+DELETE_SERVER_TIMEOUT = 20 * 60  # seconds
 
 MIN_CPU = 2
 MIN_RAM = 1024  # M
@@ -310,7 +311,7 @@ def run(
             ),
         )
         logger.info("Deleting builder VM: %s (%s)", builder.name, builder.id)
-        conn.delete_server(name_or_id=builder.id, wait=True, timeout=5 * 60)
+        conn.delete_server(name_or_id=builder.id, wait=True, timeout=DELETE_SERVER_TIMEOUT)
         logger.info("Image builder run complete.")
     return ",".join(str(image.id) for image in images)
 

@@ -26,9 +26,6 @@ from tests.integration import helpers, types
 
 logger = logging.getLogger(__name__)
 
-# The timeout is increased to 15 minutes to account for the slow testing infrastructure.
-openstack_builder.CREATE_SERVER_TIMEOUT = 15 * 60
-
 
 @pytest.mark.amd64
 @pytest.mark.arm64
@@ -91,7 +88,7 @@ def image_ids_fixture(
     test_id: str,
     proxy: types.ProxyConfig,
     dockerhub_mirror: urllib.parse.ParseResult | None,
-):
+) -> list[str]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has

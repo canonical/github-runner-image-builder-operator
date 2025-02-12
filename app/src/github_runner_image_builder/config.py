@@ -6,13 +6,10 @@
 import dataclasses
 import itertools
 import logging
-import platform
 import urllib.parse
 from enum import Enum
 from pathlib import Path
 from typing import Literal
-
-from github_runner_image_builder.errors import UnsupportedArchitectureError
 
 
 class Arch(str, Enum):
@@ -42,25 +39,6 @@ class Arch(str, Enum):
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
-
-
-def get_supported_arch() -> Arch:
-    """Get current machine architecture.
-
-    Raises:
-        UnsupportedArchitectureError: if the current architecture is unsupported.
-
-    Returns:
-        Arch: Current machine architecture.
-    """
-    arch = platform.machine()
-    match arch:
-        case arch if arch in ARCHITECTURES_ARM64:
-            return Arch.ARM64
-        case arch if arch in ARCHITECTURES_X86:
-            return Arch.X64
-        case _:
-            raise UnsupportedArchitectureError()
 
 
 class BaseImage(str, Enum):
