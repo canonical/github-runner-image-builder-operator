@@ -1,4 +1,4 @@
-## [#79 Drop chroot mode](https://github.com/canonical/github-runner-image-builder-operator/pull/79) (2025-02-10)
+## [#79 Drop chroot mode](https://github.com/canonical/github-runner-image-builder-operator/pull/79) (2025-02-12)
 
 > Drop local image building (chroot) from the charm.
 
@@ -20,7 +20,7 @@ Please specify those options when upgrading the charm.
 * None
 
 ### Other Changes
-* None
+* Increased OpenStack server timeouts to 20 minutes in the application to allow for longer build/delete times.
 
 ## [#81 Drop arm charm support](https://github.com/canonical/github-runner-image-builder-operator/pull/81) (2025-02-07)
 
