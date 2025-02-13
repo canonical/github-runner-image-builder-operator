@@ -181,8 +181,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         return builder.ConfigMatrix(
             bases=builder_config.image_config.bases,
-            juju_channels=builder_config.image_config.juju_channels,
-            microk8s_channels=builder_config.image_config.microk8s_channels,
         )
 
     def _get_static_config(self, builder_config: state.BuilderConfig) -> builder.StaticConfigs:

@@ -7,7 +7,6 @@ import dataclasses
 import inspect
 import logging
 import time
-import urllib
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -212,20 +211,6 @@ def _wait_for_valid_connection(
     raise TimeoutError("No valid ssh connections found.")
 
 
-def format_dockerhub_mirror_microk8s_command(command: str, dockerhub_mirror: str) -> str:
-    """Format dockerhub mirror for microk8s command.
-
-    Args:
-        command: The command to run.
-        dockerhub_mirror: The DockerHub mirror URL.
-
-    Returns:
-        The formatted dockerhub mirror registry command for snap microk8s.
-    """
-    url = urllib.parse.urlparse(dockerhub_mirror)
-    return command.format(registry_url=url.geturl(), hostname=url.hostname, port=url.port)
-
-
 P = ParamSpec("P")
 R = TypeVar("R")
 S = Callable[P, R] | Callable[P, Awaitable[R]]
@@ -409,12 +394,6 @@ async def run_image_test(
         dockerhub_mirror=image_test_meta.dockerhub_mirror,
     ) as ssh_conn:
         for command in test_commands:
-            if command.command == "configure dockerhub mirror":
-                if not image_test_meta.dockerhub_mirror:
-                    continue
-                command.command = format_dockerhub_mirror_microk8s_command(
-                    command=command.command, dockerhub_mirror=image_test_meta.dockerhub_mirror
-                )
             logger.info("Running test: %s", command.name)
             for attempt in range(command.retry):
                 try:

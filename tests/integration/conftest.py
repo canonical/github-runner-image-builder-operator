@@ -36,8 +36,6 @@ from state import (
     DOCKERHUB_CACHE_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
-    JUJU_CHANNELS_CONFIG_NAME,
-    MICROK8S_CHANNELS_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -246,8 +244,6 @@ def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
         bases=("noble",),
-        juju_channels=tuple(),  # ("3.5/stable",), juju support will be removed
-        microk8s_channels=tuple(),  # ("1.29-strict/stable",), microk8s support will be removed
     )
 
 
@@ -263,8 +259,6 @@ def app_config_fixture(
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,
-        JUJU_CHANNELS_CONFIG_NAME: ",".join(image_configs.juju_channels),
-        MICROK8S_CHANNELS_CONFIG_NAME: ",".join(image_configs.microk8s_channels),
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
@@ -440,14 +434,6 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
     arch = _get_supported_arch()
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
-        for juju in image_configs.juju_channels:
-            for microk8s in image_configs.microk8s_channels:
-                image_names.append(
-                    (
-                        f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}"
-                        f"-mk8s-{microk8s.replace('/','-')}"
-                    )
-                )
     return image_names
 
 
@@ -471,58 +457,4 @@ async def bare_image_id_fixture(
         check_interval=30,
     )
     assert image, "Bare image not found"
-    return image.id
-
-
-@pytest_asyncio.fixture(scope="module", name="juju_image_id")
-async def juju_image_id_fixture(
-    openstack_connection: Connection,
-    dispatch_time: datetime,
-    image_configs: ImageConfigs,
-    app: Application,
-):
-    """The Juju bootstrapped image expected from builder application."""
-    arch = _get_supported_arch()
-    image: Image | None = await wait_for(
-        functools.partial(
-            image_created_from_dispatch,
-            image_name=(
-                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}-"
-                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
-            ),
-            connection=openstack_connection,
-            dispatch_time=dispatch_time,
-        ),
-        timeout=60 * 30,
-        check_interval=30,
-    )
-    assert image, "Juju image not found"
-    return image.id
-
-
-@pytest_asyncio.fixture(scope="module", name="microk8s_image_id")
-async def microk8s_image_id_fixture(
-    openstack_connection: Connection,
-    dispatch_time: datetime,
-    image_configs: ImageConfigs,
-    app: Application,
-):
-    """The Juju bootstrapped image expected from builder application."""
-    arch = _get_supported_arch()
-    image: Image | None = await wait_for(
-        functools.partial(
-            image_created_from_dispatch,
-            image_name=(
-                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}-"
-                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
-            ),
-            connection=openstack_connection,
-            dispatch_time=dispatch_time,
-        ),
-        timeout=60 * 30,
-        check_interval=30,
-    )
-    assert image, "Microk8s image not found"
     return image.id

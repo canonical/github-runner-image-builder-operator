@@ -70,8 +70,6 @@ class Observer(ops.Object):
         cloud_images = builder.get_latest_images(
             config_matrix=builder.ConfigMatrix(
                 bases=build_config.image_config.bases,
-                juju_channels=build_config.image_config.juju_channels,
-                microk8s_channels=build_config.image_config.microk8s_channels,
             ),
             static_config=builder.StaticConfigs(
                 cloud_config=builder.CloudConfig(
@@ -187,9 +185,4 @@ def _format_tags(image: builder.CloudImage) -> str:
     Returns:
         The CSV formatted tags.
     """
-    tag_str = ",".join(tag for tag in (image.arch.value, image.base.value) if tag)
-    if image.juju:
-        tag_str += f",juju={image.juju}"
-    if image.microk8s:
-        tag_str += f",microk8s={image.microk8s}"
-    return tag_str
+    return ",".join(tag for tag in (image.arch.value, image.base.value) if tag)

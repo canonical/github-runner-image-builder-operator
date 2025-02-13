@@ -90,13 +90,9 @@ class ImageConfigs(typing.NamedTuple):
 
     Attributes:
         bases: The Ubuntu OS Bases.
-        juju_channels: The Juju snap channels to install.
-        microk8s_channels: The Microk8s snap channels to install.
     """
 
     bases: tuple[str, ...]
-    juju_channels: tuple[str, ...]
-    microk8s_channels: tuple[str, ...]
 
 
 class OpenstackMeta(typing.NamedTuple):
