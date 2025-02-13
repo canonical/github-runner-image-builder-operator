@@ -176,7 +176,6 @@ def test__create_security_group():
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
@@ -188,7 +187,6 @@ def test__create_security_group():
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
@@ -200,7 +198,6 @@ def test__create_security_group():
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
@@ -583,8 +580,6 @@ def test__generate_cloud_init_script():
             image_config=openstack_builder.config.ImageConfig(
                 arch=openstack_builder.Arch.X64,
                 base=openstack_builder.BaseImage.JAMMY,
-                juju="3.1/stable",
-                microk8s="1.29-strict/stable",
                 runner_version="",
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
@@ -593,7 +588,6 @@ def test__generate_cloud_init_script():
                 ),
             ),
             proxy="test.proxy.internal:3128",
-            dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
         )
         # The templated script contains similar lines to helper for setting up proxy.
         # pylint: disable=R0801
@@ -708,75 +702,6 @@ function chown_home() {
     /usr/bin/chown --recursive ubuntu:ubuntu /home/ubuntu/
 }
 
-function install_microk8s() {
-    local channel="$1"
-    local dockerhub_cache_url="$2"
-    local dockerhub_hostname="$3"
-    local dockerhub_port="$4"
-    if [[ -z "$channel" ]]; then
-        echo "Microk8s channel not provided, skipping installation."
-        return
-    fi
-    classic_flag=""
-    if [[ "$channel" != *"strict"* ]]; then
-        classic_flag="--classic"
-    fi
-    /usr/bin/snap install microk8s --channel="$channel" $classic_flag
-    /usr/sbin/usermod --append --groups snap_microk8s ubuntu
-
-    if [[ -z "$dockerhub_cache_url" ]]; then
-        /usr/bin/echo "dockerhub cache not enabled, skipping installation"
-        initialize_microk8s_plugins
-        return
-    fi
-    install_microk8s_dockerhub_cache "$dockerhub_cache_url" "$dockerhub_hostname" "$dockerhub_port"
-    initialize_microk8s_plugins
-}
-
-function initialize_microk8s_plugins() {
-    /snap/bin/microk8s status --wait-ready --timeout=600
-    /snap/bin/microk8s enable dns hostpath-storage registry
-    /snap/bin/microk8s status --wait-ready --timeout=600
-}
-
-function install_microk8s_dockerhub_cache() {
-    local dockerhub_cache_url="$1"
-    local dockerhub_hostname="$2"
-    local dockerhub_port="$3"
-    /usr/bin/mkdir -p /var/snap/microk8s/current/args/certs.d/docker.io/
-    /usr/bin/cat <<EOF | /usr/bin/tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
-server = $dockerhub_cache_url
-
-[host.$dockerhub_hostname:$dockerhub_port]
-    capabilities = ["pull", "resolve"]
-    override_path = true
-EOF
-    /snap/bin/microk8s stop
-    /snap/bin/microk8s start
-}
-
-function install_juju() {
-    local channel="$1"
-    if [[ -z "$channel" ]]; then
-        echo "Juju channel not provided, skipping installation."
-        return
-    fi
-
-    /usr/bin/snap install juju --channel="$channel"
-    if ! lxd --version &> /dev/null; then
-        /usr/bin/snap install lxd
-    fi
-
-    echo "Bootstrapping LXD on Juju"
-    /snap/bin/lxd init --auto
-    /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap localhost localhost
-
-    if command -v microk8s &> /dev/null; then
-        echo "Bootstrapping MicroK8s on Juju"
-        /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap microk8s microk8s
-    fi
-}
-
 function configure_system_users() {
     echo "Configuring ubuntu user"
     # only add ubuntu user if ubuntu does not exist
@@ -814,16 +739,11 @@ function execute_script() {
 }
 
 proxy="test.proxy.internal:3128"
-dockerhub_cache_url="https://test-dockerhub-cache.com:5000"
-dockerhub_cache_host="test-dockerhub-cache.com"
-dockerhub_cache_port="5000"
 apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
 shellcheck tar time unzip wget"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="x64"
-microk8s_channel="1.29-strict/stable"
-juju_channel="3.1/stable"
 script_url="https://test-url.com/script.sh"
 script_secrets="TEST_SECRET_ONE=HELLO TEST_SECRET_TWO=WORLD"
 
@@ -838,9 +758,6 @@ export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-install_microk8s "$microk8s_channel" "$dockerhub_cache_url" "$dockerhub_cache_host" \
-"$dockerhub_cache_port"
-install_juju "$juju_channel"
 configure_system_users
 execute_script "$script_url" "$script_secrets"
 

@@ -31,8 +31,7 @@ def run_inputs_fixture():
         " ": "test-image-name",
         "--base-image": "noble",
         "--keep-revisions": "5",
-        "--juju": "3.1/stable",
-        "--dockerhub-cache": "https://dockerhub-cache.internal:5000",
+        "--script-url": "https://example.com",
     }
 
 
@@ -151,10 +150,7 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
         pytest.param({"--base-image": "test"}, id="invalid base-image"),
         pytest.param({"": ""}, id="empty cloud name positional argument"),
         pytest.param({" ": ""}, id="empty image name positional argument"),
-        pytest.param({"--juju": "invalid-value"}, id="invalid juju channel value"),
-        pytest.param({"--juju": "3.1/stable/edge"}, id="more than 1 / values"),
-        pytest.param({"--dockerhub-cache": "invalidurl"}, id="invalid url"),
-        pytest.param({"--dockerhub-cache": "no-scheme.internal:5000"}, id="no scheme"),
+        pytest.param({"--script-url": "invalidurl"}, id="invalid url"),
     ],
 )
 def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args: dict):

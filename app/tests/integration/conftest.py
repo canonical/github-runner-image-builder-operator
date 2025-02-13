@@ -8,7 +8,6 @@ import platform
 import secrets
 import string
 import typing
-import urllib.parse
 from pathlib import Path
 
 import openstack
@@ -160,25 +159,6 @@ def cloud_name_fixture(clouds_yaml_contents: str) -> str:
 def openstack_connection_fixture(cloud_name: str) -> Connection:
     """The openstack connection instance."""
     return openstack.connect(cloud_name)
-
-
-@pytest.fixture(scope="module", name="dockerhub_mirror_url")
-def dockerhub_mirror_url_fixture(pytestconfig: pytest.Config) -> str | None:
-    """Dockerhub mirror URL."""
-    dockerhub_mirror_url: str | None = pytestconfig.getoption("--dockerhub-mirror")
-    if not dockerhub_mirror_url:
-        return None
-    return dockerhub_mirror_url
-
-
-@pytest.fixture(scope="module", name="dockerhub_mirror")
-def dockerhub_mirror_fixture(dockerhub_mirror_url: str) -> urllib.parse.ParseResult | None:
-    """Dockerhub mirror URL."""
-    parse_result = urllib.parse.urlparse(dockerhub_mirror_url)
-    assert (
-        parse_result.netloc and parse_result.port and parse_result.geturl()
-    ), "Invalid dockerhub-mirror URL"
-    return parse_result
 
 
 @pytest.fixture(scope="module", name="ssh_key")
