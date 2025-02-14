@@ -176,6 +176,7 @@ async def ssh_connection_fixture(
     openstack_server: Server,
     proxy: types.ProxyConfig,
     openstack_metadata: types.OpenstackMeta,
+    dockerhub_mirror: urllib.parse.ParseResult | None,
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
@@ -187,6 +188,7 @@ async def ssh_connection_fixture(
             ssh_key=openstack_metadata.ssh_key.private_key,
         ),
         proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror,
     )
 
     return ssh_connection
@@ -198,7 +200,9 @@ async def ssh_connection_fixture(
 @pytest.mark.amd64
 @pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
-async def test_run(ssh_connection: SSHConnection):
+async def test_run(
+    ssh_connection: SSHConnection,
+):
     """
     arrange: given openstack cloud instance.
     act: when run (build image) is called.

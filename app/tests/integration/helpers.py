@@ -10,6 +10,7 @@ import logging
 import platform
 import tarfile
 import time
+import urllib.parse
 from datetime import datetime, timezone
 from functools import partial
 from pathlib import Path
@@ -17,6 +18,7 @@ from string import Template
 from typing import Awaitable, Callable, Generator, ParamSpec, Protocol, TypeVar, cast
 
 import openstack.exceptions
+import tenacity
 from fabric import Connection as SSHConnection
 from fabric import Result
 from invoke.exceptions import UnexpectedExit
@@ -249,6 +251,7 @@ async def wait_for_valid_connection(
     connection_params: OpenStackConnectionParams,
     timeout: int = 30 * 60,
     proxy: types.ProxyConfig | None = None,
+    dockerhub_mirror: urllib.parse.ParseResult | None = None,
 ) -> SSHConnection:
     """Wait for a valid SSH connection from Openstack server.
 
@@ -256,6 +259,7 @@ async def wait_for_valid_connection(
         connection_params: Parameters for connecting to OpenStack instance.
         timeout: Number of seconds to wait before raising a timeout error.
         proxy: The proxy to configure on host runner.
+        dockerhub_mirror: The DockerHub mirror URL.
 
     Raises:
         TimeoutError: If no valid connections were found.
@@ -288,6 +292,9 @@ async def wait_for_valid_connection(
                 result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
                     await _install_proxy(conn=ssh_connection, proxy=proxy)
+                    _configure_dockerhub_mirror(
+                        conn=ssh_connection, dockerhub_mirror=dockerhub_mirror
+                    )
                     return ssh_connection
             except (NoValidConnectionsError, TimeoutError, SSHException) as exc:
                 logger.warning("Connection not yet ready, %s.", str(exc))
@@ -356,6 +363,56 @@ def _snap_ready(conn: SSHConnection) -> bool:
         return result.ok
     except UnexpectedExit:
         return False
+
+
+@tenacity.retry(
+    wait=tenacity.wait_exponential(multiplier=2, min=10, max=60),
+    stop=tenacity.stop_after_attempt(10),
+)
+def _configure_dockerhub_mirror(
+    conn: SSHConnection, dockerhub_mirror: urllib.parse.ParseResult | None
+):
+    """Use dockerhub mirror if provided.
+
+    Args:
+        conn: The SSH connection instance.
+        dockerhub_mirror: The DockerHub mirror URL.
+    """
+    if not dockerhub_mirror:
+        return
+    command = f'sudo mkdir -p /etc/docker/ && \
+echo {{ \\"registry-mirrors\\": [\\"{dockerhub_mirror.geturl()}\\"]}} | sudo tee \
+/etc/docker/daemon.json'
+    logger.info("Running command: %s", command)
+    result: Result = conn.run(command)
+    assert result.ok, "Failed to setup DockerHub mirror"
+
+    command = "sudo systemctl daemon-reload"
+    result = conn.run(command)
+    assert result.ok, "Failed to reload daemon"
+
+    command = "sudo systemctl restart docker"
+    result = conn.run(command)
+    assert result.ok, "Failed to restart docker"
+
+
+def format_dockerhub_mirror_microk8s_command(
+    command: str, dockerhub_mirror: urllib.parse.ParseResult
+) -> str:
+    """Format dockerhub mirror for microk8s command.
+
+    Args:
+        command: The command to run.
+        dockerhub_mirror: The DockerHub mirror URL.
+
+    Returns:
+        The formatted dockerhub mirror registry command for snap microk8s.
+    """
+    return command.format(
+        registry_url=dockerhub_mirror.geturl(),
+        hostname=dockerhub_mirror.hostname,
+        port=dockerhub_mirror.port,
+    )
 
 
 def run_openstack_tests(
@@ -459,6 +516,10 @@ def create_openstack_server(
             security_groups=[security_group.name],
             flavor=openstack_metadata.flavor,
             network=openstack_metadata.network,
+            # hostname setting is required for microk8s testing
+            userdata="""#!/bin/bash
+hostnamectl set-hostname github-runner
+""",
             timeout=60 * 20,
             wait=True,
         )
