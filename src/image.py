@@ -55,6 +55,7 @@ class Observer(ops.Object):
             event: The event emitted when a relation is joined.
         """
         build_config = state.BuilderConfig.from_charm(charm=self.charm)
+        proxy = state.ProxyConfig.from_env()
         if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
@@ -70,8 +71,6 @@ class Observer(ops.Object):
         cloud_images = builder.get_latest_images(
             config_matrix=builder.ConfigMatrix(
                 bases=build_config.image_config.bases,
-                juju_channels=build_config.image_config.juju_channels,
-                microk8s_channels=build_config.image_config.microk8s_channels,
             ),
             static_config=builder.StaticConfigs(
                 cloud_config=builder.CloudConfig(
@@ -88,14 +87,7 @@ class Observer(ops.Object):
                     script_secrets=build_config.image_config.script_secrets,
                     runner_version=build_config.image_config.runner_version,
                 ),
-                service_config=builder.ExternalServiceConfig(
-                    dockerhub_cache=build_config.service_config.dockerhub_cache,
-                    proxy=(
-                        build_config.service_config.proxy.http
-                        if build_config.service_config.proxy
-                        else None
-                    ),
-                ),
+                service_config=builder.ExternalServiceConfig(proxy=proxy.http if proxy else None),
             ),
         )
         if not cloud_images:
@@ -187,9 +179,4 @@ def _format_tags(image: builder.CloudImage) -> str:
     Returns:
         The CSV formatted tags.
     """
-    tag_str = ",".join(tag for tag in (image.arch.value, image.base.value) if tag)
-    if image.juju:
-        tag_str += f",juju={image.juju}"
-    if image.microk8s:
-        tag_str += f",microk8s={image.microk8s}"
-    return tag_str
+    return ",".join(tag for tag in (image.arch.value, image.base.value) if tag)

@@ -1,3 +1,26 @@
+## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
+> Drop juju and microk8s preinstallation.
+
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* The charm no longer supports pre-installing different Juju and MicroK8s versions in the image.
+The configuration options `dockerhub-cache`, `juju-channels` and `microk8s-channels` have been removed.
+
+### New Features
+* None
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
 ## [#79 Drop chroot mode](https://github.com/canonical/github-runner-image-builder-operator/pull/79) (2025-02-12)
 
 > Drop local image building (chroot) from the charm.
@@ -28,7 +51,7 @@ Please specify those options when upgrading the charm.
 
 
 ### Upgrade Steps
-* Non, for amd64 only.
+* Nothing in particular to consider. Upgrading works for amd64 only.
 
 ### Breaking Changes
 * No longer supports the `arm64` architecture for the charm (note that building ARM images is still supported,

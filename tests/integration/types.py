@@ -74,14 +74,12 @@ class TestConfigs(typing.NamedTuple):
         model: The juju test model.
         charm_file: The charm file path.
         dispatch_time: The test start time.
-        dockerhub_mirror: The DockerHub mirror URL to configure the charm with.
         test_id: The test unique identifier.
     """
 
     model: Model
     charm_file: str | Path
     dispatch_time: datetime
-    dockerhub_mirror: str
     test_id: str
 
 
@@ -90,13 +88,9 @@ class ImageConfigs(typing.NamedTuple):
 
     Attributes:
         bases: The Ubuntu OS Bases.
-        juju_channels: The Juju snap channels to install.
-        microk8s_channels: The Microk8s snap channels to install.
     """
 
     bases: tuple[str, ...]
-    juju_channels: tuple[str, ...]
-    microk8s_channels: tuple[str, ...]
 
 
 class OpenstackMeta(typing.NamedTuple):

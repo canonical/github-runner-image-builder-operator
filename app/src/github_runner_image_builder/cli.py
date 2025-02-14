@@ -83,32 +83,6 @@ def get_latest_build_id(cloud_name: str, image_name: str) -> None:
 
 
 # The arguments are necessary input for click validation function.
-def _validate_snap_channel(
-    ctx: click.Context, param: click.Parameter, value: str  # pylint: disable=unused-argument
-) -> str:
-    """Validate snap channel string input.
-
-    Args:
-        ctx: Click context argument.
-        param: Click parameter argument.
-        value: The value passed into --juju option.
-
-    Raises:
-        BadParameter: If invalid juju channel was passed in.
-
-    Returns:
-        The validated Juju channel option.
-    """
-    if not value:
-        return ""
-    try:
-        track, risk = value.strip().split("/")
-        return f"{track}/{risk}"
-    except ValueError as exc:
-        raise click.BadParameter("format must be '<track>/<list>'") from exc
-
-
-# The arguments are necessary input for click validation function.
 def _parse_url(
     ctx: click.Context, param: click.Parameter, value: str  # pylint: disable=unused-argument
 ) -> urllib.parse.ParseResult | None:
@@ -150,16 +124,6 @@ def _parse_url(
     help=("The Ubuntu base image to use as build base."),
 )
 @click.option(
-    "--dockerhub-cache",
-    type=str,
-    callback=_parse_url,
-    default=None,
-    help=(
-        "The DockerHub cache to use to instantiate builder VMs with. Useful when creating images"
-        "with MicroK8s."
-    ),
-)
-@click.option(
     "-k",
     "--keep-revisions",
     default=5,
@@ -176,20 +140,6 @@ def _parse_url(
 )
 @click.option(
     "--flavor", default="", help="OpenStack flavor to launch for external build run VMs. "
-)
-@click.option(
-    "--juju",
-    callback=_validate_snap_channel,
-    default="",
-    help="Juju channel to install and bootstrap. E.g. to install Juju 3.1/stable, pass the values "
-    "--juju=3.1/stable",
-)
-@click.option(
-    "--microk8s",
-    callback=_validate_snap_channel,
-    default="",
-    help="Microk8s channel to install and bootstrap. E.g. to install Microk8s 1.31-strict/stable, "
-    "pass the values --microk8s=1.31-strict/stable",
 )
 @click.option(
     "--network", default="", help="OpenStack network to launch the external build run VMs under. "
@@ -222,14 +172,11 @@ def _parse_url(
 def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positional-arguments
     arch: config.Arch | None,
     cloud_name: str,
-    dockerhub_cache: urllib.parse.ParseResult | None,
     image_name: str,
     base_image: str,
     keep_revisions: int,
     runner_version: str,
     flavor: str,
-    juju: str,
-    microk8s: str,
     network: str,
     prefix: str,
     proxy: str,
@@ -242,14 +189,11 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         arch: The architecture to run build for.
         cloud_name: The cloud to use from the clouds.yaml file. The CLI looks for clouds.yaml in
             paths of the following order: current directory, ~/.config/openstack, /etc/openstack.
-        dockerhub_cache: The DockerHub cache to use for using cached images.
         image_name: The image name uploaded to Openstack.
         base_image: The Ubuntu base image to use as build base.
         keep_revisions: Number of past revisions to keep before deletion.
         runner_version: GitHub runner version to pin.
         flavor: The Openstack flavor to create server to build images.
-        juju: The Juju channel to install and bootstrap.
-        microk8s: The Microk8s channel to install and bootstrap.
         network: The Openstack network to assign to server to build images.
         prefix: The prefix to use for OpenStack resource names.
         proxy: Proxy to use for external build VMs.
@@ -263,7 +207,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
     image_ids = openstack_builder.run(
         cloud_config=openstack_builder.CloudConfig(
             cloud_name=cloud_name,
-            dockerhub_cache=dockerhub_cache,
             flavor=flavor,
             network=network,
             prefix=prefix,
@@ -273,8 +216,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         image_config=config.ImageConfig(
             arch=arch,
             base=base,
-            microk8s=microk8s,
-            juju=juju,
             runner_version=runner_version,
             script_config=config.ScriptConfig(
                 script_url=script_url,

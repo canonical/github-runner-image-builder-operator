@@ -72,9 +72,3 @@ def pytest_addoption(parser: Parser):
         help="The no proxy URL(s) to apply on the Openstack runners.",
         default=None,
     )
-    parser.addoption(
-        "--dockerhub-mirror",
-        action="store",
-        help="The dockerhub mirror URL to reduce API rate limiting.",
-        default=None,
-    )

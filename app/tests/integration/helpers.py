@@ -416,26 +416,18 @@ def format_dockerhub_mirror_microk8s_command(
 
 
 def run_openstack_tests(
-    dockerhub_mirror: urllib.parse.ParseResult | None,
     ssh_connection: SSHConnection,
     external: bool = False,
 ):
     """Run test commands on the openstack instance via ssh.
 
     Args:
-        dockerhub_mirror: The dockerhub mirror URL to reduce rate limiting for tests.
         ssh_connection: The SSH connection instance to OpenStack test server.
         external: Whether the test is for external VM builder image test.
     """
     for testcmd in commands.TEST_RUNNER_COMMANDS:
         if not external and testcmd.external:
             continue
-        if testcmd == "configure dockerhub mirror":
-            if not dockerhub_mirror:
-                continue
-            testcmd.command = format_dockerhub_mirror_microk8s_command(
-                command=testcmd.command, dockerhub_mirror=dockerhub_mirror
-            )
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)

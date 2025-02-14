@@ -91,24 +91,6 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
-    dockerhub-cache:
-      type: string
-      default: ""
-      description: |
-        The DockerHub cache to use to enable cached image pull requests for initializing MicroK8s.
-    juju-channels:
-      type: string
-      default: ""
-      description: |
-        The comma separated Juju versions to download in <track>/<risk> format. E.g. to create
-        images with Juju version 2.9/stable and 3.1/edge, juju-channels="2.9/stable,3.1/edge".
-    microk8s-channels:
-      type: string
-      default: ""
-      description: |
-        The comma separated Microk8s versions to download in <track>/<risk> format. E.g. to create
-        images with Microk8s version 1.31-strict/stable and 1.28/stable,
-        microk8s-channels="1.31-strict/stable, 1.28/stable".
     openstack-auth-url:
       type: string
       default: ""

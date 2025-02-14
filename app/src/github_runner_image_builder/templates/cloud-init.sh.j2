@@ -104,75 +104,6 @@ function chown_home() {
     /usr/bin/chown --recursive ubuntu:ubuntu /home/ubuntu/
 }
 
-function install_microk8s() {
-    local channel="$1"
-    local dockerhub_cache_url="$2"
-    local dockerhub_hostname="$3"
-    local dockerhub_port="$4"
-    if [[ -z "$channel" ]]; then
-        echo "Microk8s channel not provided, skipping installation."
-        return
-    fi
-    classic_flag=""
-    if [[ "$channel" != *"strict"* ]]; then
-        classic_flag="--classic"
-    fi
-    /usr/bin/snap install microk8s --channel="$channel" $classic_flag
-    /usr/sbin/usermod --append --groups snap_microk8s ubuntu
-
-    if [[ -z "$dockerhub_cache_url" ]]; then
-        /usr/bin/echo "dockerhub cache not enabled, skipping installation"
-        initialize_microk8s_plugins
-        return
-    fi
-    install_microk8s_dockerhub_cache "$dockerhub_cache_url" "$dockerhub_hostname" "$dockerhub_port"
-    initialize_microk8s_plugins
-}
-
-function initialize_microk8s_plugins() {
-    /snap/bin/microk8s status --wait-ready --timeout=600
-    /snap/bin/microk8s enable dns hostpath-storage registry
-    /snap/bin/microk8s status --wait-ready --timeout=600
-}
-
-function install_microk8s_dockerhub_cache() {
-    local dockerhub_cache_url="$1"
-    local dockerhub_hostname="$2"
-    local dockerhub_port="$3"
-    /usr/bin/mkdir -p /var/snap/microk8s/current/args/certs.d/docker.io/
-    /usr/bin/cat <<EOF | /usr/bin/tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
-server = $dockerhub_cache_url
-
-[host.$dockerhub_hostname:$dockerhub_port]
-    capabilities = ["pull", "resolve"]
-    override_path = true
-EOF
-    /snap/bin/microk8s stop
-    /snap/bin/microk8s start
-}
-
-function install_juju() {
-    local channel="$1"
-    if [[ -z "$channel" ]]; then
-        echo "Juju channel not provided, skipping installation."
-        return
-    fi
-
-    /usr/bin/snap install juju --channel="$channel"
-    if ! lxd --version &> /dev/null; then
-        /usr/bin/snap install lxd
-    fi
-
-    echo "Bootstrapping LXD on Juju"
-    /snap/bin/lxd init --auto
-    /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap localhost localhost
-
-    if command -v microk8s &> /dev/null; then
-        echo "Bootstrapping MicroK8s on Juju"
-        /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap microk8s microk8s
-    fi
-}
-
 function configure_system_users() {
     echo "Configuring ubuntu user"
     # only add ubuntu user if ubuntu does not exist
@@ -210,15 +141,10 @@ function execute_script() {
 }
 
 proxy="{{ PROXY_URL }}"
-dockerhub_cache_url="{{ DOCKERHUB_CACHE_URL }}"
-dockerhub_cache_host="{{ DOCKERHUB_CACHE_HOST }}"
-dockerhub_cache_port="{{ DOCKERHUB_CACHE_PORT }}"
 apt_packages="{{ APT_PACKAGES }}"
 hwe_version="{{ HWE_VERSION }}"
 github_runner_version="{{ RUNNER_VERSION }}"
 github_runner_arch="{{ RUNNER_ARCH }}"
-microk8s_channel="{{ MICROK8S_CHANNEL }}"
-juju_channel="{{ JUJU_CHANNEL }}"
 script_url="{{ SCRIPT_URL }}"
 script_secrets="{{ SCRIPT_SECRETS }}"
 
@@ -233,8 +159,6 @@ export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-install_microk8s "$microk8s_channel" "$dockerhub_cache_url" "$dockerhub_cache_host" "$dockerhub_cache_port"
-install_juju "$juju_channel"
 configure_system_users
 execute_script "$script_url" "$script_secrets"
 
