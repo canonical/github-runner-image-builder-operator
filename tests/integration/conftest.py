@@ -33,7 +33,6 @@ from pytest_operator.plugin import OpsTest
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
-    DOCKERHUB_CACHE_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
@@ -213,12 +212,6 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
     return openstack.connect(first_cloud)
 
 
-@pytest.fixture(scope="module", name="dockerhub_mirror")
-def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str:
-    """Dockerhub mirror URL."""
-    return pytestconfig.getoption("--dockerhub-mirror") or ""
-
-
 @pytest.fixture(scope="module", name="test_id")
 def test_id_fixture() -> str:
     """The test ID fixture."""
@@ -227,7 +220,10 @@ def test_id_fixture() -> str:
 
 @pytest.fixture(scope="module", name="test_configs")
 def test_configs_fixture(
-    model: Model, charm_file: str, test_id: str, dispatch_time: datetime, dockerhub_mirror: str
+    model: Model,
+    charm_file: str,
+    test_id: str,
+    dispatch_time: datetime,
 ) -> TestConfigs:
     """The test configuration values."""
     return TestConfigs(
@@ -235,7 +231,6 @@ def test_configs_fixture(
         charm_file=charm_file,
         dispatch_time=dispatch_time,
         test_id=test_id,
-        dockerhub_mirror=dockerhub_mirror,
     )
 
 
@@ -249,7 +244,6 @@ def image_configs_fixture():
 
 @pytest.fixture(scope="module", name="app_config")
 def app_config_fixture(
-    test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
@@ -258,7 +252,6 @@ def app_config_fixture(
     return {
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
-        DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],

@@ -325,11 +325,9 @@ class ExternalServiceConfig:
     """Builder run external service dependencies.
 
     Attributes:
-        dockerhub_cache: The DockerHub cache URL to use to apply to image building.
         proxy: The proxy to use to build the image.
     """
 
-    dockerhub_cache: str | None
     proxy: str | None
 
 
@@ -451,14 +449,7 @@ def _parametrize_build(
                     num_revisions=static_config.cloud_config.num_revisions,
                     upload_clouds=static_config.cloud_config.upload_clouds,
                 ),
-                external_service=ExternalServiceConfig(
-                    dockerhub_cache=static_config.service_config.dockerhub_cache,
-                    proxy=(
-                        static_config.service_config.proxy
-                        if static_config.service_config.proxy
-                        else None
-                    ),
-                ),
+                external_service=static_config.service_config,
             )
         )
     return tuple(configs)
@@ -501,7 +492,6 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 script_secrets=config.image.script_config.script_secrets,
             ),
             service_options=_ServiceOptions(
-                dockerhub_cache=config.external_service.dockerhub_cache,
                 proxy=config.external_service.proxy,
             ),
         )
@@ -616,11 +606,9 @@ class _ServiceOptions:
     """Builder application run optional arguments related to external helper services.
 
     Attributes:
-        dockerhub_cache: The DockerHub cache to use when initializing microk8s.
         proxy: The proxy to use when building the image.
     """
 
-    dockerhub_cache: str | None
     proxy: str | None
 
 
@@ -710,8 +698,6 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
         The application run options related to helper services.
     """
     cmd: list[str] = []
-    if service_options.dockerhub_cache:
-        cmd.extend(["--dockerhub-cache", service_options.dockerhub_cache])
     if service_options.proxy:
         cmd.extend(
             [

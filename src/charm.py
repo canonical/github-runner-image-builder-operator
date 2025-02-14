@@ -208,12 +208,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 runner_version=builder_config.image_config.runner_version,
             ),
             service_config=builder.ExternalServiceConfig(
-                dockerhub_cache=builder_config.service_config.dockerhub_cache,
-                proxy=(
-                    builder_config.service_config.proxy.http
-                    if builder_config.service_config.proxy
-                    else None
-                ),
+                proxy=(builder_config.proxy.http if builder_config.proxy else None),
             ),
         )
 

@@ -55,6 +55,7 @@ class Observer(ops.Object):
             event: The event emitted when a relation is joined.
         """
         build_config = state.BuilderConfig.from_charm(charm=self.charm)
+        proxy = state.ProxyConfig.from_env()
         if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
                 f"{state.IMAGE_RELATION} integration required."
@@ -86,14 +87,7 @@ class Observer(ops.Object):
                     script_secrets=build_config.image_config.script_secrets,
                     runner_version=build_config.image_config.runner_version,
                 ),
-                service_config=builder.ExternalServiceConfig(
-                    dockerhub_cache=build_config.service_config.dockerhub_cache,
-                    proxy=(
-                        build_config.service_config.proxy.http
-                        if build_config.service_config.proxy
-                        else None
-                    ),
-                ),
+                service_config=builder.ExternalServiceConfig(proxy=proxy.http if proxy else None),
             ),
         )
         if not cloud_images:

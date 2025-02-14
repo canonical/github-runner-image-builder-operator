@@ -25,7 +25,6 @@ LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 ARCHITECTURE_CONFIG_NAME = "architecture"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-DOCKERHUB_CACHE_CONFIG_NAME = "dockerhub-cache"
 EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
@@ -374,7 +373,7 @@ class ImageConfig:
             Image configuration state.
         """
         arch = Arch.from_charm(charm=charm)
-        base_images = BaseImage.from_charm(charm)
+        base_images = BaseImage.from_charm(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
         script_url = _parse_script_url(charm=charm)
         script_secrets = _parse_script_secrets(charm=charm)
@@ -442,58 +441,6 @@ class CloudConfig:
 
 
 @dataclasses.dataclass
-class ServiceConfig:
-    """External service configuration values.
-
-    Attributes:
-        dockerhub_cache: The DockerHub cache to use for microk8s installation.
-        proxy: The Juju proxy in which the charm should use to build the image.
-    """
-
-    dockerhub_cache: str | None
-    proxy: ProxyConfig | None
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "ServiceConfig":
-        """Initialize the external service configurations from charm.
-
-        Args:
-            charm: The running charm instance.
-
-        Returns:
-            The external service configurations used to build images.
-        """
-        dockerhub_cache = _parse_dockerhub_cache_config(charm=charm)
-        proxy = ProxyConfig.from_env()
-        return cls(dockerhub_cache=dockerhub_cache, proxy=proxy)
-
-
-class InvalidDockerHubCacheURLError(CharmConfigInvalidError):
-    """Represents an error with DockerHub cache URL."""
-
-
-def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
-    """Parse the dockerhub cache URL config from charm.
-
-    Args:
-        charm: The charm instance.
-
-    Raises:
-        InvalidDockerHubCacheURLError: If an invalid URL string was passed to the charm.
-
-    Returns:
-        The valid DockerHub cache URL string.
-    """
-    dockerhub_cache_url_str = typing.cast(str, charm.config.get(DOCKERHUB_CACHE_CONFIG_NAME))
-    if not dockerhub_cache_url_str:
-        return None
-    parsed_result = urllib.parse.urlparse(dockerhub_cache_url_str)
-    if not all((parsed_result.scheme, parsed_result.hostname)):
-        raise InvalidDockerHubCacheURLError("DockerHub scheme or hostname not provided.")
-    return parsed_result.geturl()
-
-
-@dataclasses.dataclass
 class ApplicationConfig:
     """Image builder application related configuration values.
 
@@ -517,13 +464,13 @@ class BuilderConfig:
         app_config: Application configuration parameters.
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
-        service_config: The external dependent service configurations to build the image.
+        proxy: The http(s) proxy configuration.
     """
 
     app_config: ApplicationConfig
     image_config: ImageConfig
     cloud_config: CloudConfig
-    service_config: ServiceConfig
+    proxy: ProxyConfig | None
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderConfig":
@@ -537,7 +484,7 @@ class BuilderConfig:
         """
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
-        service_config = ServiceConfig.from_charm(charm=charm)
+        proxy_config = ProxyConfig.from_env()
         return cls(
             app_config=ApplicationConfig(
                 build_interval=_parse_build_interval(charm=charm),
@@ -546,7 +493,7 @@ class BuilderConfig:
             ),
             cloud_config=cloud_config,
             image_config=image_config,
-            service_config=service_config,
+            proxy=proxy_config,
         )
 
 

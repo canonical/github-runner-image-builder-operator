@@ -471,7 +471,6 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
                     external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
@@ -495,7 +494,6 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
                     external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
@@ -632,7 +630,7 @@ def test__run(
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -660,7 +658,7 @@ def test__run(
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -694,7 +692,7 @@ def test__run(
                 script_url="https://test-script-url.com/script.sh",
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -727,7 +725,6 @@ def test__run(
                 script_secrets=None,
             ),
             builder._ServiceOptions(
-                dockerhub_cache="https://dockerhub-cache.com:5000",
                 proxy="https://test-proxy.com:3128",
             ),
             [
@@ -738,8 +735,6 @@ def test__run(
                 "run",
                 "test-build-cloud",
                 "test-output-image-name",
-                "--dockerhub-cache",
-                "https://dockerhub-cache.com:5000",
                 "--proxy",
                 "test-proxy.com:3128",
             ],

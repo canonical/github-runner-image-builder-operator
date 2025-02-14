@@ -217,49 +217,6 @@ def test_external_build_config(
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
 
 
-@pytest.mark.parametrize(
-    "dockerhub_cache_url",
-    [
-        pytest.param("www.cache-url.com", id="no scheme"),
-        pytest.param("https://", id="no host"),
-    ],
-)
-def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
-    """
-    arrange: given an invalid dockerhub URL config set.
-    act: when _parse_dockerhub_cache_config is called.
-    assert: InvalidDockerHubCacheURLError is raised.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
-
-    with pytest.raises(state.InvalidDockerHubCacheURLError) as exc:
-        state._parse_dockerhub_cache_config(charm)
-
-    assert "DockerHub scheme or hostname not provided." in str(exc)
-
-
-@pytest.mark.parametrize(
-    "dockerhub_cache_url, expected_url",
-    [
-        pytest.param(
-            "https://www.cache-url.com:8080", "https://www.cache-url.com:8080", id="with port"
-        ),
-        pytest.param("https://www.cache-url.com", "https://www.cache-url.com", id="without port"),
-    ],
-)
-def test__parse_dockerhub_cache_config(dockerhub_cache_url: str, expected_url: str):
-    """
-    arrange: given a valid dockerhub URL config.
-    act: when _parse_dockerhub_cache_config is called.
-    assert: Expected url is returned.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
-
-    assert state._parse_dockerhub_cache_config(charm) == expected_url
-
-
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched multiprocessing.cpu_count() function that returns 1 core.
