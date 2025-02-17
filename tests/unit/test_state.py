@@ -217,49 +217,6 @@ def test_external_build_config(
     assert state.ExternalBuildConfig.from_charm(charm=charm) == expected_config
 
 
-@pytest.mark.parametrize(
-    "dockerhub_cache_url",
-    [
-        pytest.param("www.cache-url.com", id="no scheme"),
-        pytest.param("https://", id="no host"),
-    ],
-)
-def test__parse_dockerhub_cache_config_invalid_url(dockerhub_cache_url: str):
-    """
-    arrange: given an invalid dockerhub URL config set.
-    act: when _parse_dockerhub_cache_config is called.
-    assert: InvalidDockerHubCacheURLError is raised.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
-
-    with pytest.raises(state.InvalidDockerHubCacheURLError) as exc:
-        state._parse_dockerhub_cache_config(charm)
-
-    assert "DockerHub scheme or hostname not provided." in str(exc)
-
-
-@pytest.mark.parametrize(
-    "dockerhub_cache_url, expected_url",
-    [
-        pytest.param(
-            "https://www.cache-url.com:8080", "https://www.cache-url.com:8080", id="with port"
-        ),
-        pytest.param("https://www.cache-url.com", "https://www.cache-url.com", id="without port"),
-    ],
-)
-def test__parse_dockerhub_cache_config(dockerhub_cache_url: str, expected_url: str):
-    """
-    arrange: given a valid dockerhub URL config.
-    act: when _parse_dockerhub_cache_config is called.
-    assert: Expected url is returned.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.DOCKERHUB_CACHE_CONFIG_NAME] = dockerhub_cache_url
-
-    assert state._parse_dockerhub_cache_config(charm) == expected_url
-
-
 def test__get_num_parallel_build_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched multiprocessing.cpu_count() function that returns 1 core.
@@ -506,70 +463,6 @@ def test__parse_openstack_clouds_auth_configs_from_relation_no_units(
     state._parse_openstack_clouds_auth_configs_from_relation(charm=charm)
 
     assert any("Units not yet joined" in log_line for log_line in caplog.messages)
-
-
-@pytest.mark.parametrize(
-    "juju_config_value",
-    [
-        pytest.param("3.1/stable/", id="multiple slashes"),
-        pytest.param("3.1", id="no risk"),
-        pytest.param("/stable", id="no track"),
-    ],
-)
-def test__parse_juju_channels_error(juju_config_value: str):
-    """
-    arrange: given invalid charm juju channel configurations.
-    act: when _parse_juju_channels is called.
-    assert: JujuChannelInvalidError is raised.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.JUJU_CHANNELS_CONFIG_NAME] = juju_config_value
-
-    with pytest.raises(state.JujuChannelInvalidError):
-        state._parse_juju_channels(charm=charm)
-
-
-@pytest.mark.parametrize(
-    "juju_config_value",
-    [
-        pytest.param("3.1/stable/", id="multiple slashes"),
-        pytest.param("3.1", id="no risk"),
-        pytest.param("/stable", id="no track"),
-    ],
-)
-def test__parse_microk8s_channels_error(juju_config_value: str):
-    """
-    arrange: given invalid charm juju channel configurations.
-    act: when _parse_microk8s_channels is called.
-    assert: Microk8sChannelInvalidError is raised.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.MICROK8S_CHANNELS_CONFIG_NAME] = juju_config_value
-
-    with pytest.raises(state.Microk8sChannelInvalidError):
-        state._parse_microk8s_channels(charm=charm)
-
-
-@pytest.mark.parametrize(
-    "juju_config_value, expected_channels",
-    [
-        pytest.param("", set(("",)), id="no channels"),
-        pytest.param("3.1/stable", set(("", "3.1/stable")), id="single channel"),
-        pytest.param(
-            "3.1/stable, 2.9/stable", set(("", "3.1/stable", "2.9/stable")), id="multiple channels"
-        ),
-    ],
-)
-def test__parse_juju_channels(juju_config_value: str, expected_channels: tuple[str, ...]):
-    """
-    arrange: given different charm juju channel configurations.
-    act: when _parse_juju_channels is called.
-    assert: expected juju channels are parsed.
-    """
-    charm = factories.MockCharmFactory()
-    charm.config[state.JUJU_CHANNELS_CONFIG_NAME] = juju_config_value
-
-    assert state._parse_juju_channels(charm=charm) == expected_channels
 
 
 @pytest.mark.parametrize(

@@ -137,8 +137,6 @@ class ImageConfig:
     Attributes:
         arch: The architecture of the target image.
         base: The ubuntu base OS of the image.
-        microk8s: The MicroK8s snap channel to install.
-        juju: The Juju channel to install and bootstrap.
         runner_version: The GitHub runner version to install on the VM. Defaults to latest.
         script_config: The custom setup script configurations.
         name: The image name to upload on OpenStack.
@@ -146,8 +144,6 @@ class ImageConfig:
 
     arch: Arch
     base: BaseImage
-    microk8s: str
-    juju: str
     runner_version: str
     script_config: ScriptConfig
     name: str

@@ -181,8 +181,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         return builder.ConfigMatrix(
             bases=builder_config.image_config.bases,
-            juju_channels=builder_config.image_config.juju_channels,
-            microk8s_channels=builder_config.image_config.microk8s_channels,
         )
 
     def _get_static_config(self, builder_config: state.BuilderConfig) -> builder.StaticConfigs:
@@ -210,12 +208,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 runner_version=builder_config.image_config.runner_version,
             ),
             service_config=builder.ExternalServiceConfig(
-                dockerhub_cache=builder_config.service_config.dockerhub_cache,
-                proxy=(
-                    builder_config.service_config.proxy.http
-                    if builder_config.service_config.proxy
-                    else None
-                ),
+                proxy=(builder_config.proxy.http if builder_config.proxy else None),
             ),
         )
 

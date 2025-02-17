@@ -47,8 +47,6 @@ by a config option. Using an external OpenStack VM instead of the charm's machin
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
 [cloud-init](https://cloud-init.io/) is used to install the necessary dependencies for spawning self-hosted runners
 ([github actions runner binary](https://github.com/actions/runner)) and tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
-In addition, software that is heavily used in Canonical projects (such as [Juju](https://juju.is/) or [MicroK8s](https://microk8s.io/)) 
-can be configured to be pre-installed to reduce the actual CI runtime (as users do not have to install this software in their respective CI runs). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
 The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project
 and deletes the VM. This specified OpenStack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).

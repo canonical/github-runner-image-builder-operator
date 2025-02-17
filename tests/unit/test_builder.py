@@ -449,16 +449,12 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
         pytest.param(
             builder.ConfigMatrix(
                 bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-                juju_channels=set(("",)),
-                microk8s_channels=set(("",)),
             ),
             (
                 builder.RunConfig(
                     image=builder.ImageConfig(
                         arch=TEST_STATIC_CONFIG.image_config.arch,
                         base=state.BaseImage.JAMMY,
-                        juju="",
-                        microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
@@ -475,7 +471,6 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
                     external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
@@ -483,8 +478,6 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     image=builder.ImageConfig(
                         arch=TEST_STATIC_CONFIG.image_config.arch,
                         base=state.BaseImage.NOBLE,
-                        juju="",
-                        microk8s="",
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
@@ -501,136 +494,11 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
                     ),
                     external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
                     ),
                 ),
             ),
             id="multiple OS bases",
-        ),
-        pytest.param(
-            builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("", "3.1/stable")),
-                microk8s_channels=set(("",)),
-            ),
-            (
-                builder.RunConfig(
-                    image=builder.ImageConfig(
-                        arch=TEST_STATIC_CONFIG.image_config.arch,
-                        base=state.BaseImage.JAMMY,
-                        juju="",
-                        microk8s="",
-                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_config=builder.ScriptConfig(
-                            script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
-                        ),
-                        runner_version="1.2.3",
-                    ),
-                    cloud=builder.CloudConfig(
-                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
-                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
-                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
-                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
-                    ),
-                    external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
-                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
-                    ),
-                ),
-                builder.RunConfig(
-                    image=builder.ImageConfig(
-                        arch=TEST_STATIC_CONFIG.image_config.arch,
-                        base=state.BaseImage.JAMMY,
-                        juju="3.1/stable",
-                        microk8s="",
-                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_config=builder.ScriptConfig(
-                            script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
-                        ),
-                        runner_version="1.2.3",
-                    ),
-                    cloud=builder.CloudConfig(
-                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
-                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
-                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
-                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
-                    ),
-                    external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
-                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
-                    ),
-                ),
-            ),
-            id="multiple Juju channels",
-        ),
-        pytest.param(
-            builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("",)),
-                microk8s_channels=set(("", "1.29-strict/stable")),
-            ),
-            (
-                builder.RunConfig(
-                    image=builder.ImageConfig(
-                        arch=TEST_STATIC_CONFIG.image_config.arch,
-                        base=state.BaseImage.JAMMY,
-                        juju="",
-                        microk8s="",
-                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_config=builder.ScriptConfig(
-                            script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
-                        ),
-                        runner_version="1.2.3",
-                    ),
-                    cloud=builder.CloudConfig(
-                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
-                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
-                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
-                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
-                    ),
-                    external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
-                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
-                    ),
-                ),
-                builder.RunConfig(
-                    image=builder.ImageConfig(
-                        arch=TEST_STATIC_CONFIG.image_config.arch,
-                        base=state.BaseImage.JAMMY,
-                        juju="",
-                        microk8s="1.29-strict/stable",
-                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        script_config=builder.ScriptConfig(
-                            script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
-                        ),
-                        runner_version="1.2.3",
-                    ),
-                    cloud=builder.CloudConfig(
-                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
-                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
-                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
-                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
-                    ),
-                    external_service=builder.ExternalServiceConfig(
-                        dockerhub_cache=TEST_STATIC_CONFIG.service_config.dockerhub_cache,
-                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
-                    ),
-                ),
-            ),
-            id="multiple Microk8s channels",
         ),
     ],
 )
@@ -699,8 +567,6 @@ def test__run_error(
                     base=TEST_RUN_CONFIG.image.base,
                     cloud_id="test-upload-cloud-a",
                     image_id="image-id-a",
-                    juju=TEST_RUN_CONFIG.image.juju,
-                    microk8s=TEST_RUN_CONFIG.image.microk8s,
                 )
             ],
             id="single upload cloud",
@@ -714,16 +580,12 @@ def test__run_error(
                     base=TEST_RUN_CONFIG.image.base,
                     cloud_id="test-upload-cloud-a",
                     image_id="image-id-a",
-                    juju=TEST_RUN_CONFIG.image.juju,
-                    microk8s=TEST_RUN_CONFIG.image.microk8s,
                 ),
                 builder.CloudImage(
                     arch=TEST_RUN_CONFIG.image.arch,
                     base=TEST_RUN_CONFIG.image.base,
                     cloud_id="test-upload-cloud-b",
                     image_id="image-id-b",
-                    juju=TEST_RUN_CONFIG.image.juju,
-                    microk8s=TEST_RUN_CONFIG.image.microk8s,
                 ),
             ],
             id="multiple upload clouds",
@@ -764,13 +626,11 @@ def test__run(
             builder._ImageOptions(
                 arch=None,
                 image_base=None,
-                juju=None,
-                microk8s=None,
                 runner_version=None,
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -794,13 +654,11 @@ def test__run(
             builder._ImageOptions(
                 arch=None,
                 image_base=None,
-                juju=None,
-                microk8s=None,
                 runner_version=None,
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -830,13 +688,11 @@ def test__run(
             builder._ImageOptions(
                 arch=state.Arch.ARM64,
                 image_base=state.BaseImage.JAMMY,
-                juju="3.1/stable",
-                microk8s="1.29-strict/stable",
                 runner_version="1.2.3",
                 script_url="https://test-script-url.com/script.sh",
                 script_secrets=None,
             ),
-            builder._ServiceOptions(dockerhub_cache=None, proxy=None),
+            builder._ServiceOptions(proxy=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -849,10 +705,6 @@ def test__run(
                 "arm64",
                 "--base-image",
                 "jammy",
-                "--juju",
-                "3.1/stable",
-                "--microk8s",
-                "1.29-strict/stable",
                 "--runner-version",
                 "1.2.3",
                 "--script-url",
@@ -868,14 +720,11 @@ def test__run(
             builder._ImageOptions(
                 arch=None,
                 image_base=None,
-                juju=None,
-                microk8s=None,
                 runner_version=None,
                 script_url=None,
                 script_secrets=None,
             ),
             builder._ServiceOptions(
-                dockerhub_cache="https://dockerhub-cache.com:5000",
                 proxy="https://test-proxy.com:3128",
             ),
             [
@@ -886,8 +735,6 @@ def test__run(
                 "run",
                 "test-build-cloud",
                 "test-output-image-name",
-                "--dockerhub-cache",
-                "https://dockerhub-cache.com:5000",
                 "--proxy",
                 "test-proxy.com:3128",
             ],
@@ -925,46 +772,12 @@ def test__build_run_command(
             builder.ImageConfig(
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
-                juju="",
-                microk8s="",
                 runner_version="",
                 prefix="app-name",
                 script_config=builder.ScriptConfig(script_url=None, script_secrets=None),
             ),
             "app-name-jammy-arm64",
             id="raw",
-        ),
-        pytest.param(
-            builder.ImageConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                juju="3.1/stable",
-                microk8s="",
-                runner_version="",
-                prefix="app-name",
-                script_config=builder.ScriptConfig(
-                    script_url=None,
-                    script_secrets=None,
-                ),
-            ),
-            "app-name-jammy-arm64-juju-3.1-stable",
-            id="juju",
-        ),
-        pytest.param(
-            builder.ImageConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                juju="",
-                microk8s="1.29-strict/stable",
-                runner_version="",
-                prefix="app-name",
-                script_config=builder.ScriptConfig(
-                    script_url=None,
-                    script_secrets=None,
-                ),
-            ),
-            "app-name-jammy-arm64-mk8s-1.29-strict-stable",
-            id="microk8s",
         ),
     ],
 )
@@ -985,48 +798,10 @@ def test__run_image_config_image_name(config: builder.ImageConfig, expected_name
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 cloud_id="",
-                juju="",
-                microk8s="",
                 prefix="app-name",
             ),
             "app-name-jammy-arm64",
             id="raw",
-        ),
-        pytest.param(
-            builder.FetchConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_id="",
-                juju="3.1/stable",
-                microk8s="",
-                prefix="app-name",
-            ),
-            "app-name-jammy-arm64-juju-3.1-stable",
-            id="juju",
-        ),
-        pytest.param(
-            builder.FetchConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_id="",
-                juju="",
-                microk8s="1.29-strict/stable",
-                prefix="app-name",
-            ),
-            "app-name-jammy-arm64-mk8s-1.29-strict-stable",
-            id="juju",
-        ),
-        pytest.param(
-            builder.FetchConfig(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_id="",
-                juju="3.1/stable",
-                microk8s="1.29-strict/stable",
-                prefix="app-name",
-            ),
-            "app-name-jammy-arm64-juju-3.1-stable-mk8s-1.29-strict-stable",
-            id="juju and microk8s",
         ),
     ],
 )
@@ -1045,80 +820,22 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
         pytest.param(
             builder.ConfigMatrix(
                 bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
-                juju_channels=set(("",)),
-                microk8s_channels=set(("",)),
             ),
             (
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.JAMMY,
                     cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="",
-                    microk8s="",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.NOBLE,
                     cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="",
-                    microk8s="",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
             ),
             id="multiple OS bases",
-        ),
-        pytest.param(
-            builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("", "3.1/stable")),
-                microk8s_channels=set(("",)),
-            ),
-            (
-                builder.FetchConfig(
-                    arch=TEST_STATIC_CONFIG.image_config.arch,
-                    base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="",
-                    microk8s="",
-                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                ),
-                builder.FetchConfig(
-                    arch=TEST_STATIC_CONFIG.image_config.arch,
-                    base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="3.1/stable",
-                    microk8s="",
-                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                ),
-            ),
-            id="multiple Juju channels",
-        ),
-        pytest.param(
-            builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY,),
-                juju_channels=set(("",)),
-                microk8s_channels=set(("", "1.29-strict/stable")),
-            ),
-            (
-                builder.FetchConfig(
-                    arch=TEST_STATIC_CONFIG.image_config.arch,
-                    base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="",
-                    microk8s="",
-                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                ),
-                builder.FetchConfig(
-                    arch=TEST_STATIC_CONFIG.image_config.arch,
-                    base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
-                    juju="",
-                    microk8s="1.29-strict/stable",
-                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
-                ),
-            ),
-            id="multiple Microk8s channels",
         ),
     ],
 )
@@ -1204,8 +921,6 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
             arch=state.Arch.ARM64,
             base=state.BaseImage.JAMMY,
             cloud_id="test-cloud",
-            juju="3.1/stable",
-            microk8s="",
             prefix="app-name",
         )
     ) == builder.CloudImage(
@@ -1213,8 +928,6 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
         base=state.BaseImage.JAMMY,
         cloud_id="test-cloud",
         image_id="test-image",
-        juju="3.1/stable",
-        microk8s="",
     )
 
 
