@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for interacting with charm state and configurations."""
@@ -23,15 +23,10 @@ CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
 
 ARCHITECTURE_CONFIG_NAME = "architecture"
-APP_CHANNEL_CONFIG_NAME = "app-channel"
 BASE_IMAGE_CONFIG_NAME = "base-image"
 BUILD_INTERVAL_CONFIG_NAME = "build-interval"
-DOCKERHUB_CACHE_CONFIG_NAME = "dockerhub-cache"
-EXTERNAL_BUILD_CONFIG_NAME = "experimental-external-build"
-EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "experimental-external-build-flavor"
-EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "experimental-external-build-network"
-JUJU_CHANNELS_CONFIG_NAME = "juju-channels"
-MICROK8S_CHANNELS_CONFIG_NAME = "microk8s-channels"
+EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "build-flavor"
+EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
@@ -355,8 +350,6 @@ class ImageConfig:
     Attributes:
         arch: The machine architecture of the image to build with.
         bases: Ubuntu OS images to build from.
-        juju_channels: The Juju channels to install on the images.
-        microk8s_channels: The Microk8s channels to install on the images.
         runner_version: The GitHub runner version to embed in the image. Latest version if empty.
         script_url: The external script to run during cloud-init process.
         script_secrets: The script secrets to load as environment variables before executing the \
@@ -365,8 +358,6 @@ class ImageConfig:
 
     arch: Arch
     bases: tuple[BaseImage, ...]
-    juju_channels: set[str]
-    microk8s_channels: set[str]
     runner_version: str
     script_url: str | None
     script_secrets: dict[str, str]
@@ -382,9 +373,7 @@ class ImageConfig:
             Image configuration state.
         """
         arch = Arch.from_charm(charm=charm)
-        base_images = BaseImage.from_charm(charm)
-        juju_channels = _parse_juju_channels(charm=charm)
-        microk8s_channels = _parse_microk8s_channels(charm=charm)
+        base_images = BaseImage.from_charm(charm=charm)
         runner_version = _parse_runner_version(charm=charm)
         script_url = _parse_script_url(charm=charm)
         script_secrets = _parse_script_secrets(charm=charm)
@@ -392,8 +381,6 @@ class ImageConfig:
         return cls(
             arch=arch,
             bases=base_images,
-            juju_channels=juju_channels,
-            microk8s_channels=microk8s_channels,
             runner_version=runner_version,
             script_url=script_url,
             script_secrets=script_secrets,
@@ -414,7 +401,7 @@ class CloudConfig:
     """
 
     openstack_clouds_config: OpenstackCloudsConfig
-    external_build_config: ExternalBuildConfig | None
+    external_build_config: ExternalBuildConfig
     num_revisions: int
 
     @property
@@ -442,12 +429,8 @@ class CloudConfig:
             Cloud configuration state.
         """
         cloud_config = _parse_openstack_clouds_config(charm)
-        external_build_enabled = typing.cast(
-            bool, charm.config.get(EXTERNAL_BUILD_CONFIG_NAME, False)
-        )
-        external_build_config = (
-            ExternalBuildConfig.from_charm(charm=charm) if external_build_enabled else None
-        )
+        external_build_config = ExternalBuildConfig.from_charm(charm=charm)
+
         revision_history_limit = _parse_revision_history_limit(charm)
 
         return cls(
@@ -458,107 +441,17 @@ class CloudConfig:
 
 
 @dataclasses.dataclass
-class ServiceConfig:
-    """External service configuration values.
-
-    Attributes:
-        dockerhub_cache: The DockerHub cache to use for microk8s installation.
-        proxy: The Juju proxy in which the charm should use to build the image.
-    """
-
-    dockerhub_cache: str | None
-    proxy: ProxyConfig | None
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "ServiceConfig":
-        """Initialize the external service configurations from charm.
-
-        Args:
-            charm: The running charm instance.
-
-        Returns:
-            The external service configurations used to build images.
-        """
-        dockerhub_cache = _parse_dockerhub_cache_config(charm=charm)
-        proxy = ProxyConfig.from_env()
-        return cls(dockerhub_cache=dockerhub_cache, proxy=proxy)
-
-
-class InvalidDockerHubCacheURLError(CharmConfigInvalidError):
-    """Represents an error with DockerHub cache URL."""
-
-
-def _parse_dockerhub_cache_config(charm: ops.CharmBase) -> str | None:
-    """Parse the dockerhub cache URL config from charm.
-
-    Args:
-        charm: The charm instance.
-
-    Raises:
-        InvalidDockerHubCacheURLError: If an invalid URL string was passed to the charm.
-
-    Returns:
-        The valid DockerHub cache URL string.
-    """
-    dockerhub_cache_url_str = typing.cast(str, charm.config.get(DOCKERHUB_CACHE_CONFIG_NAME))
-    if not dockerhub_cache_url_str:
-        return None
-    parsed_result = urllib.parse.urlparse(dockerhub_cache_url_str)
-    if not all((parsed_result.scheme, parsed_result.hostname)):
-        raise InvalidDockerHubCacheURLError("DockerHub scheme or hostname not provided.")
-    return parsed_result.geturl()
-
-
-class BuilderAppChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid builder app channel configuration."""
-
-
-class BuilderAppChannel(str, Enum):
-    """Image builder application channel.
-
-    This is managed by the application's git tag and versioning tag in pyproject.toml.
-
-    Attributes:
-        EDGE: Edge application channel.
-        STABLE: Stable application channel.
-    """
-
-    EDGE = "edge"
-    STABLE = "stable"
-
-    @classmethod
-    def from_charm(cls, charm: ops.CharmBase) -> "BuilderAppChannel":
-        """Retrieve the app channel from charm.
-
-        Args:
-            charm: The charm instance.
-
-        Raises:
-            BuilderAppChannelInvalidError: If an invalid application channel was selected.
-
-        Returns:
-            The application channel to deploy.
-        """
-        try:
-            return cls(typing.cast(str, charm.config.get(APP_CHANNEL_CONFIG_NAME)))
-        except ValueError as exc:
-            raise BuilderAppChannelInvalidError from exc
-
-
-@dataclasses.dataclass
 class ApplicationConfig:
     """Image builder application related configuration values.
 
     Attributes:
         build_interval: Hours between regular build jobs.
-        channel: The application channel to install.
         parallel_build: Number of parallel number of applications to spawn.
         resource_prefix: The prefix of the resource saved on the repository for this application \
             manager.
     """
 
     build_interval: int
-    channel: BuilderAppChannel
     parallel_build: int
     resource_prefix: str
 
@@ -571,13 +464,13 @@ class BuilderConfig:
         app_config: Application configuration parameters.
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
-        service_config: The external dependent service configurations to build the image.
+        proxy: The http(s) proxy configuration.
     """
 
     app_config: ApplicationConfig
     image_config: ImageConfig
     cloud_config: CloudConfig
-    service_config: ServiceConfig
+    proxy: ProxyConfig | None
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderConfig":
@@ -591,17 +484,16 @@ class BuilderConfig:
         """
         cloud_config = CloudConfig.from_charm(charm=charm)
         image_config = ImageConfig.from_charm(charm=charm)
-        service_config = ServiceConfig.from_charm(charm=charm)
+        proxy_config = ProxyConfig.from_env()
         return cls(
             app_config=ApplicationConfig(
                 build_interval=_parse_build_interval(charm=charm),
-                channel=BuilderAppChannel.from_charm(charm=charm),
                 parallel_build=_get_num_parallel_build(charm=charm),
                 resource_prefix=charm.app.name,
             ),
             cloud_config=cloud_config,
             image_config=image_config,
-            service_config=service_config,
+            proxy=proxy_config,
         )
 
 
@@ -788,76 +680,6 @@ def _parse_openstack_clouds_auth_configs_from_relation(
                 continue
             clouds_config.add(unit_auth_data)
     return clouds_config
-
-
-class JujuChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid Juju channels configuration."""
-
-
-def _parse_juju_channels(charm: ops.CharmBase) -> set[str]:
-    """Parse Juju channels from charm config.
-
-    Args:
-        charm: The charm instance.
-
-    Raises:
-        JujuChannelInvalidError: If there was an error parsing Juju channels config.
-
-    Returns:
-        Juju channels to install on the image.
-    """
-    juju_channels_str = typing.cast(str, charm.config.get(JUJU_CHANNELS_CONFIG_NAME, ""))
-    try:
-        # Add an empty value for image without juju (default).
-        return set(("",)).union(_parse_snap_channels(csv_str=juju_channels_str))
-    except ValueError as exc:
-        raise JujuChannelInvalidError from exc
-
-
-class Microk8sChannelInvalidError(CharmConfigInvalidError):
-    """Represents invalid Microk8s channels configuration."""
-
-
-def _parse_microk8s_channels(charm: ops.CharmBase) -> set[str]:
-    """Parse Microk8s channels from charm config.
-
-    Args:
-        charm: The charm instance.
-
-    Raises:
-        Microk8sChannelInvalidError: If there was an error parsing Microk8s channels config.
-
-    Returns:
-        Microk8s channels to install on the image.
-    """
-    microk8s_channels_str = typing.cast(str, charm.config.get(MICROK8S_CHANNELS_CONFIG_NAME, ""))
-    try:
-        # Add an empty value for image without Microk8s (default).
-        return set(("",)).union(_parse_snap_channels(csv_str=microk8s_channels_str))
-    except ValueError as exc:
-        raise Microk8sChannelInvalidError from exc
-
-
-def _parse_snap_channels(csv_str: str) -> set[str]:
-    """Parse snap channels from comma separated string value.
-
-    The snap channel should be in <track>/<risk> format.
-
-    Args:
-        csv_str: The comma separated snap channel values.
-
-    Raises:
-        ValueError: If an invalid snap channel string was provided.
-
-    Returns:
-        Valid snap channel strings.
-    """
-    channels = set(channel.strip().lower() for channel in csv_str.split(",") if channel)
-    for channel in channels:
-        risk_track = channel.split("/")
-        if len(risk_track) != 2 or any(not value for value in risk_track):
-            raise ValueError(f"Invalid snap channel: {channel}")
-    return channels
 
 
 class InvalidScriptURLError(CharmConfigInvalidError):

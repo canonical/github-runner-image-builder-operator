@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Exception raised by the builder."""
@@ -34,3 +34,7 @@ class GetLatestImageError(BuilderBaseError):
 
 class UpgradeApplicationError(BuilderBaseError):
     """Represents an error while upgrading the application."""
+
+
+class PipXError(Exception):
+    """Represents an error while interacting with pipx."""

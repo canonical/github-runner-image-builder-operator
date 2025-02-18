@@ -1,0 +1,3 @@
+pylxd==2.3.4
+fabric==3.2.2
+types-paramiko==3.4.0.20240423

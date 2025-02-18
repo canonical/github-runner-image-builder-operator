@@ -1,0 +1,3 @@
+rules:
+  # Ignore blacklist - we are using it to ignore bandit check
+  - name: blacklist

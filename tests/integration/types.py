@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Types used in the integration test."""
@@ -46,7 +46,6 @@ class PrivateEndpointConfigs(typing.TypedDict):
     """The Private endpoint configuration values.
 
     Attributes:
-        arch: The architecture the test is running on.
         auth_url: OpenStack uthentication URL (Keystone).
         password: OpenStack password.
         project_domain_name: OpenStack project domain to use.
@@ -56,7 +55,6 @@ class PrivateEndpointConfigs(typing.TypedDict):
         region_name: OpenStack deployment region.
     """
 
-    arch: typing.Literal["amd64", "arm64"]
     auth_url: str
     password: str
     project_domain_name: str
@@ -76,14 +74,12 @@ class TestConfigs(typing.NamedTuple):
         model: The juju test model.
         charm_file: The charm file path.
         dispatch_time: The test start time.
-        dockerhub_mirror: The DockerHub mirror URL to configure the charm with.
         test_id: The test unique identifier.
     """
 
     model: Model
     charm_file: str | Path
     dispatch_time: datetime
-    dockerhub_mirror: str
     test_id: str
 
 
@@ -92,13 +88,9 @@ class ImageConfigs(typing.NamedTuple):
 
     Attributes:
         bases: The Ubuntu OS Bases.
-        juju_channels: The Juju snap channels to install.
-        microk8s_channels: The Microk8s snap channels to install.
     """
 
     bases: tuple[str, ...]
-    juju_channels: tuple[str, ...]
-    microk8s_channels: tuple[str, ...]
 
 
 class OpenstackMeta(typing.NamedTuple):
