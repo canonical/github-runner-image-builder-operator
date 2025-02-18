@@ -35,11 +35,14 @@ class Arch(str, Enum):
                 return "aarch64"
             case Arch.X64:
                 return "x86_64"
+            case Arch.S390X:
+                return "s390x"
         raise ValueError  # pragma: nocover
 
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_X86 = {"x86_64"}
+ARCHITECTURES_S390x = {"s390x"}
 
 
 class BaseImage(str, Enum):
@@ -105,6 +108,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "unzip",
     "wget",
 ]
+S390x_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
@@ -115,6 +119,9 @@ LOG_LEVELS = tuple(
         (logging.getLevelName(level).lower() for level in _LOG_LEVELS),
     )
 )
+
+FORK_RUNNER_BINARY_REPO = "canonical/github-actions-runner"
+UPSTREAM_RUNNER_BINARY_REPO = "actions/runner"
 
 
 @dataclasses.dataclass
