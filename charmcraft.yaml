@@ -66,7 +66,7 @@ config:
     architecture:
       type: string
       default: ""
-      description: The image architecture to build for using external builder (i.e. amd64, arm64).
+      description: The image architecture to build for using external builder (i.e. amd64, arm64, s390x).
     base-image:
       type: string
       default: noble

@@ -22,6 +22,7 @@ class Arch(str, Enum):
 
     ARM64 = "arm64"
     X64 = "x64"
+    S390X = "s390x"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
