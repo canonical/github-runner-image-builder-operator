@@ -193,10 +193,6 @@ async def ssh_connection_fixture(
 
 
 # pylint: enable=R0801
-
-
-@pytest.mark.amd64
-@pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
 async def test_run(
     ssh_connection: SSHConnection,
@@ -209,8 +205,6 @@ async def test_run(
     helpers.run_openstack_tests(ssh_connection=ssh_connection, external=True)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 async def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):

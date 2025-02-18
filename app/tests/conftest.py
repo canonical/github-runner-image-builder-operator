@@ -38,6 +38,14 @@ def pytest_addoption(parser: Parser):
         help="The dockerhub mirror URL to reduce API rate limiting.",
         default=None,
     )
+    parser.addoption(
+        "--arch",
+        action="store",
+        help="The architecture to build for.",
+        choices=["amd64", "arm64", "s390x"],
+    )
+    # We are using separate openstack cred arguments per architecture in order to store all in
+    # one GitHub secret.
     # Private endpoint options AMD64
     parser.addoption(
         "--openstack-network-name-amd64",
@@ -117,6 +125,47 @@ def pytest_addoption(parser: Parser):
     )
     parser.addoption(
         "--openstack-region-name-arm64",
+        action="store",
+        help="The Openstack region to authenticate to.",
+    )
+    # Private endpoint options S390x
+    parser.addoption(
+        "--openstack-network-name-s390x",
+        action="store",
+        help="The Openstack network to create testing instances under.",
+    )
+    parser.addoption(
+        "--openstack-flavor-name-s390x",
+        action="store",
+        help="The Openstack flavor to create testing instances with.",
+    )
+    parser.addoption(
+        "--openstack-auth-url-s390x",
+        action="store",
+        help="The URL to Openstack authentication service, i.e. keystone.",
+    )
+    parser.addoption(
+        "--openstack-project-domain-name-s390x",
+        action="store",
+        help="The Openstack project domain name to use.",
+    )
+    parser.addoption(
+        "--openstack-project-name-s390x",
+        action="store",
+        help="The Openstack project name to use.",
+    )
+    parser.addoption(
+        "--openstack-user-domain-name-s390x",
+        action="store",
+        help="The Openstack user domain name to use.",
+    )
+    parser.addoption(
+        "--openstack-username-s390x",
+        action="store",
+        help="The Openstack user to authenticate as.",
+    )
+    parser.addoption(
+        "--openstack-region-name-s390x",
         action="store",
         help="The Openstack region to authenticate to.",
     )

@@ -8,35 +8,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  integration-tests-arm:
-    name: Integration test (ARM64)
-    runs-on: [self-hosted, ARM64, jammy, stg-private-endpoint]
-    strategy:
-      fail-fast: false
-      matrix:
-        image: [noble]
-    steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: canonical/setup-lxd@v0.1.2
-      - name: Install tox
-        run: |
-          sudo apt-get update
-          sudo apt-get install pipx -y
-          pipx ensurepath
-          pipx install tox
-      - name: Run integration tests
-        env:
-          OPENSTACK_PASSWORD_ARM64: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
-        run: |
-         cd app
-         tox -e integration -- -m arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
-  integration-tests-amd:
-    name: Integration test (X64)
+  integration-tests:
+    name: Integration test
     runs-on: [self-hosted, X64, jammy, stg-private-endpoint]
     strategy:
       fail-fast: false
       matrix:
         image: [jammy, noble]
+        arch: [amd64, arm64, s390x]
+        include:
+          - image: jammy
+            arch: amd64
+          - image: noble
+            arch: amd64
+          - image: noble
+            arch: arm64
+          - image: noble
+            arch: s390x
     steps:
       - uses: actions/checkout@v4.2.2
       - uses: canonical/setup-lxd@v0.1.2
@@ -46,21 +34,31 @@ jobs:
           sudo apt-get install pipx -y
           pipx ensurepath
           pipx install tox
+      - name: Export environment (amd64)
+        if: matrix.arch == 'amd64'
+        run: |
+          echo "export OPENSTACK_PASSWORD_AMD64=${{ secrets.OPENSTACK_PASSWORD_AMD64 }}" >> $GITHUB_ENV
+          echo "::add-mask::$OPENSTACK_PASSWORD_AMD64"
+      - name: Export environment (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          echo "export OPENSTACK_PASSWORD_ARM64=${{ secrets.OPENSTACK_PASSWORD_ARM64 }}" >> $GITHUB_ENV
+          echo "::add-mask::$OPENSTACK_PASSWORD_ARM64"
+      - name: Export environment (s390x)
+        if: matrix.arch == 's390x'
+        run: |
+          echo "export OPENSTACK_PASSWORD_S390X=${{ secrets.OPENSTACK_PASSWORD_S390X }}" >> $GITHUB_ENV
+          echo "::add-mask::$OPENSTACK_PASSWORD_S390X"
       - name: Run integration tests
-        env:
-          OPENSTACK_PASSWORD_AMD64: ${{ secrets.OPENSTACK_PASSWORD_AMD64 }}
         run: |
          cd app 
-         tox -e integration -- -m amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
+         tox -e integration -- --arch ${{ matrix.arch }} --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest
     needs:
-      - integration-tests-amd
-      - integration-tests-arm
     if: always() && !cancelled()
     timeout-minutes: 5
     steps:
       - run: |
-          [ '${{ needs.integration-tests-amd.result }}' = 'success' ] || (echo integration-tests-amd failed && false)
-          [ '${{ needs.integration-tests-arm.result }}' = 'success' ] || (echo integration-tests-arm failed && false)
+          [ '${{ needs.integration-tests.result }}' = 'success' ] || (echo integration-tests failed && false)
