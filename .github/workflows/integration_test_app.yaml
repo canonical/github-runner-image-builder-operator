@@ -40,7 +40,7 @@ jobs:
       - name: Run integration tests (arm64)
         if: matrix.arch == 'arm64'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_ARM64_NEW }}
         run: |
          tox -e integration -- --arch arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_ARM64 }}
         working-directory: app
