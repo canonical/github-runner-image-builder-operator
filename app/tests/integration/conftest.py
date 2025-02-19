@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 def arch_fixture(pytestconfig: pytest.Config):
     """The testing architecture."""
     arch = pytestconfig.getoption("--arch")
+    assert arch, "Please specify the --arch command line option"
     match arch:
         case "arm64":
             return config.Arch.ARM64
