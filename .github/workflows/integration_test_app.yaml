@@ -34,25 +34,27 @@ jobs:
           sudo apt-get install pipx -y
           pipx ensurepath
           pipx install tox
-      - name: Export environment (amd64)
+      - name: Run integration tests (amd64)
         if: matrix.arch == 'amd64'
+        env:
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_AMD64 }}
         run: |
-          echo "export OPENSTACK_PASSWORD_AMD64=${{ secrets.OPENSTACK_PASSWORD_AMD64 }}" >> $GITHUB_ENV
-          echo "::add-mask::$OPENSTACK_PASSWORD_AMD64"
-      - name: Export environment (arm64)
+         tox -e integration -- --arch amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_AMD64 }}
+        working-directory: app
+      - name: Run integration tests (arm64)
         if: matrix.arch == 'arm64'
+        env:
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
         run: |
-          echo "export OPENSTACK_PASSWORD_ARM64=${{ secrets.OPENSTACK_PASSWORD_ARM64 }}" >> $GITHUB_ENV
-          echo "::add-mask::$OPENSTACK_PASSWORD_ARM64"
-      - name: Export environment (s390x)
+         tox -e integration -- --arch arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_ARM64 }}
+        working-directory: app
+      - name: Run integration tests (s390x)
         if: matrix.arch == 's390x'
+        env:
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_S390X }}
         run: |
-          echo "export OPENSTACK_PASSWORD_S390X=${{ secrets.OPENSTACK_PASSWORD_S390X }}" >> $GITHUB_ENV
-          echo "::add-mask::$OPENSTACK_PASSWORD_S390X"
-      - name: Run integration tests
-        run: |
-         cd app 
-         tox -e integration -- --arch ${{ matrix.arch }} --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP }}
+         tox -e integration -- --arch s390x --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_S390X }}
+        working-directory: app
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest

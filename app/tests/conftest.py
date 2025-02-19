@@ -44,128 +44,43 @@ def pytest_addoption(parser: Parser):
         help="The architecture to build for.",
         choices=["amd64", "arm64", "s390x"],
     )
-    # We are using separate openstack cred arguments per architecture in order to store all in
-    # one GitHub secret.
-    # Private endpoint options AMD64
     parser.addoption(
-        "--openstack-network-name-amd64",
+        "--openstack-network-name",
         action="store",
         help="The Openstack network to create testing instances under.",
     )
     parser.addoption(
-        "--openstack-flavor-name-amd64",
+        "--openstack-flavor-name",
         action="store",
         help="The Openstack flavor to create testing instances with.",
     )
     parser.addoption(
-        "--openstack-auth-url-amd64",
+        "--openstack-auth-url",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
     )
     parser.addoption(
-        "--openstack-project-domain-name-amd64",
+        "--openstack-project-domain-name",
         action="store",
         help="The Openstack project domain name to use.",
     )
     parser.addoption(
-        "--openstack-project-name-amd64",
+        "--openstack-project-name",
         action="store",
         help="The Openstack project name to use.",
     )
     parser.addoption(
-        "--openstack-user-domain-name-amd64",
+        "--openstack-user-domain-name",
         action="store",
         help="The Openstack user domain name to use.",
     )
     parser.addoption(
-        "--openstack-username-amd64",
+        "--openstack-username",
         action="store",
         help="The Openstack user to authenticate as.",
     )
     parser.addoption(
-        "--openstack-region-name-amd64",
-        action="store",
-        help="The Openstack region to authenticate to.",
-    )
-    # Private endpoint options ARM64
-    parser.addoption(
-        "--openstack-network-name-arm64",
-        action="store",
-        help="The Openstack network to create testing instances under.",
-    )
-    parser.addoption(
-        "--openstack-flavor-name-arm64",
-        action="store",
-        help="The Openstack flavor to create testing instances with.",
-    )
-    parser.addoption(
-        "--openstack-auth-url-arm64",
-        action="store",
-        help="The URL to Openstack authentication service, i.e. keystone.",
-    )
-    parser.addoption(
-        "--openstack-project-domain-name-arm64",
-        action="store",
-        help="The Openstack project domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-project-name-arm64",
-        action="store",
-        help="The Openstack project name to use.",
-    )
-    parser.addoption(
-        "--openstack-user-domain-name-arm64",
-        action="store",
-        help="The Openstack user domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-username-arm64",
-        action="store",
-        help="The Openstack user to authenticate as.",
-    )
-    parser.addoption(
-        "--openstack-region-name-arm64",
-        action="store",
-        help="The Openstack region to authenticate to.",
-    )
-    # Private endpoint options S390x
-    parser.addoption(
-        "--openstack-network-name-s390x",
-        action="store",
-        help="The Openstack network to create testing instances under.",
-    )
-    parser.addoption(
-        "--openstack-flavor-name-s390x",
-        action="store",
-        help="The Openstack flavor to create testing instances with.",
-    )
-    parser.addoption(
-        "--openstack-auth-url-s390x",
-        action="store",
-        help="The URL to Openstack authentication service, i.e. keystone.",
-    )
-    parser.addoption(
-        "--openstack-project-domain-name-s390x",
-        action="store",
-        help="The Openstack project domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-project-name-s390x",
-        action="store",
-        help="The Openstack project name to use.",
-    )
-    parser.addoption(
-        "--openstack-user-domain-name-s390x",
-        action="store",
-        help="The Openstack user domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-username-s390x",
-        action="store",
-        help="The Openstack user to authenticate as.",
-    )
-    parser.addoption(
-        "--openstack-region-name-s390x",
+        "--openstack-region-name",
         action="store",
         help="The Openstack region to authenticate to.",
     )

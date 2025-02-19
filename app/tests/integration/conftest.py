@@ -62,35 +62,16 @@ def image_config_fixture(arch: config.Arch, image: str):
 
 @pytest.fixture(scope="module", name="private_endpoint_config")
 def private_endpoint_config_fixture(
-    pytestconfig: pytest.Config, arch: config.Arch
+    pytestconfig: pytest.Config,
 ) -> types.PrivateEndpointConfig | None:
     """The OpenStack private endpoint configurations."""
-    if arch == config.Arch.ARM64:
-        auth_url = pytestconfig.getoption("--openstack-auth-url-arm64")
-        password = os.getenv("OPENSTACK_PASSWORD_ARM64", "")
-        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-arm64")
-        project_name = pytestconfig.getoption("--openstack-project-name-arm64")
-        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-arm64")
-        user_name = pytestconfig.getoption("--openstack-username-arm64")
-        region_name = pytestconfig.getoption("--openstack-region-name-arm64")
-    elif arch == config.Arch.X64:
-        auth_url = pytestconfig.getoption("--openstack-auth-url-amd64")
-        password = os.getenv("OPENSTACK_PASSWORD_AMD64", "")
-        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-amd64")
-        project_name = pytestconfig.getoption("--openstack-project-name-amd64")
-        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-amd64")
-        user_name = pytestconfig.getoption("--openstack-username-amd64")
-        region_name = pytestconfig.getoption("--openstack-region-name-amd64")
-    elif arch == config.Arch.S390X:
-        auth_url = pytestconfig.getoption("--openstack-auth-url-s390x")
-        password = os.getenv("OPENSTACK_PASSWORD_S390X", "")
-        project_domain_name = pytestconfig.getoption("--openstack-project-domain-name-s390x")
-        project_name = pytestconfig.getoption("--openstack-project-name-s390x")
-        user_domain_name = pytestconfig.getoption("--openstack-user-domain-name-s390x")
-        user_name = pytestconfig.getoption("--openstack-username-s390x")
-        region_name = pytestconfig.getoption("--openstack-region-name-s390x")
-    else:
-        raise ValueError(f"Unsupported architecture {arch}")
+    auth_url = pytestconfig.getoption("--openstack-auth-url")
+    password = os.getenv("OPENSTACK_PASSWORD", "")
+    project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
+    project_name = pytestconfig.getoption("--openstack-project-name")
+    user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
+    user_name = pytestconfig.getoption("--openstack-username")
+    region_name = pytestconfig.getoption("--openstack-region-name")
     if any(
         not val
         for val in (
