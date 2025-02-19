@@ -66,25 +66,13 @@ def private_endpoint_config_fixture(
 ) -> types.PrivateEndpointConfig | None:
     """The OpenStack private endpoint configurations."""
     auth_url = pytestconfig.getoption("--openstack-auth-url")
-    password = os.getenv("OPENSTACK_PASSWORD", "")
+    if not (password := os.getenv("OPENSTACK_PASSWORD")):
+        assert False, "Please specify the OPENSTACK_PASSWORD environment variable"
     project_domain_name = pytestconfig.getoption("--openstack-project-domain-name")
     project_name = pytestconfig.getoption("--openstack-project-name")
     user_domain_name = pytestconfig.getoption("--openstack-user-domain-name")
     user_name = pytestconfig.getoption("--openstack-username")
     region_name = pytestconfig.getoption("--openstack-region-name")
-    if any(
-        not val
-        for val in (
-            auth_url,
-            password,
-            project_domain_name,
-            project_name,
-            user_domain_name,
-            user_name,
-            region_name,
-        )
-    ):
-        assert False, "Please specify all OpenStack private endpoint configuration options"
     return types.PrivateEndpointConfig(
         auth_url=auth_url,
         password=password,
