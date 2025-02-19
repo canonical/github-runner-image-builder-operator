@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from fabric.connection import Connection as SSHConnection
+from integration.conftest import openstack_connection_fixture
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
@@ -27,8 +28,6 @@ from tests.integration import helpers, types
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 def test_initialize(
     openstack_connection: Connection, arch: config.Arch, cloud_name: str, test_id: str
 ):
@@ -121,7 +120,13 @@ def image_ids_fixture(
         ),
         keep_revisions=1,
     )
-    return image_ids.split(",")
+    yield image_ids.split(",")
+
+    # cleanup keypair manually until there is a mechanism in production code to cleanup dangling
+    # resources.
+    openstack_metadata.connection.delete_keypair(
+        openstack_builder._get_keypair_name(prefix=test_id)
+    )
 
 
 @pytest.fixture(scope="module", name="make_dangling_resources")
