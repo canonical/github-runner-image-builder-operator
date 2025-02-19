@@ -16,14 +16,10 @@ jobs:
       matrix:
         image: [jammy, noble]
         arch: [amd64, arm64, s390x]
-        include:
+        exclude:
           - image: jammy
-            arch: amd64
-          - image: noble
-            arch: amd64
-          - image: noble
             arch: arm64
-          - image: noble
+          - image: jammy
             arch: s390x
     steps:
       - uses: actions/checkout@v4.2.2
