@@ -40,11 +40,6 @@ class Arch(str, Enum):
         raise ValueError  # pragma: nocover
 
 
-ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
-ARCHITECTURES_X86 = {"x86_64"}
-ARCHITECTURES_S390x = {"s390x"}
-
-
 class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
 

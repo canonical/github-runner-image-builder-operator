@@ -29,13 +29,12 @@ logger = logging.getLogger(__name__)
 def arch_fixture(pytestconfig: pytest.Config):
     """The testing architecture."""
     arch = pytestconfig.getoption("--arch")
-    assert arch, "Please specify the --arch command line option"
     match arch:
-        case arch if arch in config.ARCHITECTURES_ARM64:
+        case "arm64":
             return config.Arch.ARM64
-        case arch if arch in config.ARCHITECTURES_X86:
+        case "amd64":
             return config.Arch.X64
-        case arch if arch in config.ARCHITECTURES_S390x:
+        case "s390x":
             return config.Arch.S390X
     raise ValueError(f"Unsupported testing architecture {arch}")
 
