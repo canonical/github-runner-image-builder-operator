@@ -84,7 +84,7 @@ def private_endpoint_config_fixture(
             region_name,
         )
     ):
-        return None
+        assert False, "Please specify all OpenStack private endpoint configuration options"
     return types.PrivateEndpointConfig(
         auth_url=auth_url,
         password=password,
@@ -98,11 +98,9 @@ def private_endpoint_config_fixture(
 
 @pytest.fixture(scope="module", name="clouds_yaml_contents")
 def clouds_yaml_fixture(
-    private_endpoint_config: types.PrivateEndpointConfig | None,
+    private_endpoint_config: types.PrivateEndpointConfig,
 ) -> typing.Optional[str]:
     """The openstack private endpoint clouds yaml."""
-    if not private_endpoint_config:
-        return None
     return string.Template(
         Path("tests/integration/data/clouds.yaml.tmpl").read_text(encoding="utf-8")
     ).substitute(
