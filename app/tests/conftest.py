@@ -43,53 +43,44 @@ def pytest_addoption(parser: Parser):
         action="store",
         help="The architecture to build for.",
         choices=["amd64", "arm64", "s390x"],
-        required=True,
     )
     parser.addoption(
         "--openstack-network-name",
         action="store",
         help="The Openstack network to create testing instances under.",
-        required=True,
     )
     parser.addoption(
         "--openstack-flavor-name",
         action="store",
         help="The Openstack flavor to create testing instances with.",
-        required=True,
     )
     parser.addoption(
         "--openstack-auth-url",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
-        required=True,
     )
     parser.addoption(
         "--openstack-project-domain-name",
         action="store",
         help="The Openstack project domain name to use.",
-        required=True,
     )
     parser.addoption(
         "--openstack-project-name",
         action="store",
         help="The Openstack project name to use.",
-        required=True,
     )
     parser.addoption(
         "--openstack-user-domain-name",
         action="store",
         help="The Openstack user domain name to use.",
-        required=True,
     )
     parser.addoption(
         "--openstack-username",
         action="store",
         help="The Openstack user to authenticate as.",
-        required=True,
     )
     parser.addoption(
         "--openstack-region-name",
         action="store",
         help="The Openstack region to authenticate to.",
-        required=True,
     )
