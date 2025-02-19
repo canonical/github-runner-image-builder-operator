@@ -4,7 +4,6 @@
 """Fixtures for github runner image builder integration tests."""
 import logging
 import os
-import platform
 import secrets
 import string
 import typing
@@ -117,7 +116,7 @@ def clouds_yaml_fixture(
 
 
 @pytest.fixture(scope="module", name="network_name")
-def network_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
+def network_name_fixture(pytestconfig: pytest.Config) -> str:
     """Network to use to spawn test instances under."""
     network_name = pytestconfig.getoption("--openstack-network-name")
     assert network_name, "Please specify the --openstack-network-name command line option"
@@ -125,7 +124,7 @@ def network_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
 
 
 @pytest.fixture(scope="module", name="flavor_name")
-def flavor_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
+def flavor_name_fixture(pytestconfig: pytest.Config) -> str:
     """Flavor to create testing instances with."""
     flavor_name = pytestconfig.getoption("--openstack-flavor-name")
     assert flavor_name, "Please specify the --openstack-flavor-name command line option"

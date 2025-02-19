@@ -19,7 +19,7 @@ from github_runner_image_builder.utils import retry
 
 logger = logging.getLogger(__name__)
 
-SupportedBaseImageArch = typing.Literal["amd64", "arm64"]
+SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x"]
 
 CHECKSUM_BUF_SIZE = 65536  # 65kb
 

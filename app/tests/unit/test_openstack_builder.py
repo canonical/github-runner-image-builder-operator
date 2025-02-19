@@ -590,7 +590,7 @@ def test__generate_cloud_init_script(
     """
     arrange: A certain architecture.
     act: when _generate_cloud_init_script is run.
-    assert: cloud init template is generated with correct runner binary repo and additional apt packages.
+    assert: expected cloud init template is generated.
     """
     assert (
         openstack_builder._generate_cloud_init_script(
@@ -630,11 +630,13 @@ flush table ip aproxy
 table ip aproxy {{
         chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8\
+444
         }}
         chain output {{
                 type nat hook output priority -100; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8\
+444
         }}
 }}
 EOF
@@ -650,7 +652,8 @@ function install_apt_packages() {{
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends \
+${{packages}}
     echo "Installing linux-generic-hwe-${{hwe_version}}"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends \
 linux-generic-hwe-${{hwe_version}}
@@ -700,8 +703,8 @@ function install_github_runner() {{
     if [[ -z "$version" ]]; then
         # Follow redirectin to get latest version release location
         # e.g. https://github.com/actions/runner/releases/tag/v2.318.0
-        location=$(curl -sIL "https://github.com/${{runner_binary_repo}}/releases/latest" | sed -n \
-'s/^location: *//p' | tr -d '[:space:]')
+        location=$(curl -sIL "https://github.com/${{runner_binary_repo}}/releases/latest" | sed -n\
+ 's/^location: *//p' | tr -d '[:space:]')
         # remove longest prefix from the right that matches the pattern */v
         # e.g. 2.318.0
         version=${{location##*/v}}
@@ -757,7 +760,8 @@ function execute_script() {{
 
 proxy="test.proxy.internal:3128"
 apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
-shellcheck tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
+shellcheck tar time unzip wget{
+    (' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
