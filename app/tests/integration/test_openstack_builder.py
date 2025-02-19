@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from fabric.connection import Connection as SSHConnection
-from integration.conftest import openstack_connection_fixture
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
@@ -86,7 +85,7 @@ def image_ids_fixture(
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
     proxy: types.ProxyConfig,
-) -> list[str]:
+) -> typing.Iterator[list[str]]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has
@@ -125,7 +124,7 @@ def image_ids_fixture(
     # cleanup keypair manually until there is a mechanism in production code to cleanup dangling
     # resources.
     openstack_metadata.connection.delete_keypair(
-        openstack_builder._get_keypair_name(prefix=test_id)
+        name=openstack_builder._get_keypair_name(prefix=test_id)
     )
 
 
@@ -210,7 +209,7 @@ async def test_run(
     helpers.run_openstack_tests(ssh_connection=ssh_connection, external=True)
 
 
-async def test_openstack_state(
+def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """
@@ -218,7 +217,7 @@ async def test_openstack_state(
     act: None.
     assert: Dangling resources are cleaned up.
 
-    This test is dependent on the previons test_run test. Running a new test image building run
+    This test is dependent on the previous test_run test. Running a new test image building run
     is too costly at the moment.
     """
     server = openstack_metadata.connection.get_server(
