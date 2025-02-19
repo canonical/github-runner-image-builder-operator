@@ -80,6 +80,8 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
             return "amd64"
         case Arch.ARM64:
             return "arm64"
+        case Arch.S390X:
+            return "s390x"
         case _:
             raise UnsupportedArchitectureError(f"Detected system arch: {arch} is unsupported.")
 

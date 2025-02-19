@@ -106,10 +106,7 @@ def clouds_yaml_fixture(
 @pytest.fixture(scope="module", name="network_name")
 def network_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
     """Network to use to spawn test instances under."""
-    if arch == config.Arch.ARM64:
-        network_name = pytestconfig.getoption("--openstack-network-name-arm64")
-    else:
-        network_name = pytestconfig.getoption("--openstack-network-name-amd64")
+    network_name = pytestconfig.getoption("--openstack-network-name")
     assert network_name, "Please specify the --openstack-network-name command line option"
     return network_name
 
@@ -117,10 +114,7 @@ def network_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
 @pytest.fixture(scope="module", name="flavor_name")
 def flavor_name_fixture(pytestconfig: pytest.Config, arch: config.Arch) -> str:
     """Flavor to create testing instances with."""
-    if arch == config.Arch.ARM64:
-        flavor_name = pytestconfig.getoption("--openstack-flavor-name-arm64")
-    else:
-        flavor_name = pytestconfig.getoption("--openstack-flavor-name-amd64")
+    flavor_name = pytestconfig.getoption("--openstack-flavor-name")
     assert flavor_name, "Please specify the --openstack-flavor-name command line option"
     return flavor_name
 
