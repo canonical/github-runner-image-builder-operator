@@ -104,7 +104,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "unzip",
     "wget",
 ]
-S390x_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
+S390X_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
