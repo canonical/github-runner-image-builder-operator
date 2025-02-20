@@ -87,41 +87,51 @@ def image_ids_fixture(
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
     proxy: types.ProxyConfig,
-) -> list[str]:
+) -> typing.Iterator[list[str]]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has
     been installed using pipx. See testenv:integration section of tox.ini.
     """
-    image_ids = openstack_builder.run(
-        cloud_config=openstack_builder.CloudConfig(
-            cloud_name=openstack_metadata.cloud_name,
-            flavor=openstack_metadata.flavor,
-            network=openstack_metadata.network,
-            proxy=proxy.http,
-            prefix=test_id,
-            upload_cloud_names=[openstack_metadata.cloud_name],
-        ),
-        image_config=config.ImageConfig(
-            arch=image_config.arch,
-            base=config.BaseImage.from_str(image_config.image),
-            runner_version="",
-            name=f"{test_id}-image-builder-test",
-            script_config=config.ScriptConfig(
-                script_url=urllib.parse.urlparse(
-                    "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
-                    "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
-                    "test_script.sh"
-                ),
-                script_secrets={
-                    "TEST_SECRET": "SHOULD_EXIST",
-                    "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
-                },
+    try:
+        image_ids = openstack_builder.run(
+            cloud_config=openstack_builder.CloudConfig(
+                cloud_name=openstack_metadata.cloud_name,
+                flavor=openstack_metadata.flavor,
+                network=openstack_metadata.network,
+                proxy=proxy.http,
+                prefix=test_id,
+                upload_cloud_names=[openstack_metadata.cloud_name],
             ),
-        ),
-        keep_revisions=1,
-    )
-    return image_ids.split(",")
+            image_config=config.ImageConfig(
+                arch=image_config.arch,
+                base=config.BaseImage.from_str(image_config.image),
+                runner_version="",
+                name=f"{test_id}-image-builder-test",
+                script_config=config.ScriptConfig(
+                    script_url=urllib.parse.urlparse(
+                        "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
+                        "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
+                        "test_script.sh"
+                    ),
+                    script_secrets={
+                        "TEST_SECRET": "SHOULD_EXIST",
+                        "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+                    },
+                ),
+            ),
+            keep_revisions=1,
+        )
+        yield image_ids.split(",")
+
+    finally:
+        # cleanup resources
+        openstack_metadata.connection.delete_server(name_or_id=openstack_builder._get_builder_name(
+                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+            ))
+        openstack_metadata.connection.delete_keypair(
+            name=openstack_builder._get_keypair_name(prefix=test_id)
+        )
 
 
 @pytest.fixture(scope="module", name="make_dangling_resources")
@@ -129,24 +139,25 @@ def make_dangling_resources_fixture(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """Make OpenStack resources that imitates failed run."""
-    keypair = openstack_metadata.connection.create_keypair(
-        openstack_builder._get_keypair_name(prefix=test_id)
-    )
-    server = openstack_metadata.connection.create_server(
-        name=openstack_builder._get_builder_name(
-            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-        ),
-        image=f"image-builder-base-jammy-{image_config.arch.value}",
-        flavor=openstack_metadata.flavor,
-        network=openstack_metadata.network,
-        security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
-        wait=True,
-    )
+    try:
+        keypair = openstack_metadata.connection.create_keypair(
+            openstack_builder._get_keypair_name(prefix=test_id)
+        )
+        server = openstack_metadata.connection.create_server(
+            name=openstack_builder._get_builder_name(
+                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+            ),
+            image=f"image-builder-base-jammy-{image_config.arch.value}",
+            flavor=openstack_metadata.flavor,
+            network=openstack_metadata.network,
+            security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
+            wait=True,
+        )
 
-    yield
-
-    openstack_metadata.connection.delete_keypair(name=keypair.name)
-    openstack_metadata.connection.delete_server(name_or_id=server.id)
+        yield
+    finally:
+        openstack_metadata.connection.delete_keypair(name=keypair.name)
+        openstack_metadata.connection.delete_server(name_or_id=server.id)
 
 
 # the code is similar but the fixture source is localized and is different.
@@ -219,7 +230,7 @@ def test_openstack_state(
     act: None.
     assert: Dangling resources are cleaned up.
 
-    This test is dependent on the previons test_run test. Running a new test image building run
+    This test is dependent on the previous test_run test. Running a new test image building run
     is too costly at the moment.
     """
     server = openstack_metadata.connection.get_server(
