@@ -7,7 +7,6 @@ import dataclasses
 import logging
 import multiprocessing
 import os
-import platform
 import typing
 import urllib.parse
 from enum import Enum
@@ -71,6 +70,7 @@ class Arch(str, Enum):
     Attributes:
         ARM64: Represents an ARM64 system architecture.
         X64: Represents an X64/AMD64 system architecture.
+        S390X: Represents an S390X system architecture.
     """
 
     def __str__(self) -> str:
@@ -83,7 +83,7 @@ class Arch(str, Enum):
 
     ARM64 = "arm64"
     X64 = "x64"
-    S390x = "s390x"
+    S390X = "s390x"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "Arch":
@@ -91,6 +91,9 @@ class Arch(str, Enum):
 
         Args:
             charm: The charm instance.
+
+        Raises:
+            UnsupportedArchitectureError: if the configured architecture is unsupported.
 
         Returns:
             The architecture to build for.
@@ -103,31 +106,14 @@ class Arch(str, Enum):
                 return Arch.ARM64
             case arch if arch in ARCHITECTURES_X86:
                 return Arch.X64
+            case arch if arch in ARCHITECTURES_S390x:
+                return Arch.S390X
             case _:
-                return _get_supported_arch()
+                raise UnsupportedArchitectureError(msg=f"Unsupported {arch=}")
 
 
 class UnsupportedArchitectureError(CharmConfigInvalidError):
     """Raised when given machine charm architecture is unsupported."""
-
-
-def _get_supported_arch() -> Arch:
-    """Get current machine architecture.
-
-    Raises:
-        UnsupportedArchitectureError: if the current architecture is unsupported.
-
-    Returns:
-        Arch: Current machine architecture.
-    """
-    arch = platform.machine()
-    match arch:
-        case arch if arch in ARCHITECTURES_ARM64:
-            return Arch.ARM64
-        case arch if arch in ARCHITECTURES_X86:
-            return Arch.X64
-        case _:
-            raise UnsupportedArchitectureError(msg=f"Unsupported {arch=}")
 
 
 class InvalidBaseImageError(CharmConfigInvalidError):
