@@ -1,3 +1,27 @@
+## [#83 feat: s390x images(https://github.com/canonical/github-runner-image-builder-operator/pull/83)
+> Add support for building s390x images.
+
+### Upgrade Steps
+*  The architecture option has to be specified.
+
+### Breaking Changes
+* The charm expects the architecture to be specified in the configuration.
+
+### New Features
+* The charm is now able to build images for the `s390x` architecture. `s390x` is not officially supported
+by GitHub, but a fork of the actions runner binary has been created, which is used in the image. Note
+that s390x support is experimental and may be removed in the future.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
+
 ## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
 > Drop juju and microk8s preinstallation.
 

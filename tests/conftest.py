@@ -18,6 +18,13 @@ def pytest_addoption(parser: Parser):
         action="append",
         help="The prebuilt github-runner-image-builder-operator charm file.",
     )
+    parser.addoption(
+        "--arch",
+        action="store",
+        help="The architecture to build for.",
+        choices=["amd64", "arm64", "s390x"],
+        default="amd64",
+    )
     # Private endpoint options AMD64
     parser.addoption(
         "--openstack-network-name-amd64",

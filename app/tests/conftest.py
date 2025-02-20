@@ -38,85 +38,49 @@ def pytest_addoption(parser: Parser):
         help="The dockerhub mirror URL to reduce API rate limiting.",
         default=None,
     )
-    # Private endpoint options AMD64
     parser.addoption(
-        "--openstack-network-name-amd64",
+        "--arch",
+        action="store",
+        help="The architecture to build for.",
+        choices=["amd64", "arm64", "s390x"],
+    )
+    parser.addoption(
+        "--openstack-network-name",
         action="store",
         help="The Openstack network to create testing instances under.",
     )
     parser.addoption(
-        "--openstack-flavor-name-amd64",
+        "--openstack-flavor-name",
         action="store",
         help="The Openstack flavor to create testing instances with.",
     )
     parser.addoption(
-        "--openstack-auth-url-amd64",
+        "--openstack-auth-url",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
     )
     parser.addoption(
-        "--openstack-project-domain-name-amd64",
+        "--openstack-project-domain-name",
         action="store",
         help="The Openstack project domain name to use.",
     )
     parser.addoption(
-        "--openstack-project-name-amd64",
+        "--openstack-project-name",
         action="store",
         help="The Openstack project name to use.",
     )
     parser.addoption(
-        "--openstack-user-domain-name-amd64",
+        "--openstack-user-domain-name",
         action="store",
         help="The Openstack user domain name to use.",
     )
     parser.addoption(
-        "--openstack-username-amd64",
+        "--openstack-username",
         action="store",
         help="The Openstack user to authenticate as.",
     )
     parser.addoption(
-        "--openstack-region-name-amd64",
-        action="store",
-        help="The Openstack region to authenticate to.",
-    )
-    # Private endpoint options ARM64
-    parser.addoption(
-        "--openstack-network-name-arm64",
-        action="store",
-        help="The Openstack network to create testing instances under.",
-    )
-    parser.addoption(
-        "--openstack-flavor-name-arm64",
-        action="store",
-        help="The Openstack flavor to create testing instances with.",
-    )
-    parser.addoption(
-        "--openstack-auth-url-arm64",
-        action="store",
-        help="The URL to Openstack authentication service, i.e. keystone.",
-    )
-    parser.addoption(
-        "--openstack-project-domain-name-arm64",
-        action="store",
-        help="The Openstack project domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-project-name-arm64",
-        action="store",
-        help="The Openstack project name to use.",
-    )
-    parser.addoption(
-        "--openstack-user-domain-name-arm64",
-        action="store",
-        help="The Openstack user domain name to use.",
-    )
-    parser.addoption(
-        "--openstack-username-arm64",
-        action="store",
-        help="The Openstack user to authenticate as.",
-    )
-    parser.addoption(
-        "--openstack-region-name-arm64",
+        "--openstack-region-name",
         action="store",
         help="The Openstack region to authenticate to.",
     )

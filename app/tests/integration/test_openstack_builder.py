@@ -27,8 +27,6 @@ from tests.integration import helpers, types
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 def test_initialize(
     openstack_connection: Connection, arch: config.Arch, cloud_name: str, test_id: str
 ):
@@ -87,7 +85,7 @@ def image_ids_fixture(
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
     proxy: types.ProxyConfig,
-) -> list[str]:
+) -> typing.Iterator[list[str]]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has
@@ -121,7 +119,13 @@ def image_ids_fixture(
         ),
         keep_revisions=1,
     )
-    return image_ids.split(",")
+    yield image_ids.split(",")
+
+    # cleanup keypair manually until there is a mechanism in production code to cleanup dangling
+    # resources.
+    openstack_metadata.connection.delete_keypair(
+        name=openstack_builder._get_keypair_name(prefix=test_id)
+    )
 
 
 @pytest.fixture(scope="module", name="make_dangling_resources")
@@ -193,10 +197,6 @@ async def ssh_connection_fixture(
 
 
 # pylint: enable=R0801
-
-
-@pytest.mark.amd64
-@pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
 async def test_run(
     ssh_connection: SSHConnection,
@@ -209,9 +209,7 @@ async def test_run(
     helpers.run_openstack_tests(ssh_connection=ssh_connection, external=True)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
-async def test_openstack_state(
+def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """
@@ -219,7 +217,7 @@ async def test_openstack_state(
     act: None.
     assert: Dangling resources are cleaned up.
 
-    This test is dependent on the previons test_run test. Running a new test image building run
+    This test is dependent on the previous test_run test. Running a new test image building run
     is too costly at the moment.
     """
     server = openstack_metadata.connection.get_server(

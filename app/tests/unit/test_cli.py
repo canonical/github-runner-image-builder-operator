@@ -78,7 +78,15 @@ def test_main(cli_runner: CliRunner, action: str):
     assert f"Usage: main {action}" in result.output
 
 
-def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
+@pytest.mark.parametrize(
+    "arch, expected_arch",
+    [
+        pytest.param("arm64", config.Arch.ARM64, id="arm64"),
+        pytest.param("x64", config.Arch.X64, id="amd64"),
+        pytest.param("s390x", config.Arch.S390X, id="s390x"),
+    ],
+)
+def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, arch: str, expected_arch: str):
     """
     arrange: given a monkeypatched builder.initialize function.
     act: when cli init is invoked.
@@ -88,11 +96,21 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
         cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
     )
 
-    cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", "x64"])
+    cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", arch])
 
     mock_openstack_init_func.assert_called_with(
-        arch=config.Arch.X64, cloud_name="hello", prefix=""
+        arch=expected_arch, cloud_name="hello", prefix=""
     )
+
+def test_initialize_invalid_args(cli_runner: CliRunner):
+    """
+    arrange: given invalid init action arguments.
+    act: when _parse_args is called.
+    assert: Error output is printed.
+    """
+    result = cli_runner.invoke(main, args=["init"])
+
+    assert "Error: Missing option '--arch'" in result.output
 
 
 @pytest.mark.parametrize(
@@ -151,6 +169,7 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
         pytest.param({"": ""}, id="empty cloud name positional argument"),
         pytest.param({" ": ""}, id="empty image name positional argument"),
         pytest.param({"--script-url": "invalidurl"}, id="invalid url"),
+        pytest.param({"--arch": "invalid"}, id="invalid arch"),
     ],
 )
 def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args: dict):
@@ -176,9 +195,18 @@ def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args:
     )
 
 
+@pytest.mark.parametrize(
+    "arch",
+    [
+        pytest.param("arm64", id="arm64"),
+        pytest.param("x64", id="amd64"),
+        pytest.param("s390x", id="s390x"),
+    ],
+)
 def test_run(
     monkeypatch: pytest.MonkeyPatch,
     cli_runner: CliRunner,
+    arch: str,
 ):
     """
     arrange: given a monkeypatched builder.setup_builder function.
@@ -190,7 +218,7 @@ def test_run(
     command = [
         "run",
         "--arch",
-        "x64",
+        arch,
         "--base-image",
         "jammy",
         "test-cloud-name",

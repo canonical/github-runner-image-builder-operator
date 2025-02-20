@@ -157,6 +157,7 @@ def test__get_supported_runner_arch_unsupported_error():
     [
         pytest.param(Arch.ARM64, "arm64", id="ARM64"),
         pytest.param(Arch.X64, "amd64", id="AMD64"),
+        pytest.param(Arch.S390X, "s390x", id="S390X"),
     ],
 )
 def test__get_supported_runner_arch(arch: Arch, expected: SupportedBaseImageArch):
