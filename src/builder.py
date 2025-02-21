@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 UBUNTU_USER = "ubuntu"
+ROOT_USER = "root"
 UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
 APP_NAME = "github-runner-image-builder"
 LOCAL_APP_TAR_PATH = Path(f"{os.getcwd()}/app.tar.gz")
@@ -210,11 +211,12 @@ def configure_cron(unit_name: str, interval: int) -> bool:
         "/usr/bin/run-one",
         "/usr/bin/bash",
         "-c",
-        f'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME} ./dispatch"',
+        f'\'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME}'
+        ' ./dispatch"\'',
     ]
 
     builder_exec_command: str = " ".join(commands)
-    cron_text = f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command}\n"
+    cron_text = f"0 */{interval} * * * {ROOT_USER} {builder_exec_command}\n"
 
     if not _should_configure_cron(cron_contents=cron_text):
         return False

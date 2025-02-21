@@ -348,8 +348,8 @@ def test_configure_cron_no_reconfigure(monkeypatch: pytest.MonkeyPatch):
     "expected_file_contents",
     [
         pytest.param(
-            """0 */1 * * * ubuntu /usr/bin/run-one /usr/bin/bash -c \
-/usr/bin/juju-exec "test-unit-name" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu ./dispatch"
+            """0 */1 * * * root /usr/bin/run-one /usr/bin/bash -c \
+'/usr/bin/juju-exec "test-unit-name" "JUJU_DISPATCH_PATH=run HOME=/home/ubuntu ./dispatch"'
 """,
             id="runner version set",
         ),
