@@ -77,10 +77,16 @@ async def test_periodic_rebuilt(
     """
     unit: Unit = next(iter(app.units))
 
+    await app.model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
+
     async with _change_crontab_to_minutes(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
-        await wait_for(lambda: unit.latest().agent_status == "executing")
+        def is_agent_status_executing(unit: Unit):
+            status_str = unit.latest().agent_status
+            logger.info("Agent status: %s", status_str)
+            return status_str == "executing"
+        await wait_for(functools.partial(is_agent_status_executing, unit), timeout=60 * 10)
 
     await _wait_for_images(
         openstack_connection=openstack_connection,
