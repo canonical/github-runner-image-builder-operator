@@ -84,6 +84,7 @@ async def test_periodic_rebuilt(
 
     await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
 
+    dispatch_time = datetime.now(tz=timezone.utc)
     async with _change_crontab_to_minutes(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
@@ -109,7 +110,7 @@ async def test_periodic_rebuilt(
 
     await _wait_for_images(
         openstack_connection=openstack_connection,
-        dispatch_time=datetime.now(tz=timezone.utc),
+        dispatch_time=dispatch_time,
         image_names=image_names,
     )
 
