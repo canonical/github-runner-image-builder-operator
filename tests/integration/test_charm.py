@@ -6,6 +6,7 @@
 """Integration testing module."""
 
 import functools
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -68,7 +69,11 @@ async def test_build_image(
 
 @pytest.mark.asyncio
 async def test_periodic_rebuilt(
-    app: Application, app_config: dict, openstack_connection: Connection, image_names: list[str]
+    app: Application,
+    app_config: dict,
+    openstack_connection: Connection,
+    image_names: list[str],
+    ops_test,
 ):
     """
     arrange: A deployed active charm.
@@ -77,15 +82,29 @@ async def test_periodic_rebuilt(
     """
     unit: Unit = next(iter(app.units))
 
-    await app.model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
+    await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
 
     async with _change_crontab_to_minutes(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
-        def is_agent_status_executing(unit: Unit):
-            status_str = unit.latest().agent_status
-            logger.info("Agent status: %s", status_str)
-            return status_str == "executing"
+
+        async def is_agent_status_executing(unit: Unit):
+            status_str_unit = unit.agent_status
+            status_str_unit_latest = unit.latest().agent_status
+            ret_code, stdout, stderr = await ops_test.juju("status", "--format", "json")
+            assert ret_code == 0, f"Failed to get juju status: {stderr}"
+            juju_status = json.loads(stdout)
+            status_str_juju_status = juju_status["applications"][app.name]["units"][unit.name][
+                "juju-status"
+            ]["current"]
+            logger.info(
+                "Agent status: %s (current) %s (latest) %s (juju status)",
+                status_str_unit,
+                status_str_unit_latest,
+                status_str_juju_status,
+            )
+            return "executing" in (status_str_unit, status_str_unit_latest, status_str_juju_status)
+
         await wait_for(functools.partial(is_agent_status_executing, unit), timeout=60 * 10)
 
     await _wait_for_images(
