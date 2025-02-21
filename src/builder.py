@@ -212,7 +212,7 @@ def configure_cron(unit_name: str, interval: int) -> bool:
         "/usr/bin/bash",
         "-c",
         f'\'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME}'
-        ' ./dispatch"\'',
+        " ./dispatch\"'",
     ]
 
     builder_exec_command: str = " ".join(commands)
