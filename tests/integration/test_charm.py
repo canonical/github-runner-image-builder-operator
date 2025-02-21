@@ -97,7 +97,7 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
         command=rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
-    await unit.ssh(command="systemctl restart cron")
+    await unit.ssh(command="sudo systemctl restart cron")
 
     yield
 
