@@ -94,7 +94,7 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
     """Context manager to change the crontab to run every minute."""
     minute_interval = 1
     await unit.ssh(
-        command=rf"sed 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
+        command=rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
     await unit.ssh(command="systemctl restart cron")
@@ -102,10 +102,10 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
     yield
 
     await unit.ssh(
-        command=rf"sed 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
+        command=rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
-    await unit.ssh(command="systemctl restart cron")
+    await unit.ssh(command="sudo systemctl restart cron")
 
 
 async def _wait_for_images(
