@@ -306,27 +306,21 @@ async def app_on_charmhub_fixture(
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
     # Normally we would use latest/stable, but upgrading
-    # from stable is currently broken, and therefore we are using edge. Change this in the future.
-    charmhub_channel = "edge"
-    ret_code, stdout, stderr = await ops_test.juju(
-        "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
-    )
-    assert ret_code == 0, f"Failed to get charm info: {stderr}"
-    charmhub_info = json.loads(stdout.strip())
-    charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
+    # from stable is currently broken, and therefore we test a specific revision.
+    # Change this in the future.
+    charmhub_revision = 45
 
-    charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
-    # We might need to test using the legacy config options.
+    charmhub_app_config = app_config.copy()
     legacy_config_prefix = "experimental-external-"
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
-        if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
-            charmhub_app_config[legacy_opt] = app_config[opt]
+        legacy_opt = f"{legacy_config_prefix}{opt}"
+        charmhub_app_config[legacy_opt] = app_config[opt]
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
         config=charmhub_app_config,
-        channel=charmhub_channel,
+        revision=charmhub_revision,
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
