@@ -310,8 +310,13 @@ async def app_on_charmhub_fixture(
     # Change this in the future.
     charmhub_revision = 45
 
-    charmhub_app_config = app_config.copy()
+    charmhub_app_config = {
+        k: v
+        for k, v in app_config.items()
+        if k not in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME)
+    }
     legacy_config_prefix = "experimental-external-"
+
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
         legacy_opt = f"{legacy_config_prefix}{opt}"
         charmhub_app_config[legacy_opt] = app_config[opt]
