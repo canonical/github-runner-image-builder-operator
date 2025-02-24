@@ -124,9 +124,11 @@ def image_ids_fixture(
 
     finally:
         # cleanup resources
-        openstack_metadata.connection.delete_server(name_or_id=openstack_builder._get_builder_name(
+        openstack_metadata.connection.delete_server(
+            name_or_id=openstack_builder._get_builder_name(
                 arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-            ))
+            )
+        )
         openstack_metadata.connection.delete_keypair(
             name=openstack_builder._get_keypair_name(prefix=test_id)
         )
@@ -137,6 +139,8 @@ async def make_dangling_resources_fixture(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """Make OpenStack resources that imitates failed run."""
+    keypair = None
+    server = None
     try:
         keypair = openstack_metadata.connection.create_keypair(
             openstack_builder._get_keypair_name(prefix=test_id)
@@ -154,8 +158,10 @@ async def make_dangling_resources_fixture(
 
         yield
     finally:
-        openstack_metadata.connection.delete_keypair(name=keypair.name)
-        openstack_metadata.connection.delete_server(name_or_id=server.id)
+        if keypair:
+            openstack_metadata.connection.delete_keypair(name=keypair.name)
+        if server:
+            openstack_metadata.connection.delete_server(name_or_id=server.id)
 
 
 # the code is similar but the fixture source is localized and is different.

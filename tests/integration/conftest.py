@@ -32,6 +32,7 @@ from pytest_operator.plugin import OpsTest
 
 import state
 from state import (
+    ARCHITECTURE_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
@@ -44,7 +45,7 @@ from state import (
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     SCRIPT_SECRET_CONFIG_NAME,
-    SCRIPT_URL_CONFIG_NAME, ARCHITECTURE_CONFIG_NAME,
+    SCRIPT_URL_CONFIG_NAME,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (

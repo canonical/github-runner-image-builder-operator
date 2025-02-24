@@ -786,7 +786,7 @@ execute_script "$script_url" "$script_secrets"
 # Make sure the disk is synced for snapshot
 sync
 echo "Finished sync"\
-"""
+"""  # nosec: B608 this is not a hardcoded sql expression
     )
     # pylint: enable=R0801
 

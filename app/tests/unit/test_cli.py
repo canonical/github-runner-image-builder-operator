@@ -86,7 +86,9 @@ def test_main(cli_runner: CliRunner, action: str):
         pytest.param("s390x", config.Arch.S390X, id="s390x"),
     ],
 )
-def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, arch: str, expected_arch: str):
+def test_initialize(
+    monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, arch: str, expected_arch: str
+):
     """
     arrange: given a monkeypatched builder.initialize function.
     act: when cli init is invoked.
@@ -98,9 +100,8 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, arch
 
     cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", arch])
 
-    mock_openstack_init_func.assert_called_with(
-        arch=expected_arch, cloud_name="hello", prefix=""
-    )
+    mock_openstack_init_func.assert_called_with(arch=expected_arch, cloud_name="hello", prefix="")
+
 
 def test_initialize_invalid_args(cli_runner: CliRunner):
     """
