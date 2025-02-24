@@ -44,7 +44,7 @@ from state import (
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     SCRIPT_SECRET_CONFIG_NAME,
-    SCRIPT_URL_CONFIG_NAME,
+    SCRIPT_URL_CONFIG_NAME, ARCHITECTURE_CONFIG_NAME,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (
@@ -262,9 +262,11 @@ def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
+    arch: state.Arch,
 ) -> dict:
     """The image builder application config."""
     return {
+        ARCHITECTURE_CONFIG_NAME: arch.value,
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
