@@ -36,6 +36,7 @@ def test_initialize_error(monkeypatch: pytest.MonkeyPatch):
     assert: BuilderInitError is raised.
     """
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "_clean_dependencies", MagicMock())
     monkeypatch.setattr(
         builder,
         "_install_dependencies",
