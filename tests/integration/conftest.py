@@ -321,6 +321,7 @@ async def app_on_charmhub_fixture(
         constraints=base_machine_constraint,
         config=charmhub_app_config,
         revision=charmhub_revision,
+        channel="edge",
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
