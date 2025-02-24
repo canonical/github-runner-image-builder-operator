@@ -87,7 +87,6 @@ async def test_image_build(
     model: Model = app.model
     dispatch_time = datetime.now(tz=timezone.utc)
     await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
 
     await wait_for_images(
         openstack_connection=openstack_connection,
