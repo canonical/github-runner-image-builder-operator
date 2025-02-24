@@ -320,6 +320,7 @@ async def app_on_charmhub_fixture(
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
         legacy_opt = f"{legacy_config_prefix}{opt}"
         charmhub_app_config[legacy_opt] = app_config[opt]
+    charmhub_app_config["app-channel"] = "edge"
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
