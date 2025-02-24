@@ -1,5 +1,5 @@
-## [#85 fix: Periodic rebuilt of images](https://github.com/canonical/github-runner-image-builder-operator/pull/85) (2025-02-24)
-> Fix the periodic rebuilt of images.
+## [#85 fix: Periodic rebuilding of images](https://github.com/canonical/github-runner-image-builder-operator/pull/85) (2025-02-24)
+> Fix the periodic rebuilding of images.
 
 
 ### Upgrade Steps
