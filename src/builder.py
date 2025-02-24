@@ -103,7 +103,11 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
 
 
 def _clean_dependencies() -> None:
-    """Try clean up old dependencies."""
+    """Try clean up old dependencies.
+
+    Clean up might fail if a certain dependency is not yet installed. The code will not
+    raise an error in that case.
+    """
     try:
         pipx.uninstall(APP_NAME)
     except PipXError as exc:

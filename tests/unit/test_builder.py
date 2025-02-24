@@ -79,7 +79,7 @@ def test__clean_dependencies(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given monkeypatched pipx.uninstall function.
     act: when _clean_dependencies is called.
-    assert: apt.remove_package is called.
+    assert: pipx.uninstall is called.
     """
     monkeypatch.setattr(pipx, "uninstall", MagicMock())
 

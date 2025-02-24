@@ -107,7 +107,6 @@ def test__on_image_relation_changed(
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
-    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
     charm.image_observer = MagicMock()
 
     charm._on_image_relation_changed(MagicMock())

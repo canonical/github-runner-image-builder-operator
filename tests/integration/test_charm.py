@@ -82,7 +82,7 @@ async def test_periodic_rebuilt(
     await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
 
     dispatch_time = datetime.now(tz=timezone.utc)
-    async with _change_crontab_to_minutes(
+    async with _change_cronjob_to_minutes(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
 
@@ -94,7 +94,7 @@ async def test_periodic_rebuilt(
 
 
 @asynccontextmanager
-async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
+async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
     """Context manager to change the crontab to run every minute."""
     minute_interval = 1
     await unit.ssh(
@@ -102,7 +102,7 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
-    logger.info("Crontab content: %s", cron_content)
+    logger.info("Cron file content: %s", cron_content)
     await unit.ssh(command="sudo systemctl restart cron")
 
     yield
@@ -111,6 +111,6 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
         command=rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
-    await unit.ssh(command="sudo systemctl restart cron")
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
-    logger.info("Crontab content: %s", cron_content)
+    logger.info("Cronfile content: %s", cron_content)
+    await unit.ssh(command="sudo systemctl restart cron")
