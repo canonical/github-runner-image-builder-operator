@@ -89,6 +89,7 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
     try:
         install_clouds_yaml(cloud_config=app_init_config.cloud_config.openstack_clouds_config)
         # The following lines should be covered by integration tests.
+        _clean_dependencies()
         _install_dependencies()
         _initialize_image_builder(  # pragma: no cover
             cloud_name=app_init_config.cloud_config.cloud_name,
@@ -102,8 +103,16 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
         raise BuilderInitError from exc
 
 
+def _clean_dependencies() -> None:
+    """Try clean up old dependencies."""
+    try:
+        pipx.uninstall(APP_NAME)
+    except PipXError as exc:
+        logger.info("Failed to uninstall the application, error: %s", exc)
+
+
 def _install_dependencies() -> None:
-    """Install required dependencies to run qemu image build.
+    """Install required dependencies.
 
     Raises:
         DependencyInstallError: If there was an error installing apt packages.

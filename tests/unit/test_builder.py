@@ -55,6 +55,7 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert: clouds.yaml file is written.
     """
     test_clouds_yaml_path = tmp_path / "clouds.yaml"
+    monkeypatch.setattr(builder, "_clean_dependencies", MagicMock())
     monkeypatch.setattr(builder, "_install_dependencies", MagicMock())
     monkeypatch.setattr(builder, "_initialize_image_builder", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock())
@@ -71,6 +72,36 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     )
 
     assert test_clouds_yaml_path.exists()
+
+
+def test__clean_dependencies(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched pipx.uninstall function.
+    act: when _clean_dependencies is called.
+    assert: apt.remove_package is called.
+    """
+    monkeypatch.setattr(pipx, "uninstall", MagicMock())
+
+    builder._clean_dependencies()
+
+    pipx.uninstall.assert_called_once()
+
+
+def test__clean_dependencies_fail(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """
+    arrange: given monkeypatched pipx.uninstall function that raises an error.
+    act: when _clean_dependencies is called.
+    assert: the error is ignored and an information is logged.
+    """
+    monkeypatch.setattr(
+        pipx, "uninstall", MagicMock(side_effect=PipXError("error uninstalling deps"))
+    )
+
+    builder._clean_dependencies()
+
+    assert "error uninstalling deps" in " ".join(caplog.messages)
 
 
 def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):

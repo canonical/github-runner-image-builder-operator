@@ -6,7 +6,6 @@
 """Integration testing module."""
 
 import functools
-import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -73,7 +72,6 @@ async def test_periodic_rebuilt(
     app_config: dict,
     openstack_connection: Connection,
     image_names: list[str],
-    ops_test,
 ):
     """
     arrange: A deployed active charm.
@@ -117,6 +115,7 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
     await unit.ssh(command="sudo systemctl restart cron")
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
     logger.info("Crontab content: %s", cron_content)
+
 
 async def _wait_for_images(
     openstack_connection: Connection, dispatch_time: datetime, image_names: list[str]
