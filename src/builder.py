@@ -29,7 +29,6 @@ from exceptions import (
     GetLatestImageError,
     ImageBuilderInitializeError,
     PipXError,
-    UpgradeApplicationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -841,16 +840,3 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
         raise GetLatestImageError from exc
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
-
-
-def upgrade_app() -> None:
-    """Upgrade the application if newer version is available.
-
-    Raises:
-        UpgradeApplicationError: If there was an error upgrading the application.
-    """
-    try:
-        pipx.uninstall(APP_NAME)
-        pipx.install(LOCAL_APP_TAR_PATH)
-    except PipXError as exc:
-        raise UpgradeApplicationError from exc
