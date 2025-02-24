@@ -5,7 +5,6 @@
 
 """Integration testing module."""
 
-import functools
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -18,7 +17,7 @@ from openstack.connection import Connection
 
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
-from tests.integration.helpers import image_created_from_dispatch, wait_for
+from tests.integration.helpers import wait_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ async def test_build_image(
     act: When openstack images are listed.
     assert: An image is built successfully.
     """
-    await _wait_for_images(openstack_connection, dispatch_time, image_names)
+    await wait_for_images(openstack_connection, dispatch_time, image_names)
 
 
 @pytest.mark.asyncio
@@ -87,7 +86,7 @@ async def test_periodic_rebuilt(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
 
-        await _wait_for_images(
+        await wait_for_images(
             openstack_connection=openstack_connection,
             dispatch_time=dispatch_time,
             image_names=image_names,
@@ -115,26 +114,3 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
     await unit.ssh(command="sudo systemctl restart cron")
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
     logger.info("Crontab content: %s", cron_content)
-
-
-async def _wait_for_images(
-    openstack_connection: Connection, dispatch_time: datetime, image_names: list[str]
-):
-    """Wait for images to be created.
-
-    Args:
-        openstack_connection: The openstack connection instance.
-        dispatch_time: Time when the image build was dispatched.
-        image_names: The image names to check for.
-    """
-    for image_name in image_names:
-        await wait_for(
-            functools.partial(
-                image_created_from_dispatch,
-                connection=openstack_connection,
-                dispatch_time=dispatch_time,
-                image_name=image_name,
-            ),
-            check_interval=30,
-            timeout=60 * 50,
-        )

@@ -5,29 +5,28 @@
 
 import functools
 import logging
+from datetime import datetime, timezone
 
 import pytest
+import pytest_asyncio
 from juju.application import Application
+from juju.model import Model
 from juju.unit import Unit
+from openstack.connection import Connection
 
-from tests.integration.helpers import wait_for
+from tests.integration.helpers import wait_for, wait_for_images
 from tests.integration.types import OpenstackMeta, TestConfigs
 
 
-@pytest.mark.asyncio
-async def test_upgrade(
+@pytest_asyncio.fixture(scope="module", name="app")
+async def app_fixture(
     app_on_charmhub: Application,
     test_configs: TestConfigs,
-    ops_test,
     openstack_metadata: OpenstackMeta,
-):
-    """
-    arrange: An active charm deployed from charmhub.
-    act: Refresh the charm using the local charm file.
-    assert: Upgrade charm hook is emitted ran successfully.
-    """
+    ops_test,
+) -> Application:
+    """Upgrade the charm from the local charm file."""
     logging.info("Refreshing the charm from the local charm file.")
-    unit = app_on_charmhub.units[0]
     await ops_test.juju(
         "refresh",
         "--path",
@@ -38,8 +37,8 @@ async def test_upgrade(
         f"build-network={openstack_metadata.network}",
         app_on_charmhub.name,
     )
-
     app = app_on_charmhub
+    unit = app.units[0]
 
     async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
         """Check if the upgrade_charm event is emitted.
@@ -68,4 +67,30 @@ async def test_upgrade(
         raise_on_error=True,
         timeout=180 * 60,
         check_freq=30,
+    )
+
+    return app
+
+
+@pytest.mark.asyncio
+async def test_image_build(
+    app: Application,
+    test_charm: Application,
+    openstack_connection: Connection,
+    image_names: list[str],
+):
+    """
+    arrange: A refreshed application.
+    act: Integrate the refreshed charm with the test charm.
+    assert: Image building is working.
+    """
+    model: Model = app.model
+    dispatch_time = datetime.now(tz=timezone.utc)
+    await model.integrate(app.name, test_charm.name)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=30 * 60)
+
+    await wait_for_images(
+        openstack_connection=openstack_connection,
+        dispatch_time=dispatch_time,
+        image_names=image_names,
     )
