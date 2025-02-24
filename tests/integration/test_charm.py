@@ -89,30 +89,11 @@ async def test_periodic_rebuilt(
         unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
     ):
 
-        async def is_agent_status_executing(unit: Unit):
-            status_str_unit = unit.agent_status
-            status_str_unit_latest = unit.latest().agent_status
-            ret_code, stdout, stderr = await ops_test.juju("status", "--format", "json")
-            assert ret_code == 0, f"Failed to get juju status: {stderr}"
-            juju_status = json.loads(stdout)
-            status_str_juju_status = juju_status["applications"][app.name]["units"][unit.name][
-                "juju-status"
-            ]["current"]
-            logger.info(
-                "Agent status: %s (current) %s (latest) %s (juju status)",
-                status_str_unit,
-                status_str_unit_latest,
-                status_str_juju_status,
-            )
-            return "executing" in (status_str_unit, status_str_unit_latest, status_str_juju_status)
-
-        await wait_for(functools.partial(is_agent_status_executing, unit), timeout=60 * 10)
-
-    await _wait_for_images(
-        openstack_connection=openstack_connection,
-        dispatch_time=dispatch_time,
-        image_names=image_names,
-    )
+        await _wait_for_images(
+            openstack_connection=openstack_connection,
+            dispatch_time=dispatch_time,
+            image_names=image_names,
+        )
 
 
 @asynccontextmanager
@@ -123,6 +104,8 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
         command=rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
+    cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    logger.info("Crontab content: %s", cron_content)
     await unit.ssh(command="sudo systemctl restart cron")
 
     yield
@@ -132,7 +115,8 @@ async def _change_crontab_to_minutes(unit: Unit, current_hour_interval: int):
         f"{CRON_BUILD_SCHEDULE_PATH}"
     )
     await unit.ssh(command="sudo systemctl restart cron")
-
+    cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    logger.info("Crontab content: %s", cron_content)
 
 async def _wait_for_images(
     openstack_connection: Connection, dispatch_time: datetime, image_names: list[str]
