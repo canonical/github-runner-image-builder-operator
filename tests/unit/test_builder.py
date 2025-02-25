@@ -36,7 +36,6 @@ def test_initialize_error(monkeypatch: pytest.MonkeyPatch):
     assert: BuilderInitError is raised.
     """
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
-    monkeypatch.setattr(builder, "_clean_dependencies", MagicMock())
     monkeypatch.setattr(
         builder,
         "_install_dependencies",
@@ -56,7 +55,6 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert: clouds.yaml file is written.
     """
     test_clouds_yaml_path = tmp_path / "clouds.yaml"
-    monkeypatch.setattr(builder, "_clean_dependencies", MagicMock())
     monkeypatch.setattr(builder, "_install_dependencies", MagicMock())
     monkeypatch.setattr(builder, "_initialize_image_builder", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock())
@@ -75,53 +73,37 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     assert test_clouds_yaml_path.exists()
 
 
-def test__clean_dependencies(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given monkeypatched pipx.uninstall function.
-    act: when _clean_dependencies is called.
-    assert: pipx.uninstall is called.
-    """
-    monkeypatch.setattr(pipx, "uninstall", MagicMock())
-
-    builder._clean_dependencies()
-
-    pipx.uninstall.assert_called_once()
-
-
-def test__clean_dependencies_fail(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+@pytest.mark.parametrize(
+    "apt_mock,pipx_install_mock",
+    [
+        pytest.param(
+            MagicMock(side_effect=apt.PackageNotFoundError("package not found")),
+            MagicMock(),
+            id="apt error",
+        ),
+        pytest.param(
+            MagicMock(),
+            MagicMock(side_effect=builder.PipXError("error installing deps")),
+            id="pipx install error",
+        ),
+    ],
+)
+def test__install_dependencies_fail(
+    apt_mock: MagicMock, pipx_install_mock, monkeypatch: pytest.MonkeyPatch
 ):
-    """
-    arrange: given monkeypatched pipx.uninstall function that raises an error.
-    act: when _clean_dependencies is called.
-    assert: the error is ignored and an information is logged.
-    """
-    monkeypatch.setattr(
-        pipx, "uninstall", MagicMock(side_effect=PipXError("error uninstalling deps"))
-    )
-
-    builder._clean_dependencies()
-
-    assert "error uninstalling deps" in " ".join(caplog.messages)
-
-
-def test__install_dependencies_fail(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: monkeypatched subprocess.run function.
     act: when _install_dependencies is called.
     assert: DependencyInstallError is raised.
     """
-    monkeypatch.setattr(apt, "add_package", MagicMock())
-    monkeypatch.setattr(
-        pipx,
-        "install",
-        MagicMock(side_effect=PipXError("error installing deps")),
-    )
+    monkeypatch.setattr(apt, "add_package", apt_mock)
+    monkeypatch.setattr(pipx, "uninstall", MagicMock())
+    monkeypatch.setattr(pipx, "install", pipx_install_mock)
 
     with pytest.raises(builder.DependencyInstallError) as exc:
         builder._install_dependencies()
 
-    assert "error installing deps" in str(exc.getrepr())
+    assert exc.value.__cause__ == (apt_mock.side_effect or pipx_install_mock.side_effect)
 
 
 def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
@@ -131,12 +113,39 @@ def test__install_dependencies(monkeypatch: pytest.MonkeyPatch):
     assert: mocked functions are called.
     """
     monkeypatch.setattr(apt, "add_package", (apt_mock := MagicMock()))
-    monkeypatch.setattr(pipx, "install", (install_mock := MagicMock()))
+    monkeypatch.setattr(pipx, "uninstall", (pipx_uninstall_mock := MagicMock()))
+    monkeypatch.setattr(pipx, "install", (pipx_install_mock := MagicMock()))
 
     builder._install_dependencies()
 
     apt_mock.assert_called_once()
-    install_mock.assert_called_once()
+    pipx_uninstall_mock.assert_called_once()
+    pipx_install_mock.assert_called_once()
+
+
+def test__install_dependencies_uninstalling_app_fail(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """
+    arrange: given monkeypatched pipx.uninstall function that raises an error.
+    act: when _install_dependencies is called.
+    assert: the error is ignored and an information is logged.
+    """
+    monkeypatch.setattr(apt, "add_package", (apt_mock := MagicMock()))
+    monkeypatch.setattr(
+        pipx,
+        "uninstall",
+        (pipx_uninstall_mock := MagicMock(side_effect=PipXError("error uninstalling deps"))),
+    )
+    monkeypatch.setattr(pipx, "install", (pipx_install_mock := MagicMock()))
+
+    builder._install_dependencies()
+
+    apt_mock.assert_called_once()
+    pipx_uninstall_mock.assert_called_once()
+    pipx_install_mock.assert_called_once()
+
+    assert "error uninstalling deps" in " ".join(caplog.messages)
 
 
 @pytest.mark.parametrize(
