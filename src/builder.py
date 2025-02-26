@@ -29,13 +29,13 @@ from exceptions import (
     GetLatestImageError,
     ImageBuilderInitializeError,
     PipXError,
-    UpgradeApplicationError,
 )
 
 logger = logging.getLogger(__name__)
 
 
 UBUNTU_USER = "ubuntu"
+ROOT_USER = "root"
 UBUNTU_HOME = Path(f"/home/{UBUNTU_USER}")
 APP_NAME = "github-runner-image-builder"
 LOCAL_APP_TAR_PATH = Path(f"{os.getcwd()}/app.tar.gz")
@@ -102,15 +102,37 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
 
 
 def _install_dependencies() -> None:
-    """Install required dependencies to run qemu image build.
+    """Install required dependencies."""
+    _install_apt_packages()
+    _install_app()
+
+
+def _install_apt_packages() -> None:
+    """Install required apt packages.
 
     Raises:
         DependencyInstallError: If there was an error installing apt packages.
     """
     try:
         apt.add_package(APT_DEPENDENCIES, update_cache=True)
+    except apt.PackageNotFoundError as exc:
+        raise DependencyInstallError from exc
+
+
+def _install_app() -> None:
+    """Install the application.
+
+    Raises:
+        DependencyInstallError: If there was an error installing the application.
+    """
+    # There may be an application installed from a different path, so we will uninstall it first.
+    try:
+        pipx.uninstall(APP_NAME)
+    except PipXError as exc:
+        logger.info("Failed to uninstall the application, error: %s", exc)
+    try:
         pipx.install(str(LOCAL_APP_TAR_PATH))
-    except (apt.PackageNotFoundError, PipXError) as exc:
+    except PipXError as exc:
         raise DependencyInstallError from exc
 
 
@@ -210,11 +232,12 @@ def configure_cron(unit_name: str, interval: int) -> bool:
         "/usr/bin/run-one",
         "/usr/bin/bash",
         "-c",
-        f'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME} ./dispatch"',
+        f'\'/usr/bin/juju-exec "{unit_name}" "JUJU_DISPATCH_PATH=run HOME={UBUNTU_HOME}'
+        " ./dispatch\"'",
     ]
 
     builder_exec_command: str = " ".join(commands)
-    cron_text = f"0 */{interval} * * * {UBUNTU_USER} {builder_exec_command}\n"
+    cron_text = f"0 */{interval} * * * {ROOT_USER} {builder_exec_command}\n"
 
     if not _should_configure_cron(cron_contents=cron_text):
         return False
@@ -830,16 +853,3 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
         raise GetLatestImageError from exc
     except subprocess.SubprocessError as exc:
         raise GetLatestImageError from exc
-
-
-def upgrade_app() -> None:
-    """Upgrade the application if newer version is available.
-
-    Raises:
-        UpgradeApplicationError: If there was an error upgrading the application.
-    """
-    try:
-        pipx.uninstall(APP_NAME)
-        pipx.install(LOCAL_APP_TAR_PATH)
-    except PipXError as exc:
-        raise UpgradeApplicationError from exc
