@@ -22,6 +22,7 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config, openstack_builder
+from github_runner_image_builder.openstack_builder import CREATE_SERVER_TIMEOUT
 from tests.integration import helpers, types
 
 logger = logging.getLogger(__name__)
@@ -152,6 +153,7 @@ def make_dangling_resources_fixture(
             network=openstack_metadata.network,
             security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
             wait=True,
+            timeout=CREATE_SERVER_TIMEOUT,
         )
 
         yield
