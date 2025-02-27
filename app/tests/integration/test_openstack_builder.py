@@ -125,7 +125,7 @@ def image_ids_fixture(
 
 
 @pytest.fixture(scope="module", name="make_dangling_resources")
-async def make_dangling_resources_fixture(
+def make_dangling_resources_fixture(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """Make OpenStack resources that imitates failed run."""
@@ -151,8 +151,8 @@ async def make_dangling_resources_fixture(
 
 # the code is similar but the fixture source is localized and is different.
 # pylint: disable=R0801
-@pytest_asyncio.fixture(scope="module", name="openstack_server")
-async def openstack_server_fixture(
+@pytest.fixture(scope="module", name="openstack_server")
+def openstack_server_fixture(
     openstack_metadata: types.OpenstackMeta,
     openstack_security_group: SecurityGroup,
     test_id: str,
@@ -198,7 +198,7 @@ async def ssh_connection_fixture(
 @pytest.mark.amd64
 @pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
-async def test_run(
+def test_run(
     ssh_connection: SSHConnection,
 ):
     """
@@ -211,7 +211,7 @@ async def test_run(
 
 @pytest.mark.amd64
 @pytest.mark.arm64
-async def test_openstack_state(
+def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """
