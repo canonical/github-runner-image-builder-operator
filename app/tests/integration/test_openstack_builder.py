@@ -126,9 +126,11 @@ def image_ids_fixture(
 
     finally:
         # cleanup resources
-        openstack_metadata.connection.delete_server(name_or_id=openstack_builder._get_builder_name(
+        openstack_metadata.connection.delete_server(
+            name_or_id=openstack_builder._get_builder_name(
                 arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-            ))
+            )
+        )
         openstack_metadata.connection.delete_keypair(
             name=openstack_builder._get_keypair_name(prefix=test_id)
         )
@@ -139,10 +141,8 @@ def make_dangling_resources_fixture(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """Make OpenStack resources that imitates failed run."""
+    server = None
     try:
-        keypair = openstack_metadata.connection.create_keypair(
-            openstack_builder._get_keypair_name(prefix=test_id)
-        )
         server = openstack_metadata.connection.create_server(
             name=openstack_builder._get_builder_name(
                 arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
@@ -156,8 +156,8 @@ def make_dangling_resources_fixture(
 
         yield
     finally:
-        openstack_metadata.connection.delete_keypair(name=keypair.name)
-        openstack_metadata.connection.delete_server(name_or_id=server.id)
+        if server:
+            openstack_metadata.connection.delete_server(name_or_id=server.id)
 
 
 # the code is similar but the fixture source is localized and is different.
@@ -172,13 +172,12 @@ def openstack_server_fixture(
     """A testing openstack instance."""
     image: Image = openstack_metadata.connection.get_image(name_or_id=image_ids[0])
     server_name = f"test-image-builder-run-{test_id}"
-    for server in helpers.create_openstack_server(
+    yield from helpers.create_openstack_server(
         openstack_metadata=openstack_metadata,
         server_name=server_name,
         image=image,
         security_group=openstack_security_group,
-    ):
-        yield server
+    )
     openstack_metadata.connection.delete_image(image.id)
 
 
@@ -201,9 +200,6 @@ async def ssh_connection_fixture(
     )
 
     return ssh_connection
-
-
-# pylint: enable=R0801
 
 
 @pytest.mark.amd64
