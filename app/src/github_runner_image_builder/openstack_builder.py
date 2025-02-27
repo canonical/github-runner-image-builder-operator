@@ -50,6 +50,7 @@ CLOUD_YAML_PATHS = (
 
 BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
+EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
 
 CREATE_SERVER_TIMEOUT = 20 * 60  # seconds
 DELETE_SERVER_TIMEOUT = 20 * 60  # seconds
@@ -282,7 +283,14 @@ def run(
             wait=True,
         )
         logger.info("Launched builder, waiting for cloud-init to complete: %s.", builder.id)
-        _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
+        ssh_conn = _get_ssh_connection(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
+        _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_conn=ssh_conn)
+        if script_url := image_config.script_config.script_url:
+            _execute_external_script(
+                script_url=script_url.geturl(),
+                script_secrets=image_config.script_config.script_secrets,
+                ssh_conn=ssh_conn,
+            )
         log_output = conn.get_server_console(server=builder)
         logger.info("Build output: %s", log_output)
         image = store.create_snapshot(
@@ -488,22 +496,6 @@ def _generate_cloud_init_script(
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
-        SCRIPT_URL=(
-            image_config.script_config.script_url.geturl()
-            if image_config.script_config.script_url
-            else ""
-        ),
-        SCRIPT_SECRETS=(
-            " ".join(
-                f"{secret_key}={secret_value}"
-                for (
-                    secret_key,
-                    secret_value,
-                ) in image_config.script_config.script_secrets.items()
-            )
-            if image_config.script_config.script_secrets
-            else ""
-        ),
     )
 
 
@@ -530,14 +522,14 @@ def _get_builder_name(arch: Arch, base: BaseImage, prefix: str) -> str:
 def _wait_for_cloud_init_complete(
     conn: openstack.connection.Connection,
     server: openstack.compute.v2.server.Server,
-    ssh_key: pathlib.Path,
+    ssh_conn: fabric.Connection,
 ) -> bool:
     """Wait until the userdata has finished installing expected components.
 
     Args:
         conn: The Openstach connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
-        ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
+        ssh_conn: The SSH connection instance to the OpenStack server instance.
 
     Raises:
         CloudInitFailError: if there was an error running cloud-init status command.
@@ -545,11 +537,8 @@ def _wait_for_cloud_init_complete(
     Returns:
         Whether the cloud init is complete. Used for tenacity retry to pick up return value.
     """
-    ssh_connection = _get_ssh_connection(conn=conn, server=server, ssh_key=ssh_key)
     try:
-        result: fabric.Result | None = ssh_connection.run(
-            "cloud-init status --wait", timeout=60 * 30
-        )
+        result: fabric.Result | None = ssh_conn.run("cloud-init status --wait", timeout=60 * 30)
     except invoke.exceptions.UnexpectedExit as exc:
         log_out = conn.get_server_console(server=server)
         logger.error("Cloud init output: %s", log_out)
@@ -560,6 +549,24 @@ def _wait_for_cloud_init_complete(
         logger.error("cloud-init status command failure, result: %s.", result)
         raise github_runner_image_builder.errors.CloudInitFailError("Invalid cloud-init status")
     return "status: done" in result.stdout
+
+
+def _execute_external_script(
+    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
+) -> None:
+    """Execute external setup script on the OpenStack instance."""
+    script_setup_cmd = (
+        f'sudo wget "{script_url}" -O {EXTERNAL_SCRIPT_PATH} '
+        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}"
+    )
+    script_run_cmd = f"sudo {EXTERNAL_SCRIPT_PATH}"
+    script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
+    general_timeout_in_minutes = 2
+    script_run_timeout_in_minutes = 60
+
+    ssh_conn.run(script_setup_cmd, timeout=general_timeout_in_minutes * 60)
+    ssh_conn.run(script_run_cmd, env=script_secrets, timeout=script_run_timeout_in_minutes * 60)
+    ssh_conn.run(script_rm_cmd, timeout=general_timeout_in_minutes * 60)
 
 
 @tenacity.retry(wait=tenacity.wait_exponential(multiplier=2, max=30), reraise=True)
