@@ -111,9 +111,10 @@ def image_ids_fixture(
                 name=f"{test_id}-image-builder-test",
                 script_config=config.ScriptConfig(
                     script_url=urllib.parse.urlparse(
-                        "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
-                        "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
-                        "test_script.sh"
+                        "https://raw.githubusercontent.com/canonical/"
+                        "github-runner-image-builder-operator/"
+                        "cc9d06c43a5feabd278265ab580eca14d5acffd4/app/tests/integration/"
+                        "testdata/test_script.sh"
                     ),
                     script_secrets={
                         "TEST_SECRET": "SHOULD_EXIST",
