@@ -561,12 +561,14 @@ def _execute_external_script(
     )
     script_run_cmd = f"sudo {EXTERNAL_SCRIPT_PATH}"
     script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
+    sync_cmd = "sudo sync"
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
 
     ssh_conn.run(script_setup_cmd, timeout=general_timeout_in_minutes * 60)
     ssh_conn.run(script_run_cmd, env=script_secrets, timeout=script_run_timeout_in_minutes * 60)
     ssh_conn.run(script_rm_cmd, timeout=general_timeout_in_minutes * 60)
+    ssh_conn.run(sync_cmd, timeout=general_timeout_in_minutes * 60)
 
 
 @tenacity.retry(wait=tenacity.wait_exponential(multiplier=2, max=30), reraise=True)
