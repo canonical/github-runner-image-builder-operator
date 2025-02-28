@@ -152,6 +152,7 @@ def make_dangling_resources_fixture(
             flavor=openstack_metadata.flavor,
             network=openstack_metadata.network,
             security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
+            auto_ip=False,
             wait=True,
             timeout=CREATE_SERVER_TIMEOUT,
         )
