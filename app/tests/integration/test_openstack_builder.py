@@ -181,7 +181,7 @@ def openstack_server_fixture(
         image=image,
         security_group=openstack_security_group,
     )
-    # openstack_metadata.connection.delete_image(image.id) TODO: remove comment
+    openstack_metadata.connection.delete_image(image.id)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
