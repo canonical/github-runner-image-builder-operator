@@ -568,6 +568,7 @@ def _execute_external_script(
     ssh_conn.run(script_setup_cmd, timeout=general_timeout_in_minutes * 60)
     ssh_conn.run(script_run_cmd, env=script_secrets, timeout=script_run_timeout_in_minutes * 60)
     ssh_conn.run(script_rm_cmd, timeout=general_timeout_in_minutes * 60)
+    # TODO : Add command to remove wget history and clear the journal logs.
     ssh_conn.run(sync_cmd, timeout=general_timeout_in_minutes * 60)
 
 
