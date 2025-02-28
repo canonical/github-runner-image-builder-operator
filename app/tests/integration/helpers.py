@@ -291,7 +291,6 @@ async def wait_for_valid_connection(
             try:
                 result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
-                    await _install_proxy(conn=ssh_connection, proxy=proxy)
                     _configure_dockerhub_mirror(
                         conn=ssh_connection, dockerhub_mirror=dockerhub_mirror
                     )
@@ -300,51 +299,6 @@ async def wait_for_valid_connection(
                 logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
-
-
-async def _install_proxy(conn: SSHConnection, proxy: types.ProxyConfig | None = None):
-    """Run commands to install proxy.
-
-    Args:
-        conn: The SSH connection instance.
-        proxy: The proxy to apply if available.
-    """
-    if not proxy or not proxy.http:
-        return
-    await wait_for(partial(_snap_ready, conn))
-
-    command = "sudo snap install aproxy --edge"
-    logger.info("Running command: %s", command)
-    result: Result = conn.run(command)
-    assert result.ok, "Failed to install aproxy"
-
-    proxy_str = proxy.http.replace("http://", "").replace("https://", "")
-    command = f"sudo snap set aproxy proxy={proxy_str}"
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to setup aproxy"
-
-    # ignore line too long since it is better read without line breaks
-    command = """/usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
-define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
-table ip aproxy
-flush table ip aproxy
-table ip aproxy {
-    chain prerouting {
-            type nat hook prerouting priority dstnat; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-
-    chain output {
-            type nat hook output priority -100; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-}
-EOF"""  # noqa: E501
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to configure iptable rules"
 
 
 def _snap_ready(conn: SSHConnection) -> bool:
