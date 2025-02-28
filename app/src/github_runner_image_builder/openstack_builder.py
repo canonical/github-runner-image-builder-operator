@@ -559,7 +559,9 @@ def _execute_external_script(
         f'sudo wget "{script_url}" -O {EXTERNAL_SCRIPT_PATH} '
         f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}"
     )
-    script_run_cmd = f"sudo {EXTERNAL_SCRIPT_PATH}"
+    script_run_cmd = (
+        f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}"
+    )
     script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
     sync_cmd = "sudo sync"
     general_timeout_in_minutes = 2

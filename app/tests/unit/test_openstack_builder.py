@@ -873,7 +873,11 @@ def test__execute_external_script(script_secrets: dict[str, str]):
         ssh_conn=mock_connection,
     )
 
-    run_mock.assert_any_call(f"sudo {EXTERNAL_SCRIPT_PATH}", env=script_secrets, timeout=3600)
+    run_mock.assert_any_call(
+        f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
+        env=script_secrets,
+        timeout=3600,
+    )
     run_mock.assert_any_call(f"sudo rm {EXTERNAL_SCRIPT_PATH}", timeout=120)
 
 
