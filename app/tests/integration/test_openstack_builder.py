@@ -201,7 +201,7 @@ async def ssh_connection_fixture(
             ssh_key=openstack_metadata.ssh_key.private_key,
         ),
         proxy=proxy,
-        dockerhub_mirror=dockerhub_mirror
+        dockerhub_mirror=dockerhub_mirror,
     )
 
     return ssh_connection
@@ -218,7 +218,7 @@ def test_run(
     act: when run (build image) is called.
     assert: an image snapshot of working VM is created with the ability to run expected commands.
     """
-    helpers.run_openstack_tests(ssh_connection=ssh_connection, external=True)
+    helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 
 @pytest.mark.amd64

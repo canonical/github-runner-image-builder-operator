@@ -14,13 +14,11 @@ class Commands:
         name: The test name.
         command: The command to execute.
         env: Additional run envs.
-        external: OpenStack VM test only (Chroot unsupported test).
     """
 
     name: str
     command: str
     env: dict | None = None
-    external: bool = False
 
 
 TEST_RUNNER_COMMANDS = (
@@ -29,6 +27,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin"),
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
+    ),
+    Commands(
+        name="check aproxy",
+        command="sudo snap info aproxy && sudo snap services aproxy && sudo snap logs aproxy -n 100",
     ),
     Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
@@ -56,16 +58,13 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test external script",
         command="cat /home/ubuntu/test.txt | grep 'hello world'",
-        external=True,
     ),
     Commands(
         name="test external script secrets (should exist)",
         command='grep -q "SHOULD_EXIST" secret.txt',
-        external=True,
     ),
     Commands(
         name="test external script secrets (should not exist)",
         command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
-        external=True,
     ),
 )
