@@ -189,6 +189,7 @@ async def ssh_connection_fixture(
     openstack_server: Server,
     proxy: types.ProxyConfig,
     openstack_metadata: types.OpenstackMeta,
+    dockerhub_mirror: urllib.parse.ParseResult | None,
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
@@ -200,6 +201,7 @@ async def ssh_connection_fixture(
             ssh_key=openstack_metadata.ssh_key.private_key,
         ),
         proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror
     )
 
     return ssh_connection
