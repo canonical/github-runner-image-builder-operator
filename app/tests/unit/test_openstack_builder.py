@@ -20,6 +20,7 @@ import tenacity
 import yaml
 
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
+from github_runner_image_builder.errors import ExternalScriptError
 from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
 
 
@@ -877,8 +878,46 @@ def test__execute_external_script(script_secrets: dict[str, str]):
         f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
         env=script_secrets,
         timeout=3600,
+        warn=False,
     )
-    run_mock.assert_any_call(f"sudo rm {EXTERNAL_SCRIPT_PATH}", timeout=120)
+    run_mock.assert_any_call(f"sudo rm {EXTERNAL_SCRIPT_PATH}", timeout=120, warn=False, env={})
+
+
+@pytest.mark.parametrize("run_pos", [pytest.param(i, id=str(i)) for i in range(5)])
+def test_execute_external_script_error(run_pos: int):
+    """
+    arrange: given a monkeypatched _get_ssh_connection and connection.run functions that raises an\
+        error on a given call on a certain position.
+    act: when _execute_external_script is called.
+    assert: ExternalScriptError is raised.
+    """
+    mock_connection = MagicMock()
+
+    call_count = 0
+
+    def run_side_effect(*_, **__):
+        """Raise an error on a given call position.
+
+        Raises:
+            UnexpectedExit: Raised on a given call position.
+        """
+        nonlocal call_count
+        if call_count == run_pos:
+            raise openstack_builder.invoke.exceptions.UnexpectedExit(
+                result=MagicMock(), reason=MagicMock()
+            )
+
+        call_count += 1
+
+    mock_connection.run.side_effect = run_side_effect
+
+    with pytest.raises(ExternalScriptError) as exc:
+        openstack_builder._execute_external_script(
+            script_url="https://test-url.com/script.sh",
+            script_secrets={"TEST_SECRET_ONE": "HELLO"},
+            ssh_conn=mock_connection,
+        )
+    assert "Unexpected exit code" in str(exc)
 
 
 def test__get_ssh_connection_no_networks():

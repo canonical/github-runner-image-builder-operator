@@ -568,11 +568,19 @@ def _execute_external_script(
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
 
-    ssh_conn.run(script_setup_cmd, timeout=general_timeout_in_minutes * 60)
-    ssh_conn.run(script_run_cmd, env=script_secrets, timeout=script_run_timeout_in_minutes * 60)
-    ssh_conn.run(script_rm_cmd, timeout=general_timeout_in_minutes * 60)
-    ssh_conn.run(clear_journal_cmd, timeout=general_timeout_in_minutes * 60)
-    ssh_conn.run(sync_cmd, timeout=general_timeout_in_minutes * 60)
+    try:
+        for cmd, timeout, env in (
+            (script_setup_cmd, general_timeout_in_minutes, {}),
+            (script_run_cmd, script_run_timeout_in_minutes, script_secrets),
+            (script_rm_cmd, general_timeout_in_minutes, {}),
+            (clear_journal_cmd, general_timeout_in_minutes, {}),
+            (sync_cmd, general_timeout_in_minutes, {}),
+        ):
+            ssh_conn.run(cmd, timeout=timeout * 60, warn=False, env=env)
+    except invoke.exceptions.UnexpectedExit as exc:
+        raise github_runner_image_builder.errors.ExternalScriptError(
+            f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
+        ) from exc
 
 
 @tenacity.retry(wait=tenacity.wait_exponential(multiplier=2, max=30), reraise=True)

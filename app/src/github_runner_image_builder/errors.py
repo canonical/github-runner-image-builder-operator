@@ -81,6 +81,10 @@ class HomeDirectoryChangeOwnershipError(BuildImageError):
     """Represents an error while changing ubuntu home directory."""
 
 
+class ExternalScriptError(BuildImageError):
+    """Represents an error while running external script."""
+
+
 class OpenstackBaseError(Exception):
     """Represents an error while interacting with Openstack."""
 
