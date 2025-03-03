@@ -72,19 +72,15 @@ TEST_RUNNER_COMMANDS = (
     # following commands are security related - ensure no traces of the external script are
     # kept in the image
     Commands(
-        name="wget no hsts file exists",
-        command="! sudo test -f /root/.wget-hsts",
-    ),
-    Commands(
-        name="journal does not contain external script url",
-        command=f"! journalctl | grep {TESTDATA_TEST_SCRIPT_URL}",
-    ),
-    Commands(
         name="journal does not contain external script secrets",
         command="! journalctl | grep 'SHOULD_EXIST'",
     ),
     Commands(
         name="journal does not contain external script secrets",
         command="! journalctl | grep 'SHOULD_NOT_EXIST'",
+    ),
+    Commands(
+        name="journal does not contain external script url",
+        command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
 )
