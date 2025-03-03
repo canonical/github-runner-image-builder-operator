@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from fabric.connection import Connection as SSHConnection
+from integration.helpers import TESTDATA_TEST_SCRIPT_URL
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
@@ -110,12 +111,7 @@ def image_ids_fixture(
                 runner_version="",
                 name=f"{test_id}-image-builder-test",
                 script_config=config.ScriptConfig(
-                    script_url=urllib.parse.urlparse(
-                        "https://raw.githubusercontent.com/canonical/"
-                        "github-runner-image-builder-operator/"
-                        "cc9d06c43a5feabd278265ab580eca14d5acffd4/app/tests/integration/"
-                        "testdata/test_script.sh"
-                    ),
+                    script_url=urllib.parse.urlparse(TESTDATA_TEST_SCRIPT_URL),
                     script_secrets={
                         "TEST_SECRET": "SHOULD_EXIST",
                         "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
@@ -188,7 +184,6 @@ def openstack_server_fixture(
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
 async def ssh_connection_fixture(
     openstack_server: Server,
-    proxy: types.ProxyConfig,
     openstack_metadata: types.OpenstackMeta,
     dockerhub_mirror: urllib.parse.ParseResult | None,
 ) -> SSHConnection:
@@ -201,7 +196,6 @@ async def ssh_connection_fixture(
             network=openstack_metadata.network,
             ssh_key=openstack_metadata.ssh_key.private_key,
         ),
-        proxy=proxy,
         dockerhub_mirror=dockerhub_mirror,
     )
 

@@ -36,6 +36,13 @@ from tests.integration import commands, types
 
 logger = logging.getLogger(__name__)
 
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "cc9d06c43a5feabd278265ab580eca14d5acffd4/app/tests/integration/testdata/test_script.sh"
+)
+
+
 P = ParamSpec("P")
 R = TypeVar("R")
 S = Callable[P, R] | Callable[P, Awaitable[R]]
@@ -250,7 +257,6 @@ class OpenStackConnectionParams:
 async def wait_for_valid_connection(
     connection_params: OpenStackConnectionParams,
     timeout: int = 30 * 60,
-    proxy: types.ProxyConfig | None = None,
     dockerhub_mirror: urllib.parse.ParseResult | None = None,
 ) -> SSHConnection:
     """Wait for a valid SSH connection from Openstack server.
@@ -258,7 +264,6 @@ async def wait_for_valid_connection(
     Args:
         connection_params: Parameters for connecting to OpenStack instance.
         timeout: Number of seconds to wait before raising a timeout error.
-        proxy: The proxy to configure on host runner.
         dockerhub_mirror: The DockerHub mirror URL.
 
     Raises:

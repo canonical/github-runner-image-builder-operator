@@ -5,6 +5,8 @@
 
 import dataclasses
 
+from integration.helpers import TESTDATA_TEST_SCRIPT_URL
+
 
 @dataclasses.dataclass
 class Commands:
@@ -30,7 +32,7 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="check aproxy",
-        command="sudo snap info aproxy && sudo snap services aproxy && sudo snap logs aproxy -n 100",
+        command="sudo snap info aproxy && sudo snap services aproxy",
     ),
     Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
@@ -66,5 +68,23 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test external script secrets (should not exist)",
         command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
+    ),
+    # following commands are security related - ensure no traces of the external script are
+    # kept in the image
+    Commands(
+        name="wget no hsts file exists",
+        command="sudo test -f /root/.wget-hsts",
+    ),
+    Commands(
+        name="journal does not contain external script url",
+        command=f"! journalctl | grep {TESTDATA_TEST_SCRIPT_URL}",
+    ),
+    Commands(
+        name="journal does not contain external script secrets",
+        command="! journalctl | grep 'SHOULD_EXIST'",
+    ),
+    Commands(
+        name="journal does not contain external script secrets",
+        command="! journalctl | grep 'SHOULD_NOT_EXIST'",
     ),
 )

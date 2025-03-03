@@ -557,12 +557,13 @@ def _execute_external_script(
     """Execute external setup script on the OpenStack instance."""
     script_setup_cmd = (
         f'sudo wget "{script_url}" -O {EXTERNAL_SCRIPT_PATH} '
-        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}"
+        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH} && sudo rm /root/.wget-hsts"
     )
     script_run_cmd = (
         f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}"
     )
     script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
+    clear_journal_cmd = "sudo journalctl --merge --vacuum-size=1"
     sync_cmd = "sudo sync"
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
@@ -570,7 +571,7 @@ def _execute_external_script(
     ssh_conn.run(script_setup_cmd, timeout=general_timeout_in_minutes * 60)
     ssh_conn.run(script_run_cmd, env=script_secrets, timeout=script_run_timeout_in_minutes * 60)
     ssh_conn.run(script_rm_cmd, timeout=general_timeout_in_minutes * 60)
-    # TODO : Add command to remove wget history and clear the journal logs.
+    ssh_conn.run(clear_journal_cmd, timeout=general_timeout_in_minutes * 60)
     ssh_conn.run(sync_cmd, timeout=general_timeout_in_minutes * 60)
 
 
