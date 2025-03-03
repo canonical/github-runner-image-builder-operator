@@ -556,8 +556,8 @@ def _execute_external_script(
 ) -> None:
     """Execute external setup script on the OpenStack instance."""
     script_setup_cmd = (
-        f'sudo wget "{script_url}" -O {EXTERNAL_SCRIPT_PATH} '
-        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH} && sudo rm /root/.wget-hsts"
+        f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
+        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}"
     )
     script_run_cmd = (
         f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}"
