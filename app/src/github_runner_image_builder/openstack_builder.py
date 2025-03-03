@@ -563,7 +563,7 @@ def _execute_external_script(
         f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}"
     )
     script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
-    clear_journal_cmd = "sudo journalctl --rotate && sudo journalctl --merge --vacuum-size=0"
+    clear_journal_cmd = "sudo journalctl --rotate && sudo journalctl --merge --vacuum-size=1"
     sync_cmd = "sudo sync"
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
