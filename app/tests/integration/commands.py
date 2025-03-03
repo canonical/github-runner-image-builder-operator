@@ -73,7 +73,7 @@ TEST_RUNNER_COMMANDS = (
     # kept in the image
     Commands(
         name="wget no hsts file exists",
-        command="sudo test -f /root/.wget-hsts",
+        command="! sudo test -f /root/.wget-hsts",
     ),
     Commands(
         name="journal does not contain external script url",
