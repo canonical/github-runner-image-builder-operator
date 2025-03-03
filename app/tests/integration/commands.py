@@ -5,7 +5,7 @@
 
 import dataclasses
 
-from integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
 
 
 @dataclasses.dataclass
