@@ -4,6 +4,7 @@
 """Helper utilities for integration tests."""
 
 import dataclasses
+import functools
 import inspect
 import logging
 import time
@@ -19,6 +20,29 @@ from tests.integration.types import ProxyConfig
 logger = logging.getLogger(__name__)
 
 CREATE_SERVER_TIMEOUT_IN_SECONDS = 15 * 60
+
+
+async def wait_for_images(
+    openstack_connection: Connection, dispatch_time: datetime, image_names: list[str]
+):
+    """Wait for images to be created.
+
+    Args:
+        openstack_connection: The openstack connection instance.
+        dispatch_time: Time when the image build was dispatched.
+        image_names: The image names to check for.
+    """
+    for image_name in image_names:
+        await wait_for(
+            functools.partial(
+                image_created_from_dispatch,
+                connection=openstack_connection,
+                dispatch_time=dispatch_time,
+                image_name=image_name,
+            ),
+            check_interval=30,
+            timeout=60 * 50,
+        )
 
 
 def image_created_from_dispatch(
