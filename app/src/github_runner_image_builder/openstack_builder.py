@@ -11,6 +11,7 @@ import pathlib
 import shutil
 import time
 import typing
+from collections import namedtuple
 
 import fabric
 import invoke
@@ -554,29 +555,46 @@ def _wait_for_cloud_init_complete(
 def _execute_external_script(
     script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
 ) -> None:
-    """Execute external setup script on the OpenStack instance."""
-    script_setup_cmd = (
-        f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
-        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}"
-    )
-    script_run_cmd = (
-        f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}"
-    )
-    script_rm_cmd = f"sudo rm {EXTERNAL_SCRIPT_PATH}"
-    clear_journal_cmd = "sudo journalctl --rotate && sudo journalctl --merge --vacuum-size=1"
-    sync_cmd = "sudo sync"
+    """Execute external script on the OpenStack instance."""
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
+    Command = namedtuple("Command", ["name", "command", "timeout", "env"])
+    script_setup_cmd = Command(
+        name="Download the external script and set permissions",
+        command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
+        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    script_run_cmd = Command(
+        name="Run the external script using the secrets provided as environment variables",
+        command=f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
+        timeout=script_run_timeout_in_minutes,
+        env=script_secrets,
+    )
+    script_rm_cmd = Command(
+        name="Remove the external script",
+        command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    clear_journal_cmd = Command(
+        name="Clear the journal to remove script traces",
+        command="sudo journalctl --rotate && sudo journalctl --merge --vacuum-size=1",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    sync_cmd = Command(
+        name="Sync the disk to ensure data is written for the snapshot",
+        command="sudo sync",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
 
     try:
-        for cmd, timeout, env in (
-            (script_setup_cmd, general_timeout_in_minutes, {}),
-            (script_run_cmd, script_run_timeout_in_minutes, script_secrets),
-            (script_rm_cmd, general_timeout_in_minutes, {}),
-            (clear_journal_cmd, general_timeout_in_minutes, {}),
-            (sync_cmd, general_timeout_in_minutes, {}),
-        ):
-            ssh_conn.run(cmd, timeout=timeout * 60, warn=False, env=env)
+        for cmd in (script_setup_cmd, script_run_cmd, script_rm_cmd, clear_journal_cmd, sync_cmd):
+            logger.info("Running command via ssh: %s", cmd.name)
+            ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
