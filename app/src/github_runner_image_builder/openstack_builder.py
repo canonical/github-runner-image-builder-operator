@@ -555,7 +555,16 @@ def _wait_for_cloud_init_complete(
 def _execute_external_script(
     script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
 ) -> None:
-    """Execute external script on the OpenStack instance."""
+    """Execute the external script on the OpenStack instance.
+
+    Args:
+        script_url: The external script URL to download and execute.
+        script_secrets: The secrets to pass as environment variables to the script.
+        ssh_conn: The SSH connection instance to the OpenStack server instance.
+
+    Raises:
+        ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
+    """
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
