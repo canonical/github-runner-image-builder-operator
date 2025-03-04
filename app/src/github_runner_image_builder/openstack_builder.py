@@ -580,7 +580,8 @@ def _execute_external_script(
     )
     clear_journal_cmd = Command(
         name="Clear the journal to remove script traces",
-        command="sudo journalctl --rotate && sudo journalctl --merge --vacuum-size=1",
+        command="sudo journalctl --flush && sudo journalctl --rotate && "
+        "sudo journalctl --merge --vacuum-size=1",
         timeout=general_timeout_in_minutes,
         env={},
     )
