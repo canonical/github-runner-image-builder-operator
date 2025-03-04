@@ -82,7 +82,7 @@ class HomeDirectoryChangeOwnershipError(BuildImageError):
 
 
 class ExternalScriptError(BuildImageError):
-    """Represents an error while running external script."""
+    """Represents an error while running/setting up or cleaning up the external script."""
 
 
 class OpenstackBaseError(Exception):
