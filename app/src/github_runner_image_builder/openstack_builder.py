@@ -584,6 +584,12 @@ def _execute_external_script(
         timeout=general_timeout_in_minutes,
         env={},
     )
+    clear_auth_logs_cmd = Command(
+        name="Clear the auth logs to remove script traces",
+        command="cat /dev/null | sudo tee /var/log/auth.log",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
     sync_cmd = Command(
         name="Sync the disk to ensure data is written for the snapshot",
         command="sudo sync",
@@ -592,7 +598,14 @@ def _execute_external_script(
     )
 
     try:
-        for cmd in (script_setup_cmd, script_run_cmd, script_rm_cmd, clear_journal_cmd, sync_cmd):
+        for cmd in (
+            script_setup_cmd,
+            script_run_cmd,
+            script_rm_cmd,
+            clear_journal_cmd,
+            clear_auth_logs_cmd,
+            sync_cmd,
+        ):
             logger.info("Running command via ssh: %s", cmd.name)
             ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)
     except invoke.exceptions.UnexpectedExit as exc:

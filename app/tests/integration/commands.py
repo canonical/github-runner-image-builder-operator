@@ -83,4 +83,16 @@ TEST_RUNNER_COMMANDS = (
         name="journal does not contain external script url",
         command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'SHOULD_EXIST' /var/log/auth.log*",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'SHOULD_NOT_EXIST' /var/log/auth.log*",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script url",
+        command=f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
+    ),
 )
