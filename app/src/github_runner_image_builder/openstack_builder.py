@@ -292,6 +292,7 @@ def run(
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
             )
+        conn.stop_server(name_or_id=builder.id, wait=True)
         log_output = conn.get_server_console(server=builder)
         logger.info("Build output: %s", log_output)
         image = store.create_snapshot(
@@ -600,12 +601,6 @@ def _execute_external_script(
         timeout=general_timeout_in_minutes,
         env={},
     )
-    sync_cmd = Command(
-        name="Sync the disk to ensure data is written for the snapshot",
-        command="sudo sync",
-        timeout=general_timeout_in_minutes,
-        env={},
-    )
 
     try:
         for cmd in (
@@ -614,7 +609,6 @@ def _execute_external_script(
             script_rm_cmd,
             clear_journal_cmd,
             clear_auth_logs_cmd,
-            sync_cmd,
         ):
             logger.info("Running command via ssh: %s", cmd.name)
             ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)

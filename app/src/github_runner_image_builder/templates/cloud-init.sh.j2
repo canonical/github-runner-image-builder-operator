@@ -134,7 +134,3 @@ su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users
-
-# Make sure the disk is synced for snapshot
-sync
-echo "Finished sync"

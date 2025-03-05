@@ -51,7 +51,7 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test that HWE kernel is installed",
         command="uname -a | "
-                "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
+        "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
     ),
     Commands(
         name="test network congestion policy(fq)",
