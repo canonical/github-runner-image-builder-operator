@@ -1,3 +1,26 @@
+## [#85 fix: Periodic rebuilding of images](https://github.com/canonical/github-runner-image-builder-operator/pull/85) (2025-02-24)
+> Fix the periodic rebuilding of images.
+
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* None
+
+### New Features
+* None
+
+### Bug Fixes
+* Periodic image building using a cron job was not working.
+* The upgrade charm hook did not re-initialize the builder, making the builder not work after an upgrade from revision 51.
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+* 
 ## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
 > Drop juju and microk8s preinstallation.
 
