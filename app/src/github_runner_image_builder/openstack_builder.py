@@ -55,6 +55,7 @@ EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
 
 CREATE_SERVER_TIMEOUT = 20 * 60  # seconds
 DELETE_SERVER_TIMEOUT = 20 * 60  # seconds
+SHUTOFF_SERVER_TIMEOUT = 10 * 60  # seconds
 
 MIN_CPU = 2
 MIN_RAM = 1024  # M
@@ -292,7 +293,7 @@ def run(
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
             )
-        conn.compute.stop_server(server=builder)
+        _shutoff_server(conn=conn, server=builder)
         log_output = conn.get_server_console(server=builder)
         logger.info("Build output: %s", log_output)
         image = store.create_snapshot(
@@ -616,6 +617,15 @@ def _execute_external_script(
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
         ) from exc
+
+
+def _shutoff_server(
+    conn: openstack.connection.Connection,
+    server: openstack.compute.v2.server.Server,
+) -> None:
+    """Shut off the server instance."""
+    conn.compute.stop_server(server=server)
+    conn.compute.wait_for_server(server=server, status="SHUTOFF", wait=SHUTOFF_SERVER_TIMEOUT)
 
 
 @tenacity.retry(wait=tenacity.wait_exponential(multiplier=2, max=30), reraise=True)
