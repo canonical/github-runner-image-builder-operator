@@ -572,7 +572,7 @@ def _execute_external_script(
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
     disable_sudo_log_cmd = Command(
         name="Disable sudo log",
-        command="echo 'Defaults:ubuntu !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
+        command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
         timeout=general_timeout_in_minutes,
         env={},
     )
