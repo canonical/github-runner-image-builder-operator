@@ -301,7 +301,7 @@ def test_run(
     get_ssh_connection_mock.assert_called()
     wait_cloud_init_mock.assert_called()
     assert execute_external_script_mock.call_count == (1 if with_external_script else 0)
-    connection_mock.stop_server.assert_called()
+    connection_mock.compute.stop_server.assert_called()
     wait_snapshot_mock.assert_called()
     create_image_snapshot.assert_called()
     connection_mock.create_server.assert_called()

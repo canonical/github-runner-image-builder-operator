@@ -292,7 +292,7 @@ def run(
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
             )
-        conn.stop_server(name_or_id=builder.id, wait=True)
+        conn.compute.stop_server(server=builder)
         log_output = conn.get_server_console(server=builder)
         logger.info("Build output: %s", log_output)
         image = store.create_snapshot(
