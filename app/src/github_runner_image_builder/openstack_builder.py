@@ -287,6 +287,8 @@ def run(
         logger.info("Launched builder, waiting for cloud-init to complete: %s.", builder.id)
         ssh_conn = _get_ssh_connection(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
         _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_conn=ssh_conn)
+        log_output = conn.get_server_console(server=builder)
+        logger.info("console log after cloud-init: %s", log_output)
         if script_url := image_config.script_config.script_url:
             _execute_external_script(
                 script_url=script_url.geturl(),
@@ -294,8 +296,6 @@ def run(
                 ssh_conn=ssh_conn,
             )
         _shutoff_server(conn=conn, server=builder)
-        log_output = conn.get_server_console(server=builder)
-        logger.info("Build output: %s", log_output)
         image = store.create_snapshot(
             cloud_name=cloud_config.cloud_name,
             image_name=image_config.name,
