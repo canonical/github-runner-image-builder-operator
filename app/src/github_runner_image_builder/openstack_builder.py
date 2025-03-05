@@ -570,6 +570,12 @@ def _execute_external_script(
     general_timeout_in_minutes = 2
     script_run_timeout_in_minutes = 60
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
+    disable_sudo_log_cmd = Command(
+        name="Disable sudo log",
+        command="echo 'Defaults:ubuntu !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
     script_setup_cmd = Command(
         name="Download the external script and set permissions",
         command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
@@ -589,27 +595,20 @@ def _execute_external_script(
         timeout=general_timeout_in_minutes,
         env={},
     )
-    clear_journal_cmd = Command(
-        name="Clear the journal to remove script traces",
-        command="sudo journalctl --flush && sudo journalctl --rotate && "
-        "sudo journalctl --merge --vacuum-size=1",
-        timeout=general_timeout_in_minutes,
-        env={},
-    )
-    clear_auth_logs_cmd = Command(
-        name="Clear the auth logs to remove script traces",
-        command="cat /dev/null | sudo tee /var/log/auth.log",
+    enable_sudo_log_cmd = Command(
+        name="Enable sudo log",
+        command="sudo rm /etc/sudoers.d/99-no-syslog",
         timeout=general_timeout_in_minutes,
         env={},
     )
 
     try:
         for cmd in (
+            disable_sudo_log_cmd,
             script_setup_cmd,
             script_run_cmd,
             script_rm_cmd,
-            clear_journal_cmd,
-            clear_auth_logs_cmd,
+            enable_sudo_log_cmd,
         ):
             logger.info("Running command via ssh: %s", cmd.name)
             ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)
