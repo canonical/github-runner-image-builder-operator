@@ -8,7 +8,6 @@
 
 import itertools
 import os
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,14 +17,6 @@ from github_runner_image_builder import cli, config
 from github_runner_image_builder.cli import main
 
 
-@pytest.fixture(scope="function", name="callback_path")
-def callback_path_fixture(tmp_path: Path):
-    """The testing callback file path."""
-    test_path = tmp_path / "test"
-    test_path.touch()
-    return test_path
-
-
 @pytest.fixture(scope="function", name="latest_build_id_inputs")
 def latest_build_id_inputs_fixture():
     """Valid CLI run mode inputs."""
@@ -33,16 +24,14 @@ def latest_build_id_inputs_fixture():
 
 
 @pytest.fixture(scope="function", name="run_inputs")
-def run_inputs_fixture(callback_path: Path):
+def run_inputs_fixture():
     """Valid CLI run mode inputs."""
     return {
         "": "test-cloud-name",
         " ": "test-image-name",
         "--base-image": "noble",
         "--keep-revisions": "5",
-        "--callback-script": str(callback_path),
-        "--juju": "3.1/stable",
-        "--dockerhub-cache": "https://dockerhub-cache.internal:5000",
+        "--script-url": "https://example.com",
     }
 
 
@@ -89,35 +78,21 @@ def test_main(cli_runner: CliRunner, action: str):
     assert f"Usage: main {action}" in result.output
 
 
-@pytest.mark.parametrize(
-    "flags",
-    [
-        pytest.param([], id="No flags (chroot builder)"),
-        pytest.param(
-            ["--experimental-external", "true", "--cloud-name", "hello"],
-            id="External flags (openstack builder)",
-        ),
-    ],
-)
-def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, flags: list[str]):
+def test_initialize(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
     """
     arrange: given a monkeypatched builder.initialize function.
     act: when cli init is invoked.
     assert: monkeypatched function is called.
     """
-    monkeypatch.setattr(cli.builder, "initialize", (mock_builder_init_func := MagicMock()))
     monkeypatch.setattr(
         cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
     )
 
-    cli_runner.invoke(main, args=["init", *flags])
+    cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", "x64"])
 
-    if not flags:
-        mock_builder_init_func.assert_called_with()
-    else:
-        mock_openstack_init_func.assert_called_with(
-            arch=config.Arch.X64, cloud_name="hello", prefix=""
-        )
+    mock_openstack_init_func.assert_called_with(
+        arch=config.Arch.X64, cloud_name="hello", prefix=""
+    )
 
 
 @pytest.mark.parametrize(
@@ -173,15 +148,9 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
     [
         pytest.param({"--base-image": ""}, id="no base-image"),
         pytest.param({"--base-image": "test"}, id="invalid base-image"),
-        pytest.param(
-            {"--callback-script": "non-existant-path"}, id="empty image name positional argument"
-        ),
         pytest.param({"": ""}, id="empty cloud name positional argument"),
         pytest.param({" ": ""}, id="empty image name positional argument"),
-        pytest.param({"--juju": "invalid-value"}, id="invalid juju channel value"),
-        pytest.param({"--juju": "3.1/stable/edge"}, id="more than 1 / values"),
-        pytest.param({"--dockerhub-cache": "invalidurl"}, id="invalid url"),
-        pytest.param({"--dockerhub-cache": "no-scheme.internal:5000"}, id="no scheme"),
+        pytest.param({"--script-url": "invalidurl"}, id="invalid url"),
     ],
 )
 def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args: dict):
@@ -207,40 +176,26 @@ def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args:
     )
 
 
-@pytest.mark.parametrize(
-    "callback_script, flags",
-    [
-        pytest.param(None, [], id="No callback script"),
-        pytest.param(Path("tmp_path"), ["--experimental-external", "true"], id="Callback script"),
-    ],
-)
 def test_run(
     monkeypatch: pytest.MonkeyPatch,
     cli_runner: CliRunner,
-    tmp_path: Path,
-    callback_script: Path | None,
-    flags: list[str],
 ):
     """
     arrange: given a monkeypatched builder.setup_builder function.
     act: when _build is called.
     assert: the mock function is called.
     """
-    monkeypatch.setattr(cli.builder, "run", MagicMock())
     monkeypatch.setattr(cli.openstack_builder, "run", MagicMock())
     monkeypatch.setattr(cli.store, "upload_image", MagicMock())
-    monkeypatch.setattr(cli.subprocess, "check_call", MagicMock())
     command = [
         "run",
+        "--arch",
+        "x64",
         "--base-image",
         "jammy",
         "test-cloud-name",
         "test-image-name",
-        *flags,
     ]
-    if callback_script:
-        (callback_script_path := tmp_path / callback_script).touch(exist_ok=True)
-        command.extend(["--callback-script", str(callback_script_path)])
 
     result = cli_runner.invoke(
         main,

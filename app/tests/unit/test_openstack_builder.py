@@ -20,6 +20,8 @@ import tenacity
 import yaml
 
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
+from github_runner_image_builder.errors import ExternalScriptError
+from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
 
 
 def test_determine_cloud_no_clouds_yaml_error(monkeypatch: pytest.MonkeyPatch):
@@ -171,52 +173,83 @@ def test__create_security_group():
 
 
 @pytest.mark.parametrize(
-    "cloud_config",
+    "cloud_config, with_external_script",
     [
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
                 proxy="test-proxy",
                 upload_cloud_names=[],
             ),
+            True,
             id="no upload-cloud-name",
         ),
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
                 proxy="test-proxy",
                 upload_cloud_names=["test-cloud-1"],
             ),
+            True,
             id="single upload-cloud-name defined",
         ),
         pytest.param(
             openstack_builder.CloudConfig(
                 cloud_name="test-cloud",
-                dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
                 flavor="test-flavor",
                 network="test-network",
                 prefix="",
                 proxy="test-proxy",
                 upload_cloud_names=["test-cloud-1", "test-cloud-2"],
             ),
+            True,
             id="multiple upload-cloud-name defined",
+        ),
+        pytest.param(
+            openstack_builder.CloudConfig(
+                cloud_name="test-cloud",
+                flavor="test-flavor",
+                network="test-network",
+                prefix="",
+                proxy="test-proxy",
+                upload_cloud_names=["test-cloud-1"],
+            ),
+            False,
+            id="without external script",
         ),
     ],
 )
-def test_run(monkeypatch: pytest.MonkeyPatch, cloud_config: openstack_builder.CloudConfig):
+def test_run(
+    monkeypatch: pytest.MonkeyPatch,
+    cloud_config: openstack_builder.CloudConfig,
+    with_external_script: bool,
+):
     """
     arrange: given monkeypatched sub functions for openstack_builder.run.
     act: when run is called.
     assert: all subfunctions are called.
     """
+    image_config = openstack_builder.config.ImageConfig(
+        arch=openstack_builder.Arch.X64,
+        base=openstack_builder.BaseImage.JAMMY,
+        runner_version="",
+        name="test-image",
+        script_config=openstack_builder.config.ScriptConfig(
+            script_url=(
+                urllib.parse.urlparse("https://test-url.com/script.sh")
+                if with_external_script
+                else None
+            ),
+            script_secrets={"TEST_SECRET_ONE": "HELLO"} if with_external_script else {},
+        ),
+    )
+
     monkeypatch.setattr(
         openstack_builder, "_generate_cloud_init_script", (generate_cloud_init_mock := MagicMock())
     )
@@ -239,7 +272,17 @@ def test_run(monkeypatch: pytest.MonkeyPatch, cloud_config: openstack_builder.Cl
         MagicMock(return_value=connection_enter_mock),
     )
     monkeypatch.setattr(
+        openstack_builder,
+        "_get_ssh_connection",
+        (get_ssh_connection_mock := MagicMock(return_value=MagicMock())),
+    )
+    monkeypatch.setattr(
         openstack_builder, "_wait_for_cloud_init_complete", (wait_cloud_init_mock := MagicMock())
+    )
+    monkeypatch.setattr(
+        openstack_builder,
+        "_execute_external_script",
+        (execute_external_script_mock := MagicMock()),
     )
     monkeypatch.setattr(
         openstack_builder, "_wait_for_snapshot_complete", (wait_snapshot_mock := MagicMock())
@@ -247,7 +290,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch, cloud_config: openstack_builder.Cl
 
     openstack_builder.run(
         cloud_config=cloud_config,
-        image_config=MagicMock(),
+        image_config=image_config,
         keep_revisions=5,
     )
 
@@ -255,7 +298,11 @@ def test_run(monkeypatch: pytest.MonkeyPatch, cloud_config: openstack_builder.Cl
     ensure_resources_mock.assert_called()
     determine_flavor_mock.assert_called()
     determine_network_mock.assert_called()
+    get_ssh_connection_mock.assert_called()
     wait_cloud_init_mock.assert_called()
+    assert execute_external_script_mock.call_count == (1 if with_external_script else 0)
+    connection_mock.compute.stop_server.assert_called()
+    connection_mock.compute.wait_for_server.assert_called()
     wait_snapshot_mock.assert_called()
     create_image_snapshot.assert_called()
     connection_mock.create_server.assert_called()
@@ -583,8 +630,6 @@ def test__generate_cloud_init_script():
             image_config=openstack_builder.config.ImageConfig(
                 arch=openstack_builder.Arch.X64,
                 base=openstack_builder.BaseImage.JAMMY,
-                juju="3.1/stable",
-                microk8s="1.29-strict/stable",
                 runner_version="",
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
@@ -593,7 +638,6 @@ def test__generate_cloud_init_script():
                 ),
             ),
             proxy="test.proxy.internal:3128",
-            dockerhub_cache=urllib.parse.urlparse("https://test-dockerhub-cache.com:5000"),
         )
         # The templated script contains similar lines to helper for setting up proxy.
         # pylint: disable=R0801
@@ -708,75 +752,6 @@ function chown_home() {
     /usr/bin/chown --recursive ubuntu:ubuntu /home/ubuntu/
 }
 
-function install_microk8s() {
-    local channel="$1"
-    local dockerhub_cache_url="$2"
-    local dockerhub_hostname="$3"
-    local dockerhub_port="$4"
-    if [[ -z "$channel" ]]; then
-        echo "Microk8s channel not provided, skipping installation."
-        return
-    fi
-    classic_flag=""
-    if [[ "$channel" != *"strict"* ]]; then
-        classic_flag="--classic"
-    fi
-    /usr/bin/snap install microk8s --channel="$channel" $classic_flag
-    /usr/sbin/usermod --append --groups snap_microk8s ubuntu
-
-    if [[ -z "$dockerhub_cache_url" ]]; then
-        /usr/bin/echo "dockerhub cache not enabled, skipping installation"
-        initialize_microk8s_plugins
-        return
-    fi
-    install_microk8s_dockerhub_cache "$dockerhub_cache_url" "$dockerhub_hostname" "$dockerhub_port"
-    initialize_microk8s_plugins
-}
-
-function initialize_microk8s_plugins() {
-    /snap/bin/microk8s status --wait-ready --timeout=600
-    /snap/bin/microk8s enable dns hostpath-storage registry
-    /snap/bin/microk8s status --wait-ready --timeout=600
-}
-
-function install_microk8s_dockerhub_cache() {
-    local dockerhub_cache_url="$1"
-    local dockerhub_hostname="$2"
-    local dockerhub_port="$3"
-    /usr/bin/mkdir -p /var/snap/microk8s/current/args/certs.d/docker.io/
-    /usr/bin/cat <<EOF | /usr/bin/tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
-server = $dockerhub_cache_url
-
-[host.$dockerhub_hostname:$dockerhub_port]
-    capabilities = ["pull", "resolve"]
-    override_path = true
-EOF
-    /snap/bin/microk8s stop
-    /snap/bin/microk8s start
-}
-
-function install_juju() {
-    local channel="$1"
-    if [[ -z "$channel" ]]; then
-        echo "Juju channel not provided, skipping installation."
-        return
-    fi
-
-    /usr/bin/snap install juju --channel="$channel"
-    if ! lxd --version &> /dev/null; then
-        /usr/bin/snap install lxd
-    fi
-
-    echo "Bootstrapping LXD on Juju"
-    /snap/bin/lxd init --auto
-    /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap localhost localhost
-
-    if command -v microk8s &> /dev/null; then
-        echo "Bootstrapping MicroK8s on Juju"
-        /usr/bin/sudo -E -H -u ubuntu /snap/bin/juju bootstrap microk8s microk8s
-    fi
-}
-
 function configure_system_users() {
     echo "Configuring ubuntu user"
     # only add ubuntu user if ubuntu does not exist
@@ -788,44 +763,13 @@ function configure_system_users() {
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
 }
 
-function execute_script() {
-    local script_url="$1"
-    local env_vars="$2"
-    if [[ -z "$script_url" ]]; then
-        echo "Script URL not provided, skipping."
-        return
-    fi
-    # Write temp environment variables file, load and delete.
-    TEMP_FILE=$(mktemp)
-    IFS=' ' read -r -a vars <<< "$env_vars"
-    for var in "${vars[@]}"; do
-        echo "$var" >> "$TEMP_FILE"
-    done
-    # Source the temporary file and run the script
-    set -a  # Automatically export all variables
-    source "$TEMP_FILE"
-    rm "$TEMP_FILE"
-    set +a  # Stop automatically exporting variables
-
-    wget "$script_url" -O external.sh
-    chmod +x external.sh
-    ./external.sh
-    rm external.sh
-}
 
 proxy="test.proxy.internal:3128"
-dockerhub_cache_url="https://test-dockerhub-cache.com:5000"
-dockerhub_cache_host="test-dockerhub-cache.com"
-dockerhub_cache_port="5000"
 apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
 shellcheck tar time unzip wget"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="x64"
-microk8s_channel="1.29-strict/stable"
-juju_channel="3.1/stable"
-script_url="https://test-url.com/script.sh"
-script_secrets="TEST_SECRET_ONE=HELLO TEST_SECRET_TWO=WORLD"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
@@ -838,42 +782,31 @@ export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-install_microk8s "$microk8s_channel" "$dockerhub_cache_url" "$dockerhub_cache_host" \
-"$dockerhub_cache_port"
-install_juju "$juju_channel"
-configure_system_users
-execute_script "$script_url" "$script_secrets"
-
-# Make sure the disk is synced for snapshot
-sync
-echo "Finished sync"\
+configure_system_users\
 """
     )
     # pylint: enable=R0801
 
 
-def test__wait_for_cloud_init_complete_fail(monkeypatch: pytest.MonkeyPatch):
+def test__wait_for_cloud_init_complete_fail():
     """
     arrange: given a monkeypatched _get_ssh_connection and connection.run functions that raises an\
         error.
     act: when _wait_for_cloud_init_complete is called.
     assert: CloudInitFailError is raised.
     """
-    mock_connection = MagicMock()
-    mock_connection.run.return_value = None
-    monkeypatch.setattr(
-        openstack_builder, "_get_ssh_connection", MagicMock(return_value=mock_connection)
-    )
+    ssh_conn_mock = MagicMock()
+    ssh_conn_mock.run.return_value = None
 
     with pytest.raises(errors.CloudInitFailError) as exc:
         openstack_builder._wait_for_cloud_init_complete(
-            conn=mock_connection, server=MagicMock(), ssh_key=MagicMock()
+            conn=MagicMock(), server=MagicMock(), ssh_conn=ssh_conn_mock
         )
 
     assert "Invalid cloud-init status" in str(exc)
 
 
-def test__wait_for_cloud_init_unexpected_exit(monkeypatch: pytest.MonkeyPatch):
+def test__wait_for_cloud_init_unexpected_exit():
     """
     arrange: given a monkeypatched _get_ssh_connection and connection.run functions that raises an\
         error.
@@ -882,22 +815,19 @@ def test__wait_for_cloud_init_unexpected_exit(monkeypatch: pytest.MonkeyPatch):
     """
     mock_connection = MagicMock()
     mock_connection.get_server_console = (get_log_mock := MagicMock())
-    mock_connection.run.side_effect = openstack_builder.invoke.exceptions.UnexpectedExit(
+    ssh_conn_mock = MagicMock()
+    ssh_conn_mock.run.side_effect = openstack_builder.invoke.exceptions.UnexpectedExit(
         result=MagicMock(), reason=MagicMock()
-    )
-    monkeypatch.setattr(
-        openstack_builder, "_get_ssh_connection", MagicMock(return_value=mock_connection)
     )
 
     with pytest.raises(errors.CloudInitFailError):
         openstack_builder._wait_for_cloud_init_complete(
-            conn=mock_connection, server=MagicMock(), ssh_key=MagicMock()
+            conn=mock_connection, server=MagicMock(), ssh_conn=ssh_conn_mock
         )
-
     get_log_mock.assert_called_once()
 
 
-def test__wait_for_cloud_init_complete(monkeypatch: pytest.MonkeyPatch):
+def test__wait_for_cloud_init_complete():
     """
     arrange: given a monkeypatched _get_ssh_connection and connection.run functions.
     act: when _wait_for_cloud_init_complete is called.
@@ -906,17 +836,86 @@ def test__wait_for_cloud_init_complete(monkeypatch: pytest.MonkeyPatch):
     # patch tenacity retry to speed up testing
     openstack_builder._wait_for_cloud_init_complete.retry.wait = tenacity.wait_none()
     openstack_builder._wait_for_cloud_init_complete.retry.stop = tenacity.stop_after_attempt(1)
-    mock_connection = MagicMock()
+    ssh_conn_mock = MagicMock()
     result_mock = MagicMock()
     result_mock.stdout = "status: done"
-    mock_connection.run.return_value = result_mock
-    monkeypatch.setattr(
-        openstack_builder, "_get_ssh_connection", MagicMock(return_value=mock_connection)
-    )
+    ssh_conn_mock.run.return_value = result_mock
 
     assert openstack_builder._wait_for_cloud_init_complete(
-        conn=mock_connection, server=MagicMock(), ssh_key=MagicMock()
+        conn=MagicMock(), server=MagicMock(), ssh_conn=ssh_conn_mock
     )
+
+
+@pytest.mark.parametrize(
+    "script_secrets",
+    [
+        pytest.param({"TEST_SECRET_ONE": "HELLO"}, id="single secret"),
+        pytest.param(
+            {"TEST_SECRET_ONE": "HELLO", "TEST_SECRET_TWO": "WORLD"}, id="multiple secrets"
+        ),
+        pytest.param({}, id="no secrets"),
+    ],
+)
+def test__execute_external_script(script_secrets: dict[str, str]):
+    """
+    arrange: given a monkeypatched _get_ssh_connection and connection.run functions.
+    act: when _execute_external_script is called.
+    assert: that the external script is executed using the secrets
+    """
+    mock_connection = MagicMock()
+    run_mock = MagicMock()
+    mock_connection.run = run_mock
+
+    openstack_builder._execute_external_script(
+        script_url="https://test-url.com/script.sh",
+        script_secrets=script_secrets,
+        ssh_conn=mock_connection,
+    )
+
+    run_mock.assert_any_call(
+        f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
+        env=script_secrets,
+        timeout=3600,
+        warn=False,
+    )
+    run_mock.assert_any_call(f"sudo rm {EXTERNAL_SCRIPT_PATH}", timeout=120, warn=False, env={})
+
+
+@pytest.mark.parametrize("run_pos", [pytest.param(i, id=str(i)) for i in range(5)])
+def test_execute_external_script_error(run_pos: int):
+    """
+    arrange: given a monkeypatched _get_ssh_connection and connection.run functions that raises an\
+        error on a given call on a certain position.
+    act: when _execute_external_script is called.
+    assert: ExternalScriptError is raised.
+    """
+    mock_connection = MagicMock()
+
+    call_count = 0
+
+    def run_side_effect(*_, **__):
+        """Raise an error on a given call position.
+
+        Raises:
+            UnexpectedExit: Raised on a given call position.
+        """
+        nonlocal call_count
+        if call_count == run_pos:
+            raise openstack_builder.invoke.exceptions.UnexpectedExit(
+                result=MagicMock(), reason=MagicMock()
+            )
+
+        call_count += 1
+
+    mock_connection.run.side_effect = run_side_effect
+
+    with pytest.raises(ExternalScriptError) as exc:
+        openstack_builder._execute_external_script(
+            script_url="https://test-url.com/script.sh",
+            script_secrets={"TEST_SECRET_ONE": "HELLO"},
+            ssh_conn=mock_connection,
+        )
+    assert "Unexpected exit code" in str(exc)
 
 
 def test__get_ssh_connection_no_networks():

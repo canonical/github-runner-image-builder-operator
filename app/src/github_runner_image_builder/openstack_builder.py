@@ -11,8 +11,7 @@ import pathlib
 import shutil
 import time
 import typing
-import urllib
-import urllib.parse
+from collections import namedtuple
 
 import fabric
 import invoke
@@ -52,8 +51,11 @@ CLOUD_YAML_PATHS = (
 
 BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
+EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
 
-CREATE_SERVER_TIMEOUT = 5 * 60  # seconds
+CREATE_SERVER_TIMEOUT = 20 * 60  # seconds
+DELETE_SERVER_TIMEOUT = 20 * 60  # seconds
+SHUTOFF_SERVER_TIMEOUT = 10 * 60  # seconds
 
 MIN_CPU = 2
 MIN_RAM = 1024  # M
@@ -218,7 +220,6 @@ class CloudConfig:
 
     Attributes:
         cloud_name: The OpenStack cloud name to use.
-        dockerhub_cache: The DockerHub cache to use for using cached images.
         flavor: The OpenStack flavor to launch builder VMs on.
         network: The OpenStack network to launch the builder VMs on.
         prefix: The prefix to use for OpenStack resource names.
@@ -228,7 +229,6 @@ class CloudConfig:
     """
 
     cloud_name: str
-    dockerhub_cache: urllib.parse.ParseResult | None
     flavor: str
     network: str
     prefix: str
@@ -254,7 +254,6 @@ def run(
     cloud_init_script = _generate_cloud_init_script(
         image_config=image_config,
         proxy=cloud_config.proxy,
-        dockerhub_cache=cloud_config.dockerhub_cache,
     )
     builder_name = _get_builder_name(
         arch=image_config.arch, base=image_config.base, prefix=cloud_config.prefix
@@ -286,9 +285,17 @@ def run(
             wait=True,
         )
         logger.info("Launched builder, waiting for cloud-init to complete: %s.", builder.id)
-        _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
+        ssh_conn = _get_ssh_connection(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
+        _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_conn=ssh_conn)
         log_output = conn.get_server_console(server=builder)
-        logger.info("Build output: %s", log_output)
+        logger.info("console log after cloud-init: %s", log_output)
+        if script_url := image_config.script_config.script_url:
+            _execute_external_script(
+                script_url=script_url.geturl(),
+                script_secrets=image_config.script_config.script_secrets,
+                ssh_conn=ssh_conn,
+            )
+        _shutoff_server(conn=conn, server=builder)
         image = store.create_snapshot(
             cloud_name=cloud_config.cloud_name,
             image_name=image_config.name,
@@ -310,7 +317,7 @@ def run(
             ),
         )
         logger.info("Deleting builder VM: %s (%s)", builder.name, builder.id)
-        conn.delete_server(name_or_id=builder.id, wait=True, timeout=5 * 60)
+        conn.delete_server(name_or_id=builder.id, wait=True, timeout=DELETE_SERVER_TIMEOUT)
         logger.info("Image builder run complete.")
     return ",".join(str(image.id) for image in images)
 
@@ -471,14 +478,12 @@ def _determine_network(conn: openstack.connection.Connection, network_name: str 
 def _generate_cloud_init_script(
     image_config: config.ImageConfig,
     proxy: str,
-    dockerhub_cache: urllib.parse.ParseResult | None,
 ) -> str:
     """Generate userdata for installing GitHub runner image components.
 
     Args:
         image_config: The target image configuration values.
         proxy: The proxy to enable while setting up the VM.
-        dockerhub_cache: The DockerHub cache to use for using cached images.
 
     Returns:
         The cloud-init script to create snapshot image.
@@ -490,31 +495,10 @@ def _generate_cloud_init_script(
     template = env.get_template("cloud-init.sh.j2")
     return template.render(
         PROXY_URL=proxy,
-        DOCKERHUB_CACHE_URL=dockerhub_cache.geturl() if dockerhub_cache else "",
-        DOCKERHUB_CACHE_HOST=dockerhub_cache.hostname if dockerhub_cache else "",
-        DOCKERHUB_CACHE_PORT=dockerhub_cache.port if dockerhub_cache else "",
         APT_PACKAGES=" ".join(IMAGE_DEFAULT_APT_PACKAGES),
         HWE_VERSION=BaseImage.get_version(image_config.base),
-        MICROK8S_CHANNEL=image_config.microk8s,
-        JUJU_CHANNEL=image_config.juju,
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
-        SCRIPT_URL=(
-            image_config.script_config.script_url.geturl()
-            if image_config.script_config.script_url
-            else ""
-        ),
-        SCRIPT_SECRETS=(
-            " ".join(
-                f"{secret_key}={secret_value}"
-                for (
-                    secret_key,
-                    secret_value,
-                ) in image_config.script_config.script_secrets.items()
-            )
-            if image_config.script_config.script_secrets
-            else ""
-        ),
     )
 
 
@@ -541,14 +525,14 @@ def _get_builder_name(arch: Arch, base: BaseImage, prefix: str) -> str:
 def _wait_for_cloud_init_complete(
     conn: openstack.connection.Connection,
     server: openstack.compute.v2.server.Server,
-    ssh_key: pathlib.Path,
+    ssh_conn: fabric.Connection,
 ) -> bool:
     """Wait until the userdata has finished installing expected components.
 
     Args:
         conn: The Openstach connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
-        ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
+        ssh_conn: The SSH connection instance to the OpenStack server instance.
 
     Raises:
         CloudInitFailError: if there was an error running cloud-init status command.
@@ -556,11 +540,8 @@ def _wait_for_cloud_init_complete(
     Returns:
         Whether the cloud init is complete. Used for tenacity retry to pick up return value.
     """
-    ssh_connection = _get_ssh_connection(conn=conn, server=server, ssh_key=ssh_key)
     try:
-        result: fabric.Result | None = ssh_connection.run(
-            "cloud-init status --wait", timeout=60 * 30
-        )
+        result: fabric.Result | None = ssh_conn.run("cloud-init status --wait", timeout=60 * 30)
     except invoke.exceptions.UnexpectedExit as exc:
         log_out = conn.get_server_console(server=server)
         logger.error("Cloud init output: %s", log_out)
@@ -571,6 +552,79 @@ def _wait_for_cloud_init_complete(
         logger.error("cloud-init status command failure, result: %s.", result)
         raise github_runner_image_builder.errors.CloudInitFailError("Invalid cloud-init status")
     return "status: done" in result.stdout
+
+
+def _execute_external_script(
+    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
+) -> None:
+    """Execute the external script on the OpenStack instance.
+
+    Args:
+        script_url: The external script URL to download and execute.
+        script_secrets: The secrets to pass as environment variables to the script.
+        ssh_conn: The SSH connection instance to the OpenStack server instance.
+
+    Raises:
+        ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
+    """
+    general_timeout_in_minutes = 2
+    script_run_timeout_in_minutes = 60
+    Command = namedtuple("Command", ["name", "command", "timeout", "env"])
+    disable_sudo_log_cmd = Command(
+        name="Disable sudo log",
+        command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    script_setup_cmd = Command(
+        name="Download the external script and set permissions",
+        command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
+        f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    script_run_cmd = Command(
+        name="Run the external script using the secrets provided as environment variables",
+        command=f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
+        timeout=script_run_timeout_in_minutes,
+        env=script_secrets,
+    )
+    script_rm_cmd = Command(
+        name="Remove the external script",
+        command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+    enable_sudo_log_cmd = Command(
+        name="Enable sudo log",
+        command="sudo rm /etc/sudoers.d/99-no-syslog",
+        timeout=general_timeout_in_minutes,
+        env={},
+    )
+
+    try:
+        for cmd in (
+            disable_sudo_log_cmd,
+            script_setup_cmd,
+            script_run_cmd,
+            script_rm_cmd,
+            enable_sudo_log_cmd,
+        ):
+            logger.info("Running command via ssh: %s", cmd.name)
+            ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)
+    except invoke.exceptions.UnexpectedExit as exc:
+        raise github_runner_image_builder.errors.ExternalScriptError(
+            f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
+        ) from exc
+
+
+def _shutoff_server(
+    conn: openstack.connection.Connection,
+    server: openstack.compute.v2.server.Server,
+) -> None:
+    """Shut off the server instance."""
+    conn.compute.stop_server(server=server)
+    conn.compute.wait_for_server(server=server, status="SHUTOFF", wait=SHUTOFF_SERVER_TIMEOUT)
 
 
 @tenacity.retry(wait=tenacity.wait_exponential(multiplier=2, max=30), reraise=True)

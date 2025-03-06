@@ -162,27 +162,6 @@ def openstack_connection_fixture(cloud_name: str) -> Connection:
     return openstack.connect(cloud_name)
 
 
-@pytest.fixture(scope="module", name="callback_result_path")
-def callback_result_path_fixture() -> Path:
-    """The file created when the callback script is run."""
-    return Path("callback_complete")
-
-
-@pytest.fixture(scope="module", name="callback_script")
-def callback_script_fixture(callback_result_path: Path) -> Path:
-    """The callback script to use with the image builder."""
-    callback_script = Path("callback")
-    callback_script.write_text(
-        f"""#!/bin/bash
-IMAGE_ID=$1
-echo $IMAGE_ID | tee {callback_result_path}
-""",
-        encoding="utf-8",
-    )
-    callback_script.chmod(0o775)
-    return callback_script
-
-
 @pytest.fixture(scope="module", name="dockerhub_mirror")
 def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> urllib.parse.ParseResult | None:
     """Dockerhub mirror URL."""
@@ -194,12 +173,6 @@ def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> urllib.parse.ParseR
         parse_result.netloc and parse_result.port and parse_result.geturl()
     ), "Invalid dockerhub-mirror URL"
     return parse_result
-
-
-@pytest.fixture(scope="module", name="openstack_image_name")
-def openstack_image_name_fixture(test_id: str) -> str:
-    """The image name to upload to openstack."""
-    return f"image-builder-test-image-{test_id}"
 
 
 @pytest.fixture(scope="module", name="ssh_key")

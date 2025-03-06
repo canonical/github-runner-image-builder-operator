@@ -109,8 +109,6 @@ def test_update_image_data_no_unit_data(harness: Harness, image_observer: image.
                     base=state.BaseImage.JAMMY,
                     cloud_id="test_test",
                     image_id="test",
-                    juju="3.1/stable",
-                    microk8s="",
                 )
             ]
         ],
@@ -205,8 +203,6 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
                     base=state.BaseImage.JAMMY,
                     cloud_id="test_test",
                     image_id="test",
-                    juju="3.1/stable",
-                    microk8s="",
                 )
             ]
         ],
@@ -216,15 +212,15 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         relation_id=first_relation_id, app_or_unit=image_observer.model.unit.name
     ) == {
         "id": "test",
-        "tags": "arm64,jammy,juju=3.1/stable",
-        "images": '[{"id": "test", "tags": "arm64,jammy,juju=3.1/stable"}]',
+        "tags": "arm64,jammy",
+        "images": '[{"id": "test", "tags": "arm64,jammy"}]',
     }
     assert harness.get_relation_data(
         relation_id=second_relation_id, app_or_unit=image_observer.model.unit.name
     ) == {
         "id": "test",
-        "tags": "arm64,jammy,juju=3.1/stable",
-        "images": '[{"id": "test", "tags": "arm64,jammy,juju=3.1/stable"}]',
+        "tags": "arm64,jammy",
+        "images": '[{"id": "test", "tags": "arm64,jammy"}]',
     }
 
 
@@ -241,16 +237,12 @@ def test__build_cloud_to_images_map():
                 base=state.BaseImage.JAMMY,
                 cloud_id="cloud-1",
                 image_id="image-1",
-                juju="3.1/stable",
-                microk8s="",
             ),
             image_2 := builder.CloudImage(
                 arch=state.Arch.ARM64,
                 base=state.BaseImage.JAMMY,
                 cloud_id="cloud-1",
                 image_id="image-2",
-                juju="3.1/stable",
-                microk8s="",
             ),
         ],
     ]
@@ -279,35 +271,9 @@ def test__cloud_images_to_relation_data_no_images():
                 base=state.BaseImage.JAMMY,
                 cloud_id="",
                 image_id="",
-                juju="",
-                microk8s="",
             ),
             "arm64,jammy",
             id="bare",
-        ),
-        pytest.param(
-            builder.CloudImage(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_id="",
-                image_id="",
-                juju="3.1/stable",
-                microk8s="",
-            ),
-            "arm64,jammy,juju=3.1/stable",
-            id="juju",
-        ),
-        pytest.param(
-            builder.CloudImage(
-                arch=state.Arch.ARM64,
-                base=state.BaseImage.JAMMY,
-                cloud_id="",
-                image_id="",
-                juju="",
-                microk8s="1.29-strict/stable",
-            ),
-            "arm64,jammy,microk8s=1.29-strict/stable",
-            id="microk8s",
         ),
     ],
 )

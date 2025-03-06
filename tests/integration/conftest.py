@@ -3,6 +3,7 @@
 
 """Fixtures for github runner charm integration tests."""
 import functools
+import json
 import logging
 import multiprocessing
 import os
@@ -32,12 +33,8 @@ from pytest_operator.plugin import OpsTest
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
-    DOCKERHUB_CACHE_CONFIG_NAME,
-    EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
-    JUJU_CHANNELS_CONFIG_NAME,
-    MICROK8S_CHANNELS_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -215,12 +212,6 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
     return openstack.connect(first_cloud)
 
 
-@pytest.fixture(scope="module", name="dockerhub_mirror")
-def dockerhub_mirror_fixture(pytestconfig: pytest.Config) -> str:
-    """Dockerhub mirror URL."""
-    return pytestconfig.getoption("--dockerhub-mirror") or ""
-
-
 @pytest.fixture(scope="module", name="test_id")
 def test_id_fixture() -> str:
     """The test ID fixture."""
@@ -229,7 +220,10 @@ def test_id_fixture() -> str:
 
 @pytest.fixture(scope="module", name="test_configs")
 def test_configs_fixture(
-    model: Model, charm_file: str, test_id: str, dispatch_time: datetime, dockerhub_mirror: str
+    model: Model,
+    charm_file: str,
+    test_id: str,
+    dispatch_time: datetime,
 ) -> TestConfigs:
     """The test configuration values."""
     return TestConfigs(
@@ -237,7 +231,6 @@ def test_configs_fixture(
         charm_file=charm_file,
         dispatch_time=dispatch_time,
         test_id=test_id,
-        dockerhub_mirror=dockerhub_mirror,
     )
 
 
@@ -246,14 +239,11 @@ def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
         bases=("noble",),
-        juju_channels=tuple(),  # ("3.5/stable",), juju support will be removed
-        microk8s_channels=tuple(),  # ("1.29-strict/stable",), microk8s support will be removed
     )
 
 
 @pytest.fixture(scope="module", name="app_config")
 def app_config_fixture(
-    test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
@@ -262,9 +252,6 @@ def app_config_fixture(
     return {
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
-        DOCKERHUB_CACHE_CONFIG_NAME: test_configs.dockerhub_mirror,
-        JUJU_CHANNELS_CONFIG_NAME: ",".join(image_configs.juju_channels),
-        MICROK8S_CHANNELS_CONFIG_NAME: ",".join(image_configs.microk8s_channels),
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
         OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
@@ -272,7 +259,6 @@ def app_config_fixture(
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
-        EXTERNAL_BUILD_CONFIG_NAME: "True",
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
@@ -316,16 +302,31 @@ async def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: str,
+    ops_test,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable without pinning a revision here, but upgrading
+    # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel = "edge"
+    ret_code, stdout, stderr = await ops_test.juju(
+        "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
+    )
+    assert ret_code == 0, f"Failed to get charm info: {stderr}"
+    charmhub_info = json.loads(stdout.strip())
+    charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
+
+    charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
+    # We might need to test using the legacy config options.
+    legacy_config_prefix = "experimental-external-"
+    for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
+        if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
+            charmhub_app_config[legacy_opt] = app_config[opt]
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=app_config,
-        channel="edge",
+        config=charmhub_app_config,
+        channel=charmhub_channel,
     )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
@@ -426,14 +427,6 @@ def image_names_fixture(image_configs: ImageConfigs, app: Application):
     arch = _get_supported_arch()
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
-        for juju in image_configs.juju_channels:
-            for microk8s in image_configs.microk8s_channels:
-                image_names.append(
-                    (
-                        f"{app.name}-{base}-{arch.value}-juju-{juju.replace('/','-')}"
-                        f"-mk8s-{microk8s.replace('/','-')}"
-                    )
-                )
     return image_names
 
 
@@ -457,58 +450,4 @@ async def bare_image_id_fixture(
         check_interval=30,
     )
     assert image, "Bare image not found"
-    return image.id
-
-
-@pytest_asyncio.fixture(scope="module", name="juju_image_id")
-async def juju_image_id_fixture(
-    openstack_connection: Connection,
-    dispatch_time: datetime,
-    image_configs: ImageConfigs,
-    app: Application,
-):
-    """The Juju bootstrapped image expected from builder application."""
-    arch = _get_supported_arch()
-    image: Image | None = await wait_for(
-        functools.partial(
-            image_created_from_dispatch,
-            image_name=(
-                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}-"
-                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
-            ),
-            connection=openstack_connection,
-            dispatch_time=dispatch_time,
-        ),
-        timeout=60 * 30,
-        check_interval=30,
-    )
-    assert image, "Juju image not found"
-    return image.id
-
-
-@pytest_asyncio.fixture(scope="module", name="microk8s_image_id")
-async def microk8s_image_id_fixture(
-    openstack_connection: Connection,
-    dispatch_time: datetime,
-    image_configs: ImageConfigs,
-    app: Application,
-):
-    """The Juju bootstrapped image expected from builder application."""
-    arch = _get_supported_arch()
-    image: Image | None = await wait_for(
-        functools.partial(
-            image_created_from_dispatch,
-            image_name=(
-                f"{app.name}-{image_configs.bases[0]}-{arch.value}-juju-"
-                f"{image_configs.juju_channels[0].replace('/','-')}-"
-                f"mk8s-{image_configs.microk8s_channels[0].replace('/','-')}"
-            ),
-            connection=openstack_connection,
-            dispatch_time=dispatch_time,
-        ),
-        timeout=60 * 30,
-        check_interval=30,
-    )
-    assert image, "Microk8s image not found"
     return image.id

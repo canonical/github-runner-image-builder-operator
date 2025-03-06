@@ -5,9 +5,9 @@
 
 """Integration testing module."""
 
-import functools
 import logging
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 import pytest
 from juju.application import Application
@@ -15,7 +15,9 @@ from juju.model import Model
 from juju.unit import Unit
 from openstack.connection import Connection
 
-from tests.integration.helpers import image_created_from_dispatch, wait_for
+from builder import CRON_BUILD_SCHEDULE_PATH
+from state import BUILD_INTERVAL_CONFIG_NAME
+from tests.integration.helpers import wait_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -60,33 +62,55 @@ async def test_build_image(
     act: When openstack images are listed.
     assert: An image is built successfully.
     """
-    for image_name in image_names:
-        await wait_for(
-            functools.partial(
-                image_created_from_dispatch,
-                connection=openstack_connection,
-                dispatch_time=dispatch_time,
-                image_name=image_name,
-            ),
-            check_interval=30,
-            timeout=60 * 50,
-        )
+    await wait_for_images(openstack_connection, dispatch_time, image_names)
 
 
-@pytest.mark.skip(reason="There is an issue with dispatch tests as of now")
 @pytest.mark.asyncio
-async def test_run_dispatch(app: Application):
+async def test_periodic_rebuilt(
+    app: Application,
+    app_config: dict,
+    openstack_connection: Connection,
+    image_names: list[str],
+):
     """
     arrange: A deployed active charm.
-    act: When dispatch command is given.
+    act: Modify the crontab to run every minute.
     assert: An image is built successfully.
     """
     unit: Unit = next(iter(app.units))
-    await unit.ssh(
-        command=(
-            f'sudo -E -b /usr/bin/juju-exec "{unit.name}" "JUJU_DISPATCH_PATH=run '
-            'HOME=/home/ubuntu ./dispatch"'
-        ),
-    )
 
-    await wait_for(lambda: unit.latest().agent_status == "executing")
+    await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
+
+    dispatch_time = datetime.now(tz=timezone.utc)
+    async with _change_cronjob_to_minutes(
+        unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
+    ):
+
+        await wait_for_images(
+            openstack_connection=openstack_connection,
+            dispatch_time=dispatch_time,
+            image_names=image_names,
+        )
+
+
+@asynccontextmanager
+async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
+    """Context manager to change the crontab to run every minute."""
+    minute_interval = 1
+    await unit.ssh(
+        command=rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
+        f"{CRON_BUILD_SCHEDULE_PATH}"
+    )
+    cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    logger.info("Cron file content: %s", cron_content)
+    await unit.ssh(command="sudo systemctl restart cron")
+
+    yield
+
+    await unit.ssh(
+        command=rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
+        f"{CRON_BUILD_SCHEDULE_PATH}"
+    )
+    cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    logger.info("Cronfile content: %s", cron_content)
+    await unit.ssh(command="sudo systemctl restart cron")

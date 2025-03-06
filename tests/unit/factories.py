@@ -13,12 +13,8 @@ import state
 from state import (
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
-    DOCKERHUB_CACHE_CONFIG_NAME,
-    EXTERNAL_BUILD_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
-    JUJU_CHANNELS_CONFIG_NAME,
-    MICROK8S_CHANNELS_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
@@ -86,12 +82,8 @@ class MockCharmFactory(factory.Factory):
         {
             BASE_IMAGE_CONFIG_NAME: "jammy",
             BUILD_INTERVAL_CONFIG_NAME: "6",
-            DOCKERHUB_CACHE_CONFIG_NAME: "https://dockerhub-cache.internal:5000",
-            EXTERNAL_BUILD_CONFIG_NAME: True,
             EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: "test-flavor",
             EXTERNAL_BUILD_NETWORK_CONFIG_NAME: "test-network",
-            JUJU_CHANNELS_CONFIG_NAME: "3.1/stable,2.9/stable",
-            MICROK8S_CHANNELS_CONFIG_NAME: "",
             OPENSTACK_AUTH_URL_CONFIG_NAME: "http://testing-auth/keystone",
             OPENSTACK_PASSWORD_CONFIG_NAME: "test-password",
             OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test-project-domain",
@@ -194,7 +186,6 @@ class ExternalServiceConfigFactory(factory.Factory):
 
         model = builder.ExternalServiceConfig
 
-    dockerhub_cache: str | None = "https://test-dockerhub-cache.com:5000"
     proxy: str | None = "http://proxy.internal:3128"
 
 
@@ -233,8 +224,6 @@ class ImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     base: state.BaseImage = state.BaseImage.JAMMY
-    juju: str = "3.1/stable"
-    microk8s: str = "1.29-strict/stable"
     prefix: str = "test-prefix-"
     script_config = ScriptConfigFactory()
     runner_version: str | None = "1.2.3"
