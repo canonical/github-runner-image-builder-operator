@@ -1,4 +1,4 @@
-## [#83 feat: s390x images(https://github.com/canonical/github-runner-image-builder-operator/pull/83)
+## [#83 feat: s390x images(https://github.com/canonical/github-runner-image-builder-operator/pull/83) (2025-03-06)
 > Add support for building s390x images.
 
 ### Upgrade Steps
@@ -20,6 +20,52 @@ that s390x support is experimental and may be removed in the future.
 
 ### Other Changes
 * None
+
+## [#88 Fix: move external script secret out of cloud-init](https://github.com/canonical/github-runner-image-builder-operator/pull/88) (2025-03-04)
+> Move running the external script out of cloud-init and use SSH instead.
+
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* None
+
+### New Features
+* None
+
+### Bug Fixes
+* cloud-init userdata is preserved in the image and should not contain traces of the external script and secrets.
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
+## [#85 fix: Periodic rebuilding of images](https://github.com/canonical/github-runner-image-builder-operator/pull/85) (2025-02-24)
+> Fix the periodic rebuilding of images.
+
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* None
+
+### New Features
+* None
+
+### Bug Fixes
+* Periodic image building using a cron job was not working.
+* The upgrade charm hook did not re-initialize the builder, making the builder not work after an upgrade from revision 51.
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+* 
 
 
 ## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
