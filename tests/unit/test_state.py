@@ -118,7 +118,7 @@ def test_arch_str(arch: state.Arch, expected_str: str):
     "image",
     [
         pytest.param("dingo", id="dingo"),
-        pytest.param("focal", id="focal"),
+        pytest.param("bionic", id="bionic"),
         pytest.param("firefox", id="firefox"),
     ],
 )

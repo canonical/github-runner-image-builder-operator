@@ -87,7 +87,11 @@ class BaseImage(str, Enum):
         return cls(tag_or_name)
 
 
-LTS_IMAGE_VERSION_TAG_MAP = {"20.04": BaseImage.FOCAL.value, "22.04": BaseImage.JAMMY.value, "24.04": BaseImage.NOBLE.value}
+LTS_IMAGE_VERSION_TAG_MAP = {
+    "20.04": BaseImage.FOCAL.value,
+    "22.04": BaseImage.JAMMY.value,
+    "24.04": BaseImage.NOBLE.value,
+}
 BASE_CHOICES = tuple(
     itertools.chain.from_iterable((tag, name) for (tag, name) in LTS_IMAGE_VERSION_TAG_MAP.items())
 )
