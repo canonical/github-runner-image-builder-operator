@@ -159,6 +159,7 @@ def test_base_image(image: str, expected_base_image: state.BaseImage):
 @pytest.mark.parametrize(
     "base_image, expected_str",
     [
+        pytest.param(state.BaseImage.FOCAL, state.BaseImage.FOCAL.value),
         pytest.param(state.BaseImage.JAMMY, state.BaseImage.JAMMY.value),
         pytest.param(state.BaseImage.NOBLE, state.BaseImage.NOBLE.value),
     ],

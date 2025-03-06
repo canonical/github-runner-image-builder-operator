@@ -45,10 +45,12 @@ class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
 
     Attributes:
+        FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
     """
 
+    FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
 
@@ -63,6 +65,8 @@ class BaseImage(str, Enum):
             The release version of the current base image.
         """
         match base:
+            case BaseImage.FOCAL:
+                return "20.04"
             case BaseImage.JAMMY:
                 return "22.04"
             case BaseImage.NOBLE:
@@ -83,7 +87,7 @@ class BaseImage(str, Enum):
         return cls(tag_or_name)
 
 
-LTS_IMAGE_VERSION_TAG_MAP = {"22.04": BaseImage.JAMMY.value, "24.04": BaseImage.NOBLE.value}
+LTS_IMAGE_VERSION_TAG_MAP = {"20.04": BaseImage.FOCAL.value, "22.04": BaseImage.JAMMY.value, "24.04": BaseImage.NOBLE.value}
 BASE_CHOICES = tuple(
     itertools.chain.from_iterable((tag, name) for (tag, name) in LTS_IMAGE_VERSION_TAG_MAP.items())
 )
