@@ -10,8 +10,6 @@ function configure_proxy() {
         return
     fi
     echo "Installing aproxy"
-    /usr/bin/sudo apt-get update -y
-    /usr/bin/sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq nftables
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
@@ -41,7 +39,7 @@ function install_apt_packages() {
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${packages}
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables ${packages} 
     echo "Installing linux-generic-hwe-${hwe_version}"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${hwe_version}
 }
@@ -150,8 +148,8 @@ github_runner_arch="{{ RUNNER_ARCH }}"
 script_url="{{ SCRIPT_URL }}"
 script_secrets="{{ SCRIPT_SECRETS }}"
 
-configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
+configure_proxy "$proxy"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin

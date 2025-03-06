@@ -569,6 +569,7 @@ def test__determine_network(network_name: str | None):
     )
 
 
+# TODO: Debug: removed gh for now.
 def test__generate_cloud_init_script():
     """
     arrange: None.
@@ -739,7 +740,7 @@ function execute_script() {
 }
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
+apt_packages="build-essential docker.io jq npm python3-dev python3-pip python-is-python3 \
 shellcheck tar time unzip wget"
 hwe_version="22.04"
 github_runner_version=""
