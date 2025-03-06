@@ -32,9 +32,5 @@ class GetLatestImageError(BuilderBaseError):
     """Represents an error while fetching the latest image."""
 
 
-class UpgradeApplicationError(BuilderBaseError):
-    """Represents an error while upgrading the application."""
-
-
 class PipXError(Exception):
     """Represents an error while interacting with pipx."""

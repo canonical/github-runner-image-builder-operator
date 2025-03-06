@@ -5,6 +5,8 @@
 
 import dataclasses
 
+from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
+
 
 @dataclasses.dataclass
 class Commands:
@@ -14,13 +16,11 @@ class Commands:
         name: The test name.
         command: The command to execute.
         env: Additional run envs.
-        external: OpenStack VM test only (Chroot unsupported test).
     """
 
     name: str
     command: str
     env: dict | None = None
-    external: bool = False
 
 
 TEST_RUNNER_COMMANDS = (
@@ -29,6 +29,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin"),
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
+    ),
+    Commands(
+        name="check aproxy",
+        command="sudo snap info aproxy && sudo snap services aproxy",
     ),
     Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
@@ -44,7 +48,11 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
-    Commands(name="test HWE kernel", command="uname -a | grep generic"),
+    Commands(
+        name="test that HWE kernel is installed",
+        command="uname -a | "
+        "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
+    ),
     Commands(
         name="test network congestion policy(fq)",
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
@@ -56,16 +64,47 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test external script",
         command="cat /home/ubuntu/test.txt | grep 'hello world'",
-        external=True,
     ),
     Commands(
         name="test external script secrets (should exist)",
         command='grep -q "SHOULD_EXIST" secret.txt',
-        external=True,
     ),
     Commands(
         name="test external script secrets (should not exist)",
         command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
-        external=True,
+    ),
+    # following commands are security related - ensure no traces of the external script are
+    # kept in the image
+    Commands(
+        name="journal does not contain external script secrets",
+        command="! journalctl | grep 'SHOULD_EXIST'",
+    ),
+    Commands(
+        name="journal does not contain external script secrets",
+        command="! journalctl | grep 'SHOULD_NOT_EXIST'",
+    ),
+    Commands(
+        name="journal does not contain external script url",
+        command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
+    ),
+    Commands(
+        name="journal does not contain script content",
+        command="! journalctl | grep '/home/ubuntu/secret.txt'",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'SHOULD_EXIST' /var/log/auth.log*",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'SHOULD_NOT_EXIST' /var/log/auth.log*",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script url",
+        command=f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
+    ),
+    Commands(
+        name="/var/log/auth.logs does not contain script content",
+        command="! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )

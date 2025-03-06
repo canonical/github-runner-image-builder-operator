@@ -55,17 +55,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
-        proxy.setup(proxy=state.ProxyConfig.from_env())
-        builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        builder.initialize(
-            app_init_config=builder.ApplicationInitializationConfig(
-                cloud_config=builder_config_state.cloud_config,
-                cron_interval=builder_config_state.app_config.build_interval,
-                image_arch=builder_config_state.image_config.arch,
-                resource_prefix=builder_config_state.app_config.resource_prefix,
-                unit_name=self.unit.name,
-            )
-        )
+        self._setup_builder()
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
     @charm_utils.block_if_invalid_config(defer=True)
@@ -75,7 +65,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         Upgrades the application.
         """
         self.unit.status = ops.MaintenanceStatus("Running builder upgrade.")
-        builder.upgrade_app()
+        self._setup_builder()
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
@@ -138,6 +128,20 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             return
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
+
+    def _setup_builder(self) -> None:
+        """Set up the builder application."""
+        proxy.setup(proxy=state.ProxyConfig.from_env())
+        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        builder.initialize(
+            app_init_config=builder.ApplicationInitializationConfig(
+                cloud_config=builder_config_state.cloud_config,
+                cron_interval=builder_config_state.app_config.build_interval,
+                image_arch=builder_config_state.image_config.arch,
+                resource_prefix=builder_config_state.app_config.resource_prefix,
+                unit_name=self.unit.name,
+            )
+        )
 
     def _is_image_relation_ready_set_status(self, cloud_config: state.CloudConfig) -> bool:
         """Check if image relation is ready and set according status otherwise.

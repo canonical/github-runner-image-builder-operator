@@ -66,7 +66,19 @@ def test_block_on_state_error(
     assert charm.unit.status == ops.BlockedStatus("Invalid config")
 
 
-def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
+@pytest.mark.parametrize(
+    "hook,expected_active_msg",
+    [
+        pytest.param("_on_install", "Waiting for first image.", id="_on_install"),
+        pytest.param("_on_upgrade_charm", "", id="_on_upgrade_charm"),
+    ],
+)
+def test_installation(
+    monkeypatch: pytest.MonkeyPatch,
+    charm: GithubRunnerImageBuilderCharm,
+    hook: str,
+    expected_active_msg: str,
+):
     """
     arrange: given a monekypatched builder.setup_builder function.
     act: when _on_install is called.
@@ -77,26 +89,10 @@ def test__on_install(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBu
     monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
 
-    charm._on_install(MagicMock())
+    getattr(charm, hook)(MagicMock())
 
     setup_mock.assert_called_once()
-    assert charm.unit.status == ops.ActiveStatus("Waiting for first image.")
-
-
-def test__on_upgrade_charm(monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm):
-    """
-    arrange: given a monekypatched builder.upgrade_app function.
-    act: when _on_upgrade_charm is called.
-    assert: upgrade_app is called.
-    """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
-    monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(proxy, "setup", MagicMock())
-    monkeypatch.setattr(builder, "upgrade_app", (upgrade_app_mock := MagicMock()))
-
-    charm._on_upgrade_charm(MagicMock())
-
-    upgrade_app_mock.assert_called_once()
+    assert charm.unit.status == ops.ActiveStatus(expected_active_msg)
 
 
 def test__on_image_relation_changed(
@@ -111,7 +107,6 @@ def test__on_image_relation_changed(
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
-    monkeypatch.setattr(builder, "upgrade_app", MagicMock())
     charm.image_observer = MagicMock()
 
     charm._on_image_relation_changed(MagicMock())
