@@ -139,11 +139,15 @@ def make_dangling_resources_fixture(
     """Make OpenStack resources that imitates failed run."""
     server = None
     try:
+        builder_name = openstack_builder._get_builder_name(
+            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+        )
+        image_name = openstack_builder._get_base_image_name(
+            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+        )
         server = openstack_metadata.connection.create_server(
-            name=openstack_builder._get_builder_name(
-                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-            ),
-            image=f"image-builder-base-jammy-{image_config.arch.value}",
+            name=builder_name,
+            image=image_name,
             flavor=openstack_metadata.flavor,
             network=openstack_metadata.network,
             security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
