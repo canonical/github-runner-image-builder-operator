@@ -30,7 +30,9 @@ from openstack.image.v2.image import Image
 from openstack.network.v2.security_group import SecurityGroup
 from pytest_operator.plugin import OpsTest
 
+import state
 from state import (
+    ARCHITECTURE_CONFIG_NAME,
     BASE_IMAGE_CONFIG_NAME,
     BUILD_INTERVAL_CONFIG_NAME,
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
@@ -44,7 +46,6 @@ from state import (
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
     SCRIPT_SECRET_CONFIG_NAME,
     SCRIPT_URL_CONFIG_NAME,
-    _get_supported_arch,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (
@@ -130,6 +131,21 @@ async def test_charm_fixture(
     logger.info("Cleaning up test charm.")
     await model.remove_application(app_name=app_name)
     logger.info("Test charm removed.")
+
+
+@pytest.fixture(scope="module", name="arch")
+def arch_fixture(pytestconfig: pytest.Config):
+    """The testing architecture."""
+    arch = pytestconfig.getoption("--arch")
+    assert arch, "Please specify the --arch command line option"
+    match arch:
+        case "arm64":
+            return state.Arch.ARM64
+        case "amd64":
+            return state.Arch.X64
+        case "s390x":
+            return state.Arch.S390X
+    raise ValueError(f"Unsupported testing architecture {arch}")
 
 
 @pytest.fixture(scope="module", name="network_name")
@@ -247,9 +263,11 @@ def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
+    arch: state.Arch,
 ) -> dict:
     """The image builder application config."""
     return {
+        ARCHITECTURE_CONFIG_NAME: arch.value,
         BASE_IMAGE_CONFIG_NAME: ",".join(image_configs.bases),
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
@@ -421,10 +439,9 @@ def openstack_metadata_fixture(
 
 
 @pytest.fixture(scope="module", name="image_names")
-def image_names_fixture(image_configs: ImageConfigs, app: Application):
+def image_names_fixture(image_configs: ImageConfigs, app: Application, arch: state.Arch):
     """Expected image names after imagebuilder run."""
     image_names = []
-    arch = _get_supported_arch()
     for base in image_configs.bases:
         image_names.append(f"{app.name}-{base}-{arch.value}")
     return image_names
@@ -436,9 +453,9 @@ async def bare_image_id_fixture(
     dispatch_time: datetime,
     image_configs: ImageConfigs,
     app: Application,
+    arch: state.Arch,
 ):
     """The bare image expected from builder application."""
-    arch = _get_supported_arch()
     image: Image | None = await wait_for(
         functools.partial(
             image_created_from_dispatch,

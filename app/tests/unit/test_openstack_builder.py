@@ -619,16 +619,33 @@ def test__determine_network(network_name: str | None):
     )
 
 
-def test__generate_cloud_init_script():
+@pytest.mark.parametrize(
+    "arch, expected_runner_binary_repo, additional_apt_packages",
+    [
+        pytest.param(openstack_builder.Arch.X64, "actions/runner", [], id="x64"),
+        pytest.param(openstack_builder.Arch.ARM64, "actions/runner", [], id="arm64"),
+        pytest.param(
+            openstack_builder.Arch.S390X,
+            "canonical/github-actions-runner",
+            ["dotnet-runtime-8.0"],
+            id="s390x",
+        ),
+    ],
+)
+def test__generate_cloud_init_script(
+    arch: openstack_builder.Arch,
+    expected_runner_binary_repo: str,
+    additional_apt_packages: list[str],
+):
     """
-    arrange: None.
+    arrange: A certain architecture.
     act: when _generate_cloud_init_script is run.
-    assert: cloud init template is generated.
+    assert: expected cloud init template is generated.
     """
     assert (
         openstack_builder._generate_cloud_init_script(
             image_config=openstack_builder.config.ImageConfig(
-                arch=openstack_builder.Arch.X64,
+                arch=arch,
                 base=openstack_builder.BaseImage.JAMMY,
                 runner_version="",
                 name="test-image",
@@ -641,13 +658,13 @@ def test__generate_cloud_init_script():
         )
         # The templated script contains similar lines to helper for setting up proxy.
         # pylint: disable=R0801
-        == """#!/bin/bash
+        == f"""#!/bin/bash
 
 set -e
 
 hostnamectl set-hostname github-runner
 
-function configure_proxy() {
+function configure_proxy() {{
     local proxy="$1"
     if [[ -z "$proxy" ]]; then
         return
@@ -655,104 +672,100 @@ function configure_proxy() {
     echo "Installing aproxy"
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP \
-'src \\K\\S+')
-define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
+define private-ips = {{ 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }}
 table ip aproxy
 flush table ip aproxy
-table ip aproxy {
-        chain prerouting {
+table ip aproxy {{
+        chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
-                ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8444
-        }
-        chain output {
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+        }}
+        chain output {{
                 type nat hook output priority -100; policy accept;
-                ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8444
-        }
-}
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+        }}
+}}
 EOF
     echo "Configuring aproxy"
-    /usr/bin/sudo snap set aproxy proxy=${proxy} listen=:8444;
+    /usr/bin/sudo snap set aproxy proxy=${{proxy}} listen=:8444;
     echo "Wait for aproxy to start"
     sleep 5
-}
+}}
 
-function install_apt_packages() {
+function install_apt_packages() {{
     local packages="$1"
     local hwe_version="$2"
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${packages}
-    echo "Installing linux-generic-hwe-${hwe_version}"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends \
-linux-generic-hwe-${hwe_version}
-}
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
+    echo "Installing linux-generic-hwe-${{hwe_version}}"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
+}}
 
-function disable_unattended_upgrades() {
+function disable_unattended_upgrades() {{
     echo "Disabling unattended upgrades"
     /usr/bin/systemctl disable apt-daily.timer
     /usr/bin/systemctl disable apt-daily.service
     /usr/bin/systemctl disable apt-daily-upgrade.timer
     /usr/bin/systemctl disable apt-daily-upgrade.service
     /usr/bin/apt-get remove -y unattended-upgrades
-}
+}}
 
-function enable_network_fair_queuing_congestion() {
+function enable_network_fair_queuing_congestion() {{
     /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 EOF
     /usr/sbin/sysctl -p
-}
+}}
 
-function configure_usr_local_bin() {
+function configure_usr_local_bin() {{
     echo "Configuring /usr/local/bin path"
     /usr/bin/chmod 777 /usr/local/bin
-}
+}}
 
-function install_yarn() {
+function install_yarn() {{
     echo "Installing yarn"
     /usr/bin/npm install --global yarn
     /usr/bin/npm cache clean --force
-}
+}}
 
-function install_yq() {
+function install_yq() {{
     /usr/bin/sudo -E /usr/bin/snap install go --classic
     /usr/bin/sudo -E /usr/bin/git clone https://github.com/mikefarah/yq.git
     /usr/bin/sudo -E /snap/bin/go mod tidy -C yq
     /usr/bin/sudo -E /snap/bin/go build -C yq -o /usr/bin/yq
     /usr/bin/sudo -E /usr/bin/rm -rf yq
     /usr/bin/sudo -E /usr/bin/snap remove go
-}
+}}
 
-function install_github_runner() {
+function install_github_runner() {{
     version="$1"
     arch="$2"
     echo "Installing GitHub runner"
     if [[ -z "$version" ]]; then
         # Follow redirectin to get latest version release location
         # e.g. https://github.com/actions/runner/releases/tag/v2.318.0
-        location=$(curl -sIL "https://github.com/actions/runner/releases/latest" | sed -n \
-'s/^location: *//p' | tr -d '[:space:]')
+        location=$(curl -sIL "https://github.com/${{runner_binary_repo}}/releases/latest" | sed -n\
+ 's/^location: *//p' | tr -d '[:space:]')
         # remove longest prefix from the right that matches the pattern */v
         # e.g. 2.318.0
-        version=${location##*/v}
+        version=${{location##*/v}}
     fi
-    /usr/bin/wget "https://github.com/actions/runner/releases/download/v$version/\
-actions-runner-linux-$arch-$version.tar.gz"
+    /usr/bin/wget "https://github.com/${{runner_binary_repo}}/releases/download/v$version/actions-runner-linux-$arch-$version.tar.gz"
     /usr/bin/mkdir -p /home/ubuntu/actions-runner
-    /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory \
-/home/ubuntu/actions-runner
+    /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory /home/ubuntu/actions-runner
 
     rm "actions-runner-linux-$arch-$version.tar.gz"
-}
+}}
 
-function chown_home() {
+function chown_home() {{
     /usr/bin/chown --recursive ubuntu:ubuntu /home/ubuntu/
-}
+}}
 
-function configure_system_users() {
+function configure_system_users() {{
     echo "Configuring ubuntu user"
     # only add ubuntu user if ubuntu does not exist
     /usr/bin/id -u ubuntu &>/dev/null || useradd --create-home ubuntu
@@ -761,15 +774,16 @@ function configure_system_users() {
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
-}
+}}
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
-shellcheck tar time unzip wget"
+apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck tar time unzip wget{
+    (' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
 github_runner_version=""
-github_runner_arch="x64"
+github_runner_arch="{arch.value}"
+runner_binary_repo="{ expected_runner_binary_repo }"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
@@ -783,7 +797,7 @@ su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
-"""
+"""  # noqa: E501
     )
     # pylint: enable=R0801
 
