@@ -22,4 +22,5 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-Currently, jammy (22.04) and noble (24.04) are supported.
+Currently, focal(20.04), jammy (22.04), and noble (24.04) are supported.
+Note: Yarn is not pre-installed for focal images.

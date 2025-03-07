@@ -114,7 +114,7 @@ def create_lxd_vm_image(
     return lxd_image
 
 
-IMAGE_TO_TAG = {"jammy": "22.04", "noble": "24.04"}
+IMAGE_TO_TAG = {"focal": "20.04", "jammy": "22.04", "noble": "24.04"}
 
 
 def _create_metadata_tar_gz(image: str, tmp_path: Path) -> Path:

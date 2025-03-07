@@ -118,7 +118,7 @@ def test_arch_str(arch: state.Arch, expected_str: str):
     "image",
     [
         pytest.param("dingo", id="dingo"),
-        pytest.param("focal", id="focal"),
+        pytest.param("bionic", id="bionic"),
         pytest.param("firefox", id="firefox"),
     ],
 )
@@ -159,6 +159,7 @@ def test_base_image(image: str, expected_base_image: state.BaseImage):
 @pytest.mark.parametrize(
     "base_image, expected_str",
     [
+        pytest.param(state.BaseImage.FOCAL, state.BaseImage.FOCAL.value),
         pytest.param(state.BaseImage.JAMMY, state.BaseImage.JAMMY.value),
         pytest.param(state.BaseImage.NOBLE, state.BaseImage.NOBLE.value),
     ],

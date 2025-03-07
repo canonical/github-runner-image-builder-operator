@@ -1,3 +1,25 @@
+## [#91 Feature: Add focal support](https://github.com/canonical/github-runner-image-builder-operator/pull/91) (2025-03-07)
+> Add support for building focal images.
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* None
+
+### New Features
+* Add focal as a option for base image. To build focal images specify "focal" as the `base-image` in charm configuration. Note, the focal image does not have yarn pre-installed.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
+
 ## [#88 Fix: move external script secret out of cloud-init](https://github.com/canonical/github-runner-image-builder-operator/pull/88) (2025-03-04)
 > Move running the external script out of cloud-init and use SSH instead.
 
