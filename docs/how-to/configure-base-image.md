@@ -23,3 +23,4 @@ juju deploy github-runner-image-builder \
 ```
 
 Currently, focal(20.04), jammy (22.04), and noble (24.04) are supported.
+Note: Yarn is not pre-installed for focal images.
