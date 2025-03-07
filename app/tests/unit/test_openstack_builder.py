@@ -645,6 +645,8 @@ def test__generate_cloud_init_script():
 
 set -e
 
+RELEASE=$(lsb_release -a | grep Codename: | awk '{print $2}')
+
 hostnamectl set-hostname github-runner
 
 function configure_proxy() {
@@ -652,6 +654,14 @@ function configure_proxy() {
     if [[ -z "$proxy" ]]; then
         return
     fi
+    
+    if [ $RELEASE == "focal" ]; then
+        echo "Ensure nftables is installed on focal"
+        # Focal does not have nftables install by default. Jammy and onward would not need this.
+        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+    fi
+
     echo "Installing aproxy"
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo nft -f - << EOF
@@ -680,6 +690,18 @@ EOF
 function install_apt_packages() {
     local packages="$1"
     local hwe_version="$2"
+
+    if [ $RELEASE == focal ]; then
+        mkdir -p -m 755 /etc/apt/keyrings
+        out=$(mktemp)
+        wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg
+        cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+        chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) \
+signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages \
+stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    fi
+
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
@@ -776,7 +798,9 @@ install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
-install_yarn
+if [ $RELEASE != "focal" ]; then
+    install_yarn
+fi
 # install yq with ubuntu user due to GOPATH related go configuration settings
 export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
