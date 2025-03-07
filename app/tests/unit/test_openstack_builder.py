@@ -672,21 +672,18 @@ function configure_proxy() {{
     echo "Installing aproxy"
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP \
-'src \\K\\S+')
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
 define private-ips = {{ 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }}
 table ip aproxy
 flush table ip aproxy
 table ip aproxy {{
         chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8\
-444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
         }}
         chain output {{
                 type nat hook output priority -100; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8\
-444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
         }}
 }}
 EOF
@@ -702,11 +699,9 @@ function install_apt_packages() {{
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends \
-${{packages}}
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
     echo "Installing linux-generic-hwe-${{hwe_version}}"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends \
-linux-generic-hwe-${{hwe_version}}
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
 }}
 
 function disable_unattended_upgrades() {{
@@ -759,11 +754,9 @@ function install_github_runner() {{
         # e.g. 2.318.0
         version=${{location##*/v}}
     fi
-    /usr/bin/wget "https://github.com/${{runner_binary_repo}}/releases/download/v$version/\
-actions-runner-linux-$arch-$version.tar.gz"
+    /usr/bin/wget "https://github.com/${{runner_binary_repo}}/releases/download/v$version/actions-runner-linux-$arch-$version.tar.gz"
     /usr/bin/mkdir -p /home/ubuntu/actions-runner
-    /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory \
-/home/ubuntu/actions-runner
+    /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory /home/ubuntu/actions-runner
 
     rm "actions-runner-linux-$arch-$version.tar.gz"
 }}
@@ -785,15 +778,12 @@ function configure_system_users() {{
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 \
-shellcheck tar time unzip wget{
+apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck tar time unzip wget{
     (' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="{ expected_runner_binary_repo }"
-script_url="https://test-url.com/script.sh"
-script_secrets="TEST_SECRET_ONE=HELLO TEST_SECRET_TWO=WORLD"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
@@ -807,7 +797,7 @@ su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
-"""
+"""  # noqa: E501
     )
     # pylint: enable=R0801
 
