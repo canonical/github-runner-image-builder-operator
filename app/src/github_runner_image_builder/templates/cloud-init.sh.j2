@@ -11,7 +11,7 @@ function configure_proxy() {
     if [[ -z "$proxy" ]]; then
         return
     fi
-    
+
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
