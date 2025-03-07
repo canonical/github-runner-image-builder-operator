@@ -147,7 +147,9 @@ install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
-install_yarn
+if [ $RELEASE != "focal" ]; then
+    install_yarn
+fi
 # install yq with ubuntu user due to GOPATH related go configuration settings
 export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
