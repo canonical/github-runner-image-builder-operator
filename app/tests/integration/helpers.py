@@ -36,6 +36,13 @@ from tests.integration import commands, types
 
 logger = logging.getLogger(__name__)
 
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "cc9d06c43a5feabd278265ab580eca14d5acffd4/app/tests/integration/testdata/test_script.sh"
+)
+
+
 P = ParamSpec("P")
 R = TypeVar("R")
 S = Callable[P, R] | Callable[P, Awaitable[R]]
@@ -250,7 +257,6 @@ class OpenStackConnectionParams:
 async def wait_for_valid_connection(
     connection_params: OpenStackConnectionParams,
     timeout: int = 30 * 60,
-    proxy: types.ProxyConfig | None = None,
     dockerhub_mirror: urllib.parse.ParseResult | None = None,
 ) -> SSHConnection:
     """Wait for a valid SSH connection from Openstack server.
@@ -258,7 +264,6 @@ async def wait_for_valid_connection(
     Args:
         connection_params: Parameters for connecting to OpenStack instance.
         timeout: Number of seconds to wait before raising a timeout error.
-        proxy: The proxy to configure on host runner.
         dockerhub_mirror: The DockerHub mirror URL.
 
     Raises:
@@ -291,7 +296,6 @@ async def wait_for_valid_connection(
             try:
                 result: Result = ssh_connection.run("echo 'hello world'")
                 if result.ok:
-                    await _install_proxy(conn=ssh_connection, proxy=proxy)
                     _configure_dockerhub_mirror(
                         conn=ssh_connection, dockerhub_mirror=dockerhub_mirror
                     )
@@ -300,51 +304,6 @@ async def wait_for_valid_connection(
                 logger.warning("Connection not yet ready, %s.", str(exc))
         time.sleep(10)
     raise TimeoutError("No valid ssh connections found.")
-
-
-async def _install_proxy(conn: SSHConnection, proxy: types.ProxyConfig | None = None):
-    """Run commands to install proxy.
-
-    Args:
-        conn: The SSH connection instance.
-        proxy: The proxy to apply if available.
-    """
-    if not proxy or not proxy.http:
-        return
-    await wait_for(partial(_snap_ready, conn))
-
-    command = "sudo snap install aproxy --edge"
-    logger.info("Running command: %s", command)
-    result: Result = conn.run(command)
-    assert result.ok, "Failed to install aproxy"
-
-    proxy_str = proxy.http.replace("http://", "").replace("https://", "")
-    command = f"sudo snap set aproxy proxy={proxy_str}"
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to setup aproxy"
-
-    # ignore line too long since it is better read without line breaks
-    command = """/usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
-define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
-table ip aproxy
-flush table ip aproxy
-table ip aproxy {
-    chain prerouting {
-            type nat hook prerouting priority dstnat; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-
-    chain output {
-            type nat hook output priority -100; policy accept;
-            ip daddr != \\$private-ips tcp dport { 80, 443 } counter dnat to \\$default-ip:8443
-    }
-}
-EOF"""  # noqa: E501
-    logger.info("Running command: %s", command)
-    result = conn.run(command)
-    assert result.ok, "Failed to configure iptable rules"
 
 
 def _snap_ready(conn: SSHConnection) -> bool:
@@ -415,19 +374,13 @@ def format_dockerhub_mirror_microk8s_command(
     )
 
 
-def run_openstack_tests(
-    ssh_connection: SSHConnection,
-    external: bool = False,
-):
+def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
 
     Args:
         ssh_connection: The SSH connection instance to OpenStack test server.
-        external: Whether the test is for external VM builder image test.
     """
     for testcmd in commands.TEST_RUNNER_COMMANDS:
-        if not external and testcmd.external:
-            continue
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)

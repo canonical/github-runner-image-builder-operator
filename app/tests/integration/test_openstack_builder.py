@@ -16,12 +16,14 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from fabric.connection import Connection as SSHConnection
+from integration.helpers import TESTDATA_TEST_SCRIPT_URL
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config, openstack_builder
+from github_runner_image_builder.openstack_builder import CREATE_SERVER_TIMEOUT
 from tests.integration import helpers, types
 
 logger = logging.getLogger(__name__)
@@ -96,72 +98,81 @@ def image_ids_fixture(
     openstack_metadata: types.OpenstackMeta,
     test_id: str,
     proxy: types.ProxyConfig,
-) -> list[str]:
+) -> typing.Iterator[list[str]]:
     """A CLI run.
 
     This fixture assumes pipx is installed in the system and the github-runner-image-builder has
     been installed using pipx. See testenv:integration section of tox.ini.
     """
-    image_ids = openstack_builder.run(
-        cloud_config=openstack_builder.CloudConfig(
-            cloud_name=openstack_metadata.cloud_name,
-            flavor=openstack_metadata.flavor,
-            network=openstack_metadata.network,
-            proxy=proxy.http,
-            prefix=test_id,
-            upload_cloud_names=[openstack_metadata.cloud_name],
-        ),
-        image_config=config.ImageConfig(
-            arch=image_config.arch,
-            base=config.BaseImage.from_str(image_config.image),
-            runner_version="",
-            name=f"{test_id}-image-builder-test",
-            script_config=config.ScriptConfig(
-                script_url=urllib.parse.urlparse(
-                    "https://raw.githubusercontent.com/canonical/github-runner-image-builder/"
-                    "eb0ca315bf8c7aa732b811120cbabca4b8d16216/tests/integration/testdata/"
-                    "test_script.sh"
-                ),
-                script_secrets={
-                    "TEST_SECRET": "SHOULD_EXIST",
-                    "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
-                },
+    try:
+        image_ids = openstack_builder.run(
+            cloud_config=openstack_builder.CloudConfig(
+                cloud_name=openstack_metadata.cloud_name,
+                flavor=openstack_metadata.flavor,
+                network=openstack_metadata.network,
+                proxy=proxy.http,
+                prefix=test_id,
+                upload_cloud_names=[openstack_metadata.cloud_name],
             ),
-        ),
-        keep_revisions=1,
-    )
-    return image_ids.split(",")
+            image_config=config.ImageConfig(
+                arch=image_config.arch,
+                base=config.BaseImage.from_str(image_config.image),
+                runner_version="",
+                name=f"{test_id}-image-builder-test",
+                script_config=config.ScriptConfig(
+                    script_url=urllib.parse.urlparse(TESTDATA_TEST_SCRIPT_URL),
+                    script_secrets={
+                        "TEST_SECRET": "SHOULD_EXIST",
+                        "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+                    },
+                ),
+            ),
+            keep_revisions=1,
+        )
+        yield image_ids.split(",")
+
+    finally:
+        # cleanup resources
+        openstack_metadata.connection.delete_server(
+            name_or_id=openstack_builder._get_builder_name(
+                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+            )
+        )
+        openstack_metadata.connection.delete_keypair(
+            name=openstack_builder._get_keypair_name(prefix=test_id)
+        )
 
 
 @pytest.fixture(scope="module", name="make_dangling_resources")
-async def make_dangling_resources_fixture(
+def make_dangling_resources_fixture(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """Make OpenStack resources that imitates failed run."""
-    keypair = openstack_metadata.connection.create_keypair(
-        openstack_builder._get_keypair_name(prefix=test_id)
-    )
-    server = openstack_metadata.connection.create_server(
-        name=openstack_builder._get_builder_name(
-            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-        ),
-        image=f"image-builder-base-jammy-{image_config.arch.value}",
-        flavor=openstack_metadata.flavor,
-        network=openstack_metadata.network,
-        security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
-        wait=True,
-    )
+    server = None
+    try:
+        server = openstack_metadata.connection.create_server(
+            name=openstack_builder._get_builder_name(
+                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+            ),
+            image=f"image-builder-base-jammy-{image_config.arch.value}",
+            flavor=openstack_metadata.flavor,
+            network=openstack_metadata.network,
+            security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
+            auto_ip=False,
+            wait=True,
+            timeout=CREATE_SERVER_TIMEOUT,
+        )
 
-    yield
-
-    openstack_metadata.connection.delete_keypair(name=keypair.name)
-    openstack_metadata.connection.delete_server(name_or_id=server.id)
+        yield
+    finally:
+        if server:
+            openstack_metadata.connection.delete_server(name_or_id=server.id)
 
 
 # the code is similar but the fixture source is localized and is different.
 # pylint: disable=R0801
-@pytest_asyncio.fixture(scope="module", name="openstack_server")
-async def openstack_server_fixture(
+@pytest.fixture(scope="module", name="openstack_server")
+def openstack_server_fixture(
     openstack_metadata: types.OpenstackMeta,
     openstack_security_group: SecurityGroup,
     test_id: str,
@@ -170,21 +181,20 @@ async def openstack_server_fixture(
     """A testing openstack instance."""
     image: Image = openstack_metadata.connection.get_image(name_or_id=image_ids[0])
     server_name = f"test-image-builder-run-{test_id}"
-    for server in helpers.create_openstack_server(
+    yield from helpers.create_openstack_server(
         openstack_metadata=openstack_metadata,
         server_name=server_name,
         image=image,
         security_group=openstack_security_group,
-    ):
-        yield server
+    )
     openstack_metadata.connection.delete_image(image.id)
 
 
 @pytest_asyncio.fixture(scope="module", name="ssh_connection")
 async def ssh_connection_fixture(
     openstack_server: Server,
-    proxy: types.ProxyConfig,
     openstack_metadata: types.OpenstackMeta,
+    dockerhub_mirror: urllib.parse.ParseResult | None,
 ) -> SSHConnection:
     """The openstack server ssh connection fixture."""
     logger.info("Setting up SSH connection.")
@@ -195,19 +205,16 @@ async def ssh_connection_fixture(
             network=openstack_metadata.network,
             ssh_key=openstack_metadata.ssh_key.private_key,
         ),
-        proxy=proxy,
+        dockerhub_mirror=dockerhub_mirror,
     )
 
     return ssh_connection
 
 
-# pylint: enable=R0801
-
-
 @pytest.mark.amd64
 @pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
-async def test_run(
+def test_run(
     ssh_connection: SSHConnection,
 ):
     """
@@ -215,12 +222,12 @@ async def test_run(
     act: when run (build image) is called.
     assert: an image snapshot of working VM is created with the ability to run expected commands.
     """
-    helpers.run_openstack_tests(ssh_connection=ssh_connection, external=True)
+    helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 
 @pytest.mark.amd64
 @pytest.mark.arm64
-async def test_openstack_state(
+def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
     """
@@ -228,7 +235,7 @@ async def test_openstack_state(
     act: None.
     assert: Dangling resources are cleaned up.
 
-    This test is dependent on the previons test_run test. Running a new test image building run
+    This test is dependent on the previous test_run test. Running a new test image building run
     is too costly at the moment.
     """
     server = openstack_metadata.connection.get_server(

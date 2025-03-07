@@ -135,38 +135,12 @@ function configure_system_users() {
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
 }
 
-function execute_script() {
-    local script_url="$1"
-    local env_vars="$2"
-    if [[ -z "$script_url" ]]; then
-        echo "Script URL not provided, skipping."
-        return
-    fi
-    # Write temp environment variables file, load and delete.
-    TEMP_FILE=$(mktemp)
-    IFS=' ' read -r -a vars <<< "$env_vars"
-    for var in "${vars[@]}"; do
-        echo "$var" >> "$TEMP_FILE"
-    done
-    # Source the temporary file and run the script
-    set -a  # Automatically export all variables
-    source "$TEMP_FILE"
-    rm "$TEMP_FILE"
-    set +a  # Stop automatically exporting variables
-
-    wget "$script_url" -O external.sh
-    chmod +x external.sh
-    ./external.sh
-    rm external.sh
-}
 
 proxy="{{ PROXY_URL }}"
 apt_packages="{{ APT_PACKAGES }}"
 hwe_version="{{ HWE_VERSION }}"
 github_runner_version="{{ RUNNER_VERSION }}"
 github_runner_arch="{{ RUNNER_ARCH }}"
-script_url="{{ SCRIPT_URL }}"
-script_secrets="{{ SCRIPT_SECRETS }}"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
@@ -180,8 +154,3 @@ su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users
-execute_script "$script_url" "$script_secrets"
-
-# Make sure the disk is synced for snapshot
-sync
-echo "Finished sync"
