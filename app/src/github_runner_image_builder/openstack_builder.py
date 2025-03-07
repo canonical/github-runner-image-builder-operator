@@ -38,7 +38,14 @@ from cryptography.hazmat.primitives import serialization
 
 import github_runner_image_builder.errors
 from github_runner_image_builder import cloud_image, config, store
-from github_runner_image_builder.config import IMAGE_DEFAULT_APT_PACKAGES, Arch, BaseImage
+from github_runner_image_builder.config import (
+    FORK_RUNNER_BINARY_REPO,
+    IMAGE_DEFAULT_APT_PACKAGES,
+    S390X_ADDITIONAL_APT_PACKAGES,
+    UPSTREAM_RUNNER_BINARY_REPO,
+    Arch,
+    BaseImage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -493,12 +500,20 @@ def _generate_cloud_init_script(
         autoescape=jinja2.select_autoescape(),
     )
     template = env.get_template("cloud-init.sh.j2")
+
+    apt_packages = IMAGE_DEFAULT_APT_PACKAGES
+    if image_config.arch == Arch.S390X:
+        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_ADDITIONAL_APT_PACKAGES
+        runner_binary_repo = FORK_RUNNER_BINARY_REPO
+    else:
+        runner_binary_repo = UPSTREAM_RUNNER_BINARY_REPO
     return template.render(
         PROXY_URL=proxy,
-        APT_PACKAGES=" ".join(IMAGE_DEFAULT_APT_PACKAGES),
+        APT_PACKAGES=" ".join(apt_packages),
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
+        RUNNER_BINARY_REPO=runner_binary_repo,
     )
 
 
