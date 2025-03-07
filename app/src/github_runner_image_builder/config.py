@@ -55,7 +55,7 @@ class BaseImage(str, Enum):
     NOBLE = "noble"
 
     @classmethod
-    def get_version(cls, base: "BaseImage") -> Literal["22.04", "24.04"]:
+    def get_version(cls, base: "BaseImage") -> Literal["20.04", "22.04", "24.04"]:
         """Change the codename to version tag.
 
         Args:
