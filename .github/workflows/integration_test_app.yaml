@@ -14,7 +14,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: Why is jammy not tested on arm? Should focal be tested on arm?
         image: [noble]
     steps:
       - uses: actions/checkout@v4.2.2
