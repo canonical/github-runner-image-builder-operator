@@ -15,8 +15,8 @@ function configure_proxy() {
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
 
     echo "Installing aproxy"
@@ -47,6 +47,8 @@ function install_apt_packages() {
     local packages="$1"
     local hwe_version="$2"
 
+    # The gh package (GitHub CLI application) is not in the APT repository for focal.
+    # For focal, the apt repository of GitHub is added.
     if [ $RELEASE == focal ]; then
         mkdir -p -m 755 /etc/apt/keyrings
         out=$(mktemp)

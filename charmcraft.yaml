@@ -73,8 +73,7 @@ config:
       description: |
         The base ubuntu OS image to use for the runners. Codename (e.g. "noble") or version tag
         (e.g. 24.04) is supported as input. Currently only supports LTS versions of focal and
-        higher, i.e. focal, jammy, noble. Focal cannot be built in environment where apt cannot be 
-        access without proxy.
+        higher, i.e. focal, jammy, noble.
     build-flavor:
       type: string
       default: ""
