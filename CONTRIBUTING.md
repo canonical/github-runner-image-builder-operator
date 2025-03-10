@@ -28,8 +28,7 @@ tox                      # runs 'format', 'lint', and 'unit' environments
 
 The integration tests (both of the charm and the app)
 require options to be passed via the command line (see `tests/conftest.py`) and 
-environment variables `OPENSTACK_PASSWORD_AMD64` and `OPENSTACK_PASSWORD_ARM64` to be able 
-to deploy the charm and/or upload images to OpenStack.
+environment variables `OPENSTACK_PASSWORD` to be able to deploy the charm and/or upload images to OpenStack.
 
 ## Build the charm
 

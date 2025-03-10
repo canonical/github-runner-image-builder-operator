@@ -110,12 +110,12 @@ function install_github_runner() {
     if [[ -z "$version" ]]; then
         # Follow redirectin to get latest version release location
         # e.g. https://github.com/actions/runner/releases/tag/v2.318.0
-        location=$(curl -sIL "https://github.com/actions/runner/releases/latest" | sed -n 's/^location: *//p' | tr -d '[:space:]')
+        location=$(curl -sIL "https://github.com/${runner_binary_repo}/releases/latest" | sed -n 's/^location: *//p' | tr -d '[:space:]')
         # remove longest prefix from the right that matches the pattern */v
         # e.g. 2.318.0
         version=${location##*/v}
     fi
-    /usr/bin/wget "https://github.com/actions/runner/releases/download/v$version/actions-runner-linux-$arch-$version.tar.gz"
+    /usr/bin/wget "https://github.com/${runner_binary_repo}/releases/download/v$version/actions-runner-linux-$arch-$version.tar.gz"
     /usr/bin/mkdir -p /home/ubuntu/actions-runner
     /usr/bin/tar -xvzf "actions-runner-linux-$arch-$version.tar.gz" --directory /home/ubuntu/actions-runner
 
@@ -143,6 +143,7 @@ apt_packages="{{ APT_PACKAGES }}"
 hwe_version="{{ HWE_VERSION }}"
 github_runner_version="{{ RUNNER_VERSION }}"
 github_runner_arch="{{ RUNNER_ARCH }}"
+runner_binary_repo="{{ RUNNER_BINARY_REPO }}"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"

@@ -31,6 +31,10 @@ TEST_RUNNER_COMMANDS = (
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
     ),
     Commands(
+        name="check github runner binary",
+        command="/home/ubuntu/actions-runner/run.sh --version",
+    ),
+    Commands(
         name="check aproxy",
         command="sudo snap info aproxy && sudo snap services aproxy",
     ),

@@ -29,8 +29,6 @@ from tests.integration import helpers, types
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 def test_initialize(
     openstack_connection: Connection, arch: config.Arch, cloud_name: str, test_id: str
 ):
@@ -150,11 +148,15 @@ def make_dangling_resources_fixture(
     """Make OpenStack resources that imitates failed run."""
     server = None
     try:
+        builder_name = openstack_builder._get_builder_name(
+            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+        )
+        image_name = openstack_builder._get_base_image_name(
+            arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
+        )
         server = openstack_metadata.connection.create_server(
-            name=openstack_builder._get_builder_name(
-                arch=image_config.arch, base=config.BaseImage(image_config.image), prefix=test_id
-            ),
-            image=f"image-builder-base-jammy-{image_config.arch.value}",
+            name=builder_name,
+            image=image_name,
             flavor=openstack_metadata.flavor,
             network=openstack_metadata.network,
             security_groups=[openstack_builder.SHARED_SECURITY_GROUP_NAME],
@@ -211,8 +213,6 @@ async def ssh_connection_fixture(
     return ssh_connection
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 @pytest.mark.usefixtures("make_dangling_resources")
 def test_run(
     ssh_connection: SSHConnection,
@@ -225,8 +225,6 @@ def test_run(
     helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 
-@pytest.mark.amd64
-@pytest.mark.arm64
 def test_openstack_state(
     openstack_metadata: types.OpenstackMeta, test_id: str, image_config: types.ImageConfig
 ):
