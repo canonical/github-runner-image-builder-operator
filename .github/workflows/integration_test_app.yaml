@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [jammy, noble]
+        image: [focal, jammy, noble]
         arch: [amd64, arm64, s390x]
         exclude:
           - image: jammy

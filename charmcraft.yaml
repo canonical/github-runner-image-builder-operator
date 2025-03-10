@@ -73,8 +73,8 @@ config:
       default: noble
       description: |
         The base ubuntu OS image to use for the runners. Codename (e.g. "noble") or version tag
-        (e.g. 24.04) is supported as input. Currently only supports LTS versions of noble and
-        higher, i.e. jammy, noble.
+        (e.g. 24.04) is supported as input. Currently only supports LTS versions of focal and
+        higher, i.e. focal, jammy, noble.
     build-flavor:
       type: string
       default: ""

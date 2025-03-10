@@ -36,7 +36,7 @@ def test_arch_openstack_conversion(arch: Arch, expected: str):
     "image",
     [
         pytest.param("dingo", id="dingo"),
-        pytest.param("focal", id="focal"),
+        pytest.param("bionic", id="bionic"),
         pytest.param("firefox", id="firefox"),
     ],
 )
@@ -71,6 +71,7 @@ def test_base_image(image: str, expected_base_image: BaseImage):
 @pytest.mark.parametrize(
     "base_image, expected_version",
     [
+        pytest.param(BaseImage.FOCAL, "20.04", id="focal"),
         pytest.param(BaseImage.JAMMY, "22.04", id="jammy"),
         pytest.param(BaseImage.NOBLE, "24.04", id="noble"),
         pytest.param(None, None, id="None"),

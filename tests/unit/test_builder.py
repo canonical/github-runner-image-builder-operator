@@ -489,9 +489,32 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     [
         pytest.param(
             builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY, state.BaseImage.NOBLE),
             ),
             (
+                builder.RunConfig(
+                    image=builder.ImageConfig(
+                        arch=TEST_STATIC_CONFIG.image_config.arch,
+                        base=state.BaseImage.FOCAL,
+                        prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        script_config=builder.ScriptConfig(
+                            script_url="https://test-url.com/script.sh",
+                            script_secrets={"test_secret": "test_value"},
+                        ),
+                        runner_version="1.2.3",
+                    ),
+                    cloud=builder.CloudConfig(
+                        build_cloud=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                        build_flavor=TEST_STATIC_CONFIG.cloud_config.build_flavor,
+                        build_network=TEST_STATIC_CONFIG.cloud_config.build_network,
+                        resource_prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                        num_revisions=TEST_STATIC_CONFIG.cloud_config.num_revisions,
+                        upload_clouds=TEST_STATIC_CONFIG.cloud_config.upload_clouds,
+                    ),
+                    external_service=builder.ExternalServiceConfig(
+                        proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                    ),
+                ),
                 builder.RunConfig(
                     image=builder.ImageConfig(
                         arch=TEST_STATIC_CONFIG.image_config.arch,
@@ -860,9 +883,15 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
     [
         pytest.param(
             builder.ConfigMatrix(
-                bases=(state.BaseImage.JAMMY, state.BaseImage.NOBLE),
+                bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY, state.BaseImage.NOBLE),
             ),
             (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.JAMMY,

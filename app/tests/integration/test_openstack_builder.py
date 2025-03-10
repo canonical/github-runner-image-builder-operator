@@ -47,6 +47,15 @@ def test_initialize(
 
     # 1.
     images: list[Image] = openstack_connection.list_images()
+    focal_images = filter(
+        functools.partial(
+            helpers.has_name,
+            name=openstack_builder._get_base_image_name(
+                arch=arch, base=config.BaseImage.FOCAL, prefix=prefix
+            ),
+        ),
+        images,
+    )
     jammy_images = filter(
         functools.partial(
             helpers.has_name,
@@ -65,7 +74,7 @@ def test_initialize(
         ),
         images,
     )
-    image_builder_images = itertools.chain(jammy_images, noble_images)
+    image_builder_images = itertools.chain(focal_images, jammy_images, noble_images)
     test_images: typing.Iterable[Image] = filter(
         functools.partial(helpers.is_greater_than_time, timestamp=test_start_time),
         image_builder_images,
