@@ -662,7 +662,7 @@ def test__generate_cloud_init_script(
 
 set -e
 
-RELEASE=$(lsb_release -a | grep Codename: | awk '{print $2}')
+RELEASE=$(lsb_release -a | grep Codename: | awk \'{print $2}\')
 
 hostnamectl set-hostname github-runner
 
