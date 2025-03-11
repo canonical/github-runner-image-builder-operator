@@ -49,7 +49,7 @@ function install_apt_packages() {
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
-    if [ $RELEASE == focal ]; then
+    if [ $RELEASE == "focal" ]; then
         mkdir -p -m 755 /etc/apt/keyrings
         out=$(mktemp)
         wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg
@@ -150,6 +150,7 @@ install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
+# The yarn installation does not work for focal.
 if [ $RELEASE != "focal" ]; then
     install_yarn
 fi
