@@ -658,6 +658,7 @@ def test__generate_cloud_init_script(
         )
         # The templated script contains similar lines to helper for setting up proxy.
         # pylint: disable=R0801
+        # Ignore bandit false positive on SQL injection vector.
         == f"""#!/bin/bash
 
 set -e
@@ -827,7 +828,7 @@ su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
-"""  # noqa: E501
+"""  # nosec # noqa: E501
     )
     # pylint: enable=R0801
 
