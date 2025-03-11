@@ -662,7 +662,7 @@ def test__generate_cloud_init_script(
 
 set -e
 
-RELEASE=$(lsb_release -a | grep Codename: | awk \'{print $2}\')
+RELEASE=$(lsb_release -a | grep Codename: | awk '{{print $2}}')
 
 hostnamectl set-hostname github-runner
 
@@ -675,10 +675,10 @@ function configure_proxy() {{
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} \
+        HTTP_PROXY=${{proxy}} HTTPS_PROXY=${{proxy}} \
 NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 \
 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} \
+        HTTP_PROXY=${{proxy}} HTTPS_PROXY=${{proxy}} \
 NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 \
 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
