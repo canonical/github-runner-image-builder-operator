@@ -17,6 +17,10 @@ jobs:
         image: [focal, jammy, noble]
         arch: [amd64, arm64, s390x]
         exclude:
+          - image: focal
+            arch: arm64
+          - image: focal
+            arch: s390x
           - image: jammy
             arch: arm64
           - image: jammy
