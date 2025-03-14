@@ -19,7 +19,7 @@
 ### Other Changes
 * None
 
-## [#83 feat: s390x images(https://github.com/canonical/github-runner-image-builder-operator/pull/83) (2025-03-06)
+## [#83 feat: s390x images](https://github.com/canonical/github-runner-image-builder-operator/pull/83) (2025-03-06)
 > Add support for building s390x images.
 
 ### Upgrade Steps
