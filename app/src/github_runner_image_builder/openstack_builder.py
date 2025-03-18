@@ -115,6 +115,10 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         prefix: The prefix to use for OpenStack resource names.
     """
     logger.info("Initializing external builder.")
+    logger.info("Downloading Focal image.")
+    focal_image_path = cloud_image.download_and_validate_image(
+        arch=arch, base_image=BaseImage.FOCAL
+    )
     logger.info("Downloading Jammy image.")
     jammy_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.JAMMY
@@ -122,6 +126,14 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     logger.info("Downloading Noble image.")
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE
+    )
+    logger.info("Uploading Focal image.")
+    store.upload_image(
+        arch=arch,
+        cloud_name=cloud_name,
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.FOCAL, prefix=prefix),
+        image_path=focal_image_path,
+        keep_revisions=1,
     )
     logger.info("Uploading Jammy image.")
     store.upload_image(
