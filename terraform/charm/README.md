@@ -25,8 +25,8 @@ data "juju_model" "my_model" {
   name = var.model
 }
 
-module "ghib" {
-  source = "git::https://github.com/canonical/github-runner-image-builder//terraform"
+module "github_runner_image_builder" {
+  source = "git::https://github.com/canonical/github-runner-image-builder-operator//terraform"
 
   model = juju_model.my_model.name
   # (Customize configuration variables here if needed)
@@ -39,8 +39,8 @@ Create integrations, for instance:
 resource "juju_integration" "ghib-nrf" {
   model = juju_model.my_model.name
   application {
-    name     = module.ghib.app_name
-    endpoint = module.ghib.provides.github_runner_image_v0
+    name     = module.github_runner_image_builder.app_name
+    endpoint = module.github_runner_image_builder.provides.github_runner_image_v0
   }
   application {
     name     = "github-runner"
