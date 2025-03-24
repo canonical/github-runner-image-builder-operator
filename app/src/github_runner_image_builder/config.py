@@ -107,6 +107,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "python3-pip",
     "python-is-python3",
     "shellcheck",
+    "socat",
     "tar",
     "time",
     "unzip",
