@@ -23,7 +23,6 @@ function configure_proxy() {
 
     # Do not configure the proxy if it is not needed for building the image.
     if [[ -z "$proxy" ]]; then
-	/usr/bin/sudo snap install aproxy --edge;
         return
     fi
 
