@@ -10,7 +10,7 @@ function configure_proxy() {
     local proxy="$1"
 
     echo "Installing aproxy"
-    # We always want snap aproxy and nft to be installed, even it they are not used by the image builder.
+    # We always want snap aproxy and nft (focal) to be installed, even it they are not used by the image builder.
     /usr/bin/sudo snap install aproxy --edge;
 
     if [ $RELEASE == "focal" ]; then

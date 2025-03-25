@@ -656,8 +656,7 @@ def test__generate_cloud_init_script(
             ),
             proxy="test.proxy.internal:3128",
         )
-        # The templated script contains similar lines to helper for setting up proxy.
-        # pylint: disable=R0801,C0301
+        # pylint: disable=line-too-long
         # Ignore bandit false positive on SQL injection vector.
         == f"""#!/bin/bash
 
@@ -671,7 +670,7 @@ function configure_proxy() {{
     local proxy="$1"
 
     echo "Installing aproxy"
-    # We always want snap aproxy and nft to be installed, even it they are not used by the image builder.
+    # We always want snap aproxy and nft (focal)  to be installed, even it they are not used by the image builder.
     /usr/bin/sudo snap install aproxy --edge;
 
     if [ $RELEASE == "focal" ]; then
