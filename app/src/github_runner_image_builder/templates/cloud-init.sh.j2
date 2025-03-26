@@ -8,19 +8,24 @@ hostnamectl set-hostname github-runner
 
 function configure_proxy() {
     local proxy="$1"
-    if [[ -z "$proxy" ]]; then
-        return
-    fi
+
+    echo "Installing aproxy"
+    # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
+    /usr/bin/sudo snap install aproxy --edge;
 
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        HTTP_PROXY=${proxy} HTTPS_PROXY=${proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+        HTTP_PROXY=${proxy:-} HTTPS_PROXY=${proxy:-} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${proxy:-} HTTPS_PROXY=${proxy:-} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
 
-    echo "Installing aproxy"
-    /usr/bin/sudo snap install aproxy --edge;
+    # Do not configure the proxy if it is not needed for building the image.
+    if [[ -z "$proxy" ]]; then
+        return
+    fi
+
+    echo "Configure nft and aproxy"
     /usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
 define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
