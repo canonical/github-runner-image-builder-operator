@@ -107,7 +107,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "python3-pip",
     "python-is-python3",
     "shellcheck",
-    # socat is used for proxying between the github-runner manager and the runner.
+    # socat is used for proxying between the runner and the tmate-ssh-server.
     "socat",
     "tar",
     "time",
