@@ -42,7 +42,7 @@ def pytest_addoption(parser: Parser):
         "--arch",
         action="store",
         help="The architecture to build for.",
-        choices=["amd64", "arm64", "s390x"],
+        choices=["amd64", "arm64", "s390x", "ppc64le"],
     )
     parser.addoption(
         "--openstack-network-name",

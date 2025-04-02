@@ -19,7 +19,7 @@ from github_runner_image_builder.utils import retry
 
 logger = logging.getLogger(__name__)
 
-SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x"]
+SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x", "ppc64le"]
 
 CHECKSUM_BUF_SIZE = 65536  # 65kb
 
@@ -82,6 +82,8 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
             return "arm64"
         case Arch.S390X:
             return "s390x"
+        case Arch.PPC64LE:
+            return "ppc64le"
         case _:
             raise UnsupportedArchitectureError(f"Detected system arch: {arch} is unsupported.")
 
