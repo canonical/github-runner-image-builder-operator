@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_S390x = {"s390x"}
+ARCHITECTURES_PPC64LE = {"ppc64le"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"20.04": "focal", "22.04": "jammy", "24.04": "noble"}
@@ -71,6 +72,7 @@ class Arch(str, Enum):
         ARM64: Represents an ARM64 system architecture.
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
+        PPC64LE: Represents an PPC64LE system architecture.
     """
 
     def __str__(self) -> str:
@@ -84,6 +86,7 @@ class Arch(str, Enum):
     ARM64 = "arm64"
     X64 = "x64"
     S390X = "s390x"
+    PPC64LE = "ppc64le"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "Arch":
@@ -108,6 +111,8 @@ class Arch(str, Enum):
                 return Arch.X64
             case arch if arch in ARCHITECTURES_S390x:
                 return Arch.S390X
+            case arch if arch in ARCHITECTURES_PPC64LE:
+                return Arch.PPC64LE
             case _:
                 raise UnsupportedArchitectureError(msg=f"Unsupported {arch=}")
 

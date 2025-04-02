@@ -1,3 +1,26 @@
+## [#101 feat: ppc64le images](https://github.com/canonical/github-runner-image-builder-operator/pull/101) (2025-04-02)
+> Add support for building ppc64le images.
+
+### Upgrade Steps
+*  The architecture option has to be specified.
+
+### Breaking Changes
+* The charm expects the architecture to be specified in the configuration.
+
+### New Features
+* The charm is now able to build images for the `ppc64le` architecture. `ppc64le` is not officially supported
+by GitHub, but a fork of the actions runner binary has been created, which is used in the image. Note
+that ppc64le support is experimental and may be removed in the future.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+* 
 ## [#91 Feature: Add focal support](https://github.com/canonical/github-runner-image-builder-operator/pull/91) (2025-03-07)
 > Add support for building focal images.
 
