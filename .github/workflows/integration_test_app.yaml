@@ -60,7 +60,7 @@ jobs:
       - name: Run integration tests (ppc64le)
         if: matrix.arch == 'ppc64le'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_PPC64EL }}
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_PPC64LE }}
         run: |
          tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
