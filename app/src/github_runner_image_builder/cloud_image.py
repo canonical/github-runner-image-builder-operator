@@ -83,7 +83,7 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
         case Arch.S390X:
             return "s390x"
         case Arch.PPC64LE:
-            return "ppc64le"
+            return "ppc64el" # cloud-images.ubuntu.com uses ppc64el instead of ppc64le
         case _:
             raise UnsupportedArchitectureError(f"Detected system arch: {arch} is unsupported.")
 
