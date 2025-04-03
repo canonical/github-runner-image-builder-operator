@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_S390x = {"s390x"}
-ARCHITECTURES_PPC64LE = {"ppc64le"}
+ARCHITECTURES_PPC64LE = {"ppc64le", "ppc64el"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
 LTS_IMAGE_VERSION_TAG_MAP = {"20.04": "focal", "22.04": "jammy", "24.04": "noble"}
