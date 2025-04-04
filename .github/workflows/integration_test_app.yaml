@@ -15,12 +15,16 @@ jobs:
       fail-fast: false
       matrix:
         image: [focal, jammy, noble]
-        arch: [amd64, arm64, s390x]
+        arch: [amd64, arm64, s390x, ppc64le]
         exclude:
+          - image: focal
+            arch: ppc64le
           - image: focal
             arch: s390x
           - image: jammy
             arch: arm64
+          - image: jammy
+            arch: ppc64le
           - image: jammy
             arch: s390x
     steps:
@@ -52,6 +56,13 @@ jobs:
             OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_S390X }}
         run: |
          tox -e integration -- --arch s390x --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_S390X }}
+        working-directory: app
+      - name: Run integration tests (ppc64le)
+        if: matrix.arch == 'ppc64le'
+        env:
+            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_PPC64LE }}
+        run: |
+         tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
   required_status_checks:
     name: Required Integration Test For Application Status Checks

@@ -41,7 +41,7 @@ from github_runner_image_builder import cloud_image, config, store
 from github_runner_image_builder.config import (
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
-    S390X_ADDITIONAL_APT_PACKAGES,
+    S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
     UPSTREAM_RUNNER_BINARY_REPO,
     Arch,
     BaseImage,
@@ -514,8 +514,8 @@ def _generate_cloud_init_script(
     template = env.get_template("cloud-init.sh.j2")
 
     apt_packages = IMAGE_DEFAULT_APT_PACKAGES
-    if image_config.arch == Arch.S390X:
-        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_ADDITIONAL_APT_PACKAGES
+    if image_config.arch in (Arch.S390X, Arch.PPC64LE):
+        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
         runner_binary_repo = FORK_RUNNER_BINARY_REPO
     else:
         runner_binary_repo = UPSTREAM_RUNNER_BINARY_REPO
