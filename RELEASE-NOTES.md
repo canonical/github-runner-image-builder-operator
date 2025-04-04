@@ -2,13 +2,13 @@
 > Add support for building ppc64le images.
 
 ### Upgrade Steps
-*  The architecture option has to be specified.
+*  Nothing in particular to consider. If PPC64LE architecture is desired, the config option `ppc64le` or `ppc64el` has to be specified.
 
 ### Breaking Changes
-* The charm expects the architecture to be specified in the configuration.
+* None
 
 ### New Features
-* The charm is now able to build images for the `ppc64le` architecture. `ppc64le` is not officially supported
+* The charm is now able to build images for the `ppc64le` (`ppc64el`) architecture. `ppc64le` is not officially supported
 by GitHub, but a fork of the actions runner binary has been created, which is used in the image. Note
 that ppc64le support is experimental and may be removed in the future.
 

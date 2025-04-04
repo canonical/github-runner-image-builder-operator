@@ -19,7 +19,7 @@ class Arch(str, Enum):
         ARM64: Represents an ARM64 system architecture.
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
-        PPC64LE: Represents an PPC64LE system architecture.
+        PPC64LE: Represents a PPC64LE system architecture.
     """
 
     ARM64 = "arm64"
