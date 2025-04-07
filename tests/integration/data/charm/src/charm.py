@@ -45,16 +45,15 @@ class RelationCharm(ops.CharmBase):
             event: The event fired when relation is joined.
         """
         logger.info("Relation joined.")
-        event.relation.data[self.unit].update(
-            {
-                "auth_url": self.config["openstack-auth-url"],
-                "password": self.config["openstack-password"],
-                "project_domain_name": self.config["openstack-project-domain-name"],
-                "project_name": self.config["openstack-project-name"],
-                "user_domain_name": self.config["openstack-user-domain-name"],
-                "username": self.config["openstack-user-name"],
-            }
-        )
+        relation_data: dict[str, str] = {
+            "auth_url": str(self.config["openstack-auth-url"]),
+            "password": str(self.config["openstack-password"]),
+            "project_domain_name": str(self.config["openstack-project-domain-name"]),
+            "project_name": str(self.config["openstack-project-name"]),
+            "user_domain_name": str(self.config["openstack-user-domain-name"]),
+            "username": str(self.config["openstack-user-name"]),
+        }
+        event.relation.data[self.unit].update(relation_data)
         logger.info("Relation data updated.")
 
     def _on_image_relation_changed(self, event: ops.RelationChangedEvent):

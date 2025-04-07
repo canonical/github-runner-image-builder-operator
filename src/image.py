@@ -6,7 +6,7 @@
 import json
 import logging
 from collections import defaultdict
-from typing import TypedDict
+from typing import TypedDict, cast
 
 import ops
 
@@ -118,7 +118,13 @@ class Observer(ops.Object):
                     logger.warning("Cloud auth data not found in relation with %s", unit.name)
                     continue
                 relation.data[self.model.unit].update(
-                    _cloud_images_to_relation_data(cloud_images=cloud_id_to_image_ids[cloud_id])
+                    # ImageRelationData is of TypedDict, it is equivalent to dict during runtime
+                    cast(
+                        dict,
+                        _cloud_images_to_relation_data(
+                            cloud_images=cloud_id_to_image_ids[cloud_id]
+                        ),
+                    )
                 )
                 # the relation data update is required only once per relation since every units in
                 # the relation share the same OpenStack cloud credentials.
