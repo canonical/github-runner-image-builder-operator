@@ -656,8 +656,7 @@ def test__generate_cloud_init_script(
             ),
             proxy="test.proxy.internal:3128",
         )
-        # The templated script contains similar lines to helper for setting up proxy.
-        # pylint: disable=R0801
+        # pylint: disable=line-too-long
         # Ignore bandit false positive on SQL injection vector.
         == f"""#!/bin/bash
 
@@ -669,23 +668,24 @@ hostnamectl set-hostname github-runner
 
 function configure_proxy() {{
     local proxy="$1"
-    if [[ -z "$proxy" ]]; then
-        return
-    fi
+
+    echo "Installing aproxy"
+    # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
+    /usr/bin/sudo snap install aproxy --edge;
 
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        HTTP_PROXY=${{proxy}} HTTPS_PROXY=${{proxy}} \
-NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 \
-DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        HTTP_PROXY=${{proxy}} HTTPS_PROXY=${{proxy}} \
-NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 \
-DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
 
-    echo "Installing aproxy"
-    /usr/bin/sudo snap install aproxy --edge;
+    # Do not configure the proxy if it is not needed for building the image.
+    if [[ -z "$proxy" ]]; then
+        return
+    fi
+
+    echo "Configure nft and aproxy"
     /usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
 define private-ips = {{ 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }}
@@ -806,12 +806,11 @@ function configure_system_users() {{
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck tar time unzip wget{
-    (' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
+apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
-runner_binary_repo="{ expected_runner_binary_repo }"
+runner_binary_repo="{expected_runner_binary_repo}"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
