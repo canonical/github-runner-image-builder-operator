@@ -20,7 +20,7 @@ ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
 ARCHITECTURES_S390x = {"s390x"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
-LTS_IMAGE_VERSION_TAG_MAP = {"22.04": "jammy", "24.04": "noble"}
+LTS_IMAGE_VERSION_TAG_MAP = {"20.04": "focal", "22.04": "jammy", "24.04": "noble"}
 
 ARCHITECTURE_CONFIG_NAME = "architecture"
 BASE_IMAGE_CONFIG_NAME = "base-image"
@@ -124,10 +124,12 @@ class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
 
     Attributes:
+        FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
     """
 
+    FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
 
@@ -155,7 +157,7 @@ class BaseImage(str, Enum):
         image_names = tuple(
             image_name.lower().strip()
             for image_name in typing.cast(
-                str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "jammy")
+                str, charm.config.get(BASE_IMAGE_CONFIG_NAME, "noble")
             ).split(",")
         )
         try:

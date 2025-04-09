@@ -656,21 +656,36 @@ def test__generate_cloud_init_script(
             ),
             proxy="test.proxy.internal:3128",
         )
-        # The templated script contains similar lines to helper for setting up proxy.
-        # pylint: disable=R0801
+        # pylint: disable=line-too-long
+        # Ignore bandit false positive on SQL injection vector.
         == f"""#!/bin/bash
 
 set -e
+
+RELEASE=$(lsb_release -a | grep Codename: | awk '{{print $2}}')
 
 hostnamectl set-hostname github-runner
 
 function configure_proxy() {{
     local proxy="$1"
+
+    echo "Installing aproxy"
+    # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
+    /usr/bin/sudo snap install aproxy --edge;
+
+    if [ $RELEASE == "focal" ]; then
+        echo "Ensure nftables is installed on focal"
+        # Focal does not have nftables install by default. Jammy and onward would not need this.
+        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+    fi
+
+    # Do not configure the proxy if it is not needed for building the image.
     if [[ -z "$proxy" ]]; then
         return
     fi
-    echo "Installing aproxy"
-    /usr/bin/sudo snap install aproxy --edge;
+
+    echo "Configure nft and aproxy"
     /usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
 define private-ips = {{ 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }}
@@ -696,6 +711,19 @@ EOF
 function install_apt_packages() {{
     local packages="$1"
     local hwe_version="$2"
+
+    # The gh package (GitHub CLI application) is not in the APT repository for focal.
+    # For focal, the apt repository of GitHub is added.
+    if [ $RELEASE == "focal" ]; then
+        mkdir -p -m 755 /etc/apt/keyrings
+        wget -nv -O /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+https://cli.github.com/packages/githubcli-archive-keyring.gpg
+        chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) \
+signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable \
+main" > /etc/apt/sources.list.d/github-cli.list
+    fi
+
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Installing apt packages $packages"
@@ -778,26 +806,28 @@ function configure_system_users() {{
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck tar time unzip wget{
-    (' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
+apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python-is-python3 shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
-runner_binary_repo="{ expected_runner_binary_repo }"
+runner_binary_repo="{expected_runner_binary_repo}"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
-install_yarn
+# The yarn installation does not work for focal.
+if [ $RELEASE != "focal" ]; then
+    install_yarn
+fi
 # install yq with ubuntu user due to GOPATH related go configuration settings
 export -f install_yq
 su ubuntu -c "bash -c 'install_yq'"
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
-"""  # noqa: E501
+"""  # nosec # noqa: E501
     )
     # pylint: enable=R0801
 
