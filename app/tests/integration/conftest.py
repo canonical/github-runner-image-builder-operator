@@ -36,6 +36,8 @@ def arch_fixture(pytestconfig: pytest.Config):
             return config.Arch.X64
         case "s390x":
             return config.Arch.S390X
+        case "ppc64le":
+            return config.Arch.PPC64LE
     raise ValueError(f"Unsupported testing architecture {arch}")
 
 

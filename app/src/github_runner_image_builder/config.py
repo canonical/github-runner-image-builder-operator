@@ -19,11 +19,13 @@ class Arch(str, Enum):
         ARM64: Represents an ARM64 system architecture.
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
+        PPC64LE: Represents a PPC64LE system architecture.
     """
 
     ARM64 = "arm64"
     X64 = "x64"
     S390X = "s390x"
+    PPC64LE = "ppc64le"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
@@ -38,6 +40,8 @@ class Arch(str, Enum):
                 return "x86_64"
             case Arch.S390X:
                 return "s390x"
+            case Arch.PPC64LE:
+                return "ppc64le"
         raise ValueError  # pragma: nocover
 
 
@@ -114,7 +118,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "unzip",
     "wget",
 ]
-S390X_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
+S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
