@@ -40,6 +40,7 @@ def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
         pytest.param("arm64", state.Arch.ARM64, id="arm64"),
         pytest.param("amd64", state.Arch.X64, id="amd64"),
         pytest.param("s390x", state.Arch.S390X, id="s390x"),
+        pytest.param("ppc64le", state.Arch.PPC64LE, id="ppc64le"),
     ],
 )
 def test_arch_from_charm(arch: str, expected: state.Arch):
@@ -61,12 +62,12 @@ def test_arch_from_charm_unsupported():
     assert: UnsupportedArchitectureError is raised.
     """
     charm = factories.MockCharmFactory()
-    charm.config[state.ARCHITECTURE_CONFIG_NAME] = "ppc64le"
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = "invalid"
 
     with pytest.raises(state.UnsupportedArchitectureError) as exc:
         state.Arch.from_charm(charm=charm)
 
-    assert "ppc64le" in str(exc.getrepr())
+    assert "invalid" in str(exc.getrepr())
 
 
 @pytest.mark.parametrize(
@@ -75,6 +76,7 @@ def test_arch_from_charm_unsupported():
         pytest.param(state.Arch.ARM64, state.Arch.ARM64.value),
         pytest.param(state.Arch.X64, state.Arch.X64.value),
         pytest.param(state.Arch.S390X, state.Arch.S390X.value),
+        pytest.param(state.Arch.PPC64LE, state.Arch.PPC64LE.value),
     ],
 )
 def test_arch_str(arch: state.Arch, expected_str: str):

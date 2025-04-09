@@ -630,6 +630,12 @@ def test__determine_network(network_name: str | None):
             ["dotnet-runtime-8.0"],
             id="s390x",
         ),
+        pytest.param(
+            openstack_builder.Arch.PPC64LE,
+            "canonical/github-actions-runner",
+            ["dotnet-runtime-8.0"],
+            id="ppc64le",
+        ),
     ],
 )
 def test__generate_cloud_init_script(

@@ -66,8 +66,9 @@ config:
     architecture:
       type: string
       description: |
-        The image architecture to build for using external builder. Can be one of "amd64", "arm64", "s390x".
-        Support for "s390x" is considered experimental.
+        The image architecture to build for using external builder. Can be one of "amd64", "arm64", "s390x", 
+        "ppc64le" (alternatively "ppc64el").
+        Support for "s390x" and "ppc64el" is considered experimental.
     base-image:
       type: string
       default: noble
