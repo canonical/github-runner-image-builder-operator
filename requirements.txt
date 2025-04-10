@@ -1,5 +1,5 @@
 ops ==2.20.0
-openstacksdk ==4.4.0
+openstacksdk ==4.5.0
 pydantic ==2.11.3
 tenacity ==9.1.2
 cosl ==0.0.57
