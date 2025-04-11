@@ -4,4 +4,4 @@ Jinja2==3.1.6
 openstacksdk @ git+https://github.com/yanksyoon/openstacksdk.git@fix/download_image_stream
 pyyaml==6.0.2
 tenacity==9.1.2
-typing_extensions==4.13.1
+typing_extensions==4.13.2
