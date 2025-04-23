@@ -5,7 +5,6 @@ that creates and stores VM images suitable for use by self-hosted GitHub Runners
 The image-builder source code is hosted in the [github-runner-image-builder GitHub repository](https://github.com/canonical/github-runner-image-builder).
 
 ```mermaid
-
 C4Container
 title Container diagram for Image Builder System
 
