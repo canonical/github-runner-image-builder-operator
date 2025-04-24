@@ -88,12 +88,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
     @charm_utils.block_if_invalid_config(defer=False)
-    def _on_image_relation_changed(self, _: ops.RelationChangedEvent) -> None:
+    def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_image_relation_ready_set_status(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not state.CloudsAuthConfig.from_unit_relation_data(data=evt.relation.data[evt.unit]):
+            logger.info(
+                "Cloud auth data not found in relation with %s. Skipping image building.",
+                evt.unit.name,
+            )
             return
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(

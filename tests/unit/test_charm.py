@@ -24,7 +24,6 @@ from charm import GithubRunnerImageBuilderCharm
         pytest.param("_on_config_changed", id="config_changed"),
         pytest.param("_on_run_action", id="run_action"),
         pytest.param("_on_run", id="run event"),
-        pytest.param("_on_image_relation_changed", id="image_relation_changed"),
     ],
 )
 def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm, hook: str):
@@ -108,7 +107,41 @@ def test__on_image_relation_changed(
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = MagicMock()
+    monkeypatch.setattr(
+        state.CloudsAuthConfig,
+        "from_unit_relation_data",
+        MagicMock(
+            return_value=state.CloudsAuthConfig(
+                auth_url="http://example.com",
+                username="user",
+                password="pass",
+                project_name="project_name",
+                project_domain_name="project_domain_name",
+                user_domain_name="user_domain_name",
+            )
+        ),
+    )
 
     charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
+
+
+def test__on_image_relation_changed_no_unit_auth_data(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given monkeypatched builder, openstack manager, image_observer.
+    act: when _on_image_relation_changed is called.
+    assert: charm is in active status.
+    """
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
+    charm.image_observer = MagicMock()
+    monkeypatch.setattr(
+        state.CloudsAuthConfig, "from_unit_relation_data", MagicMock(return_value=None)
+    )
+
+    charm._on_image_relation_changed(MagicMock())
