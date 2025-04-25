@@ -100,31 +100,33 @@ def test__on_image_relation_changed(
     """
     arrange: given monkeypatched builder, openstack manager, image_observer.
     act: when _on_image_relation_changed is called.
-    assert: charm is in active status.
+    assert: charm is in active status and run for the particular related unit is called.
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = MagicMock()
+    fake_clouds_auth_config = state.CloudsAuthConfig(
+        auth_url="http://example.com",
+        username="user",
+        password="pass",
+        project_name="project_name",
+        project_domain_name="project_domain_name",
+        user_domain_name="user_domain_name",
+    )
     monkeypatch.setattr(
         state.CloudsAuthConfig,
         "from_unit_relation_data",
-        MagicMock(
-            return_value=state.CloudsAuthConfig(
-                auth_url="http://example.com",
-                username="user",
-                password="pass",
-                project_name="project_name",
-                project_domain_name="project_domain_name",
-                user_domain_name="user_domain_name",
-            )
-        ),
+        MagicMock(return_value=fake_clouds_auth_config),
     )
 
     charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
+    assert builder.run.call_args[1]["static_config"].cloud_config.upload_clouds == [
+        fake_clouds_auth_config.get_id()
+    ]
 
 
 def test__on_image_relation_changed_no_unit_auth_data(
