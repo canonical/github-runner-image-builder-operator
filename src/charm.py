@@ -187,8 +187,16 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         )
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
-        end_ts = time.time()
-        logger.info("Image build and upload completed in %.2f seconds.", end_ts - start_ts)
+        duration = time.time() - start_ts
+        logger.info(
+            {
+                "log_type": "image_build",
+                "duration": duration,
+                "cloud_images_count": len(cloud_images),
+                "arch": builder_config.image_config.arch,
+                "bases": builder_config.image_config.bases,
+            }
+        )
 
     def _get_configuration_matrix(
         self, builder_config: state.BuilderConfig
