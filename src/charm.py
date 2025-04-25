@@ -73,9 +73,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_image_relation_ready_set_status(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following lines should be covered by integration tests.
         proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
@@ -116,9 +114,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_image_relation_ready_set_status(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
@@ -131,9 +127,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event: The run action event.
         """
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_image_relation_ready_set_status(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             event.fail("Image relation not yet ready.")
             return
         # The following line should be covered by the integration test.
@@ -153,8 +147,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             )
         )
 
-    def _is_image_relation_ready_set_status(self, cloud_config: state.CloudConfig) -> bool:
-        """Check if image relation is ready and set according status otherwise.
+    def _is_any_image_relation_ready(self, cloud_config: state.CloudConfig) -> bool:
+        """Check if any of the image relations is ready and set according status otherwise.
 
         Args:
             cloud_config: The cloud configuration state.

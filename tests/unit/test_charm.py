@@ -41,6 +41,34 @@ def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm,
 @pytest.mark.parametrize(
     "hook",
     [
+        pytest.param("_on_config_changed", id="config_changed"),
+        pytest.param("_on_run_action", id="run_action"),
+        pytest.param("_on_run", id="run event"),
+    ],
+)
+def test_hooks_that_trigger_run_for_all_clouds(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, hook: str
+):
+    """
+    arrange: given hooks that should run build for all clouds when there is image relation data.
+    act: when the hook is called.
+    assert: the charm falls into ActiveStatus
+    """
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
+
+    getattr(charm, hook)(MagicMock())
+
+    builder.run.assert_called_once()
+    assert charm.unit.status == ops.ActiveStatus()
+
+
+@pytest.mark.parametrize(
+    "hook",
+    [
         pytest.param("_on_install", id="_on_install"),
         pytest.param("_on_config_changed", id="_on_config_changed"),
         pytest.param("_on_run_action", id="_on_run_action"),
@@ -111,7 +139,7 @@ def test__on_image_relation_changed(
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
         username="user",
-        password="pass",
+        password="pass",  # nosec no real password
         project_name="project_name",
         project_domain_name="project_domain_name",
         user_domain_name="user_domain_name",
@@ -141,7 +169,7 @@ def test__on_image_relation_changed_no_unit_auth_data(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, with_unit: bool
 ):
     """
-    arrange: given monkeypatched builder, openstack manager, image_observer.
+    arrange: given a situation where image related change has no unit or no auth data.
     act: when _on_image_relation_changed is called.
     assert: charm is not building image
     """
