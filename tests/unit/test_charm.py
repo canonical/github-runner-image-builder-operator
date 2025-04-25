@@ -54,7 +54,18 @@ def test_hooks_that_trigger_run_for_all_clouds(
     act: when the hook is called.
     assert: the charm falls into ActiveStatus
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    image_config = state.ImageConfig(
+        arch=state.Arch.ARM64,
+        bases=(state.BaseImage.FOCAL,),
+        runner_version="",
+        script_url=None,
+        script_secrets=dict(),
+    )
+    monkeypatch.setattr(
+        state.BuilderConfig,
+        "from_charm",
+        MagicMock(return_value=MagicMock(image_config=image_config)),
+    )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
@@ -131,7 +142,18 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    image_config = state.ImageConfig(
+        arch=state.Arch.ARM64,
+        bases=(state.BaseImage.FOCAL,),
+        runner_version="",
+        script_url=None,
+        script_secrets=dict(),
+    )
+    monkeypatch.setattr(
+        state.BuilderConfig,
+        "from_charm",
+        MagicMock(return_value=MagicMock(image_config=image_config)),
+    )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
