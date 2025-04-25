@@ -4,7 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
-
+import json
 import logging
 import time
 import typing
@@ -189,13 +189,15 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()
         duration = time.time() - start_ts
         logger.info(
-            {
-                "log_type": "image_build",
-                "duration": duration,
-                "cloud_images_count": len(cloud_images),
-                "arch": builder_config.image_config.arch,
-                "bases": builder_config.image_config.bases,
-            }
+            json.dumps(
+                {
+                    "log_type": "image_build",
+                    "duration": duration,
+                    "cloud_images_count": len(cloud_images),
+                    "arch": builder_config.image_config.arch,
+                    "bases": builder_config.image_config.bases,
+                }
+            )
         )
 
     def _get_configuration_matrix(
