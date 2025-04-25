@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 import ops
 import pytest
+from ops import RelationChangedEvent
 
 import builder
 import image
@@ -129,21 +130,48 @@ def test__on_image_relation_changed(
     ]
 
 
+@pytest.mark.parametrize(
+    "with_unit",
+    [
+        pytest.param(True, id="with unit"),
+        pytest.param(False, id="without unit"),
+    ],
+)
 def test__on_image_relation_changed_no_unit_auth_data(
-    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, with_unit: bool
 ):
     """
     arrange: given monkeypatched builder, openstack manager, image_observer.
     act: when _on_image_relation_changed is called.
-    assert: charm is in active status.
+    assert: charm is not building image
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = MagicMock()
+
     monkeypatch.setattr(
         state.CloudsAuthConfig, "from_unit_relation_data", MagicMock(return_value=None)
     )
 
-    charm._on_image_relation_changed(MagicMock())
+    evt = MagicMock(spec=RelationChangedEvent)
+    evt.relation = MagicMock()
+
+    if with_unit:
+        evt.unit = MagicMock()
+        evt.unit.name = "test/unit"
+        evt.relation.data[evt.unit] = {
+            "auth_url": "http://example.com",
+            "username": "user",
+            "password": "pass",
+            "project_name": "project_name",
+            "project_domain_name": "project_domain_name",
+            "user_domain_name": "user_domain_name",
+        }
+    else:
+        evt.unit = None
+
+    charm._on_image_relation_changed(evt)
+
+    builder.run.assert_not_called()

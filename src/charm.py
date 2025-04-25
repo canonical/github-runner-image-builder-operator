@@ -92,6 +92,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        if not evt.unit:
+            logger.info("No unit in image relation changed event. Skipping image building.")
+            return
         if not (
             clouds_auth_config := state.CloudsAuthConfig.from_unit_relation_data(
                 data=evt.relation.data[evt.unit]
@@ -176,7 +179,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         start_ts = time.time()
         self.unit.status = ops.ActiveStatus("Building image.")
-        logger.info(f"Building image and uploading to {cloud_id if cloud_id else 'all clouds'}.")
+        logger.info(
+            "Building image and uploading to %s.", (cloud_id if cloud_id else "all clouds")
+        )
         builder_config = state.BuilderConfig.from_charm(self)
         config_matrix = self._get_configuration_matrix(builder_config=builder_config)
         static_config = self._get_static_config(builder_config=builder_config)
@@ -189,9 +194,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
         end_ts = time.time()
-        logger.info(
-            f"Image build and upload completed in {end_ts - start_ts:.2f} seconds."
-        )
+        logger.info("Image build and upload completed in %.2f seconds.", end_ts - start_ts)
 
     def _get_configuration_matrix(
         self, builder_config: state.BuilderConfig
