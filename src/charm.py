@@ -6,6 +6,7 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 
 import logging
+import time
 import typing
 
 import ops
@@ -173,6 +174,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             cloud_id: The cloud ID to upload the image to. If None, the image will be uploaded to
                 all clouds.
         """
+        start_ts = time.time()
         self.unit.status = ops.ActiveStatus("Building image.")
         logger.info(f"Building image and uploading to {cloud_id if cloud_id else 'all clouds'}.")
         builder_config = state.BuilderConfig.from_charm(self)
@@ -186,6 +188,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         )
         self.image_observer.update_image_data(cloud_images=cloud_images)
         self.unit.status = ops.ActiveStatus()
+        end_ts = time.time()
+        logger.info(
+            f"Image build and upload completed in {end_ts - start_ts:.2f} seconds."
+        )
 
     def _get_configuration_matrix(
         self, builder_config: state.BuilderConfig
