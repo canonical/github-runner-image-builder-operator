@@ -19,6 +19,26 @@ import state
 from charm import GithubRunnerImageBuilderCharm
 
 
+@pytest.fixture(autouse=True, name="mock_builder")
+def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
+    """Mock builder functions to avoid actual image building."""
+    image_config = state.ImageConfig(
+        arch=state.Arch.ARM64,
+        bases=(state.BaseImage.FOCAL,),
+        runner_version="",
+        script_url=None,
+        script_secrets=dict(),
+    )
+    monkeypatch.setattr(
+        state.BuilderConfig,
+        "from_charm",
+        MagicMock(return_value=MagicMock(image_config=image_config)),
+    )
+    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "run", MagicMock())
+    monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
+
+
 @pytest.mark.parametrize(
     "hook",
     [
@@ -54,22 +74,7 @@ def test_hooks_that_trigger_run_for_all_clouds(
     act: when the hook is called.
     assert: the charm falls into ActiveStatus
     """
-    image_config = state.ImageConfig(
-        arch=state.Arch.ARM64,
-        bases=(state.BaseImage.FOCAL,),
-        runner_version="",
-        script_url=None,
-        script_secrets=dict(),
-    )
-    monkeypatch.setattr(
-        state.BuilderConfig,
-        "from_charm",
-        MagicMock(return_value=MagicMock(image_config=image_config)),
-    )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
-    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
-    monkeypatch.setattr(builder, "run", MagicMock())
-    monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
 
     getattr(charm, hook)(MagicMock())
 
@@ -142,21 +147,7 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
-    image_config = state.ImageConfig(
-        arch=state.Arch.ARM64,
-        bases=(state.BaseImage.FOCAL,),
-        runner_version="",
-        script_url=None,
-        script_secrets=dict(),
-    )
-    monkeypatch.setattr(
-        state.BuilderConfig,
-        "from_charm",
-        MagicMock(return_value=MagicMock(image_config=image_config)),
-    )
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
-    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
-    monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -195,10 +186,7 @@ def test__on_image_relation_changed_no_unit_auth_data(
     act: when _on_image_relation_changed is called.
     assert: charm is not building image
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
-    monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
-    monkeypatch.setattr(builder, "run", MagicMock())
     charm.image_observer = MagicMock()
 
     monkeypatch.setattr(
