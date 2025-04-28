@@ -243,8 +243,7 @@ class CloudConfig:
         network: The OpenStack network to launch the builder VMs on.
         prefix: The prefix to use for OpenStack resource names.
         proxy: The proxy to enable on builder VMs.
-        upload_cloud_names: The OpenStack cloud names to upload the snapshot to. (Defaults to \
-            the same cloud)
+        upload_cloud_names: The OpenStack cloud names to upload the snapshot to.
     """
 
     cloud_name: str
