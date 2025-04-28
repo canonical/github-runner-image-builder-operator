@@ -19,7 +19,7 @@ import state
 from charm import GithubRunnerImageBuilderCharm
 
 
-@pytest.fixture(autouse=True, name="mock_builder")
+@pytest.fixture(name="mock_builder")
 def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
     """Mock builder functions to avoid actual image building."""
     image_config = state.ImageConfig(
@@ -58,6 +58,7 @@ def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm,
     assert charm.unit.status == ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
 
 
+@pytest.mark.usefixtures("mock_builder")
 @pytest.mark.parametrize(
     "hook",
     [
@@ -139,6 +140,7 @@ def test_installation(
     assert charm.unit.status == ops.ActiveStatus(expected_active_msg)
 
 
+@pytest.mark.usefixtures("mock_builder")
 def test__on_image_relation_changed(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
@@ -171,6 +173,7 @@ def test__on_image_relation_changed(
     ]
 
 
+@pytest.mark.usefixtures("mock_builder")
 @pytest.mark.parametrize(
     "with_unit",
     [
