@@ -1,3 +1,13 @@
+## [#113 fix: skip run if relation data is not ready](https://github.com/canonical/github-runner-image-builder-operator/pull/113)
+> Fix: Skip image build run if relation data is not ready
+
+### Bug Fixes
+* Fixed unnecessary image build runs where unit relation data was not ready.
+
+### Performance Improvements
+* Image build propagation to newly joined units should be faster.
+
+
 ## [#101 feat: ppc64le images](https://github.com/canonical/github-runner-image-builder-operator/pull/101) (2025-04-02)
 > Add support for building ppc64le images.
 
