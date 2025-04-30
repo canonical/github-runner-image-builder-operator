@@ -18,10 +18,14 @@ class Arch(str, Enum):
     Attributes:
         ARM64: Represents an ARM64 system architecture.
         X64: Represents an X64/AMD64 system architecture.
+        S390X: Represents an S390X system architecture.
+        PPC64LE: Represents a PPC64LE system architecture.
     """
 
     ARM64 = "arm64"
     X64 = "x64"
+    S390X = "s390x"
+    PPC64LE = "ppc64le"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
@@ -34,26 +38,28 @@ class Arch(str, Enum):
                 return "aarch64"
             case Arch.X64:
                 return "x86_64"
+            case Arch.S390X:
+                return "s390x"
+            case Arch.PPC64LE:
+                return "ppc64le"
         raise ValueError  # pragma: nocover
-
-
-ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
-ARCHITECTURES_X86 = {"x86_64"}
 
 
 class BaseImage(str, Enum):
     """The ubuntu OS base image to build and deploy runners on.
 
     Attributes:
+        FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
     """
 
+    FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
 
     @classmethod
-    def get_version(cls, base: "BaseImage") -> Literal["22.04", "24.04"]:
+    def get_version(cls, base: "BaseImage") -> Literal["20.04", "22.04", "24.04"]:
         """Change the codename to version tag.
 
         Args:
@@ -63,6 +69,8 @@ class BaseImage(str, Enum):
             The release version of the current base image.
         """
         match base:
+            case BaseImage.FOCAL:
+                return "20.04"
             case BaseImage.JAMMY:
                 return "22.04"
             case BaseImage.NOBLE:
@@ -83,7 +91,11 @@ class BaseImage(str, Enum):
         return cls(tag_or_name)
 
 
-LTS_IMAGE_VERSION_TAG_MAP = {"22.04": BaseImage.JAMMY.value, "24.04": BaseImage.NOBLE.value}
+LTS_IMAGE_VERSION_TAG_MAP = {
+    "20.04": BaseImage.FOCAL.value,
+    "22.04": BaseImage.JAMMY.value,
+    "24.04": BaseImage.NOBLE.value,
+}
 BASE_CHOICES = tuple(
     itertools.chain.from_iterable((tag, name) for (tag, name) in LTS_IMAGE_VERSION_TAG_MAP.items())
 )
@@ -99,11 +111,14 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "python3-pip",
     "python-is-python3",
     "shellcheck",
+    # socat is used for proxying between the runner and the tmate-ssh-server.
+    "socat",
     "tar",
     "time",
     "unzip",
     "wget",
 ]
+S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
@@ -114,6 +129,9 @@ LOG_LEVELS = tuple(
         (logging.getLevelName(level).lower() for level in _LOG_LEVELS),
     )
 )
+
+FORK_RUNNER_BINARY_REPO = "canonical/github-actions-runner"
+UPSTREAM_RUNNER_BINARY_REPO = "actions/runner"
 
 
 @dataclasses.dataclass

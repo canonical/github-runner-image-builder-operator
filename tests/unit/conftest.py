@@ -36,6 +36,7 @@ def harness_fixture():
             state.OPENSTACK_PROJECT_CONFIG_NAME: "test",
             state.OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test",
             state.OPENSTACK_USER_CONFIG_NAME: "test",
+            state.ARCHITECTURE_CONFIG_NAME: "amd64",
         }
     )
     harness.charm._on_config_changed = config_changed_handler

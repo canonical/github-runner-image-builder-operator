@@ -46,3 +46,4 @@ Thinking about using the GitHub runner image builder charm for your next project
   1. [How to configure pin-github-runner-version](how-to/pin-github-runner-version.md)
 1. [Tutorial](tutorial)
   1. [Quick start](tutorial/quick-start.md)
+1. [Changelog](changelog.md)

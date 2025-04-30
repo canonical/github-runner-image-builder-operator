@@ -38,7 +38,14 @@ from cryptography.hazmat.primitives import serialization
 
 import github_runner_image_builder.errors
 from github_runner_image_builder import cloud_image, config, store
-from github_runner_image_builder.config import IMAGE_DEFAULT_APT_PACKAGES, Arch, BaseImage
+from github_runner_image_builder.config import (
+    FORK_RUNNER_BINARY_REPO,
+    IMAGE_DEFAULT_APT_PACKAGES,
+    S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
+    UPSTREAM_RUNNER_BINARY_REPO,
+    Arch,
+    BaseImage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +115,10 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         prefix: The prefix to use for OpenStack resource names.
     """
     logger.info("Initializing external builder.")
+    logger.info("Downloading Focal image.")
+    focal_image_path = cloud_image.download_and_validate_image(
+        arch=arch, base_image=BaseImage.FOCAL
+    )
     logger.info("Downloading Jammy image.")
     jammy_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.JAMMY
@@ -115,6 +126,14 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     logger.info("Downloading Noble image.")
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE
+    )
+    logger.info("Uploading Focal image.")
+    store.upload_image(
+        arch=arch,
+        cloud_name=cloud_name,
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.FOCAL, prefix=prefix),
+        image_path=focal_image_path,
+        keep_revisions=1,
     )
     logger.info("Uploading Jammy image.")
     store.upload_image(
@@ -224,8 +243,7 @@ class CloudConfig:
         network: The OpenStack network to launch the builder VMs on.
         prefix: The prefix to use for OpenStack resource names.
         proxy: The proxy to enable on builder VMs.
-        upload_cloud_names: The OpenStack cloud names to upload the snapshot to. (Defaults to \
-            the same cloud)
+        upload_cloud_names: The OpenStack cloud names to upload the snapshot to.
     """
 
     cloud_name: str
@@ -493,12 +511,20 @@ def _generate_cloud_init_script(
         autoescape=jinja2.select_autoescape(),
     )
     template = env.get_template("cloud-init.sh.j2")
+
+    apt_packages = IMAGE_DEFAULT_APT_PACKAGES
+    if image_config.arch in (Arch.S390X, Arch.PPC64LE):
+        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
+        runner_binary_repo = FORK_RUNNER_BINARY_REPO
+    else:
+        runner_binary_repo = UPSTREAM_RUNNER_BINARY_REPO
     return template.render(
         PROXY_URL=proxy,
-        APT_PACKAGES=" ".join(IMAGE_DEFAULT_APT_PACKAGES),
+        APT_PACKAGES=" ".join(apt_packages),
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
+        RUNNER_BINARY_REPO=runner_binary_repo,
     )
 
 

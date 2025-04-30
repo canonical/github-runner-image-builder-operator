@@ -1,6 +1,82 @@
+## [#113 fix: skip run if relation data is not ready](https://github.com/canonical/github-runner-image-builder-operator/pull/113)
+> Fix: Skip image build run if relation data is not ready
+
+### Bug Fixes
+* Fixed unnecessary image build runs where unit relation data was not ready.
+
+### Performance Improvements
+* Image build propagation to newly joined units should be faster.
+
+
+## [#101 feat: ppc64le images](https://github.com/canonical/github-runner-image-builder-operator/pull/101) (2025-04-02)
+> Add support for building ppc64le images.
+
+### Upgrade Steps
+*  Nothing in particular to consider. If PPC64LE architecture is desired, the config option `ppc64le` or `ppc64el` has to be specified.
+
+### Breaking Changes
+* None
+
+### New Features
+* The charm is now able to build images for the `ppc64le` (`ppc64el`) architecture. `ppc64le` is not officially supported
+by GitHub, but a fork of the actions runner binary has been created, which is used in the image. Note
+that ppc64le support is experimental and may be removed in the future.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+* 
+## [#91 Feature: Add focal support](https://github.com/canonical/github-runner-image-builder-operator/pull/91) (2025-03-07)
+> Add support for building focal images.
+
+### Upgrade Steps
+*  Nothing in particular to consider.
+
+### Breaking Changes
+* None
+
+### New Features
+* Add focal as a option for base image. To build focal images specify "focal" as the `base-image` in charm configuration. Note, the focal image does not have yarn pre-installed.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
+## [#83 feat: s390x images](https://github.com/canonical/github-runner-image-builder-operator/pull/83) (2025-03-06)
+> Add support for building s390x images.
+
+### Upgrade Steps
+*  The architecture option has to be specified.
+
+### Breaking Changes
+* The charm expects the architecture to be specified in the configuration.
+
+### New Features
+* The charm is now able to build images for the `s390x` architecture. `s390x` is not officially supported
+by GitHub, but a fork of the actions runner binary has been created, which is used in the image. Note
+that s390x support is experimental and may be removed in the future.
+
+### Bug Fixes
+* None
+
+### Performance Improvements
+* None
+
+### Other Changes
+* None
+
 ## [#88 Fix: move external script secret out of cloud-init](https://github.com/canonical/github-runner-image-builder-operator/pull/88) (2025-03-04)
 > Move running the external script out of cloud-init and use SSH instead.
-
 
 ### Upgrade Steps
 *  Nothing in particular to consider.
@@ -43,6 +119,8 @@
 ### Other Changes
 * None
 * 
+
+
 ## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
 > Drop juju and microk8s preinstallation.
 

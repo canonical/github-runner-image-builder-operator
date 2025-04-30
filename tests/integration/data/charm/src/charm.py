@@ -12,6 +12,7 @@ https://juju.is/docs/sdk/create-a-minimal-kubernetes-charm
 """
 
 import logging
+import typing
 from typing import Any
 
 import ops
@@ -46,14 +47,17 @@ class RelationCharm(ops.CharmBase):
         """
         logger.info("Relation joined.")
         event.relation.data[self.unit].update(
-            {
-                "auth_url": self.config["openstack-auth-url"],
-                "password": self.config["openstack-password"],
-                "project_domain_name": self.config["openstack-project-domain-name"],
-                "project_name": self.config["openstack-project-name"],
-                "user_domain_name": self.config["openstack-user-domain-name"],
-                "username": self.config["openstack-user-name"],
-            }
+            typing.cast(
+                dict[str, str],
+                {
+                    "auth_url": self.config["openstack-auth-url"],
+                    "password": self.config["openstack-password"],
+                    "project_domain_name": self.config["openstack-project-domain-name"],
+                    "project_name": self.config["openstack-project-name"],
+                    "user_domain_name": self.config["openstack-user-domain-name"],
+                    "username": self.config["openstack-user-name"],
+                },
+            )
         )
         logger.info("Relation data updated.")
 

@@ -7,7 +7,6 @@
 # pylint:disable=protected-access
 
 import os
-import platform
 from unittest.mock import MagicMock
 
 import ops
@@ -36,33 +35,12 @@ def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "arch",
-    [
-        pytest.param("ppc64le", id="ppc64le"),
-        pytest.param("mips", id="mips"),
-        pytest.param("s390x", id="s390x"),
-        pytest.param("testing", id="testing"),
-    ],
-)
-def test__get_supported_arch_unsupported_arch(arch: str, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given architectures that are not supported by the charm.
-    act: when _get_supported_arch is called.
-    assert: UnsupportedArchitectureError is raised
-    """
-    monkeypatch.setattr(platform, "machine", lambda: arch)
-
-    with pytest.raises(state.UnsupportedArchitectureError) as exc:
-        state._get_supported_arch()
-
-    assert arch in str(exc.getrepr())
-
-
-@pytest.mark.parametrize(
     "arch, expected",
     [
         pytest.param("arm64", state.Arch.ARM64, id="arm64"),
         pytest.param("amd64", state.Arch.X64, id="amd64"),
+        pytest.param("s390x", state.Arch.S390X, id="s390x"),
+        pytest.param("ppc64le", state.Arch.PPC64LE, id="ppc64le"),
     ],
 )
 def test_arch_from_charm(arch: str, expected: state.Arch):
@@ -77,25 +55,19 @@ def test_arch_from_charm(arch: str, expected: state.Arch):
     assert state.Arch.from_charm(charm=charm) == expected
 
 
-@pytest.mark.parametrize(
-    "arch, expected_arch",
-    [
-        pytest.param("aarch64", state.Arch.ARM64, id="aarch64"),
-        pytest.param("arm64", state.Arch.ARM64, id="aarch64"),
-        pytest.param("x86_64", state.Arch.X64, id="amd64"),
-    ],
-)
-def test__get_supported_arch(
-    arch: str, expected_arch: state.Arch, monkeypatch: pytest.MonkeyPatch
-):
+def test_arch_from_charm_unsupported():
     """
-    arrange: given architectures that is supported by the charm.
-    act: when _get_supported_arch is called.
-    assert: expected architecture is returned.
+    arrange: given charm with unsupported architecture configuration.
+    act: when Arch.from_charm is called.
+    assert: UnsupportedArchitectureError is raised.
     """
-    monkeypatch.setattr(platform, "machine", lambda: arch)
+    charm = factories.MockCharmFactory()
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = "invalid"
 
-    assert state._get_supported_arch() == expected_arch
+    with pytest.raises(state.UnsupportedArchitectureError) as exc:
+        state.Arch.from_charm(charm=charm)
+
+    assert "invalid" in str(exc.getrepr())
 
 
 @pytest.mark.parametrize(
@@ -103,6 +75,8 @@ def test__get_supported_arch(
     [
         pytest.param(state.Arch.ARM64, state.Arch.ARM64.value),
         pytest.param(state.Arch.X64, state.Arch.X64.value),
+        pytest.param(state.Arch.S390X, state.Arch.S390X.value),
+        pytest.param(state.Arch.PPC64LE, state.Arch.PPC64LE.value),
     ],
 )
 def test_arch_str(arch: state.Arch, expected_str: str):
@@ -118,7 +92,7 @@ def test_arch_str(arch: state.Arch, expected_str: str):
     "image",
     [
         pytest.param("dingo", id="dingo"),
-        pytest.param("focal", id="focal"),
+        pytest.param("bionic", id="bionic"),
         pytest.param("firefox", id="firefox"),
     ],
 )
@@ -159,6 +133,7 @@ def test_base_image(image: str, expected_base_image: state.BaseImage):
 @pytest.mark.parametrize(
     "base_image, expected_str",
     [
+        pytest.param(state.BaseImage.FOCAL, state.BaseImage.FOCAL.value),
         pytest.param(state.BaseImage.JAMMY, state.BaseImage.JAMMY.value),
         pytest.param(state.BaseImage.NOBLE, state.BaseImage.NOBLE.value),
     ],
