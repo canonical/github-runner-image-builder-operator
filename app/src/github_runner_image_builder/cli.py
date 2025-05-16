@@ -172,6 +172,12 @@ def _parse_url(
     help="Comma separated list of different clouds to use to upload the externally "
     "built image. The cloud connection parameters should exist in the clouds.yaml.",
 )
+@click.option(
+    "--ssh-proxy-command",
+    default=None,
+    help="The proxy command to use for ssh'ing into the builder machine. This is technically the"
+    " gateway argument for fabric Connection. Similar to ProxyCommand in ssh-config. ",
+)
 # click doesn't yet support dataclasses, hence all arguments are required.
 def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positional-arguments
     arch: config.Arch | None,
@@ -186,6 +192,7 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
     proxy: str,
     script_url: urllib.parse.ParseResult | None,
     upload_clouds: str,
+    ssh_proxy_command: str | None,
 ) -> None:
     """Build a cloud image using chroot and upload it to OpenStack.
 
@@ -203,6 +210,9 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         proxy: Proxy to use for external build VMs.
         script_url: The external setup bash script URL.
         upload_clouds: The Openstack cloud to use to upload externally built image.
+        ssh_proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
     """
     base = config.BaseImage.from_str(base_image)
     upload_cloud_names = (
@@ -228,6 +238,7 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
             name=image_name,
         ),
         keep_revisions=keep_revisions,
+        ssh_proxy_command=ssh_proxy_command,
     )
     click.echo(f"Image build success:\n{image_ids}", nl=False)
 

@@ -258,6 +258,7 @@ def run(
     cloud_config: CloudConfig,
     image_config: config.ImageConfig,
     keep_revisions: int,
+    ssh_proxy_command: str | None = None,
 ) -> str:
     """Run external OpenStack builder instance and create a snapshot.
 
@@ -265,6 +266,9 @@ def run(
         cloud_config: The OpenStack cloud configuration values for builder VM.
         image_config: The target image configuration values.
         keep_revisions: The number of image to keep for snapshot before deletion.
+        ssh_proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
 
     Returns:
         The Openstack snapshot image ID.
@@ -303,7 +307,9 @@ def run(
             wait=True,
         )
         logger.info("Launched builder, waiting for cloud-init to complete: %s.", builder.id)
-        ssh_conn = _get_ssh_connection(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
+        ssh_conn = _get_ssh_connection(
+            conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH, proxy_command=ssh_proxy_command
+        )
         _wait_for_cloud_init_complete(conn=conn, server=builder, ssh_conn=ssh_conn)
         log_output = conn.get_server_console(server=builder)
         logger.info("console log after cloud-init: %s", log_output)
@@ -658,6 +664,7 @@ def _get_ssh_connection(
     conn: openstack.connection.Connection,
     server: openstack.compute.v2.server.Server,
     ssh_key: pathlib.Path,
+    proxy_command: str | None = None,
 ) -> fabric.Connection:
     """Get a valid SSH connection to OpenStack instance.
 
@@ -665,6 +672,9 @@ def _get_ssh_connection(
         conn: The Openstach connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
         ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
+        proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
 
     Raises:
         AddressNotFoundError: If there was no valid address to get SSH connection.
@@ -693,6 +703,7 @@ def _get_ssh_connection(
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key)},
                 connect_timeout=30,
+                gateway=proxy_command,
             )
             result: fabric.Result | None = connection.run(
                 "echo hello world", warn=True, timeout=30

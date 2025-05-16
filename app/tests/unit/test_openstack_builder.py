@@ -292,6 +292,7 @@ def test_run(
         cloud_config=cloud_config,
         image_config=image_config,
         keep_revisions=5,
+        ssh_proxy_command=None,
     )
 
     generate_cloud_init_mock.assert_called()
@@ -1082,7 +1083,14 @@ def test__get_ssh_connection_ssh_invalid_stdout(monkeypatch: pytest.MonkeyPatch)
     assert "No connectable SSH addresses found" in str(exc)
 
 
-def test__get_ssh_connection_ssh(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "proxy_command",
+    [
+        pytest.param(secrets.token_hex(16), id="with proxy command"),
+        pytest.param(None, id="without proxy command"),
+    ],
+)
+def test__get_ssh_connection_ssh(monkeypatch: pytest.MonkeyPatch, proxy_command: str | None):
     """
     arrange: given a mocked connection that returns valid stdout.
     act: when _get_ssh_connection is called.
@@ -1103,16 +1111,19 @@ def test__get_ssh_connection_ssh(monkeypatch: pytest.MonkeyPatch):
     result_mock.ok = True
     result_mock.stdout = "hello world"
     ssh_connection_mock.run.return_value = result_mock
-    monkeypatch.setattr(
-        openstack_builder.fabric, "Connection", MagicMock(return_value=ssh_connection_mock)
-    )
+    connection_constructor_mock = MagicMock(return_value=ssh_connection_mock)
+    monkeypatch.setattr(openstack_builder.fabric, "Connection", connection_constructor_mock)
 
     assert (
         openstack_builder._get_ssh_connection(
-            conn=connection_mock, server=MagicMock(), ssh_key=MagicMock()
+            conn=connection_mock,
+            server=MagicMock(),
+            ssh_key=MagicMock(),
+            proxy_command=proxy_command,
         )
         == ssh_connection_mock
     )
+    assert connection_constructor_mock.call_args[1].get("gateway") == proxy_command
 
 
 @pytest.mark.parametrize(
