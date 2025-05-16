@@ -271,7 +271,8 @@ def run(
             Similar to ProxyCommand in ssh-config.
 
     Returns:
-        The Openstack snapshot image ID.
+        A comma separated list of the Openstack snapshot image IDs in the
+        order of the upload_cloud_names.
     """
     cloud_init_script = _generate_cloud_init_script(
         image_config=image_config,
@@ -320,30 +321,55 @@ def run(
                 ssh_conn=ssh_conn,
             )
         _shutoff_server(conn=conn, server=builder)
-        image = store.create_snapshot(
-            cloud_name=cloud_config.cloud_name,
-            image_name=image_config.name,
-            server=builder,
-            keep_revisions=keep_revisions,
-        )
-        logger.info(
-            "Requested snapshot, waiting for snapshot to complete: %s, %s.", builder.id, image.id
-        )
-        _wait_for_snapshot_complete(conn=conn, image=image)
-        images = _upload_to_clouds(
-            conn=conn,
-            image=image,
-            upload_cloud_names=cloud_config.upload_cloud_names,
-            upload_cloud_config=_UploadCloudConfig(
-                arch=image_config.arch,
-                image_name=image_config.name,
-                keep_revisions=keep_revisions,
-            ),
+        images = _create_and_upload_snapshot_to_clouds(
+            builder, cloud_config, conn, image_config, keep_revisions
         )
         logger.info("Deleting builder VM: %s (%s)", builder.name, builder.id)
         conn.delete_server(name_or_id=builder.id, wait=True, timeout=DELETE_SERVER_TIMEOUT)
         logger.info("Image builder run complete.")
     return ",".join(str(image.id) for image in images)
+
+
+def _create_and_upload_snapshot_to_clouds(
+    builder: openstack.compute.v2.server.Server,
+    cloud_config: CloudConfig,
+    conn: openstack.connection.Connection,
+    image_config: config.ImageConfig,
+    keep_revisions: int,
+) -> tuple[openstack.image.v2.image.Image, ...]:
+    """Create snapshot image and upload to clouds.
+
+    Args:
+        builder: The OpenStack server instance to create snapshot from.
+        cloud_config: The OpenStack cloud configuration values for builder VM.
+        conn: The OpenStack connection instance.
+        image_config: The target image configuration values.
+        keep_revisions: The number of image to keep for snapshot before deletion.
+
+    Returns:
+        The OpenStack snapshot image IDs in the order of the upload_cloud_names.
+    """
+    image = store.create_snapshot(
+        cloud_name=cloud_config.cloud_name,
+        image_name=image_config.name,
+        server=builder,
+        keep_revisions=keep_revisions,
+    )
+    logger.info(
+        "Requested snapshot, waiting for snapshot to complete: %s, %s.", builder.id, image.id
+    )
+    _wait_for_snapshot_complete(conn=conn, image=image)
+    images = _upload_to_clouds(
+        conn=conn,
+        image=image,
+        upload_cloud_names=cloud_config.upload_cloud_names,
+        upload_cloud_config=_UploadCloudConfig(
+            arch=image_config.arch,
+            image_name=image_config.name,
+            keep_revisions=keep_revisions,
+        ),
+    )
+    return images
 
 
 def _prepare_openstack_resources(
