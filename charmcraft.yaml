@@ -93,6 +93,14 @@ config:
       default: 6
       description: |
         The interval in hours between each scheduled image builds.
+    builder-ssh-proxy-command:
+      type: string
+      default: ""
+      description: >-
+        Optional ProxyCommand used by the ssh connection which is used to access the virtual
+        machine that is building an image. It is equivalent to ProxyCommand in ssh-config,
+        but without a shell. For example, a value could be something like:
+        `bash -c "openssl s_client -quiet -connect 192.168.20.2:2222 -servername %h 2> /dev/null"`
     openstack-auth-url:
       type: string
       default: ""

@@ -7,6 +7,7 @@
 # pylint:disable=protected-access
 
 import os
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -625,3 +626,30 @@ def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: di
     mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
 
     assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
+
+
+@pytest.mark.parametrize(
+    "ssh_proxy_command",
+    [
+        pytest.param(secrets.token_hex(16), id="with proxy_command"),
+        pytest.param(None, id="without proxy_command"),
+    ],
+)
+def test_builder_config_ssh_proxy_cmd_config_from_charm(
+    monkeypatch: pytest.MonkeyPatch, ssh_proxy_command: str | None
+):
+    """
+    arrange: a config with either ssh proxy command passed or not.
+    act: call BuilderConfig.from_charm
+    assert: proxy command is the expected value in BuilderConfig object
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {}
+    if ssh_proxy_command:
+        mock_charm.config = {state.BUILDER_SSH_PROXY_COMMAND_CONFIG_NAME: ssh_proxy_command}
+    monkeypatch.setattr(state.CloudConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(state.ImageConfig, "from_charm", MagicMock())
+
+    builder_config = state.BuilderConfig.from_charm(mock_charm)
+
+    assert builder_config.ssh_proxy_command == ssh_proxy_command

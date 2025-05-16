@@ -87,7 +87,10 @@ class Observer(ops.Object):
                     script_secrets=build_config.image_config.script_secrets,
                     runner_version=build_config.image_config.runner_version,
                 ),
-                service_config=builder.ExternalServiceConfig(proxy=proxy.http if proxy else None),
+                service_config=builder.ExternalServiceConfig(
+                    proxy=proxy.http if proxy else None,
+                    ssh_proxy_command=build_config.ssh_proxy_command,
+                ),
             ),
         )
         if not cloud_images:

@@ -513,6 +513,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     ),
                     external_service=builder.ExternalServiceConfig(
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                        ssh_proxy_command=TEST_STATIC_CONFIG.service_config.ssh_proxy_command,
                     ),
                 ),
                 builder.RunConfig(
@@ -536,6 +537,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     ),
                     external_service=builder.ExternalServiceConfig(
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                        ssh_proxy_command=TEST_STATIC_CONFIG.service_config.ssh_proxy_command,
                     ),
                 ),
                 builder.RunConfig(
@@ -559,6 +561,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                     ),
                     external_service=builder.ExternalServiceConfig(
                         proxy=TEST_STATIC_CONFIG.service_config.proxy,
+                        ssh_proxy_command=TEST_STATIC_CONFIG.service_config.ssh_proxy_command,
                     ),
                 ),
             ),
@@ -694,7 +697,7 @@ def test__run(
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(proxy=None),
+            builder._ServiceOptions(proxy=None, ssh_proxy_command=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -722,7 +725,7 @@ def test__run(
                 script_url=None,
                 script_secrets=None,
             ),
-            builder._ServiceOptions(proxy=None),
+            builder._ServiceOptions(proxy=None, ssh_proxy_command=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -756,7 +759,7 @@ def test__run(
                 script_url="https://test-script-url.com/script.sh",
                 script_secrets=None,
             ),
-            builder._ServiceOptions(proxy=None),
+            builder._ServiceOptions(proxy=None, ssh_proxy_command=None),
             [
                 "/usr/bin/run-one",
                 "/usr/bin/sudo",
@@ -789,7 +792,7 @@ def test__run(
                 script_secrets=None,
             ),
             builder._ServiceOptions(
-                proxy="https://test-proxy.com:3128",
+                proxy="https://test-proxy.com:3128", ssh_proxy_command="foobar"
             ),
             [
                 "/usr/bin/run-one",
@@ -801,6 +804,8 @@ def test__run(
                 "test-output-image-name",
                 "--proxy",
                 "test-proxy.com:3128",
+                "--ssh-proxy-command",
+                "foobar",
             ],
             id="With service options",
         ),

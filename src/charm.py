@@ -241,6 +241,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             ),
             service_config=builder.ExternalServiceConfig(
                 proxy=(builder_config.proxy.http if builder_config.proxy else None),
+                ssh_proxy_command=builder_config.ssh_proxy_command,
             ),
         )
 

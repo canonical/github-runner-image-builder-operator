@@ -187,6 +187,9 @@ class ExternalServiceConfigFactory(factory.Factory):
         model = builder.ExternalServiceConfig
 
     proxy: str | None = "http://proxy.internal:3128"
+    ssh_proxy_command: str | None = (
+        'bash -c "openssl s_client -quiet -connect 192.168.20.2:2222 -servername %h 2> /dev/null"'
+    )
 
 
 class StaticConfigFactory(factory.Factory):

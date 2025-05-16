@@ -41,6 +41,7 @@ SCRIPT_URL_CONFIG_NAME = "script-url"
 # Bandit thinks this is a hardcoded password
 SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
 SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
+BUILDER_SSH_PROXY_COMMAND_CONFIG_NAME = "builder-ssh-proxy-command"
 
 IMAGE_RELATION = "image"
 
@@ -460,12 +461,16 @@ class BuilderConfig:
         image_config: Image configuration parameters.
         cloud_config: Cloud configuration parameters.
         proxy: The http(s) proxy configuration.
+        ssh_proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
     """
 
     app_config: ApplicationConfig
     image_config: ImageConfig
     cloud_config: CloudConfig
     proxy: ProxyConfig | None
+    ssh_proxy_command: str | None
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "BuilderConfig":
@@ -489,6 +494,7 @@ class BuilderConfig:
             cloud_config=cloud_config,
             image_config=image_config,
             proxy=proxy_config,
+            ssh_proxy_command=str(charm.config.get(BUILDER_SSH_PROXY_COMMAND_CONFIG_NAME, None)),
         )
 
 

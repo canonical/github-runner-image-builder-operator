@@ -349,9 +349,13 @@ class ExternalServiceConfig:
 
     Attributes:
         proxy: The proxy to use to build the image.
+        ssh_proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
     """
 
     proxy: str | None
+    ssh_proxy_command: str | None
 
 
 @dataclasses.dataclass
@@ -516,6 +520,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
             ),
             service_options=_ServiceOptions(
                 proxy=config.external_service.proxy,
+                ssh_proxy_command=config.external_service.ssh_proxy_command,
             ),
         )
         logger.info("Run build command: %s", run_command)
@@ -630,9 +635,13 @@ class _ServiceOptions:
 
     Attributes:
         proxy: The proxy to use when building the image.
+        ssh_proxy_command: The proxy command to use for ssh'ing into the builder machine.
+            This is technically the gateway argument for fabric Connection.
+            Similar to ProxyCommand in ssh-config.
     """
 
     proxy: str | None
+    ssh_proxy_command: str | None
 
 
 def _build_run_command(
@@ -728,6 +737,8 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
                 service_options.proxy.removeprefix("http://").removeprefix("https://"),
             ]
         )
+    if service_options.ssh_proxy_command:
+        cmd.extend(["--ssh-proxy-command", service_options.ssh_proxy_command])
     return cmd
 
 
