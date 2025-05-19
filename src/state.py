@@ -494,7 +494,9 @@ class BuilderConfig:
             cloud_config=cloud_config,
             image_config=image_config,
             proxy=proxy_config,
-            ssh_proxy_command=str(charm.config.get(BUILDER_SSH_PROXY_COMMAND_CONFIG_NAME, None)),
+            ssh_proxy_command=typing.cast(
+                str | None, charm.config.get(BUILDER_SSH_PROXY_COMMAND_CONFIG_NAME)
+            ),
         )
 
 
