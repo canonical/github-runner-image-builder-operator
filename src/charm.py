@@ -89,7 +89,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
-        builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        builder_config = state.BuilderConfig.from_charm(charm=self)
         if not evt.unit:
             logger.info("No unit in image relation changed event. Skipping image building.")
             return
@@ -103,10 +103,36 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 evt.unit.name,
             )
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
-        builder.install_clouds_yaml(
-            cloud_config=builder_config_state.cloud_config.openstack_clouds_config
-        )
+        # proxy_config = state.ProxyConfig.from_env()
+        # proxy.configure_aproxy(proxy=proxy_config)
+        # builder.install_clouds_yaml(
+        #     cloud_config=builder_config.cloud_config.openstack_clouds_config
+        # )
+        # # use latest image instead of rebuilding
+        # cloud_images = builder.get_latest_images(
+        #     config_matrix=builder.ConfigMatrix(
+        #         bases=builder_config.image_config.bases,
+        #     ),
+        #     static_config=builder.StaticConfigs(
+        #         cloud_config=builder.CloudConfig(
+        #             build_cloud=builder_config.cloud_config.cloud_name,
+        #             build_flavor=builder_config.cloud_config.external_build_config.flavor,
+        #             build_network=builder_config.cloud_config.external_build_config.network,
+        #             resource_prefix=builder_config.app_config.resource_prefix,
+        #             num_revisions=builder_config.cloud_config.num_revisions,
+        #             upload_clouds=builder_config.cloud_config.upload_cloud_ids,
+        #         ),
+        #         image_config=builder.StaticImageConfig(
+        #             arch=builder_config.image_config.arch,
+        #             script_url=builder_config.image_config.script_url,
+        #             script_secrets=builder_config.image_config.script_secrets,
+        #             runner_version=builder_config.image_config.runner_version,
+        #         ),
+        #         service_config=builder.ExternalServiceConfig(proxy=proxy_config.http if proxy_config else None),
+        #     ),
+        # )
+        # if not cloud_images:
+        #     logger.info("No image yet ready for %s. Will build image.", evt.unit.name)
         self._run(cloud_id=clouds_auth_config.get_id())
         self.unit.status = ops.ActiveStatus()
 

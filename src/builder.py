@@ -211,6 +211,7 @@ def install_clouds_yaml(cloud_config: state.OpenstackCloudsConfig) -> None:
         cloud_config: The contents of clouds.yaml parsed as dict.
     """
     cloud_config_dict = cloud_config.model_dump()
+    # FIXME we shouldnt serialize the creds on the disk, better use env vars
     if not OPENSTACK_CLOUDS_YAML_PATH.exists():
         OPENSTACK_CLOUDS_YAML_PATH.write_text(yaml.safe_dump(cloud_config_dict), encoding="utf-8")
         return
