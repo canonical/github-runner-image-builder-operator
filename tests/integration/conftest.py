@@ -16,6 +16,7 @@ import subprocess  # nosec: B404
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Optional
+from uuid import uuid4
 
 import nest_asyncio
 import openstack
@@ -84,13 +85,15 @@ async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator
     """Juju model used in the test."""
     assert ops_test.model is not None
     # Set model proxy for the runners
-    await ops_test.model.set_config(
-        {
-            "juju-http-proxy": proxy.http,
-            "juju-https-proxy": proxy.https,
-            "juju-no-proxy": proxy.no_proxy,
-        }
-    )
+    if proxy.http:
+        logger.info("Setting model proxy: %s", proxy.http)
+        await ops_test.model.set_config(
+            {
+                "juju-http-proxy": proxy.http,
+                "juju-https-proxy": proxy.https,
+                "juju-no-proxy": proxy.no_proxy,
+            }
+        )
     yield ops_test.model
 
 
@@ -259,6 +262,22 @@ def image_configs_fixture():
         bases=("noble",),
     )
 
+@pytest.fixture(scope="module", name="script_secret_data")
+def script_secret_data_fixture() -> list[str]:
+    """The script secret data."""
+    # This is the data that will be passed to the script as an environment variable.
+    # It is not used in the test, but it is required to be present for the script to run.
+    return ["testsecret=TEST_VALUE"]
+
+
+@pytest_asyncio.fixture(scope="module", name="script_secret_id")
+async def script_secret_id_fixture(test_configs, script_secret_data: list[str]) -> str:
+    """The script secret ID."""
+    secret_name = f"secret-{uuid4().hex}"
+    secret = await test_configs.model.add_secret(secret_name, script_secret_data)
+    secret_id = secret.split(":")[-1]
+
+    return secret_id
 
 @pytest.fixture(scope="module", name="app_config")
 def app_config_fixture(
@@ -266,6 +285,7 @@ def app_config_fixture(
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
     arch: state.Arch,
+    script_secret_id: str
 ) -> dict:
     """The image builder application config."""
     return {
@@ -283,7 +303,7 @@ def app_config_fixture(
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
         SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
         "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
-        SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret_id,
     }
 
 
@@ -300,6 +320,7 @@ async def app_fixture(
     app_config: dict,
     base_machine_constraint: str,
     test_configs: TestConfigs,
+    script_secret_id: str
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -309,6 +330,7 @@ async def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
+    await app.model.grant_secret(script_secret_id, app.name)
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
