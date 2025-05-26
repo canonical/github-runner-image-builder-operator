@@ -270,11 +270,15 @@ def script_secret_data_fixture() -> list[str]:
     return ["testsecret=TEST_VALUE"]
 
 
+@pytest.fixture(scope="module", name="script_secret_name")
+def script_secret_name_fixture() -> str:
+    """The script secret name."""
+    return f"secret-{uuid4().hex}"
+
 @pytest_asyncio.fixture(scope="module", name="script_secret_id")
-async def script_secret_id_fixture(test_configs, script_secret_data: list[str]) -> str:
+async def script_secret_id_fixture(test_configs, script_secret_name: str, script_secret_data: list[str]) -> str:
     """The script secret ID."""
-    secret_name = f"secret-{uuid4().hex}"
-    secret = await test_configs.model.add_secret(secret_name, script_secret_data)
+    secret = await test_configs.model.add_secret(script_secret_name, script_secret_data)
     secret_id = secret.split(":")[-1]
 
     return secret_id
@@ -286,7 +290,6 @@ def app_config_fixture(
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
     arch: state.Arch,
-    script_secret_id: str,
 ) -> dict:
     """The image builder application config."""
     return {
@@ -319,6 +322,7 @@ async def app_fixture(
     base_machine_constraint: str,
     test_configs: TestConfigs,
     script_secret_id: str,
+    script_secret_name: str
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -328,12 +332,12 @@ async def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
-    await app.model.grant_secret(script_secret_id, app.name)
+    await app.model.grant_secret(script_secret_name, app.name)
     await app.set_config(
         {
             SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
             "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
-            state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret_id,
+            state.SCRIPT_SECRET_ID_CONFIG_NAME: f"secret:{script_secret_id}",
         }
     )
     # This takes long due to having to wait for the machine to come up.
