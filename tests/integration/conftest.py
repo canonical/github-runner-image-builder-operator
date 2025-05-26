@@ -13,6 +13,7 @@ import string
 # subprocess module is used to call juju cli directly due to constraints with private-endpoint
 # models
 import subprocess  # nosec: B404
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Optional
@@ -61,6 +62,19 @@ logger = logging.getLogger(__name__)
 
 # This is required to dynamically load async fixtures in async def model_fixture()
 nest_asyncio.apply()
+
+
+@dataclass
+class _Secret:
+    """Data class for a secret.
+
+    Attributes:
+        id: The secret ID.
+        name: The secret name.
+    """
+
+    id: str
+    name: str
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -262,26 +276,15 @@ def image_configs_fixture():
     )
 
 
-@pytest.fixture(scope="module", name="script_secret_data")
-def script_secret_data_fixture() -> list[str]:
-    """The script secret data."""
-    # This is the data that will be passed to the script as an environment variable.
-    # It is not used in the test, but it is required to be present for the script to run.
-    return ["testsecret=TEST_VALUE"]
-
-
-@pytest.fixture(scope="module", name="script_secret_name")
-def script_secret_name_fixture() -> str:
-    """The script secret name."""
-    return f"secret-{uuid4().hex}"
-
-@pytest_asyncio.fixture(scope="module", name="script_secret_id")
-async def script_secret_id_fixture(test_configs, script_secret_name: str, script_secret_data: list[str]) -> str:
-    """The script secret ID."""
-    secret = await test_configs.model.add_secret(script_secret_name, script_secret_data)
-    secret_id = secret.split(":")[-1]
-
-    return secret_id
+@pytest_asyncio.fixture(scope="module", name="script_secret")
+async def script_secret_fixture(test_configs) -> _Secret:
+    """The script secret."""
+    secret_name = f"script-{uuid4().hex}"
+    secret_id = await test_configs.model.add_secret(
+        name=secret_name,
+        data_args=["testsecret=TEST_VALUE"],
+    )  # note secret_id already contains "secret:" prefix
+    return _Secret(id=secret_id, name=secret_name)
 
 
 @pytest.fixture(scope="module", name="app_config")
@@ -321,8 +324,7 @@ async def app_fixture(
     app_config: dict,
     base_machine_constraint: str,
     test_configs: TestConfigs,
-    script_secret_id: str,
-    script_secret_name: str
+    script_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -332,12 +334,13 @@ async def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
-    await app.model.grant_secret(script_secret_name, app.name)
+    await app.model.grant_secret(script_secret.name, app.name)
     await app.set_config(
         {
             SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
-            "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
-            state.SCRIPT_SECRET_ID_CONFIG_NAME: f"secret:{script_secret_id}",
+            "github-runner-image-builder/refs/heads/main/tests/integration/"
+            "testdata/test_script.sh",
+            state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
         }
     )
     # This takes long due to having to wait for the machine to come up.
