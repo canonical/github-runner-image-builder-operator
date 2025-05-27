@@ -107,7 +107,22 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_clouds_yaml(
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
-        self._run(cloud_id=clouds_auth_config.get_id())
+        cloud_id = clouds_auth_config.get_id()
+        builder_config = state.BuilderConfig.from_charm(self)
+        config_matrix = self._get_configuration_matrix(builder_config=builder_config)
+        static_config = self._get_static_config(builder_config=builder_config)
+        static_config.cloud_config.upload_clouds = [cloud_id]
+        if cloud_images := builder.get_latest_images(
+            config_matrix=config_matrix, static_config=static_config
+        ):
+            logger.info(
+                "Latest image already exists for %s. Skipping image building.",
+                evt.unit.name,
+            )
+
+            self.image_observer.update_image_data(cloud_images)
+        else:
+            self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
