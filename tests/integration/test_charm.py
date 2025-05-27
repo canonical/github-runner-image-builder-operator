@@ -17,7 +17,7 @@ from openstack.connection import Connection
 
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
-from tests.integration.helpers import wait_for_images
+from tests.integration.helpers import image_created_from_dispatch, wait_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,33 @@ async def test_periodic_rebuilt(
             openstack_connection=openstack_connection,
             dispatch_time=dispatch_time,
             image_names=image_names,
+        )
+
+
+async def test_charm_another_unit(
+    app: Application,
+    test_charm: Application,
+    openstack_connection: Connection,
+    image_names: list[str],
+):
+    """
+    arrange: .
+    act: Scale up the test charm.
+    assert: No additional image is created but instead the already created ones are reused.
+    """
+    time_now = datetime.now(tz=timezone.utc)
+    model: Model = app.model
+    # TODO: deploy another app , because another unit might interfere with following tests?
+    await app.add_unit()
+    await model.wait_for_idle(apps=[test_charm.name], status="active", timeout=30 * 60)
+
+    # Check that no new image is created
+    for image_name in image_names:
+        assert (
+            image_created_from_dispatch(
+                image_name=image_name, connection=openstack_connection, dispatch_time=time_now
+            )
+            is None
         )
 
 
