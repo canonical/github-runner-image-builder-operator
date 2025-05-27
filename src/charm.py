@@ -120,7 +120,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 evt.unit.name,
             )
 
-            self.image_observer.update_image_data(cloud_images)
+            self.image_observer.update_image_data([cloud_images])
         else:
             self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()

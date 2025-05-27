@@ -200,13 +200,16 @@ def test__on_image_relation_changed_image_already_in_cloud(
         "from_unit_relation_data",
         MagicMock(return_value=fake_clouds_auth_config),
     )
-    builder.get_latest_images.return_value = [["latest"]]
+    cloud_image = builder.CloudImage(
+        arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id="demo_demo", image_id=""
+    )
+    builder.get_latest_images.return_value = [cloud_image]
 
     charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
     assert builder.run.call_count == 0
-    charm.image_observer.update_image_data.assert_called_with([["latest"]])
+    charm.image_observer.update_image_data.assert_called_with([[cloud_image]])
 
 
 @pytest.mark.usefixtures("mock_builder")

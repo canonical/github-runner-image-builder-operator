@@ -457,17 +457,27 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
         builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
-def _patched_test_func(*_args, **_kwargs):
-    """Patch function.
+def _patched__get_latest_image(*args, **_kwargs):
+    """Patch the fct _get_ltest image.
 
+    We use a function because of pickling issues with multiprocessing.
+
+    If first arg is "empty-image" the returned CloudImage object has an empty image_id.
     Args:
-        _args: args placeholder.
+        args: args placeholder.
         _kwargs: keyword args placeholder
 
     Returns:
         "test" string
     """
-    return "test"
+    if args[0] == "empty-image":
+        # Simulating a case where the image has an empty ID.
+        return builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=args[0], image_id=""
+        )
+    return builder.CloudImage(
+        arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=args[0], image_id="test_id"
+    )
 
 
 def test_run(monkeypatch: pytest.MonkeyPatch):
@@ -476,10 +486,15 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     act: when run is called.
     assert: run build results are returned.
     """
-    monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test", "test"]))
-    monkeypatch.setattr(builder, "_run", _patched_test_func)
+    monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test1", "test2"]))
+    monkeypatch.setattr(builder, "_run", _patched__get_latest_image)
 
-    assert ["test", "test"] == builder.run(config_matrix=MagicMock(), static_config=MagicMock())
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
+        )
+        for cloud_id in ["test1", "test2"]
+    ] == builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 # pylint doesn't quite understand walrus operators
@@ -1018,12 +1033,34 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
     act: when get_latest_images is called.
     assert: get_latest_images results are returned.
     """
-    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test", "test"]))
-    monkeypatch.setattr(builder, "_get_latest_image", _patched_test_func)
+    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
+    monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
 
-    assert ["test", "test"] == builder.get_latest_images(
-        config_matrix=MagicMock(), static_config=MagicMock()
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
+        )
+        for cloud_id in ["test1", "test2"]
+    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
+
+
+def test_get_latest_filters_empty_images(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched _run function that returns empty image id for the latest image.
+    act: when get_latest_images is called.
+    assert: get_latest_images returns only those images that have non-empty image id.
+    """
+    monkeypatch.setattr(
+        builder, "_parametrize_fetch", MagicMock(return_value=["empty-image", "test2"])
     )
+
+    monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
+
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id="test2", image_id="test_id"
+        )
+    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 @pytest.mark.parametrize(
