@@ -108,7 +108,7 @@ async def test_charm_another_unit(
     time_now = datetime.now(tz=timezone.utc)
     model: Model = app.model
     # TODO: deploy another app , because another unit might interfere with following tests?
-    await app.add_unit()
+    await test_charm.add_unit()
     await model.wait_for_idle(apps=[test_charm.name], status="active", timeout=30 * 60)
 
     # Check that no new image is created
