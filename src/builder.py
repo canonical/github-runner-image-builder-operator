@@ -797,14 +797,15 @@ def _parametrize_fetch(
     """
     configs = []
     for base in config_matrix.bases:
-        configs.append(
-            FetchConfig(
-                arch=static_config.image_config.arch,
-                base=base,
-                cloud_id=static_config.cloud_config.build_cloud,
-                prefix=static_config.cloud_config.resource_prefix,
+        for cloud_id in static_config.cloud_config.upload_clouds:
+            configs.append(
+                FetchConfig(
+                    arch=static_config.image_config.arch,
+                    base=base,
+                    cloud_id=cloud_id,
+                    prefix=static_config.cloud_config.resource_prefix,
+                )
             )
-        )
     return tuple(configs)
 
 

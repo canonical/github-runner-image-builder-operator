@@ -879,46 +879,122 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
 
 
 @pytest.mark.parametrize(
-    "config_matrix, expected_configs",
+    "config_matrix,upload_clouds,expected_configs",
     [
         pytest.param(
             builder.ConfigMatrix(
                 bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY, state.BaseImage.NOBLE),
             ),
+            ("test-upload",),
             (
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.FOCAL,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.NOBLE,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
             ),
             id="multiple OS bases",
         ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL,),
+            ),
+            ("test-upload",),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="single OS base",
+        ),
+        # multiple upload clouds
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL,),
+            ),
+            ("test-upload-a", "test-upload-b"),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple upload clouds",
+        ),
+        # multiple upload clouds with multiple OS bases
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY),
+            ),
+            ("test-upload-a", "test-upload-b"),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple upload clouds with multiple OS bases",
+        ),
     ],
 )
 def test__parametrize_fetch(
-    config_matrix: builder.ConfigMatrix, expected_configs: tuple[builder.FetchConfig, ...]
+    config_matrix: builder.ConfigMatrix,
+    upload_clouds: typing.Iterable[str],
+    expected_configs: tuple[builder.FetchConfig, ...],
 ):
     """
     arrange: given fetch configuration values.
     act: when _parametrize_fetch is called.
     assert: expected fetch configurations are returned.
     """
+    static_config = factories.StaticConfigFactory.create()
+    static_config.cloud_config.upload_clouds = upload_clouds
     assert (
-        builder._parametrize_fetch(config_matrix=config_matrix, static_config=TEST_STATIC_CONFIG)
+        builder._parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
         == expected_configs
     )
 
