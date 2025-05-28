@@ -1,3 +1,10 @@
+## [#121 reuse image id on relation changed](https://github.com/canonical/github-runner-image-builder-operator/pull/121)
+> Reuse the already existing image in an cloud and instead of rebuilding on image relation changed.
+
+### Performance Improvements
+* Image build propagation to newly joined units should be faster as they are not rebuilt.
+
+
 ## [#113 fix: skip run if relation data is not ready](https://github.com/canonical/github-runner-image-builder-operator/pull/113)
 > Fix: Skip image build run if relation data is not ready
 
