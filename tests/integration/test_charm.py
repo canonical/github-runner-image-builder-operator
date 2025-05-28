@@ -115,7 +115,7 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
     time_now = datetime.now(tz=timezone.utc)
 
     await model.integrate(app.name, test_charm_2.name)
-    await model.wait_for_idle(apps=[test_charm.name], status="active", timeout=30 * 60)
+    await model.wait_for_idle(apps=(test_charm_2.name,), status="active", timeout=30 * 60)
 
     # Check that no new image is created
     for image_name in image_names:
@@ -132,19 +132,21 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
     _, test_charm_unit_data, _ = await ops_test.juju(
         "show-unit", test_charm_unit_name, "--format", "json"
     )
+    logger.info("Test charm unit data: %s", test_charm_unit_data)
     test_charm_unit_data = json.loads(test_charm_unit_data)
 
     test_charm_2_unit_name = test_charm_2.units[0].name
-    _, test_charm2_unit_data, _ = await ops_test.juju(
+    _, test_charm_2_unit_data, _ = await ops_test.juju(
         "show-unit", test_charm_2_unit_name, "--format", "json"
     )
-    test_charm2_unit_data = json.loads(test_charm2_unit_data)
+    logger.info("Test charm 2 unit data: %s", test_charm_2_unit_data)
+    test_charm_2_unit_data = json.loads(test_charm_2_unit_data)
 
     assert (
         test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"][
             image_builder_unit_name
         ]["data"]["images"]
-        == test_charm2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"][
+        == test_charm_2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"][
             image_builder_unit_name
         ]["data"]["images"]
     )
