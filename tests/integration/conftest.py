@@ -13,9 +13,11 @@ import string
 # subprocess module is used to call juju cli directly due to constraints with private-endpoint
 # models
 import subprocess  # nosec: B404
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Optional
+from uuid import uuid4
 
 import nest_asyncio
 import openstack
@@ -44,7 +46,6 @@ from state import (
     OPENSTACK_USER_CONFIG_NAME,
     OPENSTACK_USER_DOMAIN_CONFIG_NAME,
     REVISION_HISTORY_LIMIT_CONFIG_NAME,
-    SCRIPT_SECRET_CONFIG_NAME,
     SCRIPT_URL_CONFIG_NAME,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
@@ -61,6 +62,19 @@ logger = logging.getLogger(__name__)
 
 # This is required to dynamically load async fixtures in async def model_fixture()
 nest_asyncio.apply()
+
+
+@dataclass
+class _Secret:
+    """Data class for a secret.
+
+    Attributes:
+        id: The secret ID.
+        name: The secret name.
+    """
+
+    id: str
+    name: str
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -84,13 +98,15 @@ async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator
     """Juju model used in the test."""
     assert ops_test.model is not None
     # Set model proxy for the runners
-    await ops_test.model.set_config(
-        {
-            "juju-http-proxy": proxy.http,
-            "juju-https-proxy": proxy.https,
-            "juju-no-proxy": proxy.no_proxy,
-        }
-    )
+    if proxy.http:
+        logger.info("Setting model proxy: %s", proxy.http)
+        await ops_test.model.set_config(
+            {
+                "juju-http-proxy": proxy.http,
+                "juju-https-proxy": proxy.https,
+                "juju-no-proxy": proxy.no_proxy,
+            }
+        )
     yield ops_test.model
 
 
@@ -260,6 +276,17 @@ def image_configs_fixture():
     )
 
 
+@pytest_asyncio.fixture(scope="module", name="script_secret")
+async def script_secret_fixture(test_configs) -> _Secret:
+    """The script secret."""
+    secret_name = f"script-{uuid4().hex}"
+    secret_id = await test_configs.model.add_secret(
+        name=secret_name,
+        data_args=["testsecret=TEST_VALUE"],
+    )  # note secret_id already contains "secret:" prefix
+    return _Secret(id=secret_id, name=secret_name)
+
+
 @pytest.fixture(scope="module", name="app_config")
 def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
@@ -281,9 +308,6 @@ def app_config_fixture(
         OPENSTACK_USER_DOMAIN_CONFIG_NAME: private_endpoint_configs["user_domain_name"],
         EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: openstack_metadata.flavor,
         EXTERNAL_BUILD_NETWORK_CONFIG_NAME: openstack_metadata.network,
-        SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
-        "github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh",
-        SCRIPT_SECRET_CONFIG_NAME: "TEST_SECRET=TEST_VALUE",
     }
 
 
@@ -300,6 +324,7 @@ async def app_fixture(
     app_config: dict,
     base_machine_constraint: str,
     test_configs: TestConfigs,
+    script_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -308,6 +333,15 @@ async def app_fixture(
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
         config=app_config,
+    )
+    await app.model.grant_secret(script_secret.name, app.name)
+    await app.set_config(
+        {
+            SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
+            "github-runner-image-builder/refs/heads/main/tests/integration/"
+            "testdata/test_script.sh",
+            state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
+        }
     )
     # This takes long due to having to wait for the machine to come up.
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
