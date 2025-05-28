@@ -4,7 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Integration testing module."""
-
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -14,6 +14,7 @@ from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
 from openstack.connection import Connection
+from pytest_operator.plugin import OpsTest
 
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
@@ -94,12 +95,15 @@ async def test_periodic_rebuilt(
         )
 
 
-async def test_charm_another_app(
+# Ignore the "too many arguments" warning, as this is not significant for a test function where
+# the arguments are fixtures and the function is not expected to be called directly.
+async def test_charm_another_app(  # pylint: disable=R0913,R0917
     app: Application,
     test_charm: Application,
     test_charm_2: Application,
     openstack_connection: Connection,
     image_names: list[str],
+    ops_test: OpsTest,
 ):
     """
     arrange: A test_charm that has already been integrated.
@@ -121,6 +125,24 @@ async def test_charm_another_app(
             )
             is None
         )
+
+    # Check that relation data is same for both test charms
+    test_charm_unit_name = test_charm.units[0].name
+    _, test_charm_unit_data, _ = await ops_test.juju(
+        "show-unit", test_charm_unit_name, "--format", "json"
+    )
+    test_charm_unit_data = json.loads(test_charm_unit_data)
+
+    test_charm_2_unit_name = test_charm_2.units[0].name
+    _, test_charm2_unit_data, _ = await ops_test.juju(
+        "show-unit", test_charm_2_unit_name, "--format", "json"
+    )
+    test_charm2_unit_data = json.loads(test_charm2_unit_data)
+
+    assert (
+        test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"]
+        == test_charm2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"]
+    )
 
 
 @asynccontextmanager
