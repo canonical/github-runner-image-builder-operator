@@ -126,7 +126,8 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
             is None
         )
 
-    # Check that relation data is same for both test charms
+    # Check that images in relation data is same for both test charms
+    image_builder_unit_name = app.units[0].name
     test_charm_unit_name = test_charm.units[0].name
     _, test_charm_unit_data, _ = await ops_test.juju(
         "show-unit", test_charm_unit_name, "--format", "json"
@@ -140,8 +141,12 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
     test_charm2_unit_data = json.loads(test_charm2_unit_data)
 
     assert (
-        test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"]
-        == test_charm2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"]
+        test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"][
+            image_builder_unit_name
+        ]["data"]["images"]
+        == test_charm2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"][
+            image_builder_unit_name
+        ]["data"]["images"]
     )
 
 
