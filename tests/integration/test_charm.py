@@ -94,21 +94,25 @@ async def test_periodic_rebuilt(
         )
 
 
-async def test_charm_another_unit(
+async def test_charm_another_app(
     app: Application,
     test_charm: Application,
+    test_charm_2: Application,
     openstack_connection: Connection,
     image_names: list[str],
 ):
     """
-    arrange: .
-    act: Scale up the test charm.
+    arrange: A test_charm that has already been integrated.
+        And another test_charm_2 (with creds on the same cloud) that is not yet integrated.
+    act: Integrate the test_charm_2 with the app.
     assert: No additional image is created but instead the already created ones are reused.
     """
-    time_now = datetime.now(tz=timezone.utc)
     model: Model = app.model
-    # TODO: deploy another app , because another unit might interfere with following tests?
-    await test_charm.add_unit()
+    await model.integrate(app.name, test_charm.name)
+    await model.wait_for_idle([app.name], wait_for_active=True, timeout=60 * 60)
+    time_now = datetime.now(tz=timezone.utc)
+
+    await model.integrate(app.name, test_charm_2.name)
     await model.wait_for_idle(apps=[test_charm.name], status="active", timeout=30 * 60)
 
     # Check that no new image is created
