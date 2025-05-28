@@ -108,8 +108,6 @@ async def test_charm_another_app(
     assert: No additional image is created but instead the already created ones are reused.
     """
     model: Model = app.model
-    await model.integrate(app.name, test_charm.name)
-    await model.wait_for_idle([app.name], wait_for_active=True, timeout=60 * 60)
     time_now = datetime.now(tz=timezone.utc)
 
     await model.integrate(app.name, test_charm_2.name)
