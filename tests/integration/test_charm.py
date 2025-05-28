@@ -67,34 +67,6 @@ async def test_build_image(
     await wait_for_images(openstack_connection, dispatch_time, image_names)
 
 
-@pytest.mark.asyncio
-async def test_periodic_rebuilt(
-    app: Application,
-    app_config: dict,
-    openstack_connection: Connection,
-    image_names: list[str],
-):
-    """
-    arrange: A deployed active charm.
-    act: Modify the crontab to run every minute.
-    assert: An image is built successfully.
-    """
-    unit: Unit = next(iter(app.units))
-
-    await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
-
-    dispatch_time = datetime.now(tz=timezone.utc)
-    async with _change_cronjob_to_minutes(
-        unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
-    ):
-
-        await wait_for_images(
-            openstack_connection=openstack_connection,
-            dispatch_time=dispatch_time,
-            image_names=image_names,
-        )
-
-
 # Ignore the "too many arguments" warning, as this is not significant for a test function where
 # the arguments are fixtures and the function is not expected to be called directly.
 async def test_charm_another_app(  # pylint: disable=R0913,R0917
@@ -150,6 +122,34 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
             image_builder_unit_name
         ]["data"]["images"]
     )
+
+
+@pytest.mark.asyncio
+async def test_periodic_rebuilt(
+    app: Application,
+    app_config: dict,
+    openstack_connection: Connection,
+    image_names: list[str],
+):
+    """
+    arrange: A deployed active charm.
+    act: Modify the crontab to run every minute.
+    assert: An image is built successfully.
+    """
+    unit: Unit = next(iter(app.units))
+
+    await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
+
+    dispatch_time = datetime.now(tz=timezone.utc)
+    async with _change_cronjob_to_minutes(
+        unit, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
+    ):
+
+        await wait_for_images(
+            openstack_connection=openstack_connection,
+            dispatch_time=dispatch_time,
+            image_names=image_names,
+        )
 
 
 @asynccontextmanager
