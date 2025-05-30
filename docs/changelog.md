@@ -121,8 +121,8 @@ that s390x support is experimental and may be removed in the future.
 * 
 
 
-## [#82 Remove Juju & Microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
-> Drop Juju and Microk8s preinstallation.
+## [#82 Remove Juju & MicroK8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
+> Drop Juju and MicroK8s preinstallation.
 
 
 ### Upgrade Steps
