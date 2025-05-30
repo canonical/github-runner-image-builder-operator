@@ -5,7 +5,7 @@ on:
 
 jobs:
   unit-tests:
-    uses: canonical/operator-workflows/.github/workflows/test.yaml@enable-vale-style-checker-optionally
+    uses: canonical/operator-workflows/.github/workflows/test.yaml@enable-vale-style-check-optionally
     secrets: inherit
     with:
       self-hosted-runner: false
