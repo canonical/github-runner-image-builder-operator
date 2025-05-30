@@ -2,10 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for charm module."""
-
-# Need access to protected functions for testing
-# pylint:disable=protected-access
-
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -17,6 +14,9 @@ import image
 import proxy
 import state
 from charm import GithubRunnerImageBuilderCharm
+
+# Need access to protected functions for testing
+# pylint:disable=protected-access
 
 
 @pytest.fixture(name="mock_builder")
@@ -190,7 +190,7 @@ def test__on_image_relation_changed_image_already_in_cloud(
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
         username="user",
-        password="pass",  # nosec no real password
+        password=secrets.token_hex(16),
         project_name="project_name",
         project_domain_name="project_domain_name",
         user_domain_name="user_domain_name",

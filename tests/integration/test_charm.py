@@ -69,7 +69,7 @@ async def test_build_image(
 
 # Ignore the "too many arguments" warning, as this is not significant for a test function where
 # the arguments are fixtures and the function is not expected to be called directly.
-async def test_charm_another_app(  # pylint: disable=R0913,R0917
+async def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R0917
     app: Application,
     test_charm: Application,
     test_charm_2: Application,
@@ -84,7 +84,7 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
     assert: No additional image is created but instead the already created ones are reused.
     """
     model: Model = app.model
-    time_now = datetime.now(tz=timezone.utc)
+    time_before_relation = datetime.now(tz=timezone.utc)
 
     await model.integrate(app.name, test_charm_2.name)
     await model.wait_for_idle(apps=(test_charm_2.name,), status="active", timeout=30 * 60)
@@ -93,7 +93,9 @@ async def test_charm_another_app(  # pylint: disable=R0913,R0917
     for image_name in image_names:
         assert (
             image_created_from_dispatch(
-                image_name=image_name, connection=openstack_connection, dispatch_time=time_now
+                image_name=image_name,
+                connection=openstack_connection,
+                dispatch_time=time_before_relation,
             )
             is None
         )
