@@ -8,6 +8,7 @@ import json
 import logging
 import time
 import typing
+from dataclasses import dataclass
 
 import ops
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider
@@ -23,6 +24,21 @@ logger = logging.getLogger(__name__)
 
 class RunEvent(ops.EventBase):
     """Event representing a periodic image builder run."""
+
+
+@dataclass
+class _Configs:
+    """Data class to hold builder configurations.
+
+    Attributes:
+        builder_config: The builder configuration state.
+        static_config: The static configurations required to build the image.
+        config_matrix: The configuration matrix for the image build.
+    """
+
+    builder_config: state.BuilderConfig
+    static_config: builder.StaticConfigs
+    config_matrix: builder.ConfigMatrix
 
 
 class GithubRunnerImageBuilderCharm(ops.CharmBase):
@@ -107,7 +123,22 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         builder.install_clouds_yaml(
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
-        self._run(cloud_id=clouds_auth_config.get_id())
+        cloud_id = clouds_auth_config.get_id()
+        configs = self._get_configs()
+        static_config = configs.static_config
+        static_config.cloud_config.upload_clouds = [cloud_id]
+        if cloud_images := builder.get_latest_images(
+            config_matrix=configs.config_matrix, static_config=static_config
+        ):
+            logger.info(
+                "An image already exists for %s in cloud %s. Skipping image building.",
+                evt.unit.name,
+                cloud_id,
+            )
+
+            self.image_observer.update_image_data([cloud_images])
+        else:
+            self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
@@ -176,13 +207,12 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         logger.info(
             "Building image and uploading to %s.", (cloud_id if cloud_id else "all clouds")
         )
-        builder_config = state.BuilderConfig.from_charm(self)
-        config_matrix = self._get_configuration_matrix(builder_config=builder_config)
-        static_config = self._get_static_config(builder_config=builder_config)
+        configs = self._get_configs()
+        static_config = configs.static_config
         if cloud_id:
             static_config.cloud_config.upload_clouds = [cloud_id]
         cloud_images = builder.run(
-            config_matrix=config_matrix,
+            config_matrix=configs.config_matrix,
             static_config=static_config,
         )
         self.image_observer.update_image_data(cloud_images=cloud_images)
@@ -194,10 +224,23 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                     "log_type": "image_build",
                     "duration": duration,
                     "cloud_images_count": len(cloud_images),
-                    "arch": builder_config.image_config.arch,
-                    "bases": builder_config.image_config.bases,
+                    "arch": configs.builder_config.image_config.arch,
+                    "bases": configs.builder_config.image_config.bases,
                 }
             )
+        )
+
+    def _get_configs(self) -> _Configs:
+        """Get the builder configurations.
+
+        Returns:
+            The builder configurations.
+        """
+        builder_config = state.BuilderConfig.from_charm(charm=self)
+        return _Configs(
+            builder_config=builder_config,
+            static_config=self._get_static_config(builder_config=builder_config),
+            config_matrix=self._get_configuration_matrix(builder_config=builder_config),
         )
 
     def _get_configuration_matrix(

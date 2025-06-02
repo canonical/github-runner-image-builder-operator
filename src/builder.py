@@ -734,7 +734,7 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
 def get_latest_images(
     config_matrix: ConfigMatrix, static_config: StaticConfigs
 ) -> list[CloudImage]:
-    """Fetch the latest image build ID.
+    """Fetch the latest image build IDs for the clouds.
 
     Args:
         config_matrix: Matricized values of configurable image parameters.
@@ -753,7 +753,7 @@ def get_latest_images(
             get_results = pool.map(_get_latest_image, fetch_configs)
     except multiprocessing.ProcessError as exc:
         raise GetLatestImageError("Failed to run parallel fetch") from exc
-    return get_results
+    return list(filter(lambda image: image.image_id, get_results))
 
 
 @dataclasses.dataclass
@@ -797,14 +797,15 @@ def _parametrize_fetch(
     """
     configs = []
     for base in config_matrix.bases:
-        configs.append(
-            FetchConfig(
-                arch=static_config.image_config.arch,
-                base=base,
-                cloud_id=static_config.cloud_config.build_cloud,
-                prefix=static_config.cloud_config.resource_prefix,
+        for cloud_id in static_config.cloud_config.upload_clouds:
+            configs.append(
+                FetchConfig(
+                    arch=static_config.image_config.arch,
+                    base=base,
+                    cloud_id=cloud_id,
+                    prefix=static_config.cloud_config.resource_prefix,
+                )
             )
-        )
     return tuple(configs)
 
 

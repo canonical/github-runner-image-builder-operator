@@ -457,17 +457,27 @@ def test_run_error(monkeypatch: pytest.MonkeyPatch):
         builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
-def _patched_test_func(*_args, **_kwargs):
-    """Patch function.
+def _patched__get_latest_image(*args, **_kwargs):
+    """Patch the fct _get_ltest image.
 
+    We use a function because of pickling issues with multiprocessing.
+
+    If first arg is "empty-image" the returned CloudImage object has an empty image_id.
     Args:
-        _args: args placeholder.
+        args: args placeholder.
         _kwargs: keyword args placeholder
 
     Returns:
         "test" string
     """
-    return "test"
+    if args[0] == "empty-image":
+        # Simulating a case where the image has an empty ID.
+        return builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=args[0], image_id=""
+        )
+    return builder.CloudImage(
+        arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=args[0], image_id="test_id"
+    )
 
 
 def test_run(monkeypatch: pytest.MonkeyPatch):
@@ -476,10 +486,15 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
     act: when run is called.
     assert: run build results are returned.
     """
-    monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test", "test"]))
-    monkeypatch.setattr(builder, "_run", _patched_test_func)
+    monkeypatch.setattr(builder, "_parametrize_build", MagicMock(return_value=["test1", "test2"]))
+    monkeypatch.setattr(builder, "_run", _patched__get_latest_image)
 
-    assert ["test", "test"] == builder.run(config_matrix=MagicMock(), static_config=MagicMock())
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
+        )
+        for cloud_id in ["test1", "test2"]
+    ] == builder.run(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 # pylint doesn't quite understand walrus operators
@@ -879,46 +894,122 @@ def test__fetch_config_image_name(config: builder.FetchConfig, expected_name: st
 
 
 @pytest.mark.parametrize(
-    "config_matrix, expected_configs",
+    "config_matrix,upload_clouds,expected_configs",
     [
         pytest.param(
             builder.ConfigMatrix(
                 bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY, state.BaseImage.NOBLE),
             ),
+            ("test-upload",),
             (
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.FOCAL,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.JAMMY,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
                 builder.FetchConfig(
                     arch=TEST_STATIC_CONFIG.image_config.arch,
                     base=state.BaseImage.NOBLE,
-                    cloud_id=TEST_STATIC_CONFIG.cloud_config.build_cloud,
+                    cloud_id="test-upload",
                     prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                 ),
             ),
             id="multiple OS bases",
         ),
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL,),
+            ),
+            ("test-upload",),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="single OS base",
+        ),
+        # multiple upload clouds
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL,),
+            ),
+            ("test-upload-a", "test-upload-b"),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple upload clouds",
+        ),
+        # multiple upload clouds with multiple OS bases
+        pytest.param(
+            builder.ConfigMatrix(
+                bases=(state.BaseImage.FOCAL, state.BaseImage.JAMMY),
+            ),
+            ("test-upload-a", "test-upload-b"),
+            (
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.FOCAL,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test-upload-a",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+                builder.FetchConfig(
+                    arch=TEST_STATIC_CONFIG.image_config.arch,
+                    base=state.BaseImage.JAMMY,
+                    cloud_id="test-upload-b",
+                    prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
+                ),
+            ),
+            id="multiple upload clouds with multiple OS bases",
+        ),
     ],
 )
 def test__parametrize_fetch(
-    config_matrix: builder.ConfigMatrix, expected_configs: tuple[builder.FetchConfig, ...]
+    config_matrix: builder.ConfigMatrix,
+    upload_clouds: typing.Iterable[str],
+    expected_configs: tuple[builder.FetchConfig, ...],
 ):
     """
     arrange: given fetch configuration values.
     act: when _parametrize_fetch is called.
     assert: expected fetch configurations are returned.
     """
+    static_config = factories.StaticConfigFactory.create()
+    static_config.cloud_config.upload_clouds = upload_clouds
     assert (
-        builder._parametrize_fetch(config_matrix=config_matrix, static_config=TEST_STATIC_CONFIG)
+        builder._parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
         == expected_configs
     )
 
@@ -942,12 +1033,34 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
     act: when get_latest_images is called.
     assert: get_latest_images results are returned.
     """
-    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test", "test"]))
-    monkeypatch.setattr(builder, "_get_latest_image", _patched_test_func)
+    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
+    monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
 
-    assert ["test", "test"] == builder.get_latest_images(
-        config_matrix=MagicMock(), static_config=MagicMock()
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
+        )
+        for cloud_id in ["test1", "test2"]
+    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
+
+
+def test_get_latest_filters_empty_images(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a monkeypatched _run function that returns empty image id for the latest image.
+    act: when get_latest_images is called.
+    assert: get_latest_images returns only those images that have non-empty image id.
+    """
+    monkeypatch.setattr(
+        builder, "_parametrize_fetch", MagicMock(return_value=["empty-image", "test2"])
     )
+
+    monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
+
+    assert [
+        builder.CloudImage(
+            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id="test2", image_id="test_id"
+        )
+    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
 
 
 @pytest.mark.parametrize(

@@ -2,10 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for charm module."""
-
-# Need access to protected functions for testing
-# pylint:disable=protected-access
-
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -17,6 +14,9 @@ import image
 import proxy
 import state
 from charm import GithubRunnerImageBuilderCharm
+
+# Need access to protected functions for testing
+# pylint:disable=protected-access
 
 
 @pytest.fixture(name="mock_builder")
@@ -35,6 +35,7 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
         MagicMock(return_value=MagicMock(image_config=image_config)),
     )
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
+    monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=[]))
     monkeypatch.setattr(builder, "run", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
 
@@ -145,7 +146,7 @@ def test__on_image_relation_changed(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
     """
-    arrange: given monkeypatched builder, openstack manager, image_observer.
+    arrange: given monkeypatched builder with get_latest_images returning an empty list.
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
@@ -164,13 +165,51 @@ def test__on_image_relation_changed(
         "from_unit_relation_data",
         MagicMock(return_value=fake_clouds_auth_config),
     )
+    builder.get_latest_images.return_value = []
 
     charm._on_image_relation_changed(MagicMock())
 
     assert charm.unit.status == ops.ActiveStatus()
+    builder.run.assert_called_once()
     assert builder.run.call_args[1]["static_config"].cloud_config.upload_clouds == [
         fake_clouds_auth_config.get_id()
     ]
+
+
+@pytest.mark.usefixtures("mock_builder")
+def test__on_image_relation_changed_image_already_in_cloud(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given monkeypatched builder with get_latest_image_id returning a list with one image.
+    act: when _on_image_relation_changed is called.
+    assert: charm is in active status and no run is triggered but image data is updated
+    """
+    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
+    charm.image_observer = MagicMock()
+    fake_clouds_auth_config = state.CloudsAuthConfig(
+        auth_url="http://example.com",
+        username="user",
+        password=secrets.token_hex(16),
+        project_name="project_name",
+        project_domain_name="project_domain_name",
+        user_domain_name="user_domain_name",
+    )
+    monkeypatch.setattr(
+        state.CloudsAuthConfig,
+        "from_unit_relation_data",
+        MagicMock(return_value=fake_clouds_auth_config),
+    )
+    cloud_image = builder.CloudImage(
+        arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id="demo_demo", image_id=""
+    )
+    builder.get_latest_images.return_value = [cloud_image]
+
+    charm._on_image_relation_changed(MagicMock())
+
+    assert charm.unit.status == ops.ActiveStatus()
+    assert builder.run.call_count == 0
+    charm.image_observer.update_image_data.assert_called_with([[cloud_image]])
 
 
 @pytest.mark.usefixtures("mock_builder")
