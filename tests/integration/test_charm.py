@@ -4,7 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Integration testing module."""
-
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -14,10 +14,11 @@ from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
 from openstack.connection import Connection
+from pytest_operator.plugin import OpsTest
 
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
-from tests.integration.helpers import wait_for_images
+from tests.integration.helpers import image_created_from_dispatch, wait_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,65 @@ async def test_build_image(
     assert: An image is built successfully.
     """
     await wait_for_images(openstack_connection, dispatch_time, image_names)
+
+
+# Ignore the "too many arguments" warning, as this is not significant for a test function where
+# the arguments are fixtures and the function is not expected to be called directly.
+async def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R0917
+    app: Application,
+    test_charm: Application,
+    test_charm_2: Application,
+    openstack_connection: Connection,
+    image_names: list[str],
+    ops_test: OpsTest,
+):
+    """
+    arrange: A test_charm that has already been integrated.
+        And another test_charm_2 (with creds on the same cloud) that is not yet integrated.
+    act: Integrate the test_charm_2 with the app.
+    assert: No additional image is created but instead the already created ones are reused.
+    """
+    model: Model = app.model
+    time_before_relation = datetime.now(tz=timezone.utc)
+
+    await model.integrate(app.name, test_charm_2.name)
+    await model.wait_for_idle(apps=(test_charm_2.name,), status="active", timeout=30 * 60)
+
+    # Check that no new image is created
+    for image_name in image_names:
+        assert (
+            image_created_from_dispatch(
+                image_name=image_name,
+                connection=openstack_connection,
+                dispatch_time=time_before_relation,
+            )
+            is None
+        )
+
+    # Check that images in relation data is same for both test charms
+    image_builder_unit_name = app.units[0].name
+    test_charm_unit_name = test_charm.units[0].name
+    _, test_charm_unit_data, _ = await ops_test.juju(
+        "show-unit", test_charm_unit_name, "--format", "json"
+    )
+    logger.info("Test charm unit data: %s", test_charm_unit_data)
+    test_charm_unit_data = json.loads(test_charm_unit_data)
+
+    test_charm_2_unit_name = test_charm_2.units[0].name
+    _, test_charm_2_unit_data, _ = await ops_test.juju(
+        "show-unit", test_charm_2_unit_name, "--format", "json"
+    )
+    logger.info("Test charm 2 unit data: %s", test_charm_2_unit_data)
+    test_charm_2_unit_data = json.loads(test_charm_2_unit_data)
+
+    assert (
+        test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"][
+            image_builder_unit_name
+        ]["data"]["images"]
+        == test_charm_2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"][
+            image_builder_unit_name
+        ]["data"]["images"]
+    )
 
 
 @pytest.mark.asyncio
