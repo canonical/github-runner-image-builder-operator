@@ -21,7 +21,10 @@ import charm_utils
 import image
 import proxy
 import state
-from app.src.github_runner_image_builder.logging import ERROR_LOG_FILE_PATH, LOG_FILE_PATH
+
+LOG_FILE_DIR = Path.home() / "github-runner-image-builder/log"
+LOG_FILE_PATH = LOG_FILE_DIR / "info.log"
+ERROR_LOG_FILE_PATH = LOG_FILE_DIR / "error.log"
 
 logger = logging.getLogger(__name__)
 
