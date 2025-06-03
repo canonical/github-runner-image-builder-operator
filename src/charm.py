@@ -6,7 +6,9 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 import json
 import logging
-import subprocess
+
+# We ignore low severity security warning for importing subprocess module
+import subprocess  # nosec B404
 import time
 import typing
 from dataclasses import dataclass
@@ -215,7 +217,11 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             encoding="utf-8",
         )
         try:
-            subprocess.check_call(["logrotate", str(APP_LOGROTATE_CONFIG_PATH), "--debug"])
+            # We can ignore subprocess_without_shell_equals_true because we're not running
+            # anything from an untrusted input.
+            subprocess.check_call(  # nosec: B603
+                ["/usr/sbin/logrotate", str(APP_LOGROTATE_CONFIG_PATH), "--debug"]
+            )
         except subprocess.CalledProcessError:
             logger.exception(
                 "Failed to set up logrotate for github-runner-image-builder application."

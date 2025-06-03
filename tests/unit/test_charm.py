@@ -3,7 +3,9 @@
 
 """Unit tests for charm module."""
 import secrets
-import subprocess
+
+# We're monkeypatching the subprocess module for testing
+import subprocess  # nosec: B404
 from unittest.mock import MagicMock
 
 import ops
@@ -323,4 +325,6 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     logrotate_config = logrotate_path.read_text(encoding="utf-8")
     assert str(LOG_FILE_PATH) in logrotate_config
     assert str(ERROR_LOG_FILE_PATH) in logrotate_config
-    mock_check_call.assert_called_once_with(["logrotate", str(logrotate_path), "--debug"])
+    mock_check_call.assert_called_once_with(
+        ["/usr/sbin/logrotate", str(logrotate_path), "--debug"]
+    )
