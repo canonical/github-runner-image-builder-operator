@@ -175,3 +175,23 @@ async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
     logger.info("Cronfile content: %s", cron_content)
     await unit.ssh(command="sudo systemctl restart cron")
+
+
+# This test implicitly assumes that it is run after an image-builder run which produces logs.
+@pytest.mark.asyncio
+async def test_log_rotated(app: Application):
+    """
+    arrange: A deployed active charm, after image builder application has been run.
+    act: Modify the crontab to run every minute.
+    assert: An image is built successfully.
+    """
+    unit: Unit = next(iter(app.units))
+
+    await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
+
+    logrotate_output = await unit.ssh(
+        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug"
+    )
+
+    assert "rotating pattern: /root/github-runner-image-builder/log/info.log" in logrotate_output
+    assert "rotating pattern: /root/github-runner-image-builder/log/error.log" in logrotate_output
