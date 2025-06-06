@@ -177,21 +177,30 @@ async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
     await unit.ssh(command="sudo systemctl restart cron")
 
 
-# This test implicitly assumes that it is run after an image-builder run which produces logs.
 @pytest.mark.asyncio
 async def test_log_rotated(app: Application):
     """
-    arrange: A deployed active charm, after image builder application has been run.
-    act: Modify the crontab to run every minute.
-    assert: An image is built successfully.
+    arrange: A deployed active charm and manually write something to the log file.
+    act: After logrotate has been triggered.
+    assert: The log is rotated successfully.
     """
     unit: Unit = next(iter(app.units))
-
     await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
-
-    logrotate_output = await unit.ssh(
-        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
+    test_log = "this log should be rotated"
+    await unit.ssh(
+        command=f"echo '{test_log}' | "
+        "sudo tee -a /root/github-runner-image-builder/log/info.log"
     )
 
-    assert "rotating pattern: /root/github-runner-image-builder/log/info.log" in logrotate_output
-    assert "rotating pattern: /root/github-runner-image-builder/log/error.log" in logrotate_output
+    # Test that the configuration is loaded successfully using --debug flag
+    logrotate_debug_output = await unit.ssh(
+        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
+    )
+    assert "rotating pattern: /root/github-runner-image-builder/log/info.log" in logrotate_debug_output
+    assert "rotating pattern: /root/github-runner-image-builder/log/error.log" in logrotate_debug_output
+    # Manually trigger logrotate using --force flag
+    await unit.ssh(
+        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --force"
+    )
+    log_output = await unit.ssh(command="cat /root/github-runner-image-builder/log/info.log")
+    assert test_log not in log_output
