@@ -193,8 +193,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
     def _setup_logrotate(self) -> None:
         """Set up the log rotation for image-builder application."""
-        if APP_LOGROTATE_CONFIG_PATH.exists():
-            return
         APP_LOGROTATE_CONFIG_PATH.write_text(
             dedent(
                 f"""\

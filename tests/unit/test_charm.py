@@ -264,25 +264,6 @@ def test__on_image_relation_changed_no_unit_auth_data(
     builder.run.assert_not_called()
 
 
-def test__setup_logrotate_already_exists(
-    monkeypatch, tmp_path, charm: GithubRunnerImageBuilderCharm
-):
-    """
-    arrange: given already existing log rotation config.
-    act: when _setup_logrotate is called.
-    assert: no actions are taken.
-    """
-    monkeypatch.setattr(
-        charm_module, "APP_LOGROTATE_CONFIG_PATH", (logrotate_path := tmp_path / "logrotate.conf")
-    )
-    logrotate_path.touch(exist_ok=True)
-
-    charm._setup_logrotate()
-
-    # We expect no action to be taken, hence no content in the logrotate config file.
-    assert logrotate_path.read_text(encoding="utf-8") == ""
-
-
 def test__setup_logrotate_error(
     monkeypatch, tmp_path, charm: GithubRunnerImageBuilderCharm, caplog
 ):
