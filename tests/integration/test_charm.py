@@ -196,11 +196,15 @@ async def test_log_rotated(app: Application):
     logrotate_debug_output = await unit.ssh(
         command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
     )
-    assert "rotating pattern: /root/github-runner-image-builder/log/info.log" in logrotate_debug_output
-    assert "rotating pattern: /root/github-runner-image-builder/log/error.log" in logrotate_debug_output
-    # Manually trigger logrotate using --force flag
-    await unit.ssh(
-        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --force"
+    assert (
+        "rotating pattern: /root/github-runner-image-builder/log/info.log"
+        in logrotate_debug_output
     )
+    assert (
+        "rotating pattern: /root/github-runner-image-builder/log/error.log"
+        in logrotate_debug_output
+    )
+    # Manually trigger logrotate using --force flag
+    await unit.ssh(command="sudo /usr/sbin/logrotate /etc/logrotate.conf --force")
     log_output = await unit.ssh(command="cat /root/github-runner-image-builder/log/info.log")
     assert test_log not in log_output
