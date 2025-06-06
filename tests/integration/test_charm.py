@@ -190,7 +190,7 @@ async def test_log_rotated(app: Application):
     await app.model.wait_for_idle(apps=(app.name,), status="active", timeout=30 * 60)
 
     logrotate_output = await unit.ssh(
-        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug"
+        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
     )
 
     assert "rotating pattern: /root/github-runner-image-builder/log/info.log" in logrotate_output
