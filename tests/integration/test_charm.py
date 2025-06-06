@@ -181,7 +181,7 @@ async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
 async def test_log_rotated(app: Application):
     """
     arrange: A deployed active charm and manually write something to the log file.
-    act: After logrotate has been triggered.
+    act: trigger logrotate manually
     assert: The log is rotated successfully.
     """
     unit: Unit = next(iter(app.units))
