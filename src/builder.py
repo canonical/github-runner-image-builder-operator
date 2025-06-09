@@ -158,7 +158,7 @@ def _initialize_image_builder(
             check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
-            timeout=10 * 60,
+            timeout=15 * 60,
             env=os.environ,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:

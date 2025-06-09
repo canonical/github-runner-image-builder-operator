@@ -1,3 +1,6 @@
+## [#123 feat: enable logrotate](https://github.com/canonical/github-runner-image-builder-operator/pull/123)(2025-06-06)
+> Enable log rotation on the GitHub runner image builder application.
+
 ## [#121 reuse image id on relation changed](https://github.com/canonical/github-runner-image-builder-operator/pull/121)(2025-05-28)
 > Reuse the already existing image in an cloud and instead of rebuilding on image relation changed.
 
