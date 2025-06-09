@@ -26,7 +26,6 @@ import state
 
 LOG_FILE_DIR = Path.home() / "github-runner-image-builder/log"
 LOG_FILE_PATH = LOG_FILE_DIR / "info.log"
-ERROR_LOG_FILE_PATH = LOG_FILE_DIR / "error.log"
 
 logger = logging.getLogger(__name__)
 
@@ -197,13 +196,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             dedent(
                 f"""\
                     {str(LOG_FILE_PATH.absolute())} {{
-                        weekly
-                        rotate 3
-                        compress
-                        delaycompress
-                        missingok
-                    }}
-                    {str(ERROR_LOG_FILE_PATH.absolute())} {{
                         weekly
                         rotate 3
                         compress
