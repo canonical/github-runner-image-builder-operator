@@ -13,8 +13,14 @@ from unittest.mock import MagicMock
 import pytest
 from click.testing import CliRunner
 
-from github_runner_image_builder import cli, config
+from github_runner_image_builder import cli, config, logging
 from github_runner_image_builder.cli import main
+
+
+@pytest.fixture(name="monkeypatch_logging_configure", autouse=True)
+def monkeypatch_logging_configure(monkeypatch):
+    """Monkeypatch log dir to be accessible when testing."""
+    monkeypatch.setattr(logging, "configure", MagicMock())
 
 
 @pytest.fixture(scope="function", name="latest_build_id_inputs")
