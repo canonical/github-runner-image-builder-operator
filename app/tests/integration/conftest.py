@@ -168,7 +168,7 @@ def ssh_key_fixture(
 ) -> typing.Generator[types.SSHKey, None, None]:
     """The openstack ssh key fixture."""
     keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
-    ssh_key_path = Path("tmp_key")
+    ssh_key_path = Path("testing_key.pem")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
 

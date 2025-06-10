@@ -15,3 +15,6 @@ clouds.yaml
 # Mac filesystem artifact
 **/.DS_Store
 **./.DS_Store
+
+# Testing artefacts
+testing_key.pem
