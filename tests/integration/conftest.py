@@ -440,7 +440,7 @@ def ssh_key_fixture(
     keypair: Keypair = openstack_connection.create_keypair(
         f"test-image-builder-operator-keys-{test_id}"
     )
-    ssh_key_path = Path("tmp_key")
+    ssh_key_path = Path("testing_key.pem")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
 
