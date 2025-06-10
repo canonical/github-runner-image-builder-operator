@@ -24,7 +24,7 @@ import image
 import proxy
 import state
 
-LOG_FILE_DIR = Path.home() / "github-runner-image-builder/log"
+LOG_FILE_DIR = Path("/var/log/github-runner-image-builder")
 LOG_FILE_PATH = LOG_FILE_DIR / "info.log"
 
 logger = logging.getLogger(__name__)
