@@ -5,29 +5,97 @@
 
 import os
 import urllib.parse
+from dataclasses import dataclass
+from typing import cast
 
 import click
 
-from github_runner_image_builder import config, logging, openstack_builder, store
+from github_runner_image_builder import config, openstack_builder, store
 
 # Bandit thinks this is a hardcoded secret.
 SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec
 
 
+@dataclass
+class SharedState:
+    """Class to hold shared state for the CLI application.
+
+    Attributes:
+        cloud: The OpenStack cloud name.
+        proxy: The proxy configuration.
+    """
+
+    cloud: str
+    proxy: dict[str, str]
+
+
+@click.group()
 @click.option(
     "--log-level",
     type=click.Choice(config.LOG_LEVELS),
     default="info",
     help="Configure logging verbosity.",
 )
-@click.group()
-def main(log_level: str | int) -> None:
+@click.option(
+    "--os-cloud",
+    default=None,
+    help="The cloud to use from the clouds.yaml file. The CLI looks for clouds.yaml in paths of "
+    "the following order: current directory, ~/.config/openstack, /etc/openstack.",
+    required=True,
+)
+@click.option(
+    "--http-proxy",
+    envvar="http_proxy",
+    default="",
+    help="HTTP proxy URL.",
+)
+@click.option(
+    "--https-proxy",
+    envvar="https_proxy",
+    default="",
+    help="HTTPS proxy URL.",
+)
+@click.option(
+    "--no-proxy",
+    envvar="no_proxy",
+    default="",
+    help="Comma separated list of hosts that should not be proxied.",
+)
+@click.pass_context
+def main(
+    ctx: click.Context,
+    log_level: str | int,
+    os_cloud: str,
+    http_proxy: str,
+    https_proxy: str,
+    no_proxy: str,
+) -> None:
     """Run entrypoint for Github runner image builder CLI.
 
+    \f # this is to prevent click from using Args section of the docstring as help documentation.
+
     Args:
+        ctx: click.Context object for passing shared state.
         log_level: The logging verbosity to apply.
-    """
-    logging.configure(log_level=log_level)
+        os_cloud: The name of the OpenStack cloud to use from clouds.yaml file.
+        http_proxy: HTTP proxy URL.
+        https_proxy: HTTPS proxy URL.
+        no_proxy: Comma separated list of hosts that should not be proxied.
+    """  # noqa: D301 - the \f should not be escaped for click to properly format the docstring.
+    # logging.configure(log_level=log_level)
+    proxy_config = {
+        k: v
+        for (k, v) in (
+            ("http_proxy", http_proxy),
+            ("https_proxy", https_proxy),
+            ("no_proxy", no_proxy),
+        )
+        if v
+    }
+    ctx.obj = SharedState(
+        cloud=openstack_builder.determine_cloud(cloud_name=os_cloud),
+        proxy=proxy_config,
+    )
 
 
 @main.command(name="init")
@@ -40,46 +108,45 @@ def main(log_level: str | int) -> None:
     required=True,
 )
 @click.option(
-    "--cloud-name",
-    default="",
-    help="The cloud to use from the clouds.yaml file. The CLI looks for clouds.yaml in paths of "
-    "the following order: current directory, ~/.config/openstack, /etc/openstack.",
-)
-@click.option(
     "--prefix",
     default="",
     help="Name of the OpenStack resources to prefix with. Used to run the image builder in "
     "parallel under same OpenStack project.",
 )
-def initialize(arch: config.Arch | None, cloud_name: str, prefix: str) -> None:
+@click.help_option()
+@click.pass_context
+def initialize(ctx: click.Context, arch: config.Arch, prefix: str) -> None:
     """Initialize builder CLI function wrapper.
 
+    \f # this is to prevent click from using Args section of the docstring as help documentation.
+
     Args:
+        ctx: click.Context object for passing shared state.
         arch: The architecture to build for.
-        cloud_name: The cloud name to use from clouds.yaml.
         prefix: The prefix to use for OpenStack resource names.
-    """
+    """  # noqa: D301 - the \f should not be escaped for click to properly format the docstring.
+    state = cast(SharedState, ctx.obj)
     openstack_builder.initialize(
-        arch=arch,
-        cloud_name=openstack_builder.determine_cloud(cloud_name=cloud_name),
-        prefix=prefix,
+        arch=arch, cloud_name=state.cloud, prefix=prefix, proxy=state.proxy
     )
 
 
 @main.command(name="latest-build-id")
-@click.argument("cloud_name")
+@click.pass_context
 @click.argument("image_name")
-def get_latest_build_id(cloud_name: str, image_name: str) -> None:
+def get_latest_build_id(ctx: click.Context, image_name: str) -> None:
     # Click arguments do not take help parameter, display help through docstrings.
-    """Get latest build ID of <image_name> from Openstack <cloud_name>.
+    """Get latest build ID of <IMAGE_NAME> from Openstack <--os-cloud>.
+
+    \f # this is to prevent click from using Args section of the docstring as help documentation.
 
     Args:
-        cloud_name: The cloud to use from the clouds.yaml file. The CLI looks for clouds.yaml in
-            paths of the following order: current directory, ~/.config/openstack, /etc/openstack.
         image_name: The image name uploaded to Openstack.
-    """
+        ctx: click.Context object for passing shared state.
+    """  # noqa: D301 - the \f should not be escaped for click to properly format the docstring.
+    state = cast(SharedState, ctx.obj)
     click.echo(
-        message=store.get_latest_build_id(cloud_name=cloud_name, image_name=image_name),
+        message=store.get_latest_build_id(cloud_name=state.cloud, image_name=image_name),
         nl=False,
     )
 
@@ -110,7 +177,6 @@ def _parse_url(
 
 
 @main.command(name="run")
-@click.argument("cloud_name")
 @click.argument("image_name")
 @click.option(
     "--arch",
@@ -155,11 +221,6 @@ def _parse_url(
     "parallel under same OpenStack project.",
 )
 @click.option(
-    "--proxy",
-    default="",
-    help="Proxy to use for external build VMs in host:port format (without scheme). ",
-)
-@click.option(
     "--script-url",
     callback=_parse_url,
     default=None,
@@ -172,10 +233,11 @@ def _parse_url(
     help="Comma separated list of different clouds to use to upload the externally "
     "built image. The cloud connection parameters should exist in the clouds.yaml.",
 )
+@click.pass_context
 # click doesn't yet support dataclasses, hence all arguments are required.
 def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positional-arguments
-    arch: config.Arch | None,
-    cloud_name: str,
+    ctx: click.Context,
+    arch: config.Arch,
     image_name: str,
     base_image: str,
     keep_revisions: int,
@@ -183,16 +245,14 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
     flavor: str,
     network: str,
     prefix: str,
-    proxy: str,
     script_url: urllib.parse.ParseResult | None,
     upload_clouds: str,
 ) -> None:
     """Build a cloud image using chroot and upload it to OpenStack.
 
     Args:
+        ctx: click.Context object for passing shared state.
         arch: The architecture to run build for.
-        cloud_name: The cloud to use from the clouds.yaml file. The CLI looks for clouds.yaml in
-            paths of the following order: current directory, ~/.config/openstack, /etc/openstack.
         image_name: The image name uploaded to Openstack.
         base_image: The Ubuntu base image to use as build base.
         keep_revisions: Number of past revisions to keep before deletion.
@@ -200,7 +260,6 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
         flavor: The Openstack flavor to create server to build images.
         network: The Openstack network to assign to server to build images.
         prefix: The prefix to use for OpenStack resource names.
-        proxy: Proxy to use for external build VMs.
         script_url: The external setup bash script URL.
         upload_clouds: The Openstack cloud to use to upload externally built image.
     """
@@ -208,13 +267,13 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
     upload_cloud_names = (
         [cloud_name.strip() for cloud_name in upload_clouds.split(",")] if upload_clouds else None
     )
+    state = cast(SharedState, ctx.obj)
     image_ids = openstack_builder.run(
         cloud_config=openstack_builder.CloudConfig(
-            cloud_name=cloud_name,
+            cloud_name=state.cloud,
             flavor=flavor,
             network=network,
             prefix=prefix,
-            proxy=proxy,
             upload_cloud_names=upload_cloud_names,
         ),
         image_config=config.ImageConfig(
@@ -228,6 +287,7 @@ def run(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positi
             name=image_name,
         ),
         keep_revisions=keep_revisions,
+        proxy=state.proxy,
     )
     click.echo(f"Image build success:\n{image_ids}", nl=False)
 

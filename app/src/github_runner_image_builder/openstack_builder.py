@@ -102,7 +102,7 @@ def determine_cloud(cloud_name: str | None = None) -> str:
     return cloud
 
 
-def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
+def initialize(arch: Arch, cloud_name: str, prefix: str, proxy: dict[str, str]) -> None:
     """Initialize the OpenStack external image builder.
 
     Upload ubuntu base images to openstack to use as builder base. This is a separate method to
@@ -113,6 +113,7 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         arch: The architecture of the image to seed.
         cloud_name: The cloud to use from the clouds.yaml file.
         prefix: The prefix to use for OpenStack resource names.
+        proxy: The proxy to go though when making network calls.
     """
     logger.info("Initializing external builder.")
     logger.info("Downloading Focal image.")
@@ -242,7 +243,6 @@ class CloudConfig:
         flavor: The OpenStack flavor to launch builder VMs on.
         network: The OpenStack network to launch the builder VMs on.
         prefix: The prefix to use for OpenStack resource names.
-        proxy: The proxy to enable on builder VMs.
         upload_cloud_names: The OpenStack cloud names to upload the snapshot to.
     """
 
@@ -250,13 +250,13 @@ class CloudConfig:
     flavor: str
     network: str
     prefix: str
-    proxy: str
     upload_cloud_names: typing.Iterable[str] | None
 
 
 def run(
     cloud_config: CloudConfig,
     image_config: config.ImageConfig,
+    proxy: dict[str, str],
     keep_revisions: int,
 ) -> str:
     """Run external OpenStack builder instance and create a snapshot.
@@ -271,7 +271,7 @@ def run(
     """
     cloud_init_script = _generate_cloud_init_script(
         image_config=image_config,
-        proxy=cloud_config.proxy,
+        proxy=proxy.get("http_proxy") or proxy.get("https_proxy") or "",
     )
     builder_name = _get_builder_name(
         arch=image_config.arch, base=image_config.base, prefix=cloud_config.prefix

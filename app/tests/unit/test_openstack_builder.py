@@ -99,7 +99,7 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch):
     )
 
     prefix = secrets.token_hex(8)
-    openstack_builder.initialize(MagicMock(), MagicMock(), prefix=prefix)
+    openstack_builder.initialize(MagicMock(), MagicMock(), prefix=prefix, proxy={})
 
     download_mock.assert_called()
     upload_mock.assert_called()

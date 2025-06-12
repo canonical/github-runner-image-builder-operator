@@ -16,6 +16,15 @@ from click.testing import CliRunner
 from github_runner_image_builder import cli, config, logging
 from github_runner_image_builder.cli import main
 
+TEST_CLOUD_NAME = "testcloud"
+REQUIRED_MAIN_INPUTS = {"--os-cloud": TEST_CLOUD_NAME}
+OPTIONAL_MAIN_INPUTS = {
+    "--http-proxy": "http://proxy.example.com",
+    "--https-proxy": "http://proxy.example.com",
+    "--no-proxy": "localhost",
+}
+MAIN_INPUTS = {**REQUIRED_MAIN_INPUTS, **OPTIONAL_MAIN_INPUTS}
+
 
 @pytest.fixture(name="monkeypatch_logging_configure", autouse=True)
 def monkeypatch_logging_configure(monkeypatch):
@@ -23,18 +32,25 @@ def monkeypatch_logging_configure(monkeypatch):
     monkeypatch.setattr(logging, "configure", MagicMock())
 
 
-@pytest.fixture(scope="function", name="latest_build_id_inputs")
-def latest_build_id_inputs_fixture():
-    """Valid CLI run mode inputs."""
-    return {"": "test-cloud-name", " ": "test-image-name"}
+@pytest.fixture(name="monkeypatch_openstack_builder", autouse=True)
+def monkeypatch_openstack_builder_fixture(monkeypatch):
+    """Monkeypatch openstack_builder module."""
+    monkeypatch.setattr(cli, "openstack_builder", (openstack_builder_mock := MagicMock()))
+    openstack_builder_mock.determine_cloud = MagicMock(return_value=TEST_CLOUD_NAME)
+    return openstack_builder_mock
+
+
+@pytest.fixture(scope="function", name="required_main_inputs")
+def required_main_inputs_fixture():
+    """Required inputs for main function."""
+    return [item for pair in REQUIRED_MAIN_INPUTS.items() for item in pair]
 
 
 @pytest.fixture(scope="function", name="run_inputs")
 def run_inputs_fixture():
     """Valid CLI run mode inputs."""
     return {
-        "": "test-cloud-name",
-        " ": "test-image-name",
+        "": "test-image-name",
         "--base-image": "noble",
         "--keep-revisions": "5",
         "--script-url": "https://example.com",
@@ -54,13 +70,15 @@ def cli_runner_fixture():
         pytest.param("invalid", id="invalid"),
     ],
 )
-def test_main_invalid_action(cli_runner: CliRunner, invalid_action: str):
+def test_main_invalid_action(
+    cli_runner: CliRunner, invalid_action: str, required_main_inputs: list[str]
+):
     """
     arrange: given invalid action arguments.
     act: when cli is invoked with invalid argument.
     assert: Error message is output.
     """
-    result = cli_runner.invoke(main, args=[invalid_action, "--help"])
+    result = cli_runner.invoke(main, args=[*required_main_inputs, invalid_action])
 
     assert f"Error: No such command '{invalid_action}'" in result.output
 
@@ -73,15 +91,45 @@ def test_main_invalid_action(cli_runner: CliRunner, invalid_action: str):
         pytest.param("run", id="run"),
     ],
 )
-def test_main(cli_runner: CliRunner, action: str):
+def test_main(cli_runner: CliRunner, action: str, required_main_inputs: list[str]):
     """
     arrange: none.
     act: when main is called.
     assert: respective functions are called correctly.
     """
-    result = cli_runner.invoke(main, args=[action, "--help"])
+    args = [*required_main_inputs, action, "--help"]
+    result = cli_runner.invoke(main, args=args)
 
     assert f"Usage: main {action}" in result.output
+
+
+def test_main_populate_context(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
+    """
+    arrange: none.
+    act: when main is called.
+    assert: proxy and cloud information is populated in shared context.
+    """
+    monkeypatch.setattr(
+        cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
+    )
+    test_proxy_mapping = {
+        "http_proxy": "http_proxy",
+        "https_proxy": "https_proxy",
+        "no_proxy": "no_proxy",
+    }
+    monkeypatch.setattr(
+        os,
+        "environ",
+        test_proxy_mapping,
+    )
+    cli_runner.invoke(main, args=["--os-cloud", TEST_CLOUD_NAME, "init", "--arch", "arm64"])
+
+    mock_openstack_init_func.assert_called_once_with(
+        arch=config.Arch.ARM64,
+        cloud_name=TEST_CLOUD_NAME,
+        prefix="",
+        proxy=test_proxy_mapping,
+    )
 
 
 @pytest.mark.parametrize(
@@ -94,7 +142,11 @@ def test_main(cli_runner: CliRunner, action: str):
     ],
 )
 def test_initialize(
-    monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, arch: str, expected_arch: str
+    monkeypatch: pytest.MonkeyPatch,
+    cli_runner: CliRunner,
+    arch: str,
+    expected_arch: str,
+    required_main_inputs: list[str],
 ):
     """
     arrange: given a monkeypatched builder.initialize function.
@@ -105,54 +157,41 @@ def test_initialize(
         cli.openstack_builder, "initialize", (mock_openstack_init_func := MagicMock())
     )
 
-    cli_runner.invoke(main, args=["init", "--cloud-name", "hello", "--arch", arch])
+    cli_runner.invoke(main, args=[*required_main_inputs, "init", "--arch", arch])
 
-    mock_openstack_init_func.assert_called_with(arch=expected_arch, cloud_name="hello", prefix="")
+    mock_openstack_init_func.assert_called_with(
+        arch=expected_arch, cloud_name=TEST_CLOUD_NAME, prefix="", proxy={}
+    )
 
 
-def test_initialize_invalid_args(cli_runner: CliRunner):
+def test_initialize_invalid_args(cli_runner: CliRunner, required_main_inputs: list[str]):
     """
     arrange: given invalid init action arguments.
     act: when _parse_args is called.
     assert: Error output is printed.
     """
-    result = cli_runner.invoke(main, args=["init"])
+    result = cli_runner.invoke(main, args=[*required_main_inputs, "init"])
 
     assert "Error: Missing option '--arch'" in result.output
 
 
-@pytest.mark.parametrize(
-    "invalid_args",
-    [
-        pytest.param({"": ""}, id="empty cloud name positional argument"),
-        pytest.param({" ": ""}, id="empty image name positional argument"),
-    ],
-)
 def test_invalid_latest_build_id_args(
-    cli_runner: CliRunner, latest_build_id_inputs: dict, invalid_args: dict
+    cli_runner: CliRunner,
+    required_main_inputs: list[str],
 ):
     """
-    arrange: given invalid latest-build-id action arguments.
-    act: when _parse_args is called.
+    arrange: none.
+    act: when latest-build-id is called with no image name argument.
     assert: Error output is printed.
     """
-    latest_build_id_inputs.update(invalid_args)
-    inputs = list(
-        # if flag does not exist, append it as a positional argument.
-        value
-        for value in itertools.chain.from_iterable(
-            (flag, value) if flag.strip() else (value,)
-            for (flag, value) in latest_build_id_inputs.items()
-        )
-        if value
-    )
-
-    result = cli_runner.invoke(main, args=["latest-build-id", *inputs])
+    result = cli_runner.invoke(main, args=[*required_main_inputs, "latest-build-id"])
 
     assert "Error: Missing argument " in result.output
 
 
-def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
+def test_latest_build_id(
+    monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner, required_main_inputs: list[str]
+):
     """
     arrange: given valid latest-build-id args.
     act: when cli is invoked with latest-build-id.
@@ -163,7 +202,7 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
     )
 
     result = cli_runner.invoke(
-        main, args=["latest-build-id", "test-cloud-name", "test-image-name"]
+        main, args=[*required_main_inputs, "latest-build-id", "test-image-name"]
     )
 
     assert result.output == test_id
@@ -174,13 +213,14 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
     [
         pytest.param({"--base-image": ""}, id="no base-image"),
         pytest.param({"--base-image": "test"}, id="invalid base-image"),
-        pytest.param({"": ""}, id="empty cloud name positional argument"),
-        pytest.param({" ": ""}, id="empty image name positional argument"),
+        pytest.param({"": ""}, id="empty image name positional argument"),
         pytest.param({"--script-url": "invalidurl"}, id="invalid url"),
         pytest.param({"--arch": "invalid"}, id="invalid arch"),
     ],
 )
-def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args: dict):
+def test_invalid_run_args(
+    cli_runner: CliRunner, run_inputs: dict, invalid_args: dict, required_main_inputs: list[str]
+):
     """
     arrange: given invalid run action arguments.
     act: when _parse_args is called.
@@ -196,7 +236,7 @@ def test_invalid_run_args(cli_runner: CliRunner, run_inputs: dict, invalid_args:
         if value
     )
 
-    result = cli_runner.invoke(main, args=["run", *inputs])
+    result = cli_runner.invoke(main, args=[*required_main_inputs, "run", *inputs])
 
     assert (
         "Error: Invalid value for" in result.output or "Error: Missing argument" in result.output
@@ -215,6 +255,7 @@ def test_run(
     monkeypatch: pytest.MonkeyPatch,
     cli_runner: CliRunner,
     arch: str,
+    required_main_inputs: list[str],
 ):
     """
     arrange: given a monkeypatched builder.setup_builder function.
@@ -224,12 +265,12 @@ def test_run(
     monkeypatch.setattr(cli.openstack_builder, "run", MagicMock())
     monkeypatch.setattr(cli.store, "upload_image", MagicMock())
     command = [
+        *required_main_inputs,
         "run",
         "--arch",
         arch,
         "--base-image",
         "jammy",
-        "test-cloud-name",
         "test-image-name",
     ]
 
