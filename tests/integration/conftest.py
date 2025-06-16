@@ -116,21 +116,68 @@ def dispatch_time_fixture():
     return datetime.now(tz=timezone.utc)
 
 
+@pytest.fixture(scope="module", name="test_charm_file")
+def test_charm_file_fixture() -> str:
+    """Build the charm and return the path to the built charm."""
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    )
+    return "./test_ubuntu-22.04-amd64.charm"
+
+
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(
     model: Model,
     test_id: str,
+    test_charm_file: str,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
-    # The predefine inputs here can be trusted
-    subprocess.check_call(  # nosec: B603
-        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
-    )
-    logger.info("Deploying built test charm.")
     app_name = f"test-{test_id}"
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, test_charm_file)
+
+    yield app
+
+    await model.remove_application(app_name=app_name)
+    logger.info("Test charm application %s removed.", app_name)
+
+
+@pytest_asyncio.fixture(scope="module", name="test_charm_2")
+async def test_charm_2(
+    model: Model,
+    test_id: str,
+    test_charm_file: str,
+    private_endpoint_configs: PrivateEndpointConfigs,
+) -> AsyncGenerator[Application, None]:
+    """A second test charm that becomes active when valid relation data is given."""
+    app_name = f"test2-{test_id}"
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, test_charm_file)
+
+    yield app
+
+    logger.info("Cleaning up test charm.")
+    await model.remove_application(app_name=app_name)
+    logger.info("Test charm application %s removed.", app_name)
+
+
+async def _deploy_test_charm(
+    app_name: str,
+    model: Model,
+    private_endpoint_configs: PrivateEndpointConfigs,
+    test_charm_file: str,
+):
+    """Deploy the test charm with the given application name.
+
+    Args:
+        app_name: The name of the application to deploy.
+        model: The Juju model to deploy the charm in.
+        private_endpoint_configs: The OpenStack private endpoint configurations.
+        test_charm_file: The path to the built test charm file.
+
+    """
+    logger.info("Deploying built test charm")
     app: Application = await model.deploy(
-        "./test_ubuntu-22.04-amd64.charm",
+        test_charm_file,
         app_name,
         config={
             "openstack-auth-url": private_endpoint_configs["auth_url"],
@@ -141,12 +188,7 @@ async def test_charm_fixture(
             "openstack-user-name": private_endpoint_configs["username"],
         },
     )
-
-    yield app
-
-    logger.info("Cleaning up test charm.")
-    await model.remove_application(app_name=app_name)
-    logger.info("Test charm removed.")
+    return app
 
 
 @pytest.fixture(scope="module", name="arch")
@@ -398,7 +440,7 @@ def ssh_key_fixture(
     keypair: Keypair = openstack_connection.create_keypair(
         f"test-image-builder-operator-keys-{test_id}"
     )
-    ssh_key_path = Path("tmp_key")
+    ssh_key_path = Path("testing_key.pem")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
 

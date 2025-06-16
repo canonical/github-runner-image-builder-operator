@@ -1,4 +1,14 @@
-## [#113 fix: skip run if relation data is not ready](https://github.com/canonical/github-runner-image-builder-operator/pull/113)
+## [#123 feat: enable logrotate](https://github.com/canonical/github-runner-image-builder-operator/pull/123)(2025-06-06)
+> Enable log rotation on the GitHub runner image builder application.
+
+## [#121 reuse image id on relation changed](https://github.com/canonical/github-runner-image-builder-operator/pull/121)(2025-05-28)
+> Reuse the already existing image in an cloud and instead of rebuilding on image relation changed.
+
+### Performance Improvements
+* Image build propagation to newly joined units should be faster as they are not rebuilt.
+
+
+## [#113 fix: skip run if relation data is not ready](https://github.com/canonical/github-runner-image-builder-operator/pull/113)(2025-04-29)
 > Fix: Skip image build run if relation data is not ready
 
 ### Bug Fixes
@@ -121,8 +131,8 @@ that s390x support is experimental and may be removed in the future.
 * 
 
 
-## [#82 Remove juju & microk8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
-> Drop juju and microk8s preinstallation.
+## [#82 Remove Juju & MicroK8s](https://github.com/canonical/github-runner-image-builder-operator/pull/82) (2025-02-14)
+> Drop Juju and MicroK8s preinstallation.
 
 
 ### Upgrade Steps
