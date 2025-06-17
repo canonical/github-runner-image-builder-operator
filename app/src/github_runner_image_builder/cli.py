@@ -59,9 +59,7 @@ def main(ctx: click.Context, log_level: str | int, os_cloud: str) -> None:
 @main.command(name="init")
 @click.option(
     "--arch",
-    type=click.Choice(
-        (config.Arch.ARM64, config.Arch.X64, config.Arch.S390X, config.Arch.PPC64LE)
-    ),
+    type=click.Choice(config.Arch, case_sensitive=False),
     help="Image architecture to initialize for.",
     required=True,
 )
@@ -139,9 +137,7 @@ def _parse_url(
 @click.argument("image_name")
 @click.option(
     "--arch",
-    type=click.Choice(
-        (config.Arch.ARM64, config.Arch.X64, config.Arch.S390X, config.Arch.PPC64LE)
-    ),
+    type=click.Choice(config.Arch, case_sensitive=False),
     help="Image architecture.",
     required=True,
 )
