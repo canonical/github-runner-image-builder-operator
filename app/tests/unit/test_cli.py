@@ -223,7 +223,7 @@ def test_run(
         command,
     )
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Unexpected exit code {result.exit_code}, {result.output}"
 
 
 def test__load_secrets():
