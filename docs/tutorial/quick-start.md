@@ -1,6 +1,4 @@
-# Deploy the GitHub Runner Image Builder for the first time
-
-This quick start guide will help you deploy the GitHub Runner Image Builder charm in OpenStack mode.
+# Deploy the GitHub runner image builder for the first time
 
 ## What you'll do
 
@@ -46,7 +44,7 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-- Verify that the image is being built via Juju logs:
+- Verify that the image is being built via juju logs:
 ```
 juju debug-log --include=github-runner-image-builder/0
 ```
