@@ -53,6 +53,9 @@ OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 
 # Bandit thinks this is a hardcoded secret
 IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: B105
+IMAGE_BUILDER_INIT_TIMEOUT = 30 * 60
+IMAGE_BUILDER_RUN_TIMEOUT = 45 * 60
+IMAGE_BUILDER_GET_LATEST_IMAGE_TIMEOUT = 10 * 60
 
 
 @dataclasses.dataclass
@@ -158,7 +161,7 @@ def _initialize_image_builder(
             check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
-            timeout=15 * 60,
+            timeout=IMAGE_BUILDER_INIT_TIMEOUT,
             env=os.environ,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
@@ -529,6 +532,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 "HOME": str(UBUNTU_HOME),
                 **_transform_secrets(secrets=config.image.script_config.script_secrets),
             },
+            timeout=IMAGE_BUILDER_RUN_TIMEOUT,
         )
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
         return list(
@@ -836,7 +840,7 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
             ],
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
-            timeout=10 * 60,
+            timeout=IMAGE_BUILDER_GET_LATEST_IMAGE_TIMEOUT,
             env=os.environ,
             encoding="utf-8",
         )  # nosec: B603

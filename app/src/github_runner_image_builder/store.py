@@ -18,6 +18,8 @@ from github_runner_image_builder.errors import OpenstackError, UploadImageError
 
 logger = logging.getLogger(__name__)
 
+UPLOAD_IMAGE_TIMEOUT = 60 * 60
+
 
 def create_snapshot(
     cloud_name: str, image_name: str, server: Server, keep_revisions: int
@@ -82,6 +84,7 @@ def upload_image(
                 properties={"architecture": arch.to_openstack()},
                 allow_duplicates=True,
                 wait=True,
+                timeout=UPLOAD_IMAGE_TIMEOUT,
             )  # type: ignore
             logger.info("Pruning older images %s, keeping %s.", image_name, keep_revisions)
             _prune_old_images(

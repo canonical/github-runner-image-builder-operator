@@ -23,6 +23,9 @@ SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x", "ppc64el"]
 
 CHECKSUM_BUF_SIZE = 65536  # 65kb
 
+IMAGE_DOWNLOAD_TIMEOUT = 60 * 20
+FETCH_SHASUM_TIMEOUT = 60 * 5
+
 
 def download_and_validate_image(arch: Arch, base_image: BaseImage) -> Path:
     """Download and verify the base image from cloud-images.ubuntu.com.
@@ -109,7 +112,7 @@ def _download_base_image(base_image: BaseImage, bin_arch: str, output_filename: 
         request = requests.get(
             f"https://cloud-images.ubuntu.com/{base_image.value}/current/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",
-            timeout=60 * 20,
+            timeout=IMAGE_DOWNLOAD_TIMEOUT,
             stream=True,
         )  # nosec: B310, B113
     except requests.exceptions.HTTPError as exc:
@@ -139,7 +142,7 @@ def _fetch_shasums(base_image: BaseImage) -> dict[str, str]:
         # bandit does not detect that the timeout parameter exists.
         response = requests.get(  # nosec: request_without_timeout
             f"https://cloud-images.ubuntu.com/{base_image.value}/current/SHA256SUMS",
-            timeout=60 * 5,
+            timeout=FETCH_SHASUM_TIMEOUT,
         )
     except requests.RequestException as exc:
         logger.exception("Failed to download base cloud image SHA256SUMS file.")
