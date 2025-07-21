@@ -11,6 +11,7 @@ __pycache__/
 *.egg-info/
 */*.rock
 clouds.yaml
+app.tar.gz
 
 # Mac filesystem artifact
 **/.DS_Store
