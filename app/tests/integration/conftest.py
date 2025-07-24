@@ -144,9 +144,17 @@ def cloud_name_fixture(clouds_yaml_contents: str) -> str:
 
 
 @pytest.fixture(scope="module", name="openstack_connection")
-def openstack_connection_fixture(cloud_name: str) -> Connection:
+def openstack_connection_fixture(
+    cloud_name: str, test_id: str
+) -> typing.Generator[Connection, None, None]:
     """The openstack connection instance."""
-    return openstack.connect(cloud_name)
+    with openstack.connect(cloud_name) as conn:
+        yield conn
+
+        images = conn.list_images()
+        for image in images:
+            if str(image.name).startswith(test_id):
+                conn.delete_image(image)
 
 
 @pytest.fixture(scope="module", name="dockerhub_mirror")
