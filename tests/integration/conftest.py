@@ -279,13 +279,19 @@ def clouds_yaml_fixture(
 
 
 @pytest.fixture(scope="module", name="openstack_connection")
-def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
+def openstack_connection_fixture(
+    clouds_yaml_contents: str, image_names: list[str]
+) -> Generator[Connection, None, None]:
     """The openstack connection instance."""
     clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
     clouds_yaml_path.write_text(data=clouds_yaml_contents, encoding="utf-8")
     first_cloud = next(iter(clouds_yaml["clouds"].keys()))
-    return openstack.connect(first_cloud)
+    with openstack.connect(first_cloud) as conn:
+        yield conn
+
+        for image_name in image_names:
+            conn.delete_image(image_name)
 
 
 @pytest.fixture(scope="module", name="test_id")
