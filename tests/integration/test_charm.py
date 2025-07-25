@@ -46,7 +46,7 @@ async def test_cos_agent_relation(app: Application):
     grafana_agent = await model.deploy(
         "grafana-agent",
         application_name=f"grafana-agent-{app.name}",
-        channel="latest/edge",
+        channel="1/edge",
         series="jammy",
     )
     await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
