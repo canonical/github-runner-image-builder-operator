@@ -301,6 +301,8 @@ def run(
             auto_ip=False,
             timeout=CREATE_SERVER_TIMEOUT,
             wait=True,
+            # 2025/07/24 - This option is set to mitigate CVE-2024-6174
+            config_drive=True,
         )
         logger.info("Launched builder, waiting for cloud-init to complete: %s.", builder.id)
         ssh_conn = _get_ssh_connection(conn=conn, server=builder, ssh_key=BUILDER_KEY_PATH)
