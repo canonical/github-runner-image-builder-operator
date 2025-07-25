@@ -46,7 +46,7 @@ async def test_cos_agent_relation(app: Application):
     grafana_agent = await model.deploy(
         "grafana-agent",
         application_name=f"grafana-agent-{app.name}",
-        channel="latest/edge",
+        channel="1/edge",
         series="jammy",
     )
     await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
@@ -175,3 +175,30 @@ async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
     cron_content = await unit.ssh(command=f"cat {CRON_BUILD_SCHEDULE_PATH}")
     logger.info("Cronfile content: %s", cron_content)
     await unit.ssh(command="sudo systemctl restart cron")
+
+
+@pytest.mark.asyncio
+async def test_log_rotated(app: Application):
+    """
+    arrange: A deployed active charm and manually write something to the log file.
+    act: trigger logrotate manually
+    assert: The log is rotated successfully.
+    """
+    unit: Unit = next(iter(app.units))
+    await app.model.wait_for_idle(apps=(app.name,), timeout=30 * 60)
+    test_log = "this log should be rotated"
+    await unit.ssh(
+        command=f"echo '{test_log}' | " "sudo tee -a /var/log/github-runner-image-builder/info.log"
+    )
+
+    # Test that the configuration is loaded successfully using --debug flag
+    logrotate_debug_output = await unit.ssh(
+        command="sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
+    )
+    assert (
+        "rotating pattern: /var/log/github-runner-image-builder/info.log" in logrotate_debug_output
+    )
+    # Manually trigger logrotate using --force flag
+    await unit.ssh(command="sudo /usr/sbin/logrotate /etc/logrotate.conf --force")
+    log_output = await unit.ssh(command="sudo cat /var/log/github-runner-image-builder/info.log")
+    assert test_log not in log_output

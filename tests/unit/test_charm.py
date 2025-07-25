@@ -3,6 +3,9 @@
 
 """Unit tests for charm module."""
 import secrets
+
+# We're monkeypatching the subprocess module for testing
+import subprocess  # nosec: B404
 from unittest.mock import MagicMock
 
 import ops
@@ -10,9 +13,11 @@ import pytest
 from ops import RelationChangedEvent
 
 import builder
+import charm as charm_module
 import image
 import proxy
 import state
+from app.src.github_runner_image_builder.logging import LOG_FILE_PATH
 from charm import GithubRunnerImageBuilderCharm
 
 # Need access to protected functions for testing
@@ -126,18 +131,20 @@ def test_installation(
     expected_active_msg: str,
 ):
     """
-    arrange: given a monekypatched builder.setup_builder function.
+    arrange: given a monekypatched setup_builder and setup_logrotate function.
     act: when _on_install is called.
     assert: setup_builder is called.
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(proxy, "setup", MagicMock())
-    monkeypatch.setattr(builder, "initialize", (setup_mock := MagicMock()))
+    monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
+    charm._setup_logrotate = (logrotate_setup_mock := MagicMock())
 
     getattr(charm, hook)(MagicMock())
 
-    setup_mock.assert_called_once()
+    builder_setup_mock.assert_called_once()
+    logrotate_setup_mock.assert_called_once()
     assert charm.unit.status == ops.ActiveStatus(expected_active_msg)
 
 
@@ -255,3 +262,49 @@ def test__on_image_relation_changed_no_unit_auth_data(
     charm._on_image_relation_changed(evt)
 
     builder.run.assert_not_called()
+
+
+def test__setup_logrotate_error(
+    monkeypatch, tmp_path, charm: GithubRunnerImageBuilderCharm, caplog
+):
+    """
+    arrange: given monkeypatched logrotate path and subprocess call which raises an error.
+    act: when _setup_logrotate is called.
+    assert: configuration file is written and logrotate is called with debug flag.
+    """
+    monkeypatch.setattr(charm_module, "APP_LOGROTATE_CONFIG_PATH", (tmp_path / "logrotate.conf"))
+    monkeypatch.setattr(
+        subprocess,
+        "check_call",
+        (
+            MagicMock(
+                side_effect=subprocess.CalledProcessError(
+                    returncode=1, cmd=["test"], output="", stderr="failure"
+                )
+            )
+        ),
+    )
+
+    charm._setup_logrotate()
+
+    assert any("Failed to set up logrotate" in message for message in caplog.messages)
+
+
+def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilderCharm):
+    """
+    arrange: given monkeypatched logrotate path and subprocess call.
+    act: when _setup_logrotate is called.
+    assert: configuration file is written and logrotate is called with debug flag.
+    """
+    monkeypatch.setattr(
+        charm_module, "APP_LOGROTATE_CONFIG_PATH", (logrotate_path := tmp_path / "logrotate.conf")
+    )
+    monkeypatch.setattr(subprocess, "check_call", (mock_check_call := MagicMock()))
+
+    charm._setup_logrotate()
+
+    logrotate_config = logrotate_path.read_text(encoding="utf-8")
+    assert str(LOG_FILE_PATH) in logrotate_config
+    mock_check_call.assert_called_once_with(
+        ["/usr/sbin/logrotate", str(logrotate_path), "--debug"]
+    )

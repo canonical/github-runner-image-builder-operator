@@ -5,7 +5,7 @@ This charm simplifies the initial deployment and building images for GitHub
 self-hosted runners.
 
 Some of the charm dependencies upgrades on a schedule to migrate security risks. The 
-landscape-client charm can be deployed with this charm to ensure other dependencies are up to date.
+[Landscape Client charm](https://charmhub.io/landscape-client) can be deployed with this charm to ensure other dependencies are up to date.
 
 The charm operates a set of isolated single-use OpenStack virtual machines, to build up-to-date
 images for GitHub runners.
@@ -47,3 +47,5 @@ Thinking about using the GitHub runner image builder charm for your next project
 1. [Tutorial](tutorial)
   1. [Quick start](tutorial/quick-start.md)
 1. [Changelog](changelog.md)
+1. [Explanation](explanation)
+  1. [Charm architecture](explanation/charm-architecture.md)

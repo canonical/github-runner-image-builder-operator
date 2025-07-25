@@ -30,6 +30,11 @@ dependencies = { file = ["requirements.txt"] }
 [tool.setuptools.package-data]
 "github_runner_image_builder.templates" = ["*.j2"]
 
+[tool.pydocstyle]
+match = "src/github_runner_image_builder/cli.py"
+ignore = ["D301"] # ignore backshlashes in docstring - click lib uses them.
+
+
 [tool.bandit]
 exclude_dirs = ["/venv/"]
 [tool.bandit.assert_used]

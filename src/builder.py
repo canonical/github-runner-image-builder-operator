@@ -158,7 +158,7 @@ def _initialize_image_builder(
             check=True,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
-            timeout=10 * 60,
+            timeout=15 * 60,
             env=os.environ,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
@@ -189,9 +189,9 @@ def _build_init_command(
     cmd = [
         "/usr/bin/sudo",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-        "init",
-        "--cloud-name",
+        "--os-cloud",
         cloud_name,
+        "init",
         "--arch",
         image_arch.value,
     ]
@@ -657,8 +657,9 @@ def _build_run_command(
         "/usr/bin/sudo",
         "--preserve-env",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-        "run",
+        "--os-cloud",
         run_args.cloud_name,
+        "run",
         run_args.image_name,
     ]
     cmd.extend(_build_run_cloud_options(cloud_options=cloud_options))
@@ -828,8 +829,9 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
                 "/usr/bin/sudo",
                 "--preserve-env",
                 str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-                "latest-build-id",
+                "--os-cloud",
                 config.cloud_id,
+                "latest-build-id",
                 config.image_name,
             ],
             user=UBUNTU_USER,

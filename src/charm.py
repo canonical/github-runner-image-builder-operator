@@ -6,9 +6,14 @@
 """Entrypoint for GithubRunnerImageBuilder charm."""
 import json
 import logging
+
+# We ignore low severity security warning for importing subprocess module
+import subprocess  # nosec B404
 import time
 import typing
 from dataclasses import dataclass
+from pathlib import Path
+from textwrap import dedent
 
 import ops
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider
@@ -19,7 +24,12 @@ import image
 import proxy
 import state
 
+LOG_FILE_DIR = Path("/var/log/github-runner-image-builder")
+LOG_FILE_PATH = LOG_FILE_DIR / "info.log"
+
 logger = logging.getLogger(__name__)
+
+APP_LOGROTATE_CONFIG_PATH = Path("/etc/logrotate.d/github-runner-image-builder.conf")
 
 
 class RunEvent(ops.EventBase):
@@ -73,6 +83,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Setting up Builder.")
         self._setup_builder()
+        self._setup_logrotate()
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
     @charm_utils.block_if_invalid_config(defer=True)
@@ -83,6 +94,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """
         self.unit.status = ops.MaintenanceStatus("Running builder upgrade.")
         self._setup_builder()
+        self._setup_logrotate()
         self.unit.status = ops.ActiveStatus()
 
     @charm_utils.block_if_invalid_config(defer=False)
@@ -177,6 +189,33 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 unit_name=self.unit.name,
             )
         )
+
+    def _setup_logrotate(self) -> None:
+        """Set up the log rotation for image-builder application."""
+        APP_LOGROTATE_CONFIG_PATH.write_text(
+            dedent(
+                f"""\
+                    {str(LOG_FILE_PATH.absolute())} {{
+                        weekly
+                        rotate 3
+                        compress
+                        delaycompress
+                        missingok
+                    }}
+                """
+            ),
+            encoding="utf-8",
+        )
+        try:
+            # We can ignore subprocess_without_shell_equals_true because we're not running
+            # anything from an untrusted input.
+            subprocess.check_call(  # nosec: B603
+                ["/usr/sbin/logrotate", str(APP_LOGROTATE_CONFIG_PATH), "--debug"]
+            )
+        except subprocess.CalledProcessError:
+            logger.exception(
+                "Failed to set up logrotate for github-runner-image-builder application."
+            )
 
     def _is_any_image_relation_ready(self, cloud_config: state.CloudConfig) -> bool:
         """Check if any of the image relations is ready and set according status otherwise.
