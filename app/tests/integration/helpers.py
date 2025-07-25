@@ -473,6 +473,8 @@ def create_openstack_server(
             userdata="""#!/bin/bash
 hostnamectl set-hostname github-runner
 """,
+            # 2025/07/24 - This option is set to mitigate CVE-2024-6174
+            config_drive=True,
             timeout=60 * 20,
             wait=True,
         )

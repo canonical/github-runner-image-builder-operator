@@ -163,6 +163,8 @@ def make_dangling_resources_fixture(
             auto_ip=False,
             wait=True,
             timeout=CREATE_SERVER_TIMEOUT,
+            # 2025/07/24 - This option is set to mitigate CVE-2024-6174
+            config_drive=True,
         )
 
         yield
