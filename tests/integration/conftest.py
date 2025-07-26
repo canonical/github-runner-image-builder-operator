@@ -297,7 +297,8 @@ def cleanup_resources_fixture(
     yield
 
     for image_name in image_names:
-        openstack_connection.delete_image(image_name)
+        for image in openstack_connection.search_images(name_or_id=image_name):
+            openstack_connection.delete_image(image.id)
 
 
 @pytest.fixture(scope="module", name="test_id")
