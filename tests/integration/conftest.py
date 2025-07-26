@@ -279,13 +279,26 @@ def clouds_yaml_fixture(
 
 
 @pytest.fixture(scope="module", name="openstack_connection")
-def openstack_connection_fixture(clouds_yaml_contents: str) -> Connection:
+def openstack_connection_fixture(clouds_yaml_contents: str) -> Generator[Connection, None, None]:
     """The openstack connection instance."""
     clouds_yaml = yaml.safe_load(clouds_yaml_contents)
     clouds_yaml_path = Path.cwd() / "clouds.yaml"
     clouds_yaml_path.write_text(data=clouds_yaml_contents, encoding="utf-8")
-    first_cloud = next(iter(clouds_yaml["clouds"].keys()))
-    return openstack.connect(first_cloud)
+    first_cloud = list(clouds_yaml["clouds"].keys())[0]
+    with openstack.connect(first_cloud) as conn:
+        yield conn
+
+
+@pytest.fixture(scope="module", name="clean_up_resources", autouse=True)
+def cleanup_resources_fixture(
+    openstack_connection: Connection, image_names: list[str]
+) -> Generator[None, None, None]:
+    """Clean up resources after the tests are complete."""
+    yield
+
+    for image_name in image_names:
+        for image in openstack_connection.search_images(name_or_id=image_name):
+            openstack_connection.delete_image(image.id)
 
 
 @pytest.fixture(scope="module", name="test_id")
