@@ -68,7 +68,7 @@ The image-builder application is initialized by the charm before it can be used.
 
 - Downloading and validating the base images (e.g. Ubuntu 22.04 or 24.04)
 - Uploading the base images to OpenStack
-- Creating keypairs and security groups in OpenStack 
+- Creating key pairs and security groups in OpenStack 
 
 
 ```mermaid

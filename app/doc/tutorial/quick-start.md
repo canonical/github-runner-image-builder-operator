@@ -8,11 +8,11 @@
 
 ## Requirements
 
-- [Pipx installed](https://pipx.pypa.io/stable/installation/)
-- Apt packages gcc, pipx, python3-dev
+- [pipx installed](https://pipx.pypa.io/stable/installation/)
+- Apt packages `gcc`, `pipx`, `python3-dev`
   - `sudo apt-get install -y python3-dev gcc pipx`
 - Working [OpenStack environment](https://microstack.run/docs/single-node)
-- A clouds.yaml configuration with the OpenStack environment
+- A `clouds.yaml` configuration with the OpenStack environment
 
 ## Steps
 
