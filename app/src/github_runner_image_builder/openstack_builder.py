@@ -517,16 +517,13 @@ def _generate_cloud_init_script(
     apt_packages = IMAGE_DEFAULT_APT_PACKAGES
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
-        runner_binary_repo = FORK_RUNNER_BINARY_REPO
-    else:
-        runner_binary_repo = UPSTREAM_RUNNER_BINARY_REPO
     return template.render(
         PROXY_URL=proxy,
         APT_PACKAGES=" ".join(apt_packages),
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
-        RUNNER_BINARY_REPO=runner_binary_repo,
+        RUNNER_BINARY_REPO=FORK_RUNNER_BINARY_REPO,
     )
 
 
