@@ -28,5 +28,6 @@ Applicable spec: <link>
 - [ ] The documentation for charmhub is updated.
 - [ ] The PR is tagged with appropriate label (`urgent`, `trivial`, `senior-review-required`, `documentation`)
 - [ ] The docs/changelog.md is updated with user-relevant changes in the format of [keep a changelog v1.1.0](https://keepachangelog.com/en/1.1.0/)
+- [ ] The application version is incremented in `app/pyproject.toml`
 
 <!-- Explanation for any unchecked items above -->
