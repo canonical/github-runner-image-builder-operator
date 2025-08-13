@@ -1,3 +1,6 @@
+## [#140 chore: use Canonical built runner binaries](https://github.com/canonical/github-runner-image-builder-operator/pull/140)(2025-08-13)
+> Use Canonical built runner binaries for all architectures.
+
 ## [#123 feat: enable logrotate](https://github.com/canonical/github-runner-image-builder-operator/pull/123)(2025-06-06)
 > Enable log rotation on the GitHub runner image builder application.
 
