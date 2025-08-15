@@ -7,6 +7,7 @@
 # pylint:disable=protected-access
 
 import time
+from datetime import date
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -206,6 +207,28 @@ def test__download_base_image(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         == cloud_image._download_base_image(
             base_image=MagicMock(), bin_arch=MagicMock(), output_filename=str(test_file)
         ).name
+    )
+
+def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """
+    arrange: given monkeypatched urlretrieve function.
+    act: when _download_base_image is called with a release date.
+    assert: request mock is called with the correct URL
+    """
+    response_mock = MagicMock()
+    response_mock.iter_content.return_value = [b"content-1", b"content-2"]
+    monkeypatch.setattr(cloud_image.requests, "get", MagicMock(return_value=response_mock))
+    test_file = tmp_path / "test_file_name"
+    release_date = date(2025, 7, 25)
+
+    cloud_image._download_base_image(
+        base_image=BaseImage.JAMMY, bin_arch=Arch.ARM64.value, output_filename=str(test_file), release_date=release_date
+    )
+
+    cloud_image.requests.get.assert_called_once_with(
+        f"https://cloud-images.ubuntu.com/jammy/20250725/jammy-server-cloudimg-arm64.img",
+        timeout=60 * 20,
+        stream=True,
     )
 
 

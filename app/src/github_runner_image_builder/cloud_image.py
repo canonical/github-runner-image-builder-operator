@@ -54,7 +54,7 @@ def download_and_validate_image(
         output_filename=image_path_str,
         release_date=release_date,
     )
-    shasums = _fetch_shasums(base_image=base_image)
+    shasums = _fetch_shasums(base_image=base_image, release_date=release_date)
     if image_path_str not in shasums:
         logger.exception("Failed to validate SHASUM for cloud image (checksum not found).")
         raise BaseImageDownloadError("Corresponding checksum not found.")
