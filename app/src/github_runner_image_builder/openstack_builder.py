@@ -12,6 +12,7 @@ import shutil
 import time
 import typing
 from collections import namedtuple
+from datetime import date
 
 import fabric
 import invoke
@@ -67,6 +68,9 @@ SHUTOFF_SERVER_TIMEOUT = 10 * 60  # seconds
 MIN_CPU = 2
 MIN_RAM = 1024  # M
 MIN_DISK = 20  # G
+
+# We saw an issue with arm noble images with the latest release date, so we are using a fixed date.
+NOBLE_ARM64_RELEASE_DATE = date(2025, 7, 25)
 
 
 def determine_cloud(cloud_name: str | None = None) -> str:
@@ -124,8 +128,9 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         arch=arch, base_image=BaseImage.JAMMY
     )
     logger.info("Downloading Noble image.")
+    noble_release_date = NOBLE_ARM64_RELEASE_DATE if arch == Arch.ARM64 else None
     noble_image_path = cloud_image.download_and_validate_image(
-        arch=arch, base_image=BaseImage.NOBLE
+        arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
     )
     logger.info("Uploading Focal image.")
     store.upload_image(

@@ -9,6 +9,7 @@ import gzip  # noqa: F401 # pylint: disable=unused-import
 import hashlib
 import logging
 import typing
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -24,12 +25,15 @@ SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x", "ppc64el"]
 CHECKSUM_BUF_SIZE = 65536  # 65kb
 
 
-def download_and_validate_image(arch: Arch, base_image: BaseImage) -> Path:
+def download_and_validate_image(
+    arch: Arch, base_image: BaseImage, release_date: date | None = None
+) -> Path:
     """Download and verify the base image from cloud-images.ubuntu.com.
 
     Args:
         arch: The base image architecture to download.
         base_image: The ubuntu base image OS to download.
+        release_date: the release date of the base image. If None, latest is picked.
 
     Returns:
         The downloaded image path.
@@ -45,9 +49,12 @@ def download_and_validate_image(arch: Arch, base_image: BaseImage) -> Path:
 
     image_path_str = f"{base_image.value}-server-cloudimg-{bin_arch}.img"
     image_path = _download_base_image(
-        base_image=base_image, bin_arch=bin_arch, output_filename=image_path_str
+        base_image=base_image,
+        bin_arch=bin_arch,
+        output_filename=image_path_str,
+        release_date=release_date,
     )
-    shasums = _fetch_shasums(base_image=base_image)
+    shasums = _fetch_shasums(base_image=base_image, release_date=release_date)
     if image_path_str not in shasums:
         logger.exception("Failed to validate SHASUM for cloud image (checksum not found).")
         raise BaseImageDownloadError("Corresponding checksum not found.")
@@ -89,13 +96,16 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
 
 
 @retry(tries=3, delay=5, max_delay=30, backoff=2, local_logger=logger)
-def _download_base_image(base_image: BaseImage, bin_arch: str, output_filename: str) -> Path:
+def _download_base_image(
+    base_image: BaseImage, bin_arch: str, output_filename: str, release_date: date | None = None
+) -> Path:
     """Download the base image.
 
     Args:
         bin_arch: The ubuntu cloud-image supported arch.
         base_image: The ubuntu base image OS to download.
         output_filename: The output filename of the downloaded image.
+        release_date: The release date of the base image. If None, latest is picked.
 
     Raises:
         BaseImageDownloadError: If there was an error downloaded from cloud-images.ubuntu.com
@@ -103,11 +113,12 @@ def _download_base_image(base_image: BaseImage, bin_arch: str, output_filename: 
     Returns:
         The downloaded image path.
     """
+    release_dir = release_date.strftime("%Y%m%d") if release_date else "current"
     # The ubuntu-cloud-images is a trusted source
     # Bandit thinks there is no timeout provided for the code below.
     try:
         request = requests.get(
-            f"https://cloud-images.ubuntu.com/{base_image.value}/current/{base_image.value}"
+            f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",
             timeout=60 * 20,
             stream=True,
@@ -122,11 +133,12 @@ def _download_base_image(base_image: BaseImage, bin_arch: str, output_filename: 
 
 
 @retry(tries=3, delay=5, max_delay=30, backoff=2, local_logger=logger)
-def _fetch_shasums(base_image: BaseImage) -> dict[str, str]:
+def _fetch_shasums(base_image: BaseImage, release_date: date | None = None) -> dict[str, str]:
     """Fetch SHA256SUM for given base image.
 
     Args:
         base_image: The ubuntu base image OS to fetch SHA256SUMs for.
+        release_date: The release date of the base image. If None, latest is picked.
 
     Raises:
         BaseImageDownloadError: If there was an error downloading SHA256SUMS file from \
@@ -135,10 +147,11 @@ def _fetch_shasums(base_image: BaseImage) -> dict[str, str]:
     Returns:
         A map of image file name to SHA256SUM.
     """
+    release_dir = release_date.strftime("%Y%m%d") if release_date else "current"
     try:
         # bandit does not detect that the timeout parameter exists.
         response = requests.get(  # nosec: request_without_timeout
-            f"https://cloud-images.ubuntu.com/{base_image.value}/current/SHA256SUMS",
+            f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/SHA256SUMS",
             timeout=60 * 5,
         )
     except requests.RequestException as exc:
