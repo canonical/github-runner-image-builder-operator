@@ -133,11 +133,12 @@ def _download_base_image(
 
 
 @retry(tries=3, delay=5, max_delay=30, backoff=2, local_logger=logger)
-def _fetch_shasums(base_image: BaseImage) -> dict[str, str]:
+def _fetch_shasums(base_image: BaseImage, release_date: date | None = None) -> dict[str, str]:
     """Fetch SHA256SUM for given base image.
 
     Args:
         base_image: The ubuntu base image OS to fetch SHA256SUMs for.
+        release_date: The release date of the base image. If None, latest is picked.
 
     Raises:
         BaseImageDownloadError: If there was an error downloading SHA256SUMS file from \
@@ -146,10 +147,11 @@ def _fetch_shasums(base_image: BaseImage) -> dict[str, str]:
     Returns:
         A map of image file name to SHA256SUM.
     """
+    release_dir = release_date.strftime("%Y%m%d") if release_date else "current"
     try:
         # bandit does not detect that the timeout parameter exists.
         response = requests.get(  # nosec: request_without_timeout
-            f"https://cloud-images.ubuntu.com/{base_image.value}/current/SHA256SUMS",
+            f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/SHA256SUMS",
             timeout=60 * 5,
         )
     except requests.RequestException as exc:
