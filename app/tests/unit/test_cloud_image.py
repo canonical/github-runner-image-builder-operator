@@ -246,8 +246,9 @@ def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_
         release_date=release_date,
     )
 
-    cloud_image.requests.get.assert_called_once_with(
-        f"https://cloud-images.ubuntu.com/jammy/20250725/jammy-server-cloudimg-arm64.img",
+    # pylint does not recognize this as a requests mock
+    cloud_image.requests.get.assert_called_once_with(  # pylint:disable=no-member
+        "https://cloud-images.ubuntu.com/jammy/20250725/jammy-server-cloudimg-arm64.img",
         timeout=60 * 20,
         stream=True,
     )
@@ -317,7 +318,8 @@ test_shasum3 *file3
     monkeypatch.setattr(cloud_image.requests, "get", MagicMock(return_value=mock_response))
 
     cloud_image._fetch_shasums(base_image=BaseImage.FOCAL, release_date=date(2024, 1, 2))
-    cloud_image.requests.get.assert_called_once_with(
+    # pylint does not recognize this as a requests mock
+    cloud_image.requests.get.assert_called_once_with(  # pylint:disable=no-member
         "https://cloud-images.ubuntu.com/focal/20240102/SHA256SUMS",
         timeout=60 * 5,
     )
