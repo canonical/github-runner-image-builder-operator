@@ -117,7 +117,14 @@ def test_download_and_validate_image_invalid_checksum(
     assert "Invalid checksum." in str(exc.getrepr())
 
 
-def test_download_and_validate_image(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "with_release_date",
+    [
+        pytest.param(False, id="Without release date"),
+        pytest.param(True, id="With release date"),
+    ],
+)
+def test_download_and_validate_image(monkeypatch: pytest.MonkeyPatch, with_release_date: bool):
     """
     arrange: given monkeypatched sub functions of download_and_validate_image.
     act: when download_and_validate_image is called.
@@ -134,11 +141,21 @@ def test_download_and_validate_image(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(cloud_image, "_validate_checksum", validate_checksum_mock := MagicMock())
 
-    cloud_image.download_and_validate_image(arch=Arch.X64, base_image=BaseImage.JAMMY)
+    release_date = date(2025, 7, 25) if with_release_date else None
+    cloud_image.download_and_validate_image(
+        arch=Arch.X64, base_image=BaseImage.JAMMY, release_date=release_date
+    )
 
     get_arch_mock.assert_called_once()
-    download_base_mock.assert_called_once()
-    fetch_shasums_mock.assert_called_once()
+    download_base_mock.assert_called_once_with(
+        base_image=BaseImage.JAMMY,
+        bin_arch=Arch.X64.value,
+        output_filename="jammy-server-cloudimg-x64.img",
+        release_date=release_date,
+    )
+    fetch_shasums_mock.assert_called_once_with(
+        base_image=BaseImage.JAMMY, release_date=release_date
+    )
     validate_checksum_mock.assert_called_once()
 
 
@@ -209,9 +226,10 @@ def test__download_base_image(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         ).name
     )
 
+
 def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """
-    arrange: given monkeypatched urlretrieve function.
+    arrange: given monkeypatched urlretrieve function and a particular release date.
     act: when _download_base_image is called with a release date.
     assert: request mock is called with the correct URL
     """
@@ -222,7 +240,10 @@ def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_
     release_date = date(2025, 7, 25)
 
     cloud_image._download_base_image(
-        base_image=BaseImage.JAMMY, bin_arch=Arch.ARM64.value, output_filename=str(test_file), release_date=release_date
+        base_image=BaseImage.JAMMY,
+        bin_arch=Arch.ARM64.value,
+        output_filename=str(test_file),
+        release_date=release_date,
     )
 
     cloud_image.requests.get.assert_called_once_with(
@@ -275,6 +296,31 @@ test_shasum3 *file3
         "file2": "test_shasum2",
         "file3": "test_shasum3",
     } == cloud_image._fetch_shasums(base_image=MagicMock())
+
+
+def test__fetch_shasums_release_date(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched requests function that returns mocked contents of SHA256SUMS.
+    act: when _fetch_shasums is called with a release date.
+    assert: request mock is called with the correct URL
+    """
+    # Bypass decorated retry sleep
+    monkeypatch.setattr(time, "sleep", MagicMock())
+    mock_response = MagicMock()
+    mock_response.content = bytes(
+        """test_shasum1 *file1
+test_shasum2 *file2
+test_shasum3 *file3
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cloud_image.requests, "get", MagicMock(return_value=mock_response))
+
+    cloud_image._fetch_shasums(base_image=BaseImage.FOCAL, release_date=date(2024, 1, 2))
+    cloud_image.requests.get.assert_called_once_with(
+        "https://cloud-images.ubuntu.com/focal/20240102/SHA256SUMS",
+        timeout=60 * 5,
+    )
 
 
 @pytest.mark.parametrize(
