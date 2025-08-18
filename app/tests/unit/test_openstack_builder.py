@@ -20,8 +20,12 @@ import tenacity
 import yaml
 
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
+from github_runner_image_builder.config import Arch
 from github_runner_image_builder.errors import ExternalScriptError
-from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
+from github_runner_image_builder.openstack_builder import (
+    EXTERNAL_SCRIPT_PATH,
+    NOBLE_ARM64_RELEASE_DATE,
+)
 
 
 def test_determine_cloud_no_clouds_yaml_error(monkeypatch: pytest.MonkeyPatch):
@@ -84,7 +88,14 @@ def test_determine_cloud(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
     assert openstack_builder.determine_cloud() == test_cloud_name
 
 
-def test_initialize(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "arch",
+    [
+        pytest.param(Arch.X64, id="x64"),
+        pytest.param(Arch.ARM64, id="arm64"),
+    ],
+)
+def test_initialize(monkeypatch: pytest.MonkeyPatch, arch: Arch):
     """
     arrange: given monkeypatched cloud_image, store and openstack module functions.
     act: when initialize is called.
@@ -99,7 +110,8 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch):
     )
 
     prefix = secrets.token_hex(8)
-    openstack_builder.initialize(MagicMock(), MagicMock(), prefix=prefix)
+    cloud_name = "test-cloud"
+    openstack_builder.initialize(arch=arch, cloud_name=cloud_name, prefix=prefix)
 
     download_mock.assert_called()
     upload_mock.assert_called()
@@ -107,6 +119,42 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch):
     connect_mock.assert_called()
     create_keypair_mock.assert_called()
     create_security_group_mock.assert_called()
+
+
+@pytest.mark.parametrize(
+    "arch",
+    [
+        pytest.param(Arch.X64, id="x64"),
+        pytest.param(Arch.ARM64, id="arm64"),
+    ],
+)
+def test_initialize_release_date(monkeypatch: pytest.MonkeyPatch, arch: Arch):
+    """
+    arrange: given monkeypatched cloud_image, store and openstack module functions.
+    act: when initialize is called.
+    assert: release date is passed for ARM64 noble image, not for others.
+    """
+    monkeypatch.setattr(cloud_image, "download_and_validate_image", (download_mock := MagicMock()))
+    monkeypatch.setattr(store, "upload_image", MagicMock())
+    monkeypatch.setattr(openstack_builder.openstack, "connect", MagicMock())
+    monkeypatch.setattr(openstack_builder, "_create_keypair", MagicMock())
+    monkeypatch.setattr(openstack_builder, "_create_security_group", MagicMock())
+
+    prefix = secrets.token_hex(8)
+    cloud_name = "test-cloud"
+    openstack_builder.initialize(arch=arch, cloud_name=cloud_name, prefix=prefix)
+
+    download_mock.assert_called()
+
+    base_images_from_calls = {call[1]["base_image"] for call in download_mock.call_args_list}
+    archs_from_calls = {call[1]["arch"] for call in download_mock.call_args_list}
+    assert openstack_builder.BaseImage.NOBLE in base_images_from_calls
+    assert arch in archs_from_calls
+    for _, kwargs in download_mock.call_args_list:
+        if kwargs["base_image"] == openstack_builder.BaseImage.NOBLE and arch == Arch.ARM64:
+            assert kwargs["release_date"] == NOBLE_ARM64_RELEASE_DATE
+        else:
+            assert kwargs.get("release_date") is None
 
 
 def test__create_keypair_already_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path):

@@ -1,4 +1,4 @@
-# Deploy the GitHub Runner Image Builder for the first time
+# Deploy the GitHub runner image builder for the first time
 
 This quick start guide will help you deploy the GitHub Runner Image Builder charm in OpenStack mode.
 
