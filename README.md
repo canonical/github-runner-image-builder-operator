@@ -1,4 +1,6 @@
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 # GitHub runner image builder operator
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 <!-- Use this space for badges -->
 
 A Juju charm that provides the GitHub runner workload embedded snapshot image to the 

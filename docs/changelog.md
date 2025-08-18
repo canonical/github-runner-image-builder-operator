@@ -1,3 +1,4 @@
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## [#142 Use release from 2025-07-25 for Noble ARM64](2025-08-15)
 > Use release from 2025-07-25 for Noble ARM64 base image.
 
@@ -110,7 +111,7 @@ that s390x support is experimental and may be removed in the future.
 * None
 
 ### Bug Fixes
-* cloud-init userdata is preserved in the image and should not contain traces of the external script and secrets.
+* cloud-init user data is preserved in the image and should not contain traces of the external script and secrets.
 
 ### Performance Improvements
 * None
@@ -230,7 +231,7 @@ the chroot mode require redeployment.
 * None
 
 ### Bug Fixes
-* Fixed a bug where the base image name was hardcoded leading to issues when multiple builders
+* Fixed a bug where the base image name was hard-coded leading to issues when multiple builders
 build images concurrently using the same build tenant.
 
 ### Performance Improvements
