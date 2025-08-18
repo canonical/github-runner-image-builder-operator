@@ -21,4 +21,4 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-The example above would build images every 3 hours, from the latest version of dependent sources (cloud-images, apt, snap, etc).
+The example above would build images every three hours, from the latest version of dependent sources (cloud-images, apt, snap, etc).
