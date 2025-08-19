@@ -668,19 +668,17 @@ def test__determine_network(network_name: str | None):
 
 
 @pytest.mark.parametrize(
-    "arch, expected_runner_binary_repo, additional_apt_packages",
+    "arch, additional_apt_packages",
     [
-        pytest.param(openstack_builder.Arch.X64, "actions/runner", [], id="x64"),
-        pytest.param(openstack_builder.Arch.ARM64, "actions/runner", [], id="arm64"),
+        pytest.param(openstack_builder.Arch.X64, [], id="x64"),
+        pytest.param(openstack_builder.Arch.ARM64, [], id="arm64"),
         pytest.param(
             openstack_builder.Arch.S390X,
-            "canonical/github-actions-runner",
             ["dotnet-runtime-8.0"],
             id="s390x",
         ),
         pytest.param(
             openstack_builder.Arch.PPC64LE,
-            "canonical/github-actions-runner",
             ["dotnet-runtime-8.0"],
             id="ppc64le",
         ),
@@ -688,7 +686,6 @@ def test__determine_network(network_name: str | None):
 )
 def test__generate_cloud_init_script(
     arch: openstack_builder.Arch,
-    expected_runner_binary_repo: str,
     additional_apt_packages: list[str],
 ):
     """
@@ -864,7 +861,7 @@ apt_packages="build-essential docker.io gh jq npm python3-dev python3-pip python
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
-runner_binary_repo="{expected_runner_binary_repo}"
+runner_binary_repo="canonical/github-actions-runner"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
