@@ -43,7 +43,6 @@ from github_runner_image_builder.config import (
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
-    UPSTREAM_RUNNER_BINARY_REPO,
     Arch,
     BaseImage,
 )
