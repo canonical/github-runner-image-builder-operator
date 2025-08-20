@@ -1,4 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
+
+## [#140 chore: use Canonical built runner binaries](https://github.com/canonical/github-runner-image-builder-operator/pull/140)(2025-08-18)
+> Use Canonical built runner binaries for all architectures.
+
+
 ## [#142 Use release from 2025-07-25 for Noble ARM64](2025-08-15)
 > Use release from 2025-07-25 for Noble ARM64 base image.
 

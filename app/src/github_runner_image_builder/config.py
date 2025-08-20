@@ -131,7 +131,6 @@ LOG_LEVELS = tuple(
 )
 
 FORK_RUNNER_BINARY_REPO = "canonical/github-actions-runner"
-UPSTREAM_RUNNER_BINARY_REPO = "actions/runner"
 
 
 @dataclasses.dataclass
