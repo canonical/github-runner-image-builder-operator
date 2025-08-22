@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## (2025-08-22)
+
+* Update documentation workflows to inject local word list and check links.
+
 ## [#140 chore: use Canonical built runner binaries](https://github.com/canonical/github-runner-image-builder-operator/pull/140)(2025-08-18)
 > Use Canonical built runner binaries for all architectures.
 
