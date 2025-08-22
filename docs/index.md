@@ -1,4 +1,4 @@
-A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) for building VM
+A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) for building VM
 images for [GitHub self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
 
 This charm simplifies the initial deployment and building images for GitHub
@@ -17,7 +17,7 @@ SRE teams through Juju's clean interface.
 
 | | |
 |--|--|
-|  [Tutorials](https://charmhub.io/github-runner-image-builder/docs/quick-start)</br>  Get started - a hands-on introduction to using the GitHub runner image builder charm for new users </br> | [How-to guides](https://charmhub.io/github-runner-image-builder/docs/configure-base-image) </br> Step-by-step guides covering key operations and common tasks |
+|  [Tutorials](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start)</br>  Get started - a hands-on introduction to using the GitHub runner image builder charm for new users </br> | [How-to guides](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) </br> Step-by-step guides covering key operations and common tasks |
 
 
 ## Contributing to this documentation
@@ -33,7 +33,7 @@ The GitHub runner image builder charm is a member of the Ubuntu family. It's an 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](Contribute)
+- [Contribute](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md)
 
 Thinking about using the GitHub runner image builder charm for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 

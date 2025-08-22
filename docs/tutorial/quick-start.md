@@ -12,7 +12,7 @@ This quick start guide will help you deploy the GitHub Runner Image Builder char
 - A working station, e.g., a laptop, with amd64 architecture.
 - Juju 3 installed and bootstrapped to a LXD controller. You can accomplish this process by 
 using a Multipass VM as outlined in this guide: 
-[Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
+[Set up your test environment](https://documentation.ubuntu.com/juju/3.6/howto/manage-your-juju-deployment/set-up-your-juju-deployment-local-testing-and-development/)
 - A running instance of [OpenStack](https://microstack.run/docs/single-node).
 
 ## Steps
