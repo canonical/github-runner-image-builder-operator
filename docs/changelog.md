@@ -1,6 +1,6 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
-## (2025-08-22)
+## [#144 feat(docs): Evolve and standardize the documentation workflow](https://github.com/canonical/github-runner-image-builder-operator/pull/144) (2025-08-22)
 
 * Update documentation workflows to inject local word list and check links.
 
