@@ -15,6 +15,8 @@ function configure_proxy() {
     /usr/bin/sudo snap set system proxy.https=${proxy:-}
     /usr/bin/sudo systemctl restart snapd
     /usr/bin/sudo snap install aproxy --edge;
+    /usr/bin/sudo snap set system proxy.http=""
+    /usr/bin/sudo snap set system proxy.https=""
 
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
