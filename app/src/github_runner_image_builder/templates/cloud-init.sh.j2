@@ -11,8 +11,8 @@ function configure_proxy() {
 
     echo "Installing aproxy"
     # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
-    /usr/bin/sudo snap set system proxy.http=http://${proxy:-}
-    /usr/bin/sudo snap set system proxy.https=http://${proxy:-}
+    /usr/bin/sudo snap set system proxy.http=${proxy:+http://$proxy}
+    /usr/bin/sudo snap set system proxy.https=${proxy:+http://$proxy}
     /usr/bin/sudo systemctl restart snapd
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo snap set system proxy.http=""
@@ -21,8 +21,8 @@ function configure_proxy() {
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        HTTP_PROXY=http://${proxy:-} HTTPS_PROXY=http://${proxy:-} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        HTTP_PROXY=http://${proxy:-} HTTPS_PROXY=http://${proxy:-} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+        HTTP_PROXY=${proxy:+http://$proxy} HTTPS_PROXY=${proxy:+http://$proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${proxy:+http://$proxy} HTTPS_PROXY=${proxy:+http://$proxy} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
 
     # Do not configure the proxy if it is not needed for building the image.
