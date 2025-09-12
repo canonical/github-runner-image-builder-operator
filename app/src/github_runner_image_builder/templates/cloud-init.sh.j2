@@ -11,8 +11,8 @@ function configure_proxy() {
 
     echo "Installing aproxy"
     # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
-    /usr/bin/sudo snap set system proxy.http=${proxy:+http://$proxy}
-    /usr/bin/sudo snap set system proxy.https=${proxy:+http://$proxy}
+    /usr/bin/sudo snap set system proxy.http="${proxy:+http://$proxy}"
+    /usr/bin/sudo snap set system proxy.https="${proxy:+http://$proxy}"
     /usr/bin/sudo systemctl restart snapd
     /usr/bin/sudo snap install aproxy --edge;
     /usr/bin/sudo snap set system proxy.http=""
