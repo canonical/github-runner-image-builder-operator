@@ -9,17 +9,14 @@ hostnamectl set-hostname github-runner
 function configure_proxy() {
     local proxy="$1"
     local proxy_url="${1:+http://$1}"
-    local proxy_url_1="http://$1"
-    local proxy_url_2="http://${1}"
 
     echo "Installing aproxy"
-    echo "PROXY URL VALUE:${proxy_url}"
-    echo "PROXY URL VALUE 1:${proxy_url_1}"
-    echo "PROXY URL VALUE 2:${proxy_url_2}"
     # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
     /usr/bin/sudo snap set system proxy.http=${proxy_url}
     /usr/bin/sudo snap set system proxy.https=${proxy_url}
     /usr/bin/sudo snap install aproxy --edge
+    /usr/bin/sudo snap set system proxy.http=""
+    /usr/bin/sudo snap set system proxy.https=""
 
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
