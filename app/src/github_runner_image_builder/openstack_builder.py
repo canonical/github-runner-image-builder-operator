@@ -522,7 +522,7 @@ def _generate_cloud_init_script(
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
     return template.render(
-        PROXY_URL=proxy,
+        PROXY=proxy,
         APT_PACKAGES=" ".join(apt_packages),
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
