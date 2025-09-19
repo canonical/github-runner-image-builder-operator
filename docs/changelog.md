@@ -1,5 +1,11 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#150 Add proxy configuration to snap install during building image](https://github.com/canonical/github-runner-image-builder-operator/pull/150) (2025-09-12)
+
+### Bug Fixes
+
+* The proxy configuration was not set for the snap install of aproxy during image building, causing the image building to fail if snapstore need to be accessed through a proxy. This is fixed.
+
 ## [#144 feat(docs): Evolve and standardize the documentation workflow](https://github.com/canonical/github-runner-image-builder-operator/pull/144) (2025-08-22)
 
 * Update documentation workflows to inject local word list and check links.
