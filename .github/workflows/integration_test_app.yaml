@@ -10,7 +10,7 @@ concurrency:
 jobs:
   integration-tests:
     name: Integration test
-    runs-on: [self-hosted, X64, jammy, stg-private-endpoint]
+    runs-on: [self-hosted, X64, stg-private-endpoint]
     strategy:
       fail-fast: false
       matrix:
