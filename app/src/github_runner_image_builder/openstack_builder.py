@@ -87,7 +87,7 @@ def determine_cloud(cloud_name: str | None = None) -> str:
     # The cloud credentials may be stored in environment variable, trust user input if given.
     if cloud_name:
         return cloud_name
-    logger.info("Determning cloud to use.")
+    logger.info("Determining cloud to use.")
     try:
         clouds_yaml_path = next(path for path in CLOUD_YAML_PATHS if path.exists())
     except StopIteration as exc:
