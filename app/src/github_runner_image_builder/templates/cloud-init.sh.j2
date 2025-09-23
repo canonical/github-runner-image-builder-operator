@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 RELEASE=$(lsb_release -a | grep Codename: | awk '{print $2}')
 
