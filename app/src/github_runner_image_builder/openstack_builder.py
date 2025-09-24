@@ -87,7 +87,7 @@ def determine_cloud(cloud_name: str | None = None) -> str:
     # The cloud credentials may be stored in environment variable, trust user input if given.
     if cloud_name:
         return cloud_name
-    logger.info("Determning cloud to use.")
+    logger.info("Determining cloud to use.")
     try:
         clouds_yaml_path = next(path for path in CLOUD_YAML_PATHS if path.exists())
     except StopIteration as exc:
@@ -522,7 +522,7 @@ def _generate_cloud_init_script(
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
     return template.render(
-        PROXY_URL=proxy,
+        PROXY=proxy,
         APT_PACKAGES=" ".join(apt_packages),
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
