@@ -64,10 +64,10 @@ def test__download_and_validate_image_error(
     assert: A BaseImageDownloadError is raised.
     """
     mock_func = MagicMock(side_effect=exception)
-    monkeypatch.setattr(cloud_image, "_get_supported_runner_arch", MagicMock)
-    monkeypatch.setattr(cloud_image, "_download_base_image", MagicMock)
-    monkeypatch.setattr(cloud_image, "_fetch_shasums", MagicMock)
-    monkeypatch.setattr(cloud_image, "_validate_checksum", MagicMock)
+    monkeypatch.setattr(cloud_image, "_get_supported_runner_arch", MagicMock())
+    monkeypatch.setattr(cloud_image, "_download_base_image", MagicMock())
+    monkeypatch.setattr(cloud_image, "_fetch_shasums", MagicMock())
+    monkeypatch.setattr(cloud_image, "_validate_checksum", MagicMock())
     monkeypatch.setattr(patch_obj, sub_func, mock_func)
 
     with pytest.raises(BaseImageDownloadError) as exc:
