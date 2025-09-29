@@ -674,12 +674,12 @@ def test__determine_network(network_name: str | None):
         pytest.param(openstack_builder.Arch.ARM64, [], id="arm64"),
         pytest.param(
             openstack_builder.Arch.S390X,
-            ["dotnet-runtime-8.0"],
+            ["cargo", "dotnet-runtime-8.0", "pkg-config", "rustc"],
             id="s390x",
         ),
         pytest.param(
             openstack_builder.Arch.PPC64LE,
-            ["dotnet-runtime-8.0"],
+            ["cargo", "dotnet-runtime-8.0", "pkg-config", "rustc"],
             id="ppc64le",
         ),
     ],
