@@ -103,16 +103,13 @@ IMAGE_OUTPUT_PATH = Path("compressed.img")
 
 IMAGE_DEFAULT_APT_PACKAGES = [
     "build-essential",
-    "cargo",
     "docker.io",
     "gh",
     "jq",
     "npm",
-    "pkg-config",
     "python3-dev",
     "python3-pip",
     "python-is-python3",
-    "rustc",
     "shellcheck",
     # socat is used for proxying between the runner and the tmate-ssh-server.
     "socat",
@@ -121,7 +118,7 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "unzip",
     "wget",
 ]
-S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
+S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["cargo", "dotnet-runtime-8.0", "pkg-config", "rustc"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
