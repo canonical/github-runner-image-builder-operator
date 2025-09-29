@@ -1,6 +1,7 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#155 feat: add packages to build crypto lib from source](https://github.com/canonical/github-runner-image-builder-operator/pull/155) (2025-09-29)
+> Add packages to build crypto lib from source.
 
 ### New features
 
