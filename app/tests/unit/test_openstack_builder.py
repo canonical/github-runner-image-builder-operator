@@ -711,7 +711,7 @@ def test__generate_cloud_init_script(
         # Ignore bandit false positive on SQL injection vector.
         == f"""#!/bin/bash
 
-set -e
+set -ex
 
 RELEASE=$(lsb_release -a | grep Codename: | awk '{{print $2}}')
 
@@ -719,16 +719,21 @@ hostnamectl set-hostname github-runner
 
 function configure_proxy() {{
     local proxy="$1"
+    local proxy_url="${{1:+http://$1}}"
 
     echo "Installing aproxy"
     # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
-    /usr/bin/sudo snap install aproxy --edge;
+    /usr/bin/sudo snap set system proxy.http=${{proxy_url}}
+    /usr/bin/sudo snap set system proxy.https=${{proxy_url}}
+    /usr/bin/sudo snap install aproxy --edge
+    /usr/bin/sudo snap set system proxy.http=""
+    /usr/bin/sudo snap set system proxy.https=""
 
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
-        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
-        HTTP_PROXY=${{proxy:-}} HTTPS_PROXY=${{proxy:-}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
+        HTTP_PROXY=${{proxy_url}} HTTPS_PROXY=${{proxy_url}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+        HTTP_PROXY=${{proxy_url}} HTTPS_PROXY=${{proxy_url}} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends nftables
     fi
 
     # Do not configure the proxy if it is not needed for building the image.
