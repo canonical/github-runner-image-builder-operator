@@ -1,5 +1,12 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#155 feat: add packages to build crypto lib from source](https://github.com/canonical/github-runner-image-builder-operator/pull/155) (2025-09-29)
+> Add packages to build crypto lib from source.
+
+### New features
+
+* Includes `cargo`, `rustc` and `pkg-config` apt packages which allows building `cryptography` library from source.
+
 ## [#150 Add proxy configuration to snap install during building image](https://github.com/canonical/github-runner-image-builder-operator/pull/150) (2025-09-12)
 
 ### Bug Fixes
