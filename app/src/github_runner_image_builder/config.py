@@ -103,13 +103,16 @@ IMAGE_OUTPUT_PATH = Path("compressed.img")
 
 IMAGE_DEFAULT_APT_PACKAGES = [
     "build-essential",
+    "cargo",
     "docker.io",
     "gh",
     "jq",
     "npm",
+    "pkg-config",
+    "python-is-python3",
     "python3-dev",
     "python3-pip",
-    "python-is-python3",
+    "rustc",
     "shellcheck",
     # socat is used for proxying between the runner and the tmate-ssh-server.
     "socat",
