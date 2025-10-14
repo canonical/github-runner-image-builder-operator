@@ -16,6 +16,5 @@ jobs:
       provider: lxd
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
-      self-hosted-runner-arch: X64
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
