@@ -17,7 +17,7 @@ import pydantic
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
-ARCHITECTURES_S390x = {"s390x"}
+ARCHITECTURES_S390X = {"s390x"}
 ARCHITECTURES_PPC64LE = {"ppc64le", "ppc64el"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
@@ -109,7 +109,7 @@ class Arch(str, Enum):
                 return Arch.ARM64
             case arch if arch in ARCHITECTURES_X86:
                 return Arch.X64
-            case arch if arch in ARCHITECTURES_S390x:
+            case arch if arch in ARCHITECTURES_S390X:
                 return Arch.S390X
             case arch if arch in ARCHITECTURES_PPC64LE:
                 return Arch.PPC64LE
