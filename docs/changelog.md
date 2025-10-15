@@ -1,7 +1,7 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#160 fix: run install YQ in bare cloud-init environment](https://github.com/canonical/github-runner-image-builder-operator/pull/160) (2025-10-15)
-> Fix `install_yq` function siliently failing.
+> Fix `install_yq` function silently failing.
 
 ### Bug Fixes
 
