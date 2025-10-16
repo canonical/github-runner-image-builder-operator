@@ -20,4 +20,4 @@ jobs:
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
       tmate-debug: true
-      tmate-timeout: 3000
+      tmate-timeout: 300
