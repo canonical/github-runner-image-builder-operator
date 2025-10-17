@@ -30,6 +30,10 @@ jobs:
         #   - image: jammy
         #     arch: s390x
     steps:
+      - name: Setup tmate session
+        uses: canonical/action-tmate@main
+        with:
+          detached: true
       - uses: actions/checkout@v5.0.0
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/setup-python@v6
@@ -69,8 +73,8 @@ jobs:
         run: |
          tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
-      - name: Setup tmate session
-        uses: canonical/action-tmate@main
+      - run: sleep(60000000)
+        if: always()
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest
