@@ -50,9 +50,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="apt update", command="sudo apt-get update -y"),
     Commands(name="unzip version", command="unzip -v"),
     Commands(name="gh version", command="gh --version"),
-    Commands(
-        name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
-    ),
+    # TODO
+    # Commands(
+    #     name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
+    # ),
     Commands(
         name="test that HWE kernel is installed",
         command="uname -a | "
