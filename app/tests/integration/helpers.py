@@ -412,6 +412,7 @@ EOF
     ssh_connection.run(
         "sudo nft -f /etc/nftables.conf"
     )
+    # TODO: Debug
     ssh_connection.run(
         "sudo apt install curl wget -yq"
     )
