@@ -412,6 +412,12 @@ EOF
     ssh_connection.run(
         "sudo nft -f /etc/nftables.conf"
     )
+    ssh_connection.run(
+        "sudo apt install curl wget -yq"
+    )
+    ssh_connection.run(
+        "curl http://www.github.com -v"
+    )
     
 
 def run_openstack_tests(ssh_connection: SSHConnection):
