@@ -38,8 +38,7 @@ TEST_RUNNER_COMMANDS = (
         name="check aproxy",
         command="sudo snap info aproxy && sudo snap services aproxy",
     ),
-    # TODO: Remove
-    # Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
+    Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
     Commands(name="check python3 alias", command="python --version"),
     Commands(name="pip version", command="python3 -m pip --version"),

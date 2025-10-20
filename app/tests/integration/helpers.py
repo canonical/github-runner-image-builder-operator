@@ -373,6 +373,46 @@ def format_dockerhub_mirror_microk8s_command(
         port=dockerhub_mirror.port,
     )
 
+def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig):
+    """Setup the aproxy in the openstack instance.
+    
+    Args:
+        ssh_connection: SSH connection to the openstack instance.
+        proxy: The proxy configuration.
+    """
+    ssh_connection.run(
+        f"snap set aproxy proxy={proxy.http} listen=:54969"
+    )
+    ssh_connection.run(
+        """cat << EOF > /etc/nftables.conf
+define default-ipv4 = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
+table ip aproxy
+flush table ip aproxy
+table ip aproxy {
+      set exclude {
+          type ipv4_addr;
+          flags interval; auto-merge;
+          elements = { 127.0.0.0/8, {{ aproxy_exclude_ipv4_addresses }} }
+      }
+      chain prerouting {
+              type nat hook prerouting priority dstnat; policy accept;
+              ip daddr != @exclude tcp dport { {{ aproxy_redirect_ports }} } counter dnat to \$default-ipv4:54969
+      }
+      chain output {
+              type nat hook output priority -100; policy accept;
+              ip daddr != @exclude tcp dport { {{ aproxy_redirect_ports }} } counter dnat to \$default-ipv4:54969
+      }
+}
+EOF
+"""
+    )
+    ssh_connection.run(
+        "systemctl enable nftables.service"
+    )
+    ssh_connection.run(
+        "nft -f /etc/nftables.conf"
+    )
+    
 
 def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
