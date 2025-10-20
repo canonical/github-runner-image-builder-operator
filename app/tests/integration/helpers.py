@@ -381,10 +381,10 @@ def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig):
         proxy: The proxy configuration.
     """
     ssh_connection.run(
-        f"snap set aproxy proxy={proxy.http} listen=:54969"
+        f"sudo snap set aproxy proxy={proxy.http} listen=:54969"
     )
     ssh_connection.run(
-        """cat << EOF > /etc/nftables.conf
+        """sudo tee /etc/nftables.conf > /dev/null << EOF
 define default-ipv4 = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
 table ip aproxy
 flush table ip aproxy
@@ -407,10 +407,10 @@ EOF
 """
     )
     ssh_connection.run(
-        "systemctl enable nftables.service"
+        "sudo systemctl enable nftables.service"
     )
     ssh_connection.run(
-        "nft -f /etc/nftables.conf"
+        "sudo nft -f /etc/nftables.conf"
     )
     
 
