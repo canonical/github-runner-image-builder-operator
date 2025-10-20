@@ -392,15 +392,15 @@ table ip aproxy {
       set exclude {
           type ipv4_addr;
           flags interval; auto-merge;
-          elements = { 127.0.0.0/8, {{ aproxy_exclude_ipv4_addresses }} }
+          elements = { 127.0.0.0/8 }
       }
       chain prerouting {
               type nat hook prerouting priority dstnat; policy accept;
-              ip daddr != @exclude tcp dport { {{ aproxy_redirect_ports }} } counter dnat to \$default-ipv4:54969
+              ip daddr != @exclude tcp dport { 1-65535 } counter dnat to \$default-ipv4:54969
       }
       chain output {
               type nat hook output priority -100; policy accept;
-              ip daddr != @exclude tcp dport { {{ aproxy_redirect_ports }} } counter dnat to \$default-ipv4:54969
+              ip daddr != @exclude tcp dport { 1-65535 } counter dnat to \$default-ipv4:54969
       }
 }
 EOF
