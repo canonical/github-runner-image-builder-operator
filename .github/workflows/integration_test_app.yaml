@@ -73,7 +73,7 @@ jobs:
         run: |
          tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
-      - run: sleep(60000000)
+      - run: sleep 60000000
         if: always()
   required_status_checks:
     name: Required Integration Test For Application Status Checks
