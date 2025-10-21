@@ -817,12 +817,19 @@ function install_yarn() {{
 }}
 
 function install_yq() {{
-    /usr/bin/sudo -E /usr/bin/snap install go --classic
-    /usr/bin/sudo -E /usr/bin/git clone https://github.com/mikefarah/yq.git
-    /usr/bin/sudo -E /snap/bin/go mod tidy -C yq
-    /usr/bin/sudo -E /snap/bin/go build -C yq -o /usr/bin/yq
-    /usr/bin/sudo -E /usr/bin/rm -rf yq
-    /usr/bin/sudo -E /usr/bin/snap remove go
+    # setup environment for Go as cloud-init is run without sourced environment as root user
+    export GOCACHE="/root/.cache/go-build"
+    export GOPATH=/root/go
+    export PATH="/snap/bin:$PATH"
+    /usr/bin/mkdir -p "$GOPATH"
+    /usr/bin/mkdir -p "$GOCACHE"
+
+    /usr/bin/snap install go --classic
+    /usr/bin/git clone https://github.com/mikefarah/yq.git
+    /snap/bin/go mod tidy -C yq
+    /snap/bin/go build -C yq -o /usr/bin/yq
+    /usr/bin/rm -rf yq
+    /usr/bin/snap remove go
 }}
 
 function install_github_runner() {{
@@ -877,9 +884,7 @@ configure_usr_local_bin
 if [ $RELEASE != "focal" ]; then
     install_yarn
 fi
-# install yq with ubuntu user due to GOPATH related go configuration settings
-export -f install_yq
-su ubuntu -c "bash -c 'install_yq'"
+install_yq
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
