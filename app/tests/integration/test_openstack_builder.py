@@ -225,7 +225,6 @@ def test_run(
     act: when run (build image) is called.
     assert: an image snapshot of working VM is created with the ability to run expected commands.
     """
-    helpers.setup_aproxy(ssh_connection, proxy)
     helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 

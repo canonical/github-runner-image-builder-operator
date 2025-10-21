@@ -750,11 +750,11 @@ flush table ip aproxy
 table ip aproxy {{
         chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 1-65535 }} counter dnat to \\$default-ip:8444
         }}
         chain output {{
                 type nat hook output priority -100; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 1-65535 }} counter dnat to \\$default-ip:8444
         }}
 }}
 EOF

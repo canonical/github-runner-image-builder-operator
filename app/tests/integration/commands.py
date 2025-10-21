@@ -38,8 +38,7 @@ TEST_RUNNER_COMMANDS = (
         name="check aproxy",
         command="sudo snap info aproxy && sudo snap services aproxy",
     ),
-    # TODO
-    # Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
+    Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
     Commands(name="check python3 alias", command="python --version"),
     Commands(name="pip version", command="python3 -m pip --version"),
@@ -50,10 +49,9 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="apt update", command="sudo apt-get update -y"),
     Commands(name="unzip version", command="unzip -v"),
     Commands(name="gh version", command="gh --version"),
-    # TODO
-    # Commands(
-    #     name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
-    # ),
+    Commands(
+        name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
+    ),
     Commands(
         name="test that HWE kernel is installed",
         command="uname -a | "

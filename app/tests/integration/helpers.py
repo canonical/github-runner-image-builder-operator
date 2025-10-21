@@ -373,56 +373,6 @@ def format_dockerhub_mirror_microk8s_command(
         port=dockerhub_mirror.port,
     )
 
-def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig):
-    """Setup the aproxy in the openstack instance.
-    
-    Args:
-        ssh_connection: SSH connection to the openstack instance.
-        proxy: The proxy configuration.
-    """
-    ssh_connection.run(
-        f"sudo snap set aproxy proxy={proxy.http} listen=:54969"
-    )
-    ssh_connection.run(
-        """sudo tee /etc/nftables.conf > /dev/null << EOF
-define default-ipv4 = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
-table ip aproxy
-flush table ip aproxy
-table ip aproxy {
-      set exclude {
-          type ipv4_addr;
-          flags interval; auto-merge;
-          elements = { 127.0.0.0/8 }
-      }
-      chain prerouting {
-              type nat hook prerouting priority dstnat; policy accept;
-              ip daddr != @exclude tcp dport { 1-65535 } counter dnat to \$default-ipv4:54969
-      }
-      chain output {
-              type nat hook output priority -100; policy accept;
-              ip daddr != @exclude tcp dport { 1-65535 } counter dnat to \$default-ipv4:54969
-      }
-}
-EOF
-"""
-    )
-    ssh_connection.run(
-        "sudo systemctl enable nftables.service"
-    )
-    ssh_connection.run(
-        "sudo nft -f /etc/nftables.conf"
-    )
-    # TODO: Debug
-    from time import sleep
-    sleep(6000)
-    ssh_connection.run(
-        "sudo apt install curl wget -yq"
-    )
-    ssh_connection.run(
-        "curl http://www.github.com -v"
-    )
-    
-
 def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
 
