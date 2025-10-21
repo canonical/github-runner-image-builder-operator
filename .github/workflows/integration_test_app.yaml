@@ -16,7 +16,7 @@ jobs:
       matrix:
         # DEBUG
         image: [noble]
-        arch: [amd64]
+        arch: [s390x]
         # image: [focal, jammy, noble]
         # arch: [amd64, arm64, s390x, ppc64le]
         # exclude:
