@@ -380,7 +380,7 @@ def run_openstack_tests(ssh_connection: SSHConnection):
         ssh_connection: The SSH connection instance to OpenStack test server.
     """
     # TODO: DEBUG
-    logger.info("DEBUG---------------------------------------------------------------------------------------")
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
     from time import sleep
     sleep(6000000000)
     for testcmd in commands.TEST_RUNNER_COMMANDS:
