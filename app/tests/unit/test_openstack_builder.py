@@ -750,11 +750,11 @@ flush table ip aproxy
 table ip aproxy {{
         chain prerouting {{
                 type nat hook prerouting priority dstnat; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 1-65535 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
         }}
         chain output {{
                 type nat hook output priority -100; policy accept;
-                ip daddr != \\$private-ips tcp dport {{ 1-65535 }} counter dnat to \\$default-ip:8444
+                ip daddr != \\$private-ips tcp dport {{ 80, 443 }} counter dnat to \\$default-ip:8444
         }}
 }}
 EOF
@@ -860,16 +860,6 @@ function configure_system_users() {{
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
 }}
 
-function disable_ipv6() {{
-    echo "Disabling IPv6"
-    /usr/bin/sudo tee /etc/sysctl.d/99-disable-ipv6.conf > /dev/null << EOF
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
-net.ipv6.conf.lo.disable_ipv6 = 1
-EOF
-}}
-
-
 proxy="test.proxy.internal:3128"
 apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
@@ -877,7 +867,6 @@ github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
 
-disable_ipv6
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
