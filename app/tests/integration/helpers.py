@@ -373,6 +373,7 @@ def format_dockerhub_mirror_microk8s_command(
         port=dockerhub_mirror.port,
     )
 
+
 def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:
     """Setup aproxy and disable IPv6 in a openstack instance.
 
@@ -380,9 +381,13 @@ def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> Non
         ssh_connection: The SSH connection to the openstack instance.
         proxy: The proxy configuration for aproxy.
     """
-    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
+    logger.info(
+        "--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------"
+    )
     logger.info(f"proxy in setup_aproxy: {proxy.http}")
-    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
+    logger.info(
+        "--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------"
+    )
     ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy=${proxy.http} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
@@ -405,6 +410,7 @@ EOF
     )
     # Wait for aproxy to start up.
     time.sleep(5)
+
 
 def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
