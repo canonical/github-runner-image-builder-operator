@@ -380,11 +380,7 @@ def setup_network(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> No
         ssh_connection: The SSH connection to the openstack instance.
         proxy: The proxy configuration for aproxy.
     """
-    ssh_connection.run(
-        
-    )
-
-    ssh_connection.run("/usr/bin/sudo snap set aproxy proxy=${{proxy}} listen=:8444")
+    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy=${proxy.http} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
@@ -401,10 +397,25 @@ table ip aproxy {{
                 ip daddr != \\$private-ips tcp dport {{ 1-65535 }} counter dnat to \\$default-ip:8444
         }}
 }}
-EOF"""
-)
+EOF
+"""
+    )
     # Wait for aproxy to start up.
     time.sleep(5)
+    # TODO: DEBUG
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
+    from time import sleep
+    sleep(6000000000)
+
+#     ssh_connection.run(
+#         """/usr/bin/sudo tee /etc/sysctl.d/99-disable-ipv6.conf > /dev/null << EOF
+# net.ipv6.conf.all.disable_ipv6 = 1
+# net.ipv6.conf.default.disable_ipv6 = 1
+# net.ipv6.conf.lo.disable_ipv6 = 1
+# EOF
+# """ 
+#     )
+#     ssh_connection.run("/usr/bin/sudo sysctl -p /etc/sysctl.d/99-disable-ipv6.conf")
     
     
 
