@@ -373,13 +373,16 @@ def format_dockerhub_mirror_microk8s_command(
         port=dockerhub_mirror.port,
     )
 
-def setup_network(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:
+def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:
     """Setup aproxy and disable IPv6 in a openstack instance.
 
     Args:
         ssh_connection: The SSH connection to the openstack instance.
         proxy: The proxy configuration for aproxy.
     """
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
+    logger.info(f"proxy in setup_aproxy: {proxy.http}")
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
     ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy=${proxy.http} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
@@ -402,23 +405,6 @@ EOF
     )
     # Wait for aproxy to start up.
     time.sleep(5)
-    # TODO: DEBUG
-    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
-    from time import sleep
-    sleep(6000000000)
-
-#     ssh_connection.run(
-#         """/usr/bin/sudo tee /etc/sysctl.d/99-disable-ipv6.conf > /dev/null << EOF
-# net.ipv6.conf.all.disable_ipv6 = 1
-# net.ipv6.conf.default.disable_ipv6 = 1
-# net.ipv6.conf.lo.disable_ipv6 = 1
-# EOF
-# """ 
-#     )
-#     ssh_connection.run("/usr/bin/sudo sysctl -p /etc/sysctl.d/99-disable-ipv6.conf")
-    
-    
-
 
 def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
@@ -426,10 +412,6 @@ def run_openstack_tests(ssh_connection: SSHConnection):
     Args:
         ssh_connection: The SSH connection instance to OpenStack test server.
     """
-    # TODO: DEBUG
-    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
-    from time import sleep
-    sleep(6000000000)
     for testcmd in commands.TEST_RUNNER_COMMANDS:
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)

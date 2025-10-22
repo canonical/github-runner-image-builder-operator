@@ -259,4 +259,7 @@ def proxy_fixture(pytestconfig: pytest.Config) -> types.ProxyConfig:
     else:
         proxy = None
     no_proxy = pytestconfig.getoption("--no-proxy")
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
+    logger.info(f"proxy in fixture: {proxy}")
+    logger.info("--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------")
     return types.ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
