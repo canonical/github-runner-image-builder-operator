@@ -14,22 +14,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # DEBUG
-        image: [noble]
-        arch: [s390x]
-        # image: [focal, jammy, noble]
-        # arch: [amd64, arm64, s390x, ppc64le]
-        # exclude:
-        #   - image: focal
-        #     arch: ppc64le
-        #   - image: focal
-        #     arch: s390x
-        #   - image: jammy
-        #     arch: arm64
-        #   - image: jammy
-        #     arch: ppc64le
-        #   - image: jammy
-        #     arch: s390x
+        image: [focal, jammy, noble]
+        arch: [amd64, arm64, s390x, ppc64le]
+        exclude:
+          - image: focal
+            arch: ppc64le
+          - image: focal
+            arch: s390x
+          - image: jammy
+            arch: arm64
+          - image: jammy
+            arch: ppc64le
+          - image: jammy
+            arch: s390x
     steps:
       - name: Setup tmate session
         uses: canonical/action-tmate@main

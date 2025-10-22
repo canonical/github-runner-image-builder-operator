@@ -381,17 +381,7 @@ def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> Non
         ssh_connection: The SSH connection to the openstack instance.
         proxy: The proxy configuration for aproxy.
     """
-    logger.info(
-        "--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------"
-    )
-    logger.info(f"proxy in setup_aproxy: {proxy.http}")
-    logger.info(
-        "--------------------------------------------------------------DEBUG---------------------------------------------------------------------------------------"
-    )
-    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy=${proxy.http} listen=:8444")
-    # TODO: DEBUG
-    from time import sleep
-    sleep(60000)
+    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy.http} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
