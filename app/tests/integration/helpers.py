@@ -374,8 +374,8 @@ def format_dockerhub_mirror_microk8s_command(
     )
 
 
-def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:
-    """Setup aproxy and disable IPv6 in a openstack instance.
+def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:  # noqa: E501
+    """Setup aproxy in a openstack instance.
 
     Args:
         ssh_connection: The SSH connection to the openstack instance.
@@ -384,7 +384,8 @@ def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> Non
     ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy.http} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
-define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') | grep -oP 'src \\K\\S+')
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') \
+| grep -oP 'src \\K\\S+')
 define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
 table ip aproxy
 flush table ip aproxy

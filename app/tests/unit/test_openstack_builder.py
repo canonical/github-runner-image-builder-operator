@@ -860,6 +860,7 @@ function configure_system_users() {{
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
 }}
 
+
 proxy="test.proxy.internal:3128"
 apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
 hwe_version="22.04"
