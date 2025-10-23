@@ -374,14 +374,14 @@ def format_dockerhub_mirror_microk8s_command(
     )
 
 
-def setup_aproxy(ssh_connection: SSHConnection, proxy: types.ProxyConfig) -> None:  # noqa: E501
+def setup_aproxy(ssh_connection: SSHConnection, proxy: str) -> None:
     """Setup aproxy in a openstack instance.
 
     Args:
         ssh_connection: The SSH connection to the openstack instance.
-        proxy: The proxy configuration for aproxy.
+        proxy: The hostname and port in the format of "hostname:port".
     """
-    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy.http} listen=:8444")
+    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') \
@@ -402,8 +402,14 @@ table ip aproxy {
 EOF
 """
     )
-    # Wait for aproxy to start up.
-    time.sleep(5)
+    # Wait for aproxy to become active.
+    for _ in range(6):
+        time.sleep(5)
+        result = ssh_connection.run("sudo snap services aproxy")
+        if "active" in result.output:
+            break
+    else:
+        assert False, "Aproxy did not start up correctly."
 
 
 def run_openstack_tests(ssh_connection: SSHConnection):
