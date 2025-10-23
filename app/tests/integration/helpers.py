@@ -374,13 +374,28 @@ def format_dockerhub_mirror_microk8s_command(
     )
 
 
-def setup_aproxy(ssh_connection: SSHConnection, proxy: str) -> None:
-    """Setup aproxy in a openstack instance.
+def setup_aproxy_disable_ipv6(ssh_connection: SSHConnection, proxy: str) -> None:
+    """Setup aproxy and disable IPv6 in a openstack instance.
+
+    Aproxy does not work with IPv6. Therefore, if aproxy is used IPv6 should be disabled.
 
     Args:
         ssh_connection: The SSH connection to the openstack instance.
         proxy: The hostname and port in the format of "hostname:port".
     """
+    # Debug
+    from time import sleep
+    sleep(300)
+    ssh_connection.run(
+        """/usr/bin/sudo tee /etc/sysctl.d/99-disable-ipv6.conf > /dev/null << EOF
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+EOF
+"""
+    )
+    ssh_connection.run("sudo sysctl -p /etc/sysctl.d/99-disable-ipv6.conf")
+
     ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy} listen=:8444")
     ssh_connection.run(
         """/usr/bin/sudo nft -f - << EOF
