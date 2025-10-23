@@ -226,7 +226,7 @@ def test_run(
     assert: an image snapshot of working VM is created with the ability to run expected commands.
     """
     if proxy.http is not None:
-        helpers.setup_aproxy_disable_ipv6(ssh_connection, proxy.http)
+        helpers.setup_aproxy(ssh_connection, proxy.http)
     helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 
