@@ -13,10 +13,11 @@ from typing_extensions import ParamSpec
 logger = logging.getLogger(__name__)
 
 
+# Ignore pylint as this is a common name for types.
 # Parameters of the function decorated with retry
-ParamT = ParamSpec("ParamT")
+ParamT = ParamSpec("ParamT")  # pylint: disable=invalid-name
 # Return type of the function decorated with retry
-ReturnT = TypeVar("ReturnT")
+ReturnT = TypeVar("ReturnT")  # pylint: disable=invalid-name
 
 
 # This decorator has default arguments, one extra argument is not a problem.

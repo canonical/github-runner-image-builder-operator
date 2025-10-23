@@ -218,12 +218,15 @@ async def ssh_connection_fixture(
 @pytest.mark.usefixtures("make_dangling_resources")
 def test_run(
     ssh_connection: SSHConnection,
+    proxy: types.ProxyConfig,
 ):
     """
     arrange: given openstack cloud instance.
     act: when run (build image) is called.
     assert: an image snapshot of working VM is created with the ability to run expected commands.
     """
+    if proxy.http is not None:
+        helpers.setup_aproxy(ssh_connection, proxy.http)
     helpers.run_openstack_tests(ssh_connection=ssh_connection)
 
 
