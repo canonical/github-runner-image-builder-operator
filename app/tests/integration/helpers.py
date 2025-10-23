@@ -406,7 +406,7 @@ EOF
     for _ in range(6):
         time.sleep(5)
         result = ssh_connection.run("sudo snap services aproxy")
-        if "active" in result.output:
+        if "active" in result.stdout:
             break
     else:
         assert False, "Aproxy did not start up correctly."
