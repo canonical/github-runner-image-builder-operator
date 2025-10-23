@@ -9,7 +9,6 @@ hostnamectl set-hostname github-runner
 function configure_proxy() {
     local proxy="$1"
     local proxy_url="${1:+http://$1}"
-    
 
     echo "Installing aproxy"
     # We always want snap aproxy and nft (in focal) to be installed, even it they are not used by the image builder.
@@ -19,9 +18,6 @@ function configure_proxy() {
     /usr/bin/sudo snap set system proxy.http=""
     /usr/bin/sudo snap set system proxy.https=""
     if [ $RELEASE == "focal" ]; then
-        echo "#########################################DEBUG###################################################################"
-        sleep 60000
-
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
         http_proxy=${proxy_url} https_proxy=${proxy_url} no_proxy=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
