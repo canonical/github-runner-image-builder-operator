@@ -18,8 +18,10 @@ function configure_proxy() {
     /usr/bin/sudo snap install aproxy --edge
     /usr/bin/sudo snap set system proxy.http=""
     /usr/bin/sudo snap set system proxy.https=""
-
     if [ $RELEASE == "focal" ]; then
+        echo "#########################################DEBUG###################################################################"
+        sleep 60000
+
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
         HTTP_PROXY=${proxy_url} HTTPS_PROXY=${proxy_url} NO_PROXY=127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/1 DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
@@ -52,9 +54,6 @@ EOF
     /usr/bin/sudo snap set aproxy proxy=${proxy} listen=:8444;
     echo "Wait for aproxy to start"
     sleep 5
-    
-    echo "#########################################DEBUG###################################################################"
-    sleep 60000
 }
 
 function install_apt_packages() {

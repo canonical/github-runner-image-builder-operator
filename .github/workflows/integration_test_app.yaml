@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         # TODO: Debug
-        image: [focal]
+        image: [focal, jammy]
         arch: [amd64]
         # image: [focal, jammy, noble]
         # arch: [amd64, arm64, s390x, ppc64le]
