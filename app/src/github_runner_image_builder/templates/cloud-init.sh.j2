@@ -17,6 +17,7 @@ function configure_proxy() {
     /usr/bin/sudo snap install aproxy --edge
     /usr/bin/sudo snap set system proxy.http=""
     /usr/bin/sudo snap set system proxy.https=""
+
     if [ $RELEASE == "focal" ]; then
         echo "Ensure nftables is installed on focal"
         # Focal does not have nftables install by default. Jammy and onward would not need this.
