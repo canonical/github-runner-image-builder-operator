@@ -31,11 +31,6 @@ function configure_proxy() {
         return
     fi
 
-    echo "Disabling IPv6"
-    sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-    sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-    sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
-
     echo "Configure nft and aproxy"
     /usr/bin/sudo nft -f - << EOF
 define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
@@ -57,6 +52,9 @@ EOF
     /usr/bin/sudo snap set aproxy proxy=${proxy} listen=:8444;
     echo "Wait for aproxy to start"
     sleep 5
+    
+    echo "#########################################DEBUG###################################################################"
+    sleep 60000
 }
 
 function install_apt_packages() {
