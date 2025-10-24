@@ -39,10 +39,10 @@ Thinking about using the GitHub runner image builder charm for your next project
 # Contents
 
 1. [How To](how-to)
-  1. [How to configure base-image](how-to/configure-base-image.md)
-  1. [How to configure build-interval](how-to/configure-build-interval.md)
-  1. [How to configure revision-history](how-to/configure-revision-history.md)
-  1. [How to configure pin-github-runner-version](how-to/pin-github-runner-version.md)
+  1. [Configure base-image](how-to/configure-base-image.md)
+  1. [Configure build-interval](how-to/configure-build-interval.md)
+  1. [Configure revision-history](how-to/configure-revision-history.md)
+  1. [Configure pin-github-runner-version](how-to/pin-github-runner-version.md)
   1. [Upgrade](how-to/upgrade.md)
 1. [Tutorial](tutorial)
   1. [Quick start](tutorial/quick-start.md)
