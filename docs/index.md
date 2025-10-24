@@ -1,11 +1,10 @@
 A [Juju](https://juju.is/) [charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/) for building VM
 images for [GitHub self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
 
-This charm simplifies the initial deployment and building images for GitHub
-self-hosted runners.
+This charm simplifies the initial deployment and building images for GitHub self-hosted runners.
 
-Some of the charm dependencies upgrades on a schedule to migrate security risks. The 
-[Landscape Client charm](https://charmhub.io/landscape-client) can be deployed with this charm to ensure other dependencies are up to date.
+Some of the charm dependencies upgrades on a schedule to migrate security risks.
+The [Landscape Client charm](https://charmhub.io/landscape-client) can be deployed with this charm to ensure other dependencies are up to date.
 
 The charm operates a set of isolated single-use OpenStack virtual machines, to build up-to-date
 images for GitHub runners.
@@ -28,7 +27,7 @@ If there's a particular area of documentation that you'd like to see that's miss
 
 ## Project and community
 
-The GitHub runner image builder charm is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
+The GitHub runner image builder charm is a member of the Ubuntu family.It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
 
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
@@ -44,6 +43,7 @@ Thinking about using the GitHub runner image builder charm for your next project
   1. [How to configure build-interval](how-to/configure-build-interval.md)
   1. [How to configure revision-history](how-to/configure-revision-history.md)
   1. [How to configure pin-github-runner-version](how-to/pin-github-runner-version.md)
+  1. [Upgrade](how-to/upgrade.md)
 1. [Tutorial](tutorial)
   1. [Quick start](tutorial/quick-start.md)
 1. [Changelog](changelog.md)
