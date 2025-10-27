@@ -12,12 +12,10 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      juju-channel: 3.5/stable
+      juju-channel: 3.6/stable
       provider: lxd
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
       self-hosted-runner-arch: X64
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
-      tmate-debug: true
-      tmate-timeout: 6000
