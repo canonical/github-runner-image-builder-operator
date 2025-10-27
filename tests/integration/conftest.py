@@ -369,7 +369,7 @@ def app_config_fixture(
 @pytest.fixture(scope="module", name="base_machine_constraint")
 def base_machine_constraint_fixture() -> str:
     """The base machine constraint."""
-    num_cores = multiprocessing.cpu_count() - 1
+    num_cores = multiprocessing.cpu_count() - 2
     base_machine_constraint = f"arch=amd64 cores={num_cores} mem=4G root-disk=20G"
     return base_machine_constraint
 
