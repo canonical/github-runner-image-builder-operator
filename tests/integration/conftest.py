@@ -187,6 +187,7 @@ async def _deploy_test_charm(
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
             "openstack-user-name": private_endpoint_configs["username"],
         },
+        constraints="virt-type=virtual-machine"
     )
     return app
 

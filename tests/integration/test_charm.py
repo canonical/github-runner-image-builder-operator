@@ -48,6 +48,7 @@ async def test_cos_agent_relation(app: Application):
         application_name=f"grafana-agent-{app.name}",
         channel="1/edge",
         series="jammy",
+        constraints="virt-type=virtual-machine"
     )
     await model.relate(f"{app.name}:cos-agent", f"{grafana_agent.name}:cos-agent")
     await model.wait_for_idle(apps=[app.name], status="active", timeout=30 * 60)
