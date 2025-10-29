@@ -13,8 +13,8 @@ from typing_extensions import ParamSpec
 logger = logging.getLogger(__name__)
 
 
+# Ignore pylint as this is a common name for types.
 # Parameters of the function decorated with retry
-# The following type names are valid and is common standard but pylint does not agree.
 ParamT = ParamSpec("ParamT")  # pylint: disable=invalid-name
 # Return type of the function decorated with retry
 ReturnT = TypeVar("ReturnT")  # pylint: disable=invalid-name

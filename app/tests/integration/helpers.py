@@ -374,6 +374,44 @@ def format_dockerhub_mirror_microk8s_command(
     )
 
 
+def setup_aproxy(ssh_connection: SSHConnection, proxy: str) -> None:
+    """Setup aproxy in a openstack instance.
+
+    Args:
+        ssh_connection: The SSH connection to the openstack instance.
+        proxy: The hostname and port in the format of "hostname:port".
+    """
+    ssh_connection.run(f"/usr/bin/sudo snap set aproxy proxy={proxy} listen=:8444")
+    ssh_connection.run(
+        """/usr/bin/sudo nft -f - << EOF
+define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \\K\\S+') \
+| grep -oP 'src \\K\\S+')
+define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+table ip aproxy
+flush table ip aproxy
+table ip aproxy {
+        chain prerouting {
+                type nat hook prerouting priority dstnat; policy accept;
+                ip daddr != \\$private-ips tcp dport { 1-65535 } counter dnat to \\$default-ip:8444
+        }
+        chain output {
+                type nat hook output priority -100; policy accept;
+                ip daddr != \\$private-ips tcp dport { 1-65535 } counter dnat to \\$default-ip:8444
+        }
+}
+EOF
+"""
+    )
+    # Wait for aproxy to become active.
+    for _ in range(6):
+        time.sleep(5)
+        result = ssh_connection.run("sudo snap services aproxy")
+        if "active" in result.stdout:
+            break
+    else:
+        assert False, "Aproxy did not start up correctly."
+
+
 def run_openstack_tests(ssh_connection: SSHConnection):
     """Run test commands on the openstack instance via ssh.
 
