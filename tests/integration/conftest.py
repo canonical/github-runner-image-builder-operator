@@ -187,6 +187,7 @@ async def _deploy_test_charm(
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
             "openstack-user-name": private_endpoint_configs["username"],
         },
+        constraints="virt-type=virtual-machine",
     )
     return app
 
@@ -369,8 +370,10 @@ def app_config_fixture(
 @pytest.fixture(scope="module", name="base_machine_constraint")
 def base_machine_constraint_fixture() -> str:
     """The base machine constraint."""
-    num_cores = multiprocessing.cpu_count() - 1
-    base_machine_constraint = f"arch=amd64 cores={num_cores} mem=4G root-disk=20G"
+    num_cores = max(1, multiprocessing.cpu_count() - 1)
+    base_machine_constraint = (
+        f"arch=amd64 cores={num_cores} mem=4G root-disk=20G virt-type=virtual-machine"
+    )
     return base_machine_constraint
 
 
