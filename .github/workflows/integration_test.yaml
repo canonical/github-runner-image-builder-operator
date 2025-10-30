@@ -17,5 +17,10 @@ jobs:
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
       self-hosted-runner-arch: X64
-      self-hosted-runner-label: stg-private-endpoint
+      self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
+  allure-report:
+    if: always() && !cancelled()
+    needs:
+      - integration-tests
+    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
