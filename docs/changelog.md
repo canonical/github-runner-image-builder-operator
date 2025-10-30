@@ -1,5 +1,12 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#160 fix: run install YQ in bare cloud-init environment](https://github.com/canonical/github-runner-image-builder-operator/pull/160) (2025-10-15)
+> Fix `install_yq` function silently failing.
+
+### Bug Fixes
+
+* Fix `install_yq` function running within another bash shell, causing any errors to go undetected.
+
 ## [#155 feat: add packages to build crypto lib from source](https://github.com/canonical/github-runner-image-builder-operator/pull/155) (2025-09-29)
 > Add packages to build crypto lib from source.
 
