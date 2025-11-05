@@ -1,0 +1,49 @@
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e7ddb094/0 [executing] active: Building image.
+[32mINFO    [0m tests.integration.conftest:conftest.py:158 Cleaning up test charm.
+[32mINFO    [0m tests.integration.conftest:conftest.py:160 Test charm application test2-e7ddb094 removed.
+[32mINFO    [0m tests.integration.conftest:conftest.py:142 Test charm application test-e7ddb094 removed.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model            Controller           Cloud/Region         Version  SLA          Timestamp
+test-charm-cu6n  github-pr-31e16-lxd  localhost/localhost  3.6.11   unsupported  19:47:09Z
+
+App                                            Version  Status   Scale  Charm                        Channel  Rev  Exposed  Message
+grafana-agent-image-builder-operator-e7ddb094           blocked      1  grafana-agent                1/edge   603  no       Missing ['grafana-cloud-config']|['grafana-dashboards-provider']|['logging-consumer']|['send-remote-write'] for cos-a...
+image-builder-operator-e7ddb094                         active       1  github-runner-image-builder             0  no       
+
+Unit                                                Workload  Agent      Machine  Public address  Ports  Message
+image-builder-operator-e7ddb094/0*                  active    executing  0        10.214.6.142           
+  grafana-agent-image-builder-operator-e7ddb094/0*  blocked   idle                10.214.6.142           Missing ['grafana-cloud-config']|['grafana-dashboards-provider']|['logging-consumer']|['send-remote-write'] for cos-a...
+
+Machine  State    Address       Inst id        Base          AZ             Message
+0        started  10.214.6.142  juju-21fd09-0  ubuntu@22.04  github-runner  Running
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+machine-0: 19:07:54 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 19:07:54 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-e7ddb094-0: 19:08:57 ERROR unit.image-builder-operator-e7ddb094/0.juju-log Pipx command failed, code: 1, out: None, err: None
+machine-1: 19:15:15 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-1: 19:15:15 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-grafana-agent-image-builder-operator-e7ddb094-0: 19:29:29 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: preparing operation "install ch:amd64/grafana-agent-603" for grafana-agent-image-builder-operator-e7ddb094/0: failed to download charm "ch:amd64/grafana-agent-603" from API server: download request with archiveSha256 length 0 not valid
+machine-2: 19:31:06 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-2: 19:31:06 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
+[32mINFO    [0m tests.integration.conftest:conftest.py:465 Cleaning up keypair.
+[32mINFO    [0m tests.integration.conftest:conftest.py:467 Keypair deleted.
