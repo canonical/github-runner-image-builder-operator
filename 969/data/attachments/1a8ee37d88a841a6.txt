@@ -1,0 +1,2 @@
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-810633d3-noble-x64, Images: (('1f51a46b-bcf8-49de-8afe-a0af4959fd5a', 'image-builder-operator-810633d3-noble-x64', '2025-11-10T07:59:20Z'), ('31bc936e-2923-4823-80d3-f2532689bc6b', 'image-builder-operator-810633d3-noble-x64', '2025-11-10T07:56:36Z'))
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-10 07:36:35.739268+00:00
