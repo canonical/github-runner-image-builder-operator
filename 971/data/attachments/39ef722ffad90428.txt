@@ -1,0 +1,2 @@
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-df8e9ea9-noble-x64, Images: (('88c580da-595b-4eac-9d91-b3184da360d6', 'image-builder-operator-df8e9ea9-noble-x64', '2025-11-11T10:36:23Z'), ('adad1627-30fb-4dcd-a809-b48c1ad32a2b', 'image-builder-operator-df8e9ea9-noble-x64', '2025-11-11T10:33:38Z'))
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:14:58.811667+00:00

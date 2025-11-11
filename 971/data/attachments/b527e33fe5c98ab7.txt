@@ -1,0 +1,105 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:762 Adding model github-pr-a5833-lxd:test-upgrade-xhre on cloud localhost
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[32mINFO    [0m tests.integration.conftest:conftest.py:102 Setting model proxy: http://egress.ps7.internal:3128
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/github-runner-image-builder-128
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [idle] blocked: image integration required.
+[32mINFO    [0m root:test_upgrade.py:29 Refreshing the charm from the local charm file.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Running builder upgrade.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [executing] maintenance: Running builder upgrade.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-c3e38663/0 [idle] blocked: image integration required.
+[32mINFO    [0m tests.integration.conftest:conftest.py:178 Deploying built test charm
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:test-0
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-c3e38663-noble-x64, Images: (('2c233001-31a4-49ff-b758-369744886f3f', 'image-builder-operator-c3e38663-noble-x64', '2025-11-11T10:36:41Z'),)
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-11 10:25:36.359087+00:00
+[32mINFO    [0m tests.integration.conftest:conftest.py:142 Test charm application test-c3e38663 removed.
+[32mINFO    [0m tests.integration.conftest:conftest.py:465 Cleaning up keypair.
+[32mINFO    [0m tests.integration.conftest:conftest.py:467 Keypair deleted.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model              Controller           Cloud/Region         Version  SLA          Timestamp
+test-upgrade-xhre  github-pr-a5833-lxd  localhost/localhost  3.6.11   unsupported  10:36:51Z
+
+App                              Version  Status   Scale  Charm                        Channel  Rev  Exposed  Message
+image-builder-operator-c3e38663           active       1  github-runner-image-builder             0  no       Building image.
+test-c3e38663                             unknown      0  test                                    0  no       
+
+Unit                                Workload  Agent      Machine  Public address  Ports  Message
+image-builder-operator-c3e38663/0*  active    executing  0        10.216.58.7            Building image.
+
+Machine  State    Address      Inst id        Base          AZ             Message
+0        started  10.216.58.7  juju-f4e113-0  ubuntu@22.04  github-runner  Running
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+machine-0: 10:16:35 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 10:16:35 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-c3e38663-0: 10:17:52 ERROR unit.image-builder-operator-c3e38663/0.juju-log Pipx command failed, code: 1, out: None, err: None
+machine-1: 10:26:42 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-1: 10:26:42 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
