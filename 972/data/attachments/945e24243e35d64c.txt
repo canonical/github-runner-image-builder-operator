@@ -1,0 +1,15 @@
+[32mINFO    [0m tests.integration.conftest:conftest.py:178 Deploying built test charm
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:test-1
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-b17d8580/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-b17d8580/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-b17d8580/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-b17d8580/0 [idle] active: 
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b17d8580-noble-x64, Images: (('62c3096c-9426-4f82-96fb-32200512eea6', 'image-builder-operator-b17d8580-noble-x64', '2025-11-13T16:28:05Z'), ('47cafd38-0ddd-4bfb-ac9d-95c3c2f7f3f5', 'image-builder-operator-b17d8580-noble-x64', '2025-11-13T16:25:29Z'))
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-13 16:30:26.367169+00:00
+[32mINFO    [0m tests.integration.test_charm:test_charm.py:109 Test charm unit data: {"test-b17d8580/0":{"machine":"1","opened-ports":null,"public-address":"10.210.88.234","charm":"local:test-0","leader":true,"life":"alive","relation-info":[{"relation-id":0,"endpoint":"image","related-endpoint":"image","application-data":{},"local-unit":{"in-scope":false,"data":null},"related-units":{"image-builder-operator-b17d8580/0":{"in-scope":true,"data":{"egress-subnets":"10.210.88.228/32","id":"62c3096c-9426-4f82-96fb-32200512eea6","images":"[{\"id\": \"62c3096c-9426-4f82-96fb-32200512eea6\", \"tags\": \"x64,noble\"}]","ingress-address":"10.210.88.228","private-address":"10.210.88.228","tags":"x64,noble"}}}}]}}
+
+[32mINFO    [0m tests.integration.test_charm:test_charm.py:116 Test charm 2 unit data: {"test2-b17d8580/0":{"machine":"2","opened-ports":null,"public-address":"10.210.88.18","charm":"local:test-1","leader":true,"life":"alive","relation-info":[{"relation-id":3,"endpoint":"image","related-endpoint":"image","application-data":{},"local-unit":{"in-scope":false,"data":null},"related-units":{"image-builder-operator-b17d8580/0":{"in-scope":true,"data":{"egress-subnets":"10.210.88.228/32","id":"62c3096c-9426-4f82-96fb-32200512eea6","images":"[{\"id\": \"62c3096c-9426-4f82-96fb-32200512eea6\", \"tags\": \"x64,noble\"}]","ingress-address":"10.210.88.228","private-address":"10.210.88.228","tags":"x64,noble"}}}}]}}
