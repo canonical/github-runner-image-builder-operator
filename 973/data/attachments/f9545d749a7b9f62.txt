@@ -1,0 +1,194 @@
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-2bfe30cc-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-15 23:52:11.391937+00:00

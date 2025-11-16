@@ -1,0 +1,339 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:762 Adding model github-pr-d1b1c-lxd:test-upgrade-4ee1 on cloud localhost
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[32mINFO    [0m tests.integration.conftest:conftest.py:102 Setting model proxy: http://egress.ps7.internal:3128
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/github-runner-image-builder-128
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Setting up Builder.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [idle] blocked: image integration required.
+[32mINFO    [0m root:test_upgrade.py:29 Refreshing the charm from the local charm file.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [executing] maintenance: Running builder upgrade.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-b2877d72/0 [idle] blocked: image integration required.
+[32mINFO    [0m tests.integration.conftest:conftest.py:178 Deploying built test charm
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:test-0
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-b2877d72-noble-x64, Images: ()
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-16 00:03:39.201287+00:00
+[32mINFO    [0m tests.integration.conftest:conftest.py:142 Test charm application test-b2877d72 removed.
+[32mINFO    [0m tests.integration.conftest:conftest.py:465 Cleaning up keypair.
+[32mINFO    [0m tests.integration.conftest:conftest.py:467 Keypair deleted.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model              Controller           Cloud/Region         Version  SLA          Timestamp
+test-upgrade-4ee1  github-pr-d1b1c-lxd  localhost/localhost  3.6.11   unsupported  00:54:12Z
+
+App                              Version  Status   Scale  Charm                        Channel  Rev  Exposed  Message
+image-builder-operator-b2877d72           error        1  github-runner-image-builder             0  no       hook failed: "image-relation-changed"
+test-b2877d72                             unknown      0  test                                    0  no       
+
+Unit                                Workload  Agent  Machine  Public address  Ports  Message
+image-builder-operator-b2877d72/0*  error     idle   0        10.251.245.49          hook failed: "image-relation-changed"
+
+Machine  State    Address        Inst id        Base          AZ             Message
+0        started  10.251.245.49  juju-ebbc21-0  ubuntu@22.04  github-runner  Running
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+machine-0: 23:53:48 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 23:53:48 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-b2877d72-0: 23:55:08 ERROR unit.image-builder-operator-b2877d72/0.juju-log Pipx command failed, code: 1, out: None, err: None
+machine-1: 00:05:13 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-1: 00:05:13 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-b2877d72-0: 00:05:24 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-b2877d72-0: 00:05:31 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-b2877d72-0: 00:05:37 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-b2877d72-0: 00:05:47 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-b2877d72-0: 00:06:05 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-b2877d72-0: 00:06:05 ERROR unit.image-builder-operator-b2877d72/0.juju-log image:0: Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-b2877d72-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-b2877d72', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/tenacity/__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/./src/charm.py", line 339, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/_main.py", line 504, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/_main.py", line 488, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/_main.py", line 423, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/_main.py", line 467, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/framework.py", line 924, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/venv/ops/framework.py", line 1036, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/./src/charm.py", line 153, in _on_image_relation_changed
+    self._run(cloud_id=cloud_id)
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/./src/charm.py", line 253, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-b2877d72-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-b2877d72-0: 00:06:05 ERROR juju.worker.uniter.operation hook "image-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
