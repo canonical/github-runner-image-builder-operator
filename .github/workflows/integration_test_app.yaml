@@ -67,6 +67,9 @@ jobs:
         run: |
          tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: canonical/action-tmate@main
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest
