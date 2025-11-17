@@ -1,0 +1,37 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: An active charm.
+    act: When the cos-agent relation is joined.
+    assert: The test charm becomes active.
+    ","17584","test_cos_agent_relation","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
+"
+    arrange: A test_charm that has already been integrated.
+        And another test_charm_2 (with creds on the same cloud) that is not yet integrated.
+    act: Integrate the test_charm_2 with the app.
+    assert: No additional image is created but instead the already created ones are reused.
+    ","119564","test_charm_another_app_does_not_rebuild_image","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
+"
+    arrange: A refreshed application.
+    act: Integrate the refreshed charm with the test charm.
+    assert: Image building is working.
+    ","543085","test_image_build","tests.integration","2025-11-17","passed","2025-11-17","","test_upgrade","",""
+"
+    arrange: A deployed active charm.
+    act: When openstack images are listed.
+    assert: An image is built successfully.
+    ","1982","test_build_image","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
+"
+    arrange: An active charm and a test charm that becomes active when valid relation data is set.
+    act: When the relation is joined.
+    assert: The test charm becomes active due to proper relation data.
+    ","791476","test_image_relation","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
+"
+    arrange: A deployed active charm and manually write something to the log file.
+    act: trigger logrotate manually
+    assert: The log is rotated successfully.
+    ","365203","test_log_rotated","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
+"
+    arrange: A deployed active charm.
+    act: Modify the crontab to run every minute.
+    assert: An image is built successfully.
+    ","476233","test_periodic_rebuilt","tests.integration","2025-11-17","passed","2025-11-17","","test_charm","",""
