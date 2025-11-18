@@ -123,6 +123,7 @@ def _download_base_image(
             timeout=60 * 20,
             stream=True,
         )  # nosec: B310, B113
+        request.raise_for_status()
     except requests.exceptions.HTTPError as exc:
         logger.exception("Failed to download base cloud image.")
         raise BaseImageDownloadError from exc
