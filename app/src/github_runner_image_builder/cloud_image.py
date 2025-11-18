@@ -154,6 +154,7 @@ def _fetch_shasums(base_image: BaseImage, release_date: date | None = None) -> d
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/SHA256SUMS",
             timeout=60 * 5,
         )
+        response.raise_for_status()
     except requests.RequestException as exc:
         logger.exception("Failed to download base cloud image SHA256SUMS file.")
         raise BaseImageDownloadError from exc
