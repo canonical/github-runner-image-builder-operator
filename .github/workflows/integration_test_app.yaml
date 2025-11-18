@@ -32,7 +32,7 @@ jobs:
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.14' 
+          python-version: "3.14"
       - name: Install tox
         run: |
           sudo apt-get update
@@ -42,34 +42,31 @@ jobs:
       - name: Run integration tests (amd64)
         if: matrix.arch == 'amd64'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_AMD64 }}
+          OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_AMD64 }}
         run: |
-         tox -e integration -- --arch amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_AMD64 }}
+          tox -e integration -- --arch amd64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_AMD64 }}
         working-directory: app
       - name: Run integration tests (arm64)
         if: matrix.arch == 'arm64'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
+          OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_ARM64 }}
         run: |
-         tox -e integration -- --arch arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_ARM64 }}
+          tox -e integration -- --arch arm64 --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_ARM64 }}
         working-directory: app
       - name: Run integration tests (s390x)
         if: matrix.arch == 's390x'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_S390X }}
+          OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_S390X }}
         run: |
-         tox -e integration -- --arch s390x --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_S390X }}
+          tox -e integration -- --arch s390x --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_S390X }}
         working-directory: app
       - name: Run integration tests (ppc64le)
         if: matrix.arch == 'ppc64le'
         env:
-            OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_PPC64LE }}
+          OPENSTACK_PASSWORD: ${{ secrets.OPENSTACK_PASSWORD_PPC64LE }}
         run: |
-         tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
+          tox -e integration -- --arch ppc64le --image=${{ matrix.image }} ${{ secrets.INTEGRATION_TEST_ARGS_APP_PPC64LE }}
         working-directory: app
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: canonical/action-tmate@main
   required_status_checks:
     name: Required Integration Test For Application Status Checks
     runs-on: ubuntu-latest
