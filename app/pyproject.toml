@@ -3,7 +3,7 @@
 
 [project]
 name = "github-runner-image-builder"
-version = "0.11.1"
+version = "0.11.2"
 authors = [
     { name = "Canonical IS DevOps", email = "is-devops-team@canonical.com" },
 ]
@@ -32,7 +32,7 @@ dependencies = { file = ["requirements.txt"] }
 
 [tool.pydocstyle]
 match = "src/github_runner_image_builder/cli.py"
-ignore = ["D301"] # ignore backshlashes in docstring - click lib uses them.
+ignore = ["D301"]                                # ignore backshlashes in docstring - click lib uses them.
 
 
 [tool.bandit]
