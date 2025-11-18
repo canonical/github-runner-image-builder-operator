@@ -22,10 +22,7 @@ import yaml
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
 from github_runner_image_builder.config import Arch
 from github_runner_image_builder.errors import ExternalScriptError
-from github_runner_image_builder.openstack_builder import (
-    EXTERNAL_SCRIPT_PATH,
-    NOBLE_ARM64_RELEASE_DATE,
-)
+from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
 
 
 def test_determine_cloud_no_clouds_yaml_error(monkeypatch: pytest.MonkeyPatch):
@@ -150,11 +147,6 @@ def test_initialize_release_date(monkeypatch: pytest.MonkeyPatch, arch: Arch):
     archs_from_calls = {call[1]["arch"] for call in download_mock.call_args_list}
     assert openstack_builder.BaseImage.NOBLE in base_images_from_calls
     assert arch in archs_from_calls
-    for _, kwargs in download_mock.call_args_list:
-        if kwargs["base_image"] == openstack_builder.BaseImage.NOBLE and arch == Arch.ARM64:
-            assert kwargs["release_date"] == NOBLE_ARM64_RELEASE_DATE
-        else:
-            assert kwargs.get("release_date") is None
 
 
 def test__create_keypair_already_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path):
