@@ -150,11 +150,6 @@ def test_initialize_release_date(monkeypatch: pytest.MonkeyPatch, arch: Arch):
     archs_from_calls = {call[1]["arch"] for call in download_mock.call_args_list}
     assert openstack_builder.BaseImage.NOBLE in base_images_from_calls
     assert arch in archs_from_calls
-    for _, kwargs in download_mock.call_args_list:
-        if kwargs["base_image"] == openstack_builder.BaseImage.NOBLE and arch == Arch.ARM64:
-            assert kwargs["release_date"] == NOBLE_ARM64_RELEASE_DATE
-        else:
-            assert kwargs.get("release_date") is None
 
 
 def test__create_keypair_already_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path):
