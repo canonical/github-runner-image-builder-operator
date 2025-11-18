@@ -69,7 +69,7 @@ MIN_RAM = 1024  # M
 MIN_DISK = 20  # G
 
 # We saw an issue with arm noble images with the latest release date, so we are using a fixed date.
-NOBLE_ARM64_RELEASE_DATE = date(2025, 7, 25)
+NOBLE_ARM64_RELEASE_DATE = date(2025, 11, 13)
 
 
 def determine_cloud(cloud_name: str | None = None) -> str:
