@@ -22,10 +22,7 @@ import yaml
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
 from github_runner_image_builder.config import Arch
 from github_runner_image_builder.errors import ExternalScriptError
-from github_runner_image_builder.openstack_builder import (
-    EXTERNAL_SCRIPT_PATH,
-    NOBLE_ARM64_RELEASE_DATE,
-)
+from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
 
 
 def test_determine_cloud_no_clouds_yaml_error(monkeypatch: pytest.MonkeyPatch):
