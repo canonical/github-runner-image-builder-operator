@@ -1,7 +1,8 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#165 fix: raise on image download/SHASUM download failure](https://github.com/canonical/github-runner-image-builder-operator/pull/165) (2025-11-18)
-> Catch image/SHASUM download failure early to handle error early in the pipeline.
+* Catch image/SHASUM download failure early to handle error early in the pipeline.
+* Unpin ARM64 base image and use latest.
 
 ## [#160 fix: run install YQ in bare cloud-init environment](https://github.com/canonical/github-runner-image-builder-operator/pull/160) (2025-10-15)
 > Fix `install_yq` function silently failing.
