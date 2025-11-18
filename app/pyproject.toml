@@ -32,7 +32,7 @@ dependencies = { file = ["requirements.txt"] }
 
 [tool.pydocstyle]
 match = "src/github_runner_image_builder/cli.py"
-ignore = ["D301"]                                # ignore backshlashes in docstring - click lib uses them.
+ignore = ["D301"] # ignore backshlashes in docstring - click lib uses them.
 
 
 [tool.bandit]
