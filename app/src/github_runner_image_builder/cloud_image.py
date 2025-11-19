@@ -123,6 +123,7 @@ def _download_base_image(
             timeout=60 * 20,
             stream=True,
         )  # nosec: B310, B113
+        request.raise_for_status()
     except requests.exceptions.HTTPError as exc:
         logger.exception("Failed to download base cloud image.")
         raise BaseImageDownloadError from exc
@@ -154,6 +155,7 @@ def _fetch_shasums(base_image: BaseImage, release_date: date | None = None) -> d
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/SHA256SUMS",
             timeout=60 * 5,
         )
+        response.raise_for_status()
     except requests.RequestException as exc:
         logger.exception("Failed to download base cloud image SHA256SUMS file.")
         raise BaseImageDownloadError from exc

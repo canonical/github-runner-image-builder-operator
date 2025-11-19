@@ -69,7 +69,7 @@ MIN_RAM = 1024  # M
 MIN_DISK = 20  # G
 
 # We saw an issue with arm noble images with the latest release date, so we are using a fixed date.
-NOBLE_ARM64_RELEASE_DATE = date(2025, 7, 25)
+NOBLE_ARM64_RELEASE_DATE = date(2025, 11, 13)
 
 
 def determine_cloud(cloud_name: str | None = None) -> str:
@@ -127,7 +127,11 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         arch=arch, base_image=BaseImage.JAMMY
     )
     logger.info("Downloading Noble image.")
-    noble_release_date = NOBLE_ARM64_RELEASE_DATE if arch == Arch.ARM64 else None
+    # 2025/11/18 We've seen issues with the latest noble arm64 image, the decision is to keep the
+    # option to pin a specific release date if needed in the future. The comment code snippet below
+    # is kept for reference. If we want to pin a specific date again, we can expose it as a config
+    # option on the charm side to enable it on the operations side.
+    noble_release_date = None  # NOBLE_ARM64_RELEASE_DATE if arch == Arch.ARM64 else None
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
     )
