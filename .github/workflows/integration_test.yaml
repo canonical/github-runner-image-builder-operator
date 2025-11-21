@@ -2,14 +2,18 @@ name: Integration tests
 
 on:
   pull_request:
+  schedule:
+  - cron: "0 15 * * SAT"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || 
+    github.ref }}
   cancel-in-progress: true
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       juju-channel: 3.6/stable
@@ -20,7 +24,7 @@ jobs:
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
   allure-report:
-    if: always() && !cancelled()
+    if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
     needs:
-      - integration-tests
+    - integration-tests
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
