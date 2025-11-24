@@ -77,14 +77,14 @@ class _Secret:
 
 
 @pytest.fixture(scope="module", name="charm_file")
-def charm_file_fixture(pytestconfig: pytest.Config, series: str) -> Path:
+def charm_file_fixture(pytestconfig: pytest.Config, series: str) -> str:
     """Path to the built charm."""
     charm = pytestconfig.getoption("--charm-file")[0]
     assert charm, "Please specify the --charm-file command line option"
     charm_dir = Path(f"./{charm}").parent
     charm_matching_series = list(charm_dir.rglob(f"*{series}*.charm"))
     assert charm_matching_series, f"No build found for series {series}"
-    return charm_matching_series[0]
+    return f"./{charm_matching_series[0]}"
 
 
 @pytest.fixture(scope="module", name="proxy")
