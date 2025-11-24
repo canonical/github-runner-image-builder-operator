@@ -79,3 +79,7 @@ config:
 requires:
   image:
     interface: github_runner_image_v0
+
+parts:
+  charm:
+    plugin: charm
