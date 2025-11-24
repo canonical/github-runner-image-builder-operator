@@ -40,22 +40,13 @@ parts:
       tar -cvzf app.tar.gz app
       cp app.tar.gz /root/stage
     organize:
-        app.tar.gz: app.tar.gz
+      app.tar.gz: app.tar.gz
     prime:
-        - app.tar.gz
+      - app.tar.gz
 
-
-bases:
-  - build-on:
-      - name: ubuntu
-        channel: "22.04"
-        architectures:
-          - amd64
-    run-on:
-      - name: ubuntu
-        channel: "22.04"
-        architectures:
-          - amd64
+platforms:
+  ubuntu@22.04:amd64:
+  ubuntu@24.04:amd64:
 
 actions:
   run:

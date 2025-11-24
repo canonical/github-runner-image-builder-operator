@@ -116,13 +116,19 @@ def dispatch_time_fixture():
     return datetime.now(tz=timezone.utc)
 
 
+@pytest.fixture(name="series", scope="module")
+def series_fixture():
+    """Series version for deploying any-charm."""
+    return subprocess.check_output(["lsb_release", "-rs"]).strip().decode("utf-8")
+
+
 @pytest.fixture(scope="module", name="test_charm_file")
-def test_charm_file_fixture() -> str:
+def test_charm_file_fixture(series: str) -> str:
     """Build the charm and return the path to the built charm."""
     subprocess.check_call(  # nosec: B603
         ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
     )
-    return "./test_ubuntu-22.04-amd64.charm"
+    return f"./test_ubuntu-{series}-amd64.charm"
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
