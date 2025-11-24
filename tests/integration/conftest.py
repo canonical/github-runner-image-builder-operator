@@ -83,7 +83,7 @@ def charm_file_fixture(pytestconfig: pytest.Config, series: str) -> Path:
     assert charm, "Please specify the --charm-file command line option"
     charm_dir = Path(f"./{charm}").parent
     charm_matching_series = list(charm_dir.rglob(f"*{series}*.charm"))
-    assert charm_matching_series is not None, f"No build found for series {series}"
+    assert charm_matching_series, f"No build found for series {series}"
     return charm_matching_series[0]
 
 
