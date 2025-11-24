@@ -119,7 +119,12 @@ def dispatch_time_fixture():
 @pytest.fixture(name="series", scope="module")
 def series_fixture():
     """Series version for deploying any-charm."""
-    return subprocess.check_output(["lsb_release", "-rs"]).strip().decode("utf-8")
+    return (
+        # Ignore B603 since this is a trusted subprocess call
+        subprocess.check_output(["/usr/bin/lsb_release", "-rs"])  # nosec: B603
+        .strip()
+        .decode("utf-8")
+    )
 
 
 @pytest.fixture(scope="module", name="test_charm_file")
