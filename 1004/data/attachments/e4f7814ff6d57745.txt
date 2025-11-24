@@ -1,0 +1,11 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model            Controller           Cloud/Region         Version  SLA          Timestamp
+test-charm-mww6  github-pr-0f613-lxd  localhost/localhost  3.6.11   unsupported  07:32:09Z
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
+[32mINFO    [0m tests.integration.conftest:conftest.py:464 Cleaning up keypair.
+[32mINFO    [0m tests.integration.conftest:conftest.py:466 Keypair deleted.

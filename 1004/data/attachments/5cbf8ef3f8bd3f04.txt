@@ -1,0 +1,7 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:762 Adding model github-pr-0f613-lxd:test-charm-mww6 on cloud localhost
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[32mINFO    [0m tests.integration.conftest:conftest.py:104 Setting model proxy: http://egress.ps7.internal:3128
+[32mINFO    [0m tests.integration.conftest:conftest.py:390 Deploying image builder: 2025-11-24 07:32:09.090421+00:00
