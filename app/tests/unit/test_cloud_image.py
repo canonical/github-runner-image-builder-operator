@@ -16,11 +16,11 @@ import pytest
 
 from github_runner_image_builder import cloud_image
 from github_runner_image_builder.cloud_image import (
+    CLOUD_IMAGE_DOWNLOAD_TIMEOUT,
+    SHA256SUMS_DOWNLOAD_TIMEOUT,
     Arch,
     BaseImage,
     BaseImageDownloadError,
-    CLOUD_IMAGE_DOWNLOAD_TIMEOUT,
-    SHA256SUMS_DOWNLOAD_TIMEOUT,
     SupportedBaseImageArch,
     UnsupportedArchitectureError,
 )
