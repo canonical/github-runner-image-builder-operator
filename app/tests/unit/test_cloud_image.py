@@ -19,6 +19,8 @@ from github_runner_image_builder.cloud_image import (
     Arch,
     BaseImage,
     BaseImageDownloadError,
+    CLOUD_IMAGE_DOWNLOAD_TIMEOUT,
+    SHA256SUMS_DOWNLOAD_TIMEOUT,
     SupportedBaseImageArch,
     UnsupportedArchitectureError,
 )
@@ -249,7 +251,7 @@ def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_
     # pylint does not recognize this as a requests mock
     cloud_image.requests.get.assert_called_once_with(  # pylint:disable=no-member
         "https://cloud-images.ubuntu.com/jammy/20250725/jammy-server-cloudimg-arm64.img",
-        timeout=60 * 30,
+        timeout=CLOUD_IMAGE_DOWNLOAD_TIMEOUT,
         stream=True,
     )
 
@@ -321,7 +323,7 @@ test_shasum3 *file3
     # pylint does not recognize this as a requests mock
     cloud_image.requests.get.assert_called_once_with(  # pylint:disable=no-member
         "https://cloud-images.ubuntu.com/focal/20240102/SHA256SUMS",
-        timeout=60 * 5,
+        timeout=SHA256SUMS_DOWNLOAD_TIMEOUT,
     )
 
 
