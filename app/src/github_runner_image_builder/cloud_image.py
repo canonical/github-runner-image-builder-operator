@@ -120,7 +120,7 @@ def _download_base_image(
         request = requests.get(
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",
-            timeout=60 * 20,
+            timeout=60 * 30,
             stream=True,
         )  # nosec: B310, B113
         request.raise_for_status()

@@ -249,7 +249,7 @@ def test__download_base_image_release_date(monkeypatch: pytest.MonkeyPatch, tmp_
     # pylint does not recognize this as a requests mock
     cloud_image.requests.get.assert_called_once_with(  # pylint:disable=no-member
         "https://cloud-images.ubuntu.com/jammy/20250725/jammy-server-cloudimg-arm64.img",
-        timeout=60 * 20,
+        timeout=60 * 30,
         stream=True,
     )
 
