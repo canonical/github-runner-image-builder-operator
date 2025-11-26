@@ -60,9 +60,19 @@ BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
 EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
 
-CREATE_SERVER_TIMEOUT = 20 * 60  # seconds
-DELETE_SERVER_TIMEOUT = 20 * 60  # seconds
-SHUTOFF_SERVER_TIMEOUT = 10 * 60  # seconds
+# Server operation timeout constants (in seconds)
+CREATE_SERVER_TIMEOUT = 20 * 60  # 20 minutes
+DELETE_SERVER_TIMEOUT = 20 * 60  # 20 minutes
+SHUTOFF_SERVER_TIMEOUT = 10 * 60  # 10 minutes
+
+# SSH and cloud-init timeout constants (in seconds)
+CLOUD_INIT_WAIT_TIMEOUT = 60 * 30  # 30 minutes
+SSH_CONNECT_TIMEOUT = 30  # 30 seconds
+SSH_TEST_COMMAND_TIMEOUT = 30  # 30 seconds
+
+# External script execution timeout constants (in seconds)
+EXTERNAL_SCRIPT_GENERAL_TIMEOUT = 2 * 60  # 2 minutes
+EXTERNAL_SCRIPT_RUN_TIMEOUT = 60 * 60  # 60 minutes
 
 MIN_CPU = 2
 MIN_RAM = 1024  # M
@@ -574,7 +584,9 @@ def _wait_for_cloud_init_complete(
         Whether the cloud init is complete. Used for tenacity retry to pick up return value.
     """
     try:
-        result: fabric.Result | None = ssh_conn.run("cloud-init status --wait", timeout=60 * 30)
+        result: fabric.Result | None = ssh_conn.run(
+            "cloud-init status --wait", timeout=CLOUD_INIT_WAIT_TIMEOUT
+        )
     except invoke.exceptions.UnexpectedExit as exc:
         log_out = conn.get_server_console(server=server)
         logger.error("Cloud init output: %s", log_out)
@@ -600,38 +612,36 @@ def _execute_external_script(
     Raises:
         ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
     """
-    general_timeout_in_minutes = 2
-    script_run_timeout_in_minutes = 60
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
     disable_sudo_log_cmd = Command(
         name="Disable sudo log",
         command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
-        timeout=general_timeout_in_minutes,
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
     script_setup_cmd = Command(
         name="Download the external script and set permissions",
         command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
         f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}",
-        timeout=general_timeout_in_minutes,
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
     script_run_cmd = Command(
         name="Run the external script using the secrets provided as environment variables",
         command=f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
-        timeout=script_run_timeout_in_minutes,
+        timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
         env=script_secrets,
     )
     script_rm_cmd = Command(
         name="Remove the external script",
         command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
-        timeout=general_timeout_in_minutes,
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
     enable_sudo_log_cmd = Command(
         name="Enable sudo log",
         command="sudo rm /etc/sudoers.d/99-no-syslog",
-        timeout=general_timeout_in_minutes,
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
 
@@ -644,7 +654,7 @@ def _execute_external_script(
             enable_sudo_log_cmd,
         ):
             logger.info("Running command via ssh: %s", cmd.name)
-            ssh_conn.run(cmd.command, timeout=cmd.timeout * 60, warn=False, env=cmd.env)
+            ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
@@ -699,10 +709,10 @@ def _get_ssh_connection(
                 host=ip,
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key)},
-                connect_timeout=30,
+                connect_timeout=SSH_CONNECT_TIMEOUT,
             )
             result: fabric.Result | None = connection.run(
-                "echo hello world", warn=True, timeout=30
+                "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT
             )
             if not result or not result.ok:
                 logger.warning(
