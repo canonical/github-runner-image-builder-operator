@@ -1,0 +1,13 @@
+[32mINFO    [0m tests.integration.conftest:conftest.py:178 Deploying built test charm
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:test-1
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-09aa7877/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-09aa7877/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  test2-09aa7877/0 [allocating] waiting: waiting for machine
+[32mINFO    [0m tests.integration.helpers:helpers.py:62 Image name: image-builder-operator-09aa7877-noble-x64, Images: (('2ac6e654-8b55-4970-8927-fa9c17323e93', 'image-builder-operator-09aa7877-noble-x64', '2025-11-29T15:43:33Z'), ('14338a20-b3ed-42b0-b18f-1df4bb9391c5', 'image-builder-operator-09aa7877-noble-x64', '2025-11-29T15:40:28Z'))
+[32mINFO    [0m tests.integration.helpers:helpers.py:68 Dispatch time: 2025-11-29 15:46:01.929832+00:00
+[32mINFO    [0m tests.integration.test_charm:test_charm.py:109 Test charm unit data: {"test-09aa7877/0":{"machine":"1","opened-ports":null,"public-address":"10.232.24.191","charm":"local:test-0","leader":true,"life":"alive","relation-info":[{"relation-id":0,"endpoint":"image","related-endpoint":"image","application-data":{},"local-unit":{"in-scope":false,"data":null},"related-units":{"image-builder-operator-09aa7877/0":{"in-scope":true,"data":{"egress-subnets":"10.232.24.221/32","id":"2ac6e654-8b55-4970-8927-fa9c17323e93","images":"[{\"id\": \"2ac6e654-8b55-4970-8927-fa9c17323e93\", \"tags\": \"x64,noble\"}]","ingress-address":"10.232.24.221","private-address":"10.232.24.221","tags":"x64,noble"}}}}]}}
+
+[32mINFO    [0m tests.integration.test_charm:test_charm.py:116 Test charm 2 unit data: {"test2-09aa7877/0":{"machine":"2","opened-ports":null,"public-address":"10.232.24.95","charm":"local:test-1","leader":true,"life":"alive","relation-info":[{"relation-id":3,"endpoint":"image","related-endpoint":"image","application-data":{},"local-unit":{"in-scope":false,"data":null},"related-units":{"image-builder-operator-09aa7877/0":{"in-scope":true,"data":{"egress-subnets":"10.232.24.221/32","id":"2ac6e654-8b55-4970-8927-fa9c17323e93","images":"[{\"id\": \"2ac6e654-8b55-4970-8927-fa9c17323e93\", \"tags\": \"x64,noble\"}]","ingress-address":"10.232.24.221","private-address":"10.232.24.221","tags":"x64,noble"}}}}]}}
