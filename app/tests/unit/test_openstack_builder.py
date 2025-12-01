@@ -774,6 +774,8 @@ main" > /etc/apt/sources.list.d/github-cli.list
 
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
+    echo "Upgrading apt packages"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
     echo "Installing linux-generic-hwe-${{hwe_version}}"

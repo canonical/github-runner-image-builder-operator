@@ -1,5 +1,8 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
+* Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
+
 ## [#165 fix: raise on image download/SHASUM download failure](https://github.com/canonical/github-runner-image-builder-operator/pull/165) (2025-11-18)
 * Catch image/SHASUM download failure early to handle error early in the pipeline.
 * Unpin ARM64 base image and use latest.

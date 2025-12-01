@@ -18,6 +18,9 @@ from github_runner_image_builder.errors import OpenstackError, UploadImageError
 
 logger = logging.getLogger(__name__)
 
+# Timeout constants (in seconds)
+SNAPSHOT_CREATION_TIMEOUT = 60 * 30  # 30 minutes
+
 
 def create_snapshot(
     cloud_name: str, image_name: str, server: Server, keep_revisions: int
@@ -40,7 +43,7 @@ def create_snapshot(
         try:
             logger.info("Creating image snapshot, %s %s", image_name, server.name)
             image: Image = connection.create_image_snapshot(
-                name=image_name, server=server.id, wait=True, timeout=60 * 30
+                name=image_name, server=server.id, wait=True, timeout=SNAPSHOT_CREATION_TIMEOUT
             )
             logger.info("Pruning older snapshots, %s keeping %s.", image_name, keep_revisions)
             _prune_old_images(
