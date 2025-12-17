@@ -1,8 +1,8 @@
 
-## 2025-12-17
-
-- Moved charm-architecture.md from Explanation to Reference category.
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
+
+## [#178 chore: migrate architecture docs](https://github.com/canonical/github-runner-image-builder-operator/pull/178) (2025-12-17)
+- Moved charm-architecture.md from Explanation to Reference category.
 
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
