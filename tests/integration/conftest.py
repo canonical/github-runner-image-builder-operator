@@ -5,7 +5,6 @@
 import functools
 import json
 import logging
-import multiprocessing
 import os
 import secrets
 import string
@@ -78,11 +77,14 @@ class _Secret:
 
 
 @pytest.fixture(scope="module", name="charm_file")
-def charm_file_fixture(pytestconfig: pytest.Config) -> str:
+def charm_file_fixture(pytestconfig: pytest.Config, series: str) -> str:
     """Path to the built charm."""
     charm = pytestconfig.getoption("--charm-file")[0]
     assert charm, "Please specify the --charm-file command line option"
-    return f"./{charm}"
+    charm_dir = Path(f"./{charm}").parent
+    charm_matching_series = list(charm_dir.rglob(f"*{series}*.charm"))
+    assert charm_matching_series, f"No build found for series {series}"
+    return f"./{charm_matching_series[0]}"
 
 
 @pytest.fixture(scope="module", name="proxy")
@@ -116,13 +118,24 @@ def dispatch_time_fixture():
     return datetime.now(tz=timezone.utc)
 
 
+@pytest.fixture(name="series", scope="module")
+def series_fixture():
+    """Series version for deploying any-charm."""
+    return (
+        # Ignore B603 since this is a trusted subprocess call
+        subprocess.check_output(["/usr/bin/lsb_release", "-rs"])  # nosec: B603
+        .strip()
+        .decode("utf-8")
+    )
+
+
 @pytest.fixture(scope="module", name="test_charm_file")
-def test_charm_file_fixture() -> str:
+def test_charm_file_fixture(series: str) -> str:
     """Build the charm and return the path to the built charm."""
     subprocess.check_call(  # nosec: B603
         ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
     )
-    return "./test_ubuntu-22.04-amd64.charm"
+    return f"./test_ubuntu-{series}-amd64.charm"
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm")
@@ -367,20 +380,9 @@ def app_config_fixture(
     }
 
 
-@pytest.fixture(scope="module", name="base_machine_constraint")
-def base_machine_constraint_fixture() -> str:
-    """The base machine constraint."""
-    num_cores = max(1, multiprocessing.cpu_count() - 1)
-    base_machine_constraint = (
-        f"arch=amd64 cores={num_cores} mem=4G root-disk=20G virt-type=virtual-machine"
-    )
-    return base_machine_constraint
-
-
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
     app_config: dict,
-    base_machine_constraint: str,
     test_configs: TestConfigs,
     script_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
@@ -389,7 +391,6 @@ async def app_fixture(
     app: Application = await test_configs.model.deploy(
         test_configs.charm_file,
         application_name=f"image-builder-operator-{test_configs.test_id}",
-        constraints=base_machine_constraint,
         config=app_config,
     )
     await app.model.grant_secret(script_secret.name, app.name)
@@ -413,7 +414,6 @@ async def app_fixture(
 async def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
-    base_machine_constraint: str,
     ops_test,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
@@ -436,7 +436,6 @@ async def app_on_charmhub_fixture(
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
-        constraints=base_machine_constraint,
         config=charmhub_app_config,
         channel=charmhub_channel,
     )
