@@ -28,7 +28,7 @@ jobs:
           - image: jammy
             arch: s390x
     steps:
-      - uses: actions/checkout@v6.0.0
+      - uses: actions/checkout@v6.0.1
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/setup-python@v6
         with:
