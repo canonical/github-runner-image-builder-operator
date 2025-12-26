@@ -14,7 +14,9 @@ import state
 logger = logging.getLogger(__name__)
 
 
-class GithubRunnerImageBuilderCharmProtocol(typing.Protocol):  # pylint: disable=too-few-public-methods
+class GithubRunnerImageBuilderCharmProtocol(
+    typing.Protocol
+):  # pylint: disable=too-few-public-methods
     """Protocol to use for the decorator to block if invalid."""
 
     def update_status(self, status: ops.StatusBase) -> None:

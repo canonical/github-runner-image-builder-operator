@@ -25,6 +25,9 @@ def harness_fixture():
     harness = Harness(GithubRunnerImageBuilderCharm)
     harness.begin()
 
+    # Add aproxy relation to avoid validation errors in decorator
+    harness.add_relation("juju-info", "aproxy")
+
     # Replace config_changed handler temporarily.
     config_changed_handler = harness.charm._on_config_changed
     harness.charm._on_config_changed = MagicMock()

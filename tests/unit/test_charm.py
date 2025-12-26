@@ -15,7 +15,6 @@ from ops import RelationChangedEvent
 import builder
 import charm as charm_module
 import image
-import proxy
 import state
 from app.src.github_runner_image_builder.logging import LOG_FILE_PATH
 from charm import GithubRunnerImageBuilderCharm
@@ -81,7 +80,6 @@ def test_hooks_that_trigger_run_for_all_clouds(
     act: when the hook is called.
     assert: the charm falls into ActiveStatus
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
 
     getattr(charm, hook)(MagicMock())
 
@@ -137,7 +135,6 @@ def test_installation(
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
     charm._setup_logrotate = (logrotate_setup_mock := MagicMock())
 
@@ -157,7 +154,6 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -192,7 +188,6 @@ def test__on_image_relation_changed_image_already_in_cloud(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and no run is triggered but image data is updated
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -235,7 +230,6 @@ def test__on_image_relation_changed_no_unit_auth_data(
     act: when _on_image_relation_changed is called.
     assert: charm is not building image
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
 
     monkeypatch.setattr(
@@ -307,4 +301,37 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     assert str(LOG_FILE_PATH) in logrotate_config
     mock_check_call.assert_called_once_with(
         ["/usr/sbin/logrotate", str(logrotate_path), "--debug"]
+    )
+
+
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("_on_install", id="_on_install"),
+        pytest.param("_on_upgrade_charm", id="_on_upgrade_charm"),
+        pytest.param("_on_config_changed", id="_on_config_changed"),
+        pytest.param("_on_run", id="_on_run"),
+        pytest.param("_on_run_action", id="_on_run_action"),
+        pytest.param("_on_image_relation_changed", id="_on_image_relation_changed"),
+    ],
+)
+def test_block_on_aproxy_not_integrated(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, hook: str
+):
+    """
+    arrange: given proxy data is configured but aproxy is not integrated.
+    act: when a hook is called.
+    assert: charm is in blocked status with aproxy integration message.
+    """
+    # Mock proxy data to be present
+    monkeypatch.setattr(state.ProxyConfig, "from_env", MagicMock(return_value=MagicMock()))
+    # Mock get_relation to return None (aproxy not integrated)
+    charm.model.get_relation = MagicMock(return_value=None)
+
+    getattr(charm, hook)(MagicMock())
+
+    assert charm.unit.status == ops.BlockedStatus(
+        "aproxy integration required when proxy is configured. "
+        "Please integrate with aproxy using: "
+        "juju integrate aproxy github-runner-image-builder"
     )

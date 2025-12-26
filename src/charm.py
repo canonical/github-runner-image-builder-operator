@@ -105,9 +105,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following lines should be covered by integration tests.
         builder.install_clouds_yaml(  # pragma: no cover
@@ -126,9 +124,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
         if not evt.unit:
-            logger.info(
-                "No unit in image relation changed event. Skipping image building."
-            )
+            logger.info("No unit in image relation changed event. Skipping image building.")
             return
         if not (
             clouds_auth_config := state.CloudsAuthConfig.from_unit_relation_data(
@@ -166,9 +162,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
@@ -182,9 +176,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event: The run action event.
         """
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(
-            cloud_config=builder_config_state.cloud_config
-        ):
+        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             event.fail("Image relation not yet ready.")
             return
         # The following line should be covered by the integration test.
@@ -240,9 +232,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             Whether the image relation is ready.
         """
         if not cloud_config.upload_cloud_ids:
-            self.unit.status = ops.BlockedStatus(
-                f"{state.IMAGE_RELATION} integration required."
-            )
+            self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
             return False
         return True
 
@@ -313,9 +303,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             bases=builder_config.image_config.bases,
         )
 
-    def _get_static_config(
-        self, builder_config: state.BuilderConfig
-    ) -> builder.StaticConfigs:
+    def _get_static_config(self, builder_config: state.BuilderConfig) -> builder.StaticConfigs:
         """Transform builder_config state to builder static configuration.
 
         Args:
