@@ -4,6 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
+
 import json
 import logging
 
@@ -21,7 +22,6 @@ from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 import builder
 import charm_utils
 import image
-import proxy
 import state
 
 LOG_FILE_DIR = Path("/var/log/github-runner-image-builder")
@@ -71,9 +71,11 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self.framework.observe(self.on.run, self._on_run)
         self.framework.observe(self.on.run_action, self._on_run_action)
         self.framework.observe(
-            self.on[state.IMAGE_RELATION].relation_changed, self._on_image_relation_changed
+            self.on[state.IMAGE_RELATION].relation_changed,
+            self._on_image_relation_changed,
         )
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_install(self, _: ops.InstallEvent) -> None:
         """Handle installation of the charm.
@@ -86,6 +88,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self._setup_logrotate()
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
         """Handle charm upgrade events.
@@ -97,29 +100,35 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self._setup_logrotate()
         self.unit.status = ops.ActiveStatus()
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
+        if not self._is_any_image_relation_ready(
+            cloud_config=builder_config_state.cloud_config
+        ):
             return
         # The following lines should be covered by integration tests.
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
         builder.install_clouds_yaml(  # pragma: no cover
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
         if builder.configure_cron(  # pragma: no cover
-            unit_name=self.unit.name, interval=builder_config_state.app_config.build_interval
+            unit_name=self.unit.name,
+            interval=builder_config_state.app_config.build_interval,
         ):
             self._run()
         self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
         if not evt.unit:
-            logger.info("No unit in image relation changed event. Skipping image building.")
+            logger.info(
+                "No unit in image relation changed event. Skipping image building."
+            )
             return
         if not (
             clouds_auth_config := state.CloudsAuthConfig.from_unit_relation_data(
@@ -131,7 +140,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 evt.unit.name,
             )
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
@@ -153,15 +161,19 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
+        if not self._is_any_image_relation_ready(
+            cloud_config=builder_config_state.cloud_config
+        ):
             return
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
 
+    @charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
         """Handle the run action event.
@@ -170,7 +182,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event: The run action event.
         """
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
-        if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
+        if not self._is_any_image_relation_ready(
+            cloud_config=builder_config_state.cloud_config
+        ):
             event.fail("Image relation not yet ready.")
             return
         # The following line should be covered by the integration test.
@@ -178,7 +192,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
     def _setup_builder(self) -> None:
         """Set up the builder application."""
-        proxy.setup(proxy=state.ProxyConfig.from_env())
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
@@ -227,7 +240,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             Whether the image relation is ready.
         """
         if not cloud_config.upload_cloud_ids:
-            self.unit.status = ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
+            self.unit.status = ops.BlockedStatus(
+                f"{state.IMAGE_RELATION} integration required."
+            )
             return False
         return True
 
@@ -244,7 +259,8 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         start_ts = time.time()
         self.unit.status = ops.ActiveStatus("Building image.")
         logger.info(
-            "Building image and uploading to %s.", (cloud_id if cloud_id else "all clouds")
+            "Building image and uploading to %s.",
+            (cloud_id if cloud_id else "all clouds"),
         )
         configs = self._get_configs()
         static_config = configs.static_config
@@ -297,7 +313,9 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             bases=builder_config.image_config.bases,
         )
 
-    def _get_static_config(self, builder_config: state.BuilderConfig) -> builder.StaticConfigs:
+    def _get_static_config(
+        self, builder_config: state.BuilderConfig
+    ) -> builder.StaticConfigs:
         """Transform builder_config state to builder static configuration.
 
         Args:
