@@ -378,7 +378,7 @@ def base_machine_constraint_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(
+async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     app_config: dict,
     proxy: ProxyConfig,
     base_machine_constraint: str,
@@ -403,7 +403,7 @@ async def app_fixture(
             state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
         }
     )
-    
+
     if proxy.http:
         aproxy_app: Application = await request.getfixturevalue("aproxy")
         await test_configs.model.relate(f"{aproxy_app.name}:juju-info", f"{app.name}:juju-info")
@@ -417,7 +417,7 @@ async def app_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="aproxy")
-async def aproxy_fixture(test_configs: TestConfigs, app: Application) -> AsyncGenerator[Application, None]:
+async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Application, None]:
     """Deploy and integrate aproxy with the image builder charm."""
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
