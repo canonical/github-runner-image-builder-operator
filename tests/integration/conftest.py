@@ -380,9 +380,11 @@ def base_machine_constraint_fixture() -> str:
 @pytest_asyncio.fixture(scope="module", name="app")
 async def app_fixture(
     app_config: dict,
+    proxy: ProxyConfig,
     base_machine_constraint: str,
     test_configs: TestConfigs,
     script_secret: _Secret,
+    request,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -401,12 +403,31 @@ async def app_fixture(
             state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
         }
     )
-    # This takes long due to having to wait for the machine to come up.
-    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
+    
+    if proxy.http:
+        aproxy_app: Application = await request.getfixturevalue("aproxy")
+        await test_configs.model.relate(f"{aproxy_app.name}:juju-info", f"{app.name}:juju-info")
+        await test_configs.model.wait_for_idle(
+            apps=[aproxy_app.name, app.name], idle_period=30, timeout=30 * 60
+        )
 
     yield app
 
     await test_configs.model.remove_application(app_name=app.name)
+
+
+@pytest_asyncio.fixture(scope="module", name="aproxy")
+async def aproxy_fixture(test_configs: TestConfigs, app: Application) -> AsyncGenerator[Application, None]:
+    """Deploy and integrate aproxy with the image builder charm."""
+    aproxy_app: Application = await test_configs.model.deploy(
+        "aproxy",
+        application_name=f"aproxy-{test_configs.test_id}",
+        channel="latest/edge",
+    )
+
+    yield aproxy_app
+
+    await test_configs.model.remove_application(app_name=aproxy_app.name)
 
 
 @pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
