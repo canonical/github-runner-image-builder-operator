@@ -392,6 +392,7 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
         test_configs.charm_file,
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
+        base="ubuntu@22.04",
         config=app_config,
     )
     await app.model.grant_secret(script_secret.name, app.name)
@@ -417,15 +418,12 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
 
 
 @pytest_asyncio.fixture(scope="module", name="aproxy")
-async def aproxy_fixture(
-    test_configs: TestConfigs,
-    base_machine_constraint: str,
-) -> AsyncGenerator[Application, None]:
+async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Application, None]:
     """Deploy and integrate aproxy with the image builder charm."""
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
-        constraints=base_machine_constraint,
+        base="ubuntu@22.04",
         channel="latest/edge",
     )
 
