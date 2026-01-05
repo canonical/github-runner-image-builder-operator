@@ -417,11 +417,15 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
 
 
 @pytest_asyncio.fixture(scope="module", name="aproxy")
-async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Application, None]:
+async def aproxy_fixture(
+    test_configs: TestConfigs,
+    base_machine_constraint: str,
+) -> AsyncGenerator[Application, None]:
     """Deploy and integrate aproxy with the image builder charm."""
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
+        constraints=base_machine_constraint,
         channel="latest/edge",
     )
 
