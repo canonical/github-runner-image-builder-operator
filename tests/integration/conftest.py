@@ -424,6 +424,7 @@ async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Applicatio
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
         base="ubuntu@22.04",
+        force=True,
         channel="latest/edge",
     )
 
