@@ -392,7 +392,7 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
         test_configs.charm_file,
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        base="ubuntu@22.04",
+        series="jammy",
         config=app_config,
     )
     await app.model.grant_secret(script_secret.name, app.name)
@@ -423,9 +423,7 @@ async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Applicatio
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
-        base="ubuntu@22.04",
-        force=True,
-        channel="latest/edge",
+        series="jammy",
     )
 
     yield aproxy_app
