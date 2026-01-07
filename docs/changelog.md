@@ -2,7 +2,7 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#181 ISD-3652-aproxy](https://github.com/canonical/github-runner-image-builder-operator/pull/181) (2026-01-07)
-* Remove installation of aproxy inside the github image builder to use the aproxy charm instead.
+* Remove installation of aproxy inside the GH runner image builder to use the aproxy charm instead.
 
 ### Breaking changes
 * Upgrade of the charm might cause the charm to go into a blocked state. In that case, aproxy charm 
@@ -33,7 +33,7 @@ must be installed and integrated with the image builder.
 
 ### Bug Fixes
 
-* The proxy configuration was not set for the snap install of aproxy during image building, causing the image building to fail if snapstore need to be accessed through a proxy. This is fixed.
+* The proxy configuration was not set for the snap install of aproxy during image building, causing the image building to fail if snap store need to be accessed through a proxy. This is fixed.
 
 ## [#144 feat(docs): Evolve and standardize the documentation workflow](https://github.com/canonical/github-runner-image-builder-operator/pull/144) (2025-08-22)
 
