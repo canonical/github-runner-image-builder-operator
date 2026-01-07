@@ -1,6 +1,13 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#181 ISD-3652-aproxy](https://github.com/canonical/github-runner-image-builder-operator/pull/181) (2026-01-07)
+* Remove installation of aproxy inside the github image builder to use the aproxy charm instead.
+
+### Breaking changes
+* Upgrade of the charm might cause the charm to go into a blocked state. In that case, aproxy charm 
+must be installed and integrated with the image builder.
+
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
 
