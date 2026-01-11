@@ -421,12 +421,18 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
 
 
 @pytest_asyncio.fixture(scope="module", name="aproxy")
-async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Application, None]:
+async def aproxy_fixture(
+    test_configs: TestConfigs, 
+    proxy: ProxyConfig,
+) -> AsyncGenerator[Application, None]:
     """Deploy aproxy charm."""
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
         series="jammy",
+        config={
+            "proxy-address": proxy.http,
+        },
     )
 
     yield aproxy_app
