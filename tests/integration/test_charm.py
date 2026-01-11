@@ -36,6 +36,7 @@ async def test_image_relation(app: Application, test_charm: Application):
 
 
 @pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_cos_agent_relation(app: Application):
     """
     arrange: An active charm.
@@ -54,6 +55,7 @@ async def test_cos_agent_relation(app: Application):
 
 
 @pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_build_image(
     openstack_connection: Connection,
     dispatch_time: datetime,
@@ -69,6 +71,7 @@ async def test_build_image(
 
 # Ignore the "too many arguments" warning, as this is not significant for a test function where
 # the arguments are fixtures and the function is not expected to be called directly.
+@pytest.mark.abort_on_fail
 async def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R0917
     app: Application,
     test_charm: Application,
@@ -127,6 +130,7 @@ async def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R091
 
 
 @pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_periodic_rebuilt(
     app: Application,
     app_config: dict,
@@ -178,6 +182,7 @@ async def _change_cronjob_to_minutes(unit: Unit, current_hour_interval: int):
 
 
 @pytest.mark.asyncio
+@pytest.mark.abort_on_fail
 async def test_log_rotated(app: Application):
     """
     arrange: A deployed active charm and manually write something to the log file.
