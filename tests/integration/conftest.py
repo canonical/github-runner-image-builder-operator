@@ -138,8 +138,8 @@ async def test_charm_fixture(
 
     yield app
 
-    await model.remove_application(app_name=app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    # await model.remove_application(app_name=app_name)
+    # logger.info("Test charm application %s removed.", app_name)
 
 
 @pytest_asyncio.fixture(scope="module", name="test_charm_2")
@@ -155,9 +155,9 @@ async def test_charm_2(
 
     yield app
 
-    logger.info("Cleaning up test charm.")
-    await model.remove_application(app_name=app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    # logger.info("Cleaning up test charm.")
+    # await model.remove_application(app_name=app_name)
+    # logger.info("Test charm application %s removed.", app_name)
 
 
 async def _deploy_test_charm(
@@ -297,9 +297,9 @@ def cleanup_resources_fixture(
     """Clean up resources after the tests are complete."""
     yield
 
-    for image_name in image_names:
-        for image in openstack_connection.search_images(name_or_id=image_name):
-            openstack_connection.delete_image(image.id)
+    # for image_name in image_names:
+    #     for image in openstack_connection.search_images(name_or_id=image_name):
+    #         openstack_connection.delete_image(image.id)
 
 
 @pytest.fixture(scope="module", name="test_id")
@@ -406,20 +406,23 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
     )
 
     if proxy.http:
+        logger.info("Deploying aproxy")
         aproxy_app: Application = request.getfixturevalue("aproxy")
         await test_configs.model.relate(f"{aproxy_app.name}:juju-info", f"{app.name}:juju-info")
         await test_configs.model.wait_for_idle(
             apps=[aproxy_app.name, app.name], idle_period=30, timeout=30 * 60
         )
+    else:
+        await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
     yield app
 
-    await test_configs.model.remove_application(app_name=app.name)
+    #await test_configs.model.remove_application(app_name=app.name)
 
 
 @pytest_asyncio.fixture(scope="module", name="aproxy")
 async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Application, None]:
-    """Deploy and integrate aproxy with the image builder charm."""
+    """Deploy aproxy charm."""
     aproxy_app: Application = await test_configs.model.deploy(
         "aproxy",
         application_name=f"aproxy-{test_configs.test_id}",
@@ -428,7 +431,7 @@ async def aproxy_fixture(test_configs: TestConfigs) -> AsyncGenerator[Applicatio
 
     yield aproxy_app
 
-    await test_configs.model.remove_application(app_name=aproxy_app.name)
+    #await test_configs.model.remove_application(app_name=aproxy_app.name)
 
 
 @pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
@@ -467,7 +470,7 @@ async def app_on_charmhub_fixture(
 
     yield app
 
-    await test_configs.model.remove_application(app_name=app.name)
+    #await test_configs.model.remove_application(app_name=app.name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -484,9 +487,9 @@ def ssh_key_fixture(
 
     yield SSHKey(keypair=keypair, private_key=ssh_key_path)
 
-    logger.info("Cleaning up keypair.")
-    openstack_connection.delete_keypair(name=keypair.name)
-    logger.info("Keypair deleted.")
+    # logger.info("Cleaning up keypair.")
+    # openstack_connection.delete_keypair(name=keypair.name)
+    # logger.info("Keypair deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_security_group")
@@ -497,8 +500,8 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         name_or_id=security_group_name
     ):
         yield security_groups[0]
-        for security_group in security_groups[1:]:
-            openstack_connection.delete_security_group(name_or_id=security_group.id)
+        # for security_group in security_groups[1:]:
+        #     openstack_connection.delete_security_group(name_or_id=security_group.id)
     else:
         security_group = openstack_connection.create_security_group(
             name=security_group_name,
@@ -531,9 +534,9 @@ def openstack_security_group_fixture(openstack_connection: Connection):
         )
         yield security_group
 
-        logger.info("Cleaning up security group.")
-        openstack_connection.delete_security_group(security_group_name)
-        logger.info("Security group deleted.")
+        # logger.info("Cleaning up security group.")
+        # openstack_connection.delete_security_group(security_group_name)
+        # logger.info("Security group deleted.")
 
 
 @pytest.fixture(scope="module", name="openstack_metadata")
