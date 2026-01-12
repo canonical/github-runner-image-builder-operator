@@ -432,6 +432,7 @@ async def aproxy_fixture(
         series="jammy",
         config={
             "proxy-address": proxy.http.replace("http://", "").replace("https://", ""),
+            "exclude-addresses-from-proxy": "10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16",
         },
     )
 
