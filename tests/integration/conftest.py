@@ -431,7 +431,7 @@ async def aproxy_fixture(
         application_name=f"aproxy-{test_configs.test_id}",
         series="jammy",
         config={
-            "proxy-address": proxy.http,
+            "proxy-address": proxy.http.replace("http://", "").replace("https://", ""),
         },
     )
 
