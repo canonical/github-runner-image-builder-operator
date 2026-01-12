@@ -106,7 +106,7 @@ def validate_aproxy_integration(
             The value returned from the original function. That is, None.
         """
         proxy_data = state.ProxyConfig.from_env()
-        aproxy_relation = instance.model.get_relation("juju-info")  # type: ignore
+        aproxy_relation = instance.model.get_relation("proxy")  # type: ignore
         if proxy_data and not aproxy_relation:
             logger.warning(
                 "Proxy data configured in the juju model but aproxy charm is not integrated."
