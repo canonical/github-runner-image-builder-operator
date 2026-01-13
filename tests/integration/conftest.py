@@ -408,7 +408,7 @@ async def app_fixture(  # pylint: disable=too-many-arguments,too-many-positional
     if proxy.http:
         logger.info("Deploying aproxy")
         aproxy_app: Application = request.getfixturevalue("aproxy")
-        await test_configs.model.relate(f"{aproxy_app.name}:juju-info", f"{app.name}:proxy")
+        await test_configs.model.relate(f"{aproxy_app.name}:juju-info", f"{app.name}:juju-info")
         await test_configs.model.wait_for_idle(
             apps=[aproxy_app.name, app.name], idle_period=30, timeout=30 * 60
         )
