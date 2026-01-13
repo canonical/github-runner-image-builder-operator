@@ -327,7 +327,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         )
 
     def update_status(self, status: ops.StatusBase) -> None:
-        """Update the charm status.
+        """Update the charm status to test.
 
         Args:
             status: The desired status instance.
