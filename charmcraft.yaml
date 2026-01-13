@@ -169,6 +169,6 @@ provides:
     interface: github_runner_image_v0
   cos-agent:
     interface: cos_agent
-  proxy:
-    interface: juju-info
-    scope: container
+  # proxy:
+  #   interface: juju-info
+  #   scope: container

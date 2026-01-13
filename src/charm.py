@@ -75,7 +75,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self._on_image_relation_changed,
         )
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_install(self, _: ops.InstallEvent) -> None:
         """Handle installation of the charm.
@@ -88,7 +88,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self._setup_logrotate()
         self.unit.status = ops.ActiveStatus("Waiting for first image.")
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=True)
     def _on_upgrade_charm(self, _: ops.UpgradeCharmEvent) -> None:
         """Handle charm upgrade events.
@@ -100,7 +100,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         self._setup_logrotate()
         self.unit.status = ops.ActiveStatus()
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
@@ -118,7 +118,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self._run()
         self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
@@ -157,7 +157,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
@@ -167,7 +167,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
 
-    @charm_utils.validate_aproxy_integration
+    #@charm_utils.validate_aproxy_integration
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_run_action(self, event: ops.ActionEvent) -> None:
         """Handle the run action event.
