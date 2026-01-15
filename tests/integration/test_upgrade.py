@@ -54,10 +54,16 @@ async def app_fixture(
         Returns:
             bool: True if the event is emitted, False otherwise.
         """
-        unit_name_without_slash = unit.name.replace("/", "-")
-        juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
-        stdout = await unit.ssh(command=f"cat {juju_unit_log_file}")
-        return "Emitting Juju event upgrade_charm." in stdout
+        try:
+            unit_name_without_slash = unit.name.replace("/", "-")
+            juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
+            stdout = await unit.ssh(command=f"cat {juju_unit_log_file}")
+            logging.info("Upgrade logs:\n%s", stdout)
+            return "Emitting Juju event upgrade_charm." in stdout
+        except Exception as e:
+            # Unit might not be reachable yet, return False and try again
+            logging.debug(f"Could not check upgrade_charm event: {e}")
+            return False
 
     await wait_for(
         functools.partial(is_upgrade_charm_event_emitted, unit), timeout=360, check_interval=60
