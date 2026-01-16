@@ -1,3 +1,4 @@
+
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
