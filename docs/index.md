@@ -47,5 +47,5 @@ Thinking about using the GitHub runner image builder charm for your next project
 1. [Tutorial](tutorial)
   1. [Quick start](tutorial/quick-start.md)
 1. [Changelog](changelog.md)
-1. [Explanation](explanation)
-  1. [Charm architecture](explanation/charm-architecture.md)
+1. [Reference](reference)
+  1. [Charm architecture](reference/charm-architecture.md) 
