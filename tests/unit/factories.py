@@ -103,7 +103,7 @@ class CloudAuthFactory(factory.DictFactory):
 
     auth_url = "http://testing-auth/keystone"
     # We need to use known password for unit testing
-    password = "test-password"  # nosec: B105:hardcoded_password_string
+    password = "test-password"  # nosec: hardcoded_password_string:hardcoded_password_string
     project_domain_name = "test-project-domain"
     project_name = "test-project-name"
     user_domain_name = "test-user-domain"
@@ -174,7 +174,7 @@ class StaticImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
+    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}  # nosec: hardcoded_password_string
     runner_version: str | None = "1.2.3"
 
 
@@ -215,7 +215,7 @@ class ScriptConfigFactory(factory.Factory):
         model = builder.ScriptConfig
 
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
+    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}  # nosec: hardcoded_password_string
 
 
 class ImageConfigFactory(factory.Factory):

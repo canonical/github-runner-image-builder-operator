@@ -140,7 +140,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner/0",
         key_values={
             "auth_url": "test",
-            "password": "test",
+            "password": "test",  # nosec: hardcoded_password_string
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -153,7 +153,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner/1",
         key_values={
             "auth_url": "test",
-            "password": "test",
+            "password": "test",  # nosec: hardcoded_password_string
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -172,7 +172,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner-two/0",
         key_values={
             "auth_url": "test",
-            "password": "test",
+            "password": "test",  # nosec: hardcoded_password_string
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -187,7 +187,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner-two/1",
         key_values={
             "auth_url": "test",
-            "password": "test",
+            "password": "test",  # nosec: hardcoded_password_string
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",

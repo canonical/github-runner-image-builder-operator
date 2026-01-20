@@ -52,7 +52,7 @@ GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 
 # Bandit thinks this is a hardcoded secret
-IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: B105
+IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: hardcoded_password_string
 
 
 @dataclasses.dataclass
