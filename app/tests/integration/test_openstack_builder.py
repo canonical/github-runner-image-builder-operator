@@ -120,8 +120,8 @@ def image_ids_fixture(
                 script_config=config.ScriptConfig(
                     script_url=urllib.parse.urlparse(TESTDATA_TEST_SCRIPT_URL),
                     script_secrets={
-                        "TEST_SECRET": "SHOULD_EXIST",
-                        "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+                        "TEST_SECRET": "SHOULD_EXIST",  # nosec: hardcoded_password_string
+                        "TEST_NON_SECRET": "SHOULD_NOT_EXIST",  # nosec: hardcoded_password_string
                     },
                 ),
             ),
