@@ -174,7 +174,9 @@ class StaticImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}  # nosec: hardcoded_password_string
+    script_secrets: dict[str, str] | None = {
+        "test_secret": "test_value"
+    }  # nosec: hardcoded_password_string
     runner_version: str | None = "1.2.3"
 
 
@@ -215,7 +217,9 @@ class ScriptConfigFactory(factory.Factory):
         model = builder.ScriptConfig
 
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}  # nosec: hardcoded_password_string
+    script_secrets: dict[str, str] | None = {
+        "test_secret": "test_value"
+    }  # nosec: hardcoded_password_string
 
 
 class ImageConfigFactory(factory.Factory):

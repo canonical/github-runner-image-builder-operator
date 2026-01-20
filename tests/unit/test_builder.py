@@ -508,7 +508,9 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},  # nosec: hardcoded_password_string
+                            script_secrets={
+                                "test_secret": "test_value"  # nosec: hardcoded_password_string
+                            },
                         ),
                         runner_version="1.2.3",
                     ),
@@ -531,7 +533,9 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},  # nosec: hardcoded_password_string
+                            script_secrets={
+                                "test_secret": "test_value",  # nosec: hardcoded_password_string
+                            },
                         ),
                         runner_version="1.2.3",
                     ),
@@ -554,7 +558,9 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},  # nosec: hardcoded_password_string
+                            script_secrets={
+                                "test_secret": "test_value"  # nosec: hardcoded_password_string
+                            },
                         ),
                         runner_version="1.2.3",
                     ),
