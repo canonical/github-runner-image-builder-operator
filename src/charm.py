@@ -4,6 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
+
 import json
 import logging
 
@@ -21,7 +22,6 @@ from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 import builder
 import charm_utils
 import image
-import proxy
 import state
 
 LOG_FILE_DIR = Path("/var/log/github-runner-image-builder")
@@ -104,7 +104,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following lines should be covered by integration tests.
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
         builder.install_clouds_yaml(  # pragma: no cover
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
@@ -131,7 +130,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 evt.unit.name,
             )
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
@@ -178,7 +176,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
     def _setup_builder(self) -> None:
         """Set up the builder application."""
-        proxy.setup(proxy=state.ProxyConfig.from_env())
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
@@ -193,8 +190,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _setup_logrotate(self) -> None:
         """Set up the log rotation for image-builder application."""
         APP_LOGROTATE_CONFIG_PATH.write_text(
-            dedent(
-                f"""\
+            dedent(f"""\
                     {str(LOG_FILE_PATH.absolute())} {{
                         weekly
                         rotate 3
@@ -202,8 +198,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                         delaycompress
                         missingok
                     }}
-                """
-            ),
+                """),
             encoding="utf-8",
         )
         try:
@@ -322,7 +317,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 runner_version=builder_config.image_config.runner_version,
             ),
             service_config=builder.ExternalServiceConfig(
-                proxy=(builder_config.proxy.http if builder_config.proxy else None),
+                proxy=builder_config.proxy,
             ),
         )
 

@@ -160,6 +160,17 @@ def test_proxy_config(monkeypatch: pytest.MonkeyPatch):
     )
 
 
+def test_proxy_config_empty(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched os.environ with empty value.
+    act: when ProxyConfig.from_env is called.
+    assert: None is returned.
+    """
+    monkeypatch.setattr(os, "getenv", MagicMock(return_value=""))
+
+    assert state.ProxyConfig.from_env() is None
+
+
 @pytest.mark.parametrize(
     "flavor, network, expected_config",
     [

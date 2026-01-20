@@ -348,10 +348,10 @@ class ExternalServiceConfig:
     """Builder run external service dependencies.
 
     Attributes:
-        proxy: The proxy to use to build the image.
+        proxy: The proxy configuration to use to build the image.
     """
 
-    proxy: str | None
+    proxy: state.ProxyConfig | None
 
 
 @dataclasses.dataclass
@@ -515,7 +515,11 @@ def _run(config: RunConfig) -> list[CloudImage]:
                 script_secrets=config.image.script_config.script_secrets,
             ),
             service_options=_ServiceOptions(
-                proxy=config.external_service.proxy,
+                proxy=(
+                    config.external_service.proxy.http or config.external_service.proxy.https
+                    if config.external_service.proxy
+                    else None
+                ),
             ),
         )
         logger.info("Run build command: %s", run_command)
@@ -528,6 +532,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
             env={
                 "HOME": str(UBUNTU_HOME),
                 **_transform_secrets(secrets=config.image.script_config.script_secrets),
+                **_get_proxy_env(proxy=config.external_service.proxy),
             },
         )
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
@@ -569,6 +574,42 @@ def _transform_secrets(secrets: dict[str, str] | None) -> dict[str, str]:
         if secrets
         else {}
     )
+
+
+def _get_proxy_env(proxy: state.ProxyConfig | None) -> dict[str, str]:
+    """Transform proxy config to standard environment variables.
+
+    Args:
+        proxy: The proxy configuration.
+
+    Returns:
+        Dictionary of proxy environment variables.
+    """
+    if not proxy:
+        return {}
+    env_vars = {}
+    if proxy.http:
+        env_vars.update(
+            {
+                "http_proxy": proxy.http,
+                "HTTP_PROXY": proxy.http,
+            }
+        )
+    if proxy.https:
+        env_vars.update(
+            {
+                "https_proxy": proxy.https,
+                "HTTPS_PROXY": proxy.https,
+            }
+        )
+    if proxy.no_proxy:
+        env_vars.update(
+            {
+                "no_proxy": proxy.no_proxy,
+                "NO_PROXY": proxy.no_proxy,
+            }
+        )
+    return env_vars
 
 
 @dataclasses.dataclass

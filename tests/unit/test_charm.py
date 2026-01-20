@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for charm module."""
+
 import secrets
 
 # We're monkeypatching the subprocess module for testing
@@ -15,7 +16,6 @@ from ops import RelationChangedEvent
 import builder
 import charm as charm_module
 import image
-import proxy
 import state
 from app.src.github_runner_image_builder.logging import LOG_FILE_PATH
 from charm import GithubRunnerImageBuilderCharm
@@ -81,7 +81,6 @@ def test_hooks_that_trigger_run_for_all_clouds(
     act: when the hook is called.
     assert: the charm falls into ActiveStatus
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
 
     getattr(charm, hook)(MagicMock())
 
@@ -137,7 +136,6 @@ def test_installation(
     """
     monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
     charm._setup_logrotate = (logrotate_setup_mock := MagicMock())
 
@@ -157,7 +155,6 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -192,7 +189,6 @@ def test__on_image_relation_changed_image_already_in_cloud(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and no run is triggered but image data is updated
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -235,7 +231,6 @@ def test__on_image_relation_changed_no_unit_auth_data(
     act: when _on_image_relation_changed is called.
     assert: charm is not building image
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
 
     monkeypatch.setattr(

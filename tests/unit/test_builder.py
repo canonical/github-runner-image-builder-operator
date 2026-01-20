@@ -255,9 +255,7 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
     )
 
     contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""clouds:
+    assert contents == f"""clouds:
   test:
     auth:
       auth_url: test-url
@@ -267,7 +265,6 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
       user_domain_name: test_domain
       username: test-user
 """
-    )
 
 
 def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -300,9 +297,7 @@ def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path
     builder.install_clouds_yaml(cloud_config=test_config)
 
     contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""clouds:
+    assert contents == f"""clouds:
   test:
     auth:
       auth_url: test-url
@@ -312,7 +307,6 @@ def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path
       user_domain_name: test_domain
       username: test-user
 """
-    )
 
 
 @pytest.mark.parametrize(
@@ -1116,3 +1110,62 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
         cloud_id="test-cloud",
         image_id="test-image",
     )
+
+
+@pytest.mark.parametrize(
+    "proxy_config, expected_env",
+    [
+        pytest.param(
+            None,
+            {},
+            id="no proxy",
+        ),
+        pytest.param(
+            state.ProxyConfig(http="http://proxy:8080", https="", no_proxy=""),
+            {
+                "http_proxy": "http://proxy:8080",
+                "HTTP_PROXY": "http://proxy:8080",
+            },
+            id="http proxy only",
+        ),
+        pytest.param(
+            state.ProxyConfig(http="", https="https://proxy:8080", no_proxy=""),
+            {
+                "https_proxy": "https://proxy:8080",
+                "HTTPS_PROXY": "https://proxy:8080",
+            },
+            id="https proxy only",
+        ),
+        pytest.param(
+            state.ProxyConfig(http="", https="", no_proxy="localhost,127.0.0.1"),
+            {
+                "no_proxy": "localhost,127.0.0.1",
+                "NO_PROXY": "localhost,127.0.0.1",
+            },
+            id="no_proxy only",
+        ),
+        pytest.param(
+            state.ProxyConfig(
+                http="http://proxy:8080",
+                https="https://proxy:8080",
+                no_proxy="localhost,127.0.0.1",
+            ),
+            {
+                "http_proxy": "http://proxy:8080",
+                "HTTP_PROXY": "http://proxy:8080",
+                "https_proxy": "https://proxy:8080",
+                "HTTPS_PROXY": "https://proxy:8080",
+                "no_proxy": "localhost,127.0.0.1",
+                "NO_PROXY": "localhost,127.0.0.1",
+            },
+            id="all proxy settings",
+        ),
+    ],
+)
+def test__get_proxy_env(proxy_config: state.ProxyConfig | None, expected_env: dict[str, str]):
+    """
+    arrange: given different proxy configurations.
+    act: when _get_proxy_env is called.
+    assert: expected environment variables are returned.
+    """
+    assert builder._get_proxy_env(proxy=proxy_config) == expected_env
