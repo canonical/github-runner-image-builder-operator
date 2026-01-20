@@ -2,7 +2,7 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
 ## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
-* Remove aproxy installation in the charm and inject proxy values from the model config into the workload process.
+* Remove `aproxy` snap installation in the charm and inject proxy values from the model config into the workload process.
 
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
