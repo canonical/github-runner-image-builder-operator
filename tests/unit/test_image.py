@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import secrets
 from unittest.mock import MagicMock
 
 import pytest
@@ -140,7 +141,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner/0",
         key_values={
             "auth_url": "test",
-            "password": "test",  # nosec: hardcoded_password_string
+            "password": secrets.token_hex(16),
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -153,7 +154,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner/1",
         key_values={
             "auth_url": "test",
-            "password": "test",  # nosec: hardcoded_password_string
+            "password": secrets.token_hex(16),
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -172,7 +173,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner-two/0",
         key_values={
             "auth_url": "test",
-            "password": "test",  # nosec: hardcoded_password_string
+            "password": secrets.token_hex(16),
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
@@ -187,7 +188,7 @@ def test_update_image_data(harness: Harness, image_observer: image.Observer):
         app_or_unit="github-runner-two/1",
         key_values={
             "auth_url": "test",
-            "password": "test",  # nosec: hardcoded_password_string
+            "password": secrets.token_hex(16),
             "project_domain_name": "test",
             "project_name": "test",
             "user_domain_name": "test",
