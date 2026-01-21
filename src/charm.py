@@ -4,6 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Entrypoint for GithubRunnerImageBuilder charm."""
+
 import json
 import logging
 
@@ -193,8 +194,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _setup_logrotate(self) -> None:
         """Set up the log rotation for image-builder application."""
         APP_LOGROTATE_CONFIG_PATH.write_text(
-            dedent(
-                f"""\
+            dedent(f"""\
                     {str(LOG_FILE_PATH.absolute())} {{
                         weekly
                         rotate 3
@@ -202,8 +202,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                         delaycompress
                         missingok
                     }}
-                """
-            ),
+                """),
             encoding="utf-8",
         )
         try:

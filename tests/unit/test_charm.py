@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for charm module."""
+
 import secrets
 
 # We're monkeypatching the subprocess module for testing
