@@ -287,9 +287,7 @@ def test_run(
                 else None
             ),
             script_secrets=(
-                ({"TEST_SECRET_ONE": secrets.token_hex(16)})
-                if with_external_script
-                else {}
+                ({"TEST_SECRET_ONE": secrets.token_hex(16)}) if with_external_script else {}
             ),
         ),
     )
@@ -955,9 +953,7 @@ def test__wait_for_cloud_init_complete():
 @pytest.mark.parametrize(
     "script_secrets",
     [
-        pytest.param(
-            {"TEST_SECRET_ONE": secrets.token_hex(16)}, id="single secret"
-        ),
+        pytest.param({"TEST_SECRET_ONE": secrets.token_hex(16)}, id="single secret"),
         pytest.param(
             {
                 "TEST_SECRET_ONE": secrets.token_hex(16),

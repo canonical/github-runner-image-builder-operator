@@ -508,9 +508,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={
-                                "test_secret": secrets.token_hex(16)
-                            },
+                            script_secrets={"test_secret": secrets.token_hex(16)},
                         ),
                         runner_version="1.2.3",
                     ),
@@ -558,9 +556,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={
-                                "test_secret": secrets.token_hex(16)
-                            },
+                            script_secrets={"test_secret": secrets.token_hex(16)},
                         ),
                         runner_version="1.2.3",
                     ),
