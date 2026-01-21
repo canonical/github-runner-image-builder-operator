@@ -9,6 +9,7 @@
 import functools
 import itertools
 import logging
+import secrets
 import typing
 import urllib.parse
 from datetime import datetime, timezone
@@ -120,8 +121,8 @@ def image_ids_fixture(
                 script_config=config.ScriptConfig(
                     script_url=urllib.parse.urlparse(TESTDATA_TEST_SCRIPT_URL),
                     script_secrets={
-                        "TEST_SECRET": "SHOULD_EXIST",
-                        "TEST_NON_SECRET": "SHOULD_NOT_EXIST",
+                        "TEST_SECRET": secrets.token_hex(16),
+                        "TEST_NON_SECRET": secrets.token_hex(16),
                     },
                 ),
             ),
