@@ -3,7 +3,6 @@
 
 """Fixtures for github runner image builder app."""
 
-
 from pytest import Parser
 
 
