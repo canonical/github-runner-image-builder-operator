@@ -287,9 +287,7 @@ def test_run(
                 else None
             ),
             script_secrets=(
-                ({"TEST_SECRET_ONE": "HELLO"})  # nosec: hardcoded_password_string
-                if with_external_script
-                else {}
+                {"TEST_SECRET_ONE": secrets.token_hex(16)} if with_external_script else {}
             ),
         ),
     )
@@ -699,8 +697,8 @@ def test__generate_cloud_init_script(
                 script_config=openstack_builder.config.ScriptConfig(
                     script_url=urllib.parse.urlparse("https://test-url.com/script.sh"),
                     script_secrets={
-                        "TEST_SECRET_ONE": "HELLO",  # nosec: hardcoded_password_string
-                        "TEST_SECRET_TWO": "WORLD",  # nosec: hardcoded_password_string
+                        "TEST_SECRET_ONE": secrets.token_hex(16),
+                        "TEST_SECRET_TWO": secrets.token_hex(16),
                     },
                 ),
             ),
@@ -955,14 +953,9 @@ def test__wait_for_cloud_init_complete():
 @pytest.mark.parametrize(
     "script_secrets",
     [
+        pytest.param({"TEST_SECRET_ONE": secrets.token_hex(16)}, id="single secret"),
         pytest.param(
-            {"TEST_SECRET_ONE": "HELLO"}, id="single secret"  # nosec: hardcoded_password_string
-        ),
-        pytest.param(
-            {
-                "TEST_SECRET_ONE": "HELLO",  # nosec: hardcoded_password_string
-                "TEST_SECRET_TWO": "WORLD",  # nosec: hardcoded_password_string
-            },
+            {"TEST_SECRET_ONE": secrets.token_hex(16), "TEST_SECRET_TWO": secrets.token_hex(16)},
             id="multiple secrets",
         ),
         pytest.param({}, id="no secrets"),
@@ -1024,7 +1017,7 @@ def test_execute_external_script_error(run_pos: int):
     with pytest.raises(ExternalScriptError) as exc:
         openstack_builder._execute_external_script(
             script_url="https://test-url.com/script.sh",
-            script_secrets={"TEST_SECRET_ONE": "HELLO"},  # nosec: hardcoded_password_string
+            script_secrets={"TEST_SECRET_ONE": secrets.token_hex(16)},
             ssh_conn=mock_connection,
         )
     assert "Unexpected exit code" in str(exc)
