@@ -30,6 +30,13 @@ parts:
       - libssl-dev # for cryptography
       - rust-all # for cryptography
       - pkg-config # for cryptography
+      - cython3 # for building PyYAML from source
+      - libyaml-dev # for PyYAML C extension
+      - python3-dev # for Python C extensions
+    charm-python-packages:
+      - "wheel>=0.45"
+      - pip
+      - setuptools
     override-build: |
       rustup default stable
       craftctl default
