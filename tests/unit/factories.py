@@ -3,6 +3,7 @@
 
 """Factories for generating test data."""
 
+import secrets
 import typing
 from unittest.mock import MagicMock
 
@@ -174,7 +175,7 @@ class StaticImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
+    script_secrets: dict[str, str] | None = {"test_secret": secrets.token_hex(8)}
     runner_version: str | None = "1.2.3"
 
 
@@ -211,7 +212,7 @@ class ScriptConfigFactory(factory.Factory):
         model = builder.ScriptConfig
 
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {"test_secret": "test_value"}
+    script_secrets: dict[str, str] | None = {"test_secret": secrets.token_hex(8)}
 
 
 class ImageConfigFactory(factory.Factory):
