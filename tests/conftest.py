@@ -3,7 +3,6 @@
 
 """Fixtures for github runner charm."""
 
-
 from pytest import Parser
 
 

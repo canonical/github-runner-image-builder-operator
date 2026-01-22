@@ -4,6 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Integration testing module."""
+
 import json
 import logging
 from contextlib import asynccontextmanager

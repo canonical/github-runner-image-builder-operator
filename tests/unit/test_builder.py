@@ -255,9 +255,7 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
     )
 
     contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""clouds:
+    assert contents == f"""clouds:
   test:
     auth:
       auth_url: test-url
@@ -267,7 +265,6 @@ def test_install_clouds_yaml_not_exists(monkeypatch: pytest.MonkeyPatch, tmp_pat
       user_domain_name: test_domain
       username: test-user
 """
-    )
 
 
 def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -300,9 +297,7 @@ def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path
     builder.install_clouds_yaml(cloud_config=test_config)
 
     contents = test_path.read_text(encoding="utf-8")
-    assert (
-        contents
-        == f"""clouds:
+    assert contents == f"""clouds:
   test:
     auth:
       auth_url: test-url
@@ -312,7 +307,6 @@ def test_install_clouds_yaml_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path
       user_domain_name: test_domain
       username: test-user
 """
-    )
 
 
 @pytest.mark.parametrize(
@@ -514,7 +508,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
+                            script_secrets=TEST_STATIC_CONFIG.image_config.script_secrets,
                         ),
                         runner_version="1.2.3",
                     ),
@@ -537,7 +531,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
+                            script_secrets=TEST_STATIC_CONFIG.image_config.script_secrets,
                         ),
                         runner_version="1.2.3",
                     ),
@@ -560,7 +554,7 @@ def test_run(monkeypatch: pytest.MonkeyPatch):
                         prefix=TEST_STATIC_CONFIG.cloud_config.resource_prefix,
                         script_config=builder.ScriptConfig(
                             script_url="https://test-url.com/script.sh",
-                            script_secrets={"test_secret": "test_value"},
+                            script_secrets=TEST_STATIC_CONFIG.image_config.script_secrets,
                         ),
                         runner_version="1.2.3",
                     ),

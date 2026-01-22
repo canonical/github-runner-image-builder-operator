@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for logging module."""
+
 import logging as logging_module
 from pathlib import Path
 from unittest.mock import MagicMock

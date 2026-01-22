@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Fixtures for github runner image builder integration tests."""
+
 import logging
 import os
 import secrets
