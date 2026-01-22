@@ -286,7 +286,9 @@ def test_run(
                 if with_external_script
                 else None
             ),
-            script_secrets={"TEST_SECRET_ONE": secrets.token_hex(8)} if with_external_script else {},
+            script_secrets=(
+                {"TEST_SECRET_ONE": secrets.token_hex(8)} if with_external_script else {}
+            ),
         ),
     )
 
@@ -694,7 +696,10 @@ def test__generate_cloud_init_script(
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
                     script_url=urllib.parse.urlparse("https://test-url.com/script.sh"),
-                    script_secrets={"TEST_SECRET_ONE": secrets.token_hex(8), "TEST_SECRET_TWO": secrets.token_hex(8)},
+                    script_secrets={
+                        "TEST_SECRET_ONE": secrets.token_hex(8),
+                        "TEST_SECRET_TWO": secrets.token_hex(8),
+                    },
                 ),
             ),
             proxy="test.proxy.internal:3128",
@@ -950,7 +955,11 @@ def test__wait_for_cloud_init_complete():
     [
         pytest.param({"TEST_SECRET_ONE": secrets.token_hex(8)}, id="single secret"),
         pytest.param(
-            {"TEST_SECRET_ONE": secrets.token_hex(8), "TEST_SECRET_TWO": secrets.token_hex(8)}, id="multiple secrets"
+            {
+                "TEST_SECRET_ONE": secrets.token_hex(8),
+                "TEST_SECRET_TWO": secrets.token_hex(8),
+            },
+            id="multiple secrets",
         ),
         pytest.param({}, id="no secrets"),
     ],
