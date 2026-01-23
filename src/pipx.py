@@ -4,7 +4,6 @@
 
 """Module handling interactions with pipx."""
 
-
 # Code is abstracting process interactions and is currently tested in integration tests.
 
 import logging

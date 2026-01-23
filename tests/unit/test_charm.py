@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for charm module."""
+
 import secrets
 
 # We're monkeypatching the subprocess module for testing
@@ -251,7 +252,7 @@ def test__on_image_relation_changed_no_unit_auth_data(
         evt.relation.data[evt.unit] = {
             "auth_url": "http://example.com",
             "username": "user",
-            "password": "pass",
+            "password": secrets.token_hex(16),
             "project_name": "project_name",
             "project_domain_name": "project_domain_name",
             "user_domain_name": "user_domain_name",
