@@ -577,7 +577,7 @@ def _transform_secrets(secrets: dict[str, str] | None) -> dict[str, str]:
 
 
 def _get_proxy_env(proxy: state.ProxyConfig | None) -> dict[str, str]:
-    """Transform proxy config to standard environment variables.
+    """Transform proxy config to dict of standard environment variables.
 
     Args:
         proxy: The proxy configuration.
