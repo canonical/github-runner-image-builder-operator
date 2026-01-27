@@ -246,7 +246,7 @@ def test__on_image_relation_changed_no_unit_auth_data(
         evt.relation.data[evt.unit] = {
             "auth_url": "http://example.com",
             "username": "user",
-            "password": "pass",  # nosec: hardcoded_password_string
+            "password": secrets.token_hex(16),
             "project_name": "project_name",
             "project_domain_name": "project_domain_name",
             "user_domain_name": "user_domain_name",

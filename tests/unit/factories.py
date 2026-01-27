@@ -3,6 +3,7 @@
 
 """Factories for generating test data."""
 
+import secrets
 import typing
 from unittest.mock import MagicMock
 
@@ -103,7 +104,7 @@ class CloudAuthFactory(factory.DictFactory):
 
     auth_url = "http://testing-auth/keystone"
     # We need to use known password for unit testing
-    password = "test-password"  # nosec: hardcoded_password_string:hardcoded_password_string
+    password = factory.LazyFunction(lambda: secrets.token_hex(16))
     project_domain_name = "test-project-domain"
     project_name = "test-project-name"
     user_domain_name = "test-user-domain"
@@ -174,9 +175,9 @@ class StaticImageConfigFactory(factory.Factory):
 
     arch: state.Arch = state.Arch.ARM64
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {
-        "test_secret": "test_value"
-    }  # nosec: hardcoded_password_string
+    script_secrets: dict[str, str] | None = factory.LazyFunction(
+        lambda: {"test_secret": secrets.token_hex(16)}
+    )
     runner_version: str | None = "1.2.3"
 
 
@@ -217,9 +218,9 @@ class ScriptConfigFactory(factory.Factory):
         model = builder.ScriptConfig
 
     script_url: str | None = "https://test-url.com/script.sh"
-    script_secrets: dict[str, str] | None = {
-        "test_secret": "test_value"
-    }  # nosec: hardcoded_password_string
+    script_secrets: dict[str, str] | None = factory.LazyFunction(
+        lambda: {"test_secret": secrets.token_hex(16)}
+    )
 
 
 class ImageConfigFactory(factory.Factory):
