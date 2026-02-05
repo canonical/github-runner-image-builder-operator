@@ -3,6 +3,7 @@
 
 """Unit tests for charm module."""
 
+import os
 import secrets
 
 # We're monkeypatching the subprocess module for testing
@@ -134,7 +135,11 @@ def test_installation(
     act: when _on_install is called.
     assert: setup_builder is called.
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    builder_config_mock = MagicMock()
+    builder_config_mock.proxy = None
+    monkeypatch.setattr(
+        state.BuilderConfig, "from_charm", MagicMock(return_value=builder_config_mock)
+    )
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
     charm._setup_logrotate = (logrotate_setup_mock := MagicMock())
@@ -303,3 +308,30 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     mock_check_call.assert_called_once_with(
         ["/usr/sbin/logrotate", str(logrotate_path), "--debug"]
     )
+
+
+def test_setup_proxy_environment_with_proxy_config(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a ProxyConfig with http, https, and no_proxy values.
+    act: when _setup_proxy_environment is called.
+    assert: environment variables are set correctly.
+    """
+    for key in ["http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"]:
+        monkeypatch.delenv(key, raising=False)
+
+    proxy_config = state.ProxyConfig(
+        http="http://proxy.example.com:8080",
+        https="https://proxy.example.com:8443",
+        no_proxy="localhost,127.0.0.1",
+    )
+
+    charm._setup_proxy_environment(proxy_config)
+
+    assert os.environ["http_proxy"] == "http://proxy.example.com:8080"
+    assert os.environ["https_proxy"] == "https://proxy.example.com:8443"
+    assert os.environ["no_proxy"] == "localhost,127.0.0.1"
+    assert os.environ["HTTP_PROXY"] == "http://proxy.example.com:8080"
+    assert os.environ["HTTPS_PROXY"] == "https://proxy.example.com:8443"
+    assert os.environ["NO_PROXY"] == "localhost,127.0.0.1"

@@ -23,8 +23,6 @@ jobs:
       self-hosted-runner-arch: X64
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
-      pre-run-script: |
-        -c "sudo nft delete chain ip aproxy prerouting"
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:

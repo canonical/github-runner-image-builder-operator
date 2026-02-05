@@ -7,6 +7,7 @@
 
 import json
 import logging
+import os
 
 # We ignore low severity security warning for importing subprocess module
 import subprocess  # nosec B404
@@ -174,9 +175,26 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
 
+    def _setup_proxy_environment(self, proxy_config: state.ProxyConfig | None) -> None:
+        """Set up proxy environment variables.
+
+        Args:
+            proxy_config: The proxy configuration to apply to environment variables.
+        """
+        if proxy_config:
+            os.environ["http_proxy"] = proxy_config.http
+            os.environ["https_proxy"] = proxy_config.https
+            os.environ["no_proxy"] = proxy_config.no_proxy
+            os.environ["HTTP_PROXY"] = proxy_config.http
+            os.environ["HTTPS_PROXY"] = proxy_config.https
+            os.environ["NO_PROXY"] = proxy_config.no_proxy
+
     def _setup_builder(self) -> None:
         """Set up the builder application."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+
+        self._setup_proxy_environment(builder_config_state.proxy)
+
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
                 cloud_config=builder_config_state.cloud_config,
