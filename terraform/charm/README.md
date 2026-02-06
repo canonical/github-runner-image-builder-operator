@@ -24,8 +24,8 @@ like shown below:
 
 ```text
 data "juju_model" "my_model" {
-  name = var.model
-  owner = "admin"
+  name  = var.model
+  owner = "<your-juju-username>"
 }
 
 module "github_runner_image_builder" {
