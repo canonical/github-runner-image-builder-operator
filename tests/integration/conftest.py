@@ -106,6 +106,10 @@ async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator
                 "juju-http-proxy": proxy.http,
                 "juju-https-proxy": proxy.https,
                 "juju-no-proxy": proxy.no_proxy,
+                "apt-http-proxy": proxy.http,
+                "apt-https-proxy": proxy.https,
+                "snap-http-proxy": proxy.http,
+                "snap-https-proxy": proxy.https,
             }
         )
     yield ops_test.model
