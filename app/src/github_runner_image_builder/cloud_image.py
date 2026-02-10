@@ -8,6 +8,7 @@
 import gzip  # noqa: F401 # pylint: disable=unused-import
 import hashlib
 import logging
+import os
 import typing
 from datetime import date
 from pathlib import Path
@@ -121,6 +122,7 @@ def _download_base_image(
     # The ubuntu-cloud-images is a trusted source
     # Bandit thinks there is no timeout provided for the code below.
     try:
+        logger.info(f"Env inside image builder binary: {os.environ}")
         request = requests.get(
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",
@@ -185,6 +187,9 @@ def _validate_checksum(file: Path, expected_checksum: str) -> bool:
     """
     sha256 = hashlib.sha256()
     with open(file=file, mode="rb") as target_file:
+        while data := target_file.read(CHECKSUM_BUF_SIZE):
+            sha256.update(data)
+    return sha256.hexdigest() == expected_checksum
         while data := target_file.read(CHECKSUM_BUF_SIZE):
             sha256.update(data)
     return sha256.hexdigest() == expected_checksum

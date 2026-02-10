@@ -189,6 +189,7 @@ def _build_init_command(
     """
     cmd = [
         "/usr/bin/sudo",
+        "--preserve-env",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "--os-cloud",
         cloud_name,
