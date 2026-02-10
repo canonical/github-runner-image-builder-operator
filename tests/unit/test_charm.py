@@ -38,7 +38,7 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         state.BuilderConfig,
         "from_charm",
-        MagicMock(return_value=MagicMock(image_config=image_config)),
+        MagicMock(return_value=MagicMock(image_config=image_config, proxy=None)),
     )
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=[]))
@@ -135,10 +135,8 @@ def test_installation(
     act: when _on_install is called.
     assert: setup_builder is called.
     """
-    builder_config_mock = MagicMock()
-    builder_config_mock.proxy = None
     monkeypatch.setattr(
-        state.BuilderConfig, "from_charm", MagicMock(return_value=builder_config_mock)
+        state.BuilderConfig, "from_charm", MagicMock(return_value=MagicMock(proxy=None))
     )
     monkeypatch.setattr(image, "Observer", MagicMock())
     monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
