@@ -65,6 +65,7 @@ class ApplicationInitializationConfig:
         image_arch: The image architecture to initialize build resources for.
         resource_prefix: The prefix of application resources.
         unit_name: The Juju unit name to trigger the CRON with.
+        proxy: The http(s) proxy configuration.
     """
 
     cloud_config: state.CloudConfig
@@ -72,6 +73,7 @@ class ApplicationInitializationConfig:
     image_arch: state.Arch
     resource_prefix: str
     unit_name: str
+    proxy: state.ProxyConfig | None
 
 
 def initialize(app_init_config: ApplicationInitializationConfig) -> None:
@@ -93,6 +95,7 @@ def initialize(app_init_config: ApplicationInitializationConfig) -> None:
             cloud_name=app_init_config.cloud_config.cloud_name,
             image_arch=app_init_config.image_arch,
             resource_prefix=app_init_config.resource_prefix,
+            proxy_config=app_init_config.proxy,
         )
         configure_cron(
             unit_name=app_init_config.unit_name, interval=app_init_config.cron_interval
@@ -137,7 +140,10 @@ def _install_app() -> None:
 
 
 def _initialize_image_builder(
-    cloud_name: str, image_arch: state.Arch, resource_prefix: str
+    cloud_name: str,
+    image_arch: state.Arch,
+    resource_prefix: str,
+    proxy_config: state.ProxyConfig | None,
 ) -> None:
     """Initialize github-runner-image-builder app.
 
@@ -145,6 +151,7 @@ def _initialize_image_builder(
         cloud_name: The OpenStack cloud to pre-populate OpenStack image builder resources.
         image_arch: The architecture of the image to build.
         resource_prefix: The resource prefix for artefacts saved in the image repository.
+        proxy_config: The proxy configuration to apply to the environment.
 
     Raises:
         ImageBuilderInitializeError: If there was an error Initialize the app.
@@ -152,6 +159,14 @@ def _initialize_image_builder(
     init_cmd = _build_init_command(
         cloud_name=cloud_name, image_arch=image_arch, resource_prefix=resource_prefix
     )
+    env = os.environ.copy()
+    if proxy_config:
+        env["http_proxy"] = proxy_config.http
+        env["https_proxy"] = proxy_config.https
+        env["no_proxy"] = proxy_config.no_proxy
+        env["HTTP_PROXY"] = proxy_config.http
+        env["HTTPS_PROXY"] = proxy_config.https
+        env["NO_PROXY"] = proxy_config.no_proxy
     try:
         subprocess.run(
             init_cmd,
@@ -159,7 +174,7 @@ def _initialize_image_builder(
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             timeout=15 * 60,
-            env=os.environ,
+            env=env,
         )  # nosec: B603
     except subprocess.CalledProcessError as exc:
         logger.error(

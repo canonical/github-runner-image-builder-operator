@@ -67,6 +67,7 @@ def test_initialize(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
             image_arch=MagicMock(),
             resource_prefix=MagicMock(),
             unit_name=MagicMock(),
+            proxy=None,
         )
     )
 
@@ -175,7 +176,10 @@ def test__initialize_image_builder_error(
 
     with pytest.raises(builder.ImageBuilderInitializeError):
         builder._initialize_image_builder(
-            cloud_name=MagicMock(), image_arch=MagicMock(), resource_prefix=MagicMock()
+            cloud_name=MagicMock(),
+            image_arch=MagicMock(),
+            resource_prefix=MagicMock(),
+            proxy_config=None,
         )
 
 

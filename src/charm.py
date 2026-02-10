@@ -202,6 +202,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 image_arch=builder_config_state.image_config.arch,
                 resource_prefix=builder_config_state.app_config.resource_prefix,
                 unit_name=self.unit.name,
+                proxy=builder_config_state.proxy,
             )
         )
 
