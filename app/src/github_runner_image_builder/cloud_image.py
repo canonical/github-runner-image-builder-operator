@@ -190,6 +190,3 @@ def _validate_checksum(file: Path, expected_checksum: str) -> bool:
         while data := target_file.read(CHECKSUM_BUF_SIZE):
             sha256.update(data)
     return sha256.hexdigest() == expected_checksum
-        while data := target_file.read(CHECKSUM_BUF_SIZE):
-            sha256.update(data)
-    return sha256.hexdigest() == expected_checksum
