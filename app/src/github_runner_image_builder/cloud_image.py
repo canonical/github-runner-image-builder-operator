@@ -122,7 +122,7 @@ def _download_base_image(
     # The ubuntu-cloud-images is a trusted source
     # Bandit thinks there is no timeout provided for the code below.
     try:
-        logger.info(f"Env inside image builder binary: {os.environ}")
+        logger.info("Env inside image builder binary: %s", os.environ)
         request = requests.get(
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",
