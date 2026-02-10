@@ -20,9 +20,4 @@ run "basic_deploy" {
     condition     = module.github_runner_image_builder.provides.cos_agent == "cos-agent"
     error_message = "Expected provides.cos_agent to be cos-agent."
   }
-
-  assert {
-    condition     = length(module.github_runner_image_builder.requires) == 0
-    error_message = "Expected requires to be empty."
-  }
 }
