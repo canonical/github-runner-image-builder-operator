@@ -336,7 +336,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 runner_version=builder_config.image_config.runner_version,
             ),
             service_config=builder.ExternalServiceConfig(
-                proxy=builder_config.proxy,
+                proxy=(builder_config.proxy.http if builder_config.proxy else None),
             ),
         )
 

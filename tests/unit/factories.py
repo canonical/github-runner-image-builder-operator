@@ -189,11 +189,7 @@ class ExternalServiceConfigFactory(factory.Factory):
 
         model = builder.ExternalServiceConfig
 
-    proxy: state.ProxyConfig | None = state.ProxyConfig(
-        http="http://proxy.internal:3128",
-        https="http://proxy.internal:3128",
-        no_proxy="localhost,127.0.0.1",
-    )
+    proxy: str | None = "http://proxy.internal:3128"
 
 
 class StaticConfigFactory(factory.Factory):
