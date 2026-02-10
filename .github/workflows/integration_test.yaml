@@ -24,7 +24,10 @@ jobs:
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
       pre-run-script: |
-        -c "sudo nft delete chain ip aproxy prerouting"
+        -c "lxc list
+        IP=$(lxc list -c 4 --format csv | awk '{print $1}' | head -n 1)
+        echo '$IP'
+        sudo nft insert rule ip aproxy prerouting index 0 ip saddr != $IP return"
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
