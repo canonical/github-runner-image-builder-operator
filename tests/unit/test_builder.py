@@ -175,9 +175,7 @@ def test__initialize_image_builder_error(
 
     with pytest.raises(builder.ImageBuilderInitializeError):
         builder._initialize_image_builder(
-            cloud_name=MagicMock(),
-            image_arch=MagicMock(),
-            resource_prefix=MagicMock(),
+            cloud_name=MagicMock(), image_arch=MagicMock(), resource_prefix=MagicMock()
         )
 
 
