@@ -102,6 +102,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following lines should be covered by integration tests.
@@ -118,6 +119,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not evt.unit:
             logger.info("No unit in image relation changed event. Skipping image building.")
             return
@@ -156,6 +158,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following line should be covered by the integration test.
@@ -169,6 +172,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event: The run action event.
         """
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             event.fail("Image relation not yet ready.")
             return
