@@ -137,7 +137,7 @@ def _install_app() -> None:
 
 
 def _initialize_image_builder(
-        cloud_name: str, image_arch: state.Arch, resource_prefix: str
+    cloud_name: str, image_arch: state.Arch, resource_prefix: str
 ) -> None:
     """Initialize github-runner-image-builder app.
 
