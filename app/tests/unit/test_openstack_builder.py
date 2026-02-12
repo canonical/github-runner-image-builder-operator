@@ -763,7 +763,6 @@ EOF
 
 function install_apt_packages() {{
     local packages="$1"
-    local hwe_version="$2"
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
@@ -783,8 +782,6 @@ main" > /etc/apt/sources.list.d/github-cli.list
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    echo "Installing linux-generic-hwe-${{hwe_version}}"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
 }}
 
 function disable_unattended_upgrades() {{
@@ -869,13 +866,12 @@ function configure_system_users() {{
 
 proxy="test.proxy.internal:3128"
 apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
-hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
 
 configure_proxy "$proxy"
-install_apt_packages "$apt_packages" "$hwe_version"
+install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin

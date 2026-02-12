@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#196 fix: use default kernel instead of HWE kernel](https://github.com/canonical/github-runner-image-builder-operator/pull/196) (2026-02-12)
+* Use the default kernel instead of the HWE kernel in GitHub runner images.
+
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
 
