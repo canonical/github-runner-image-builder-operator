@@ -5,6 +5,7 @@
 
 set -euo pipefail
 
+/snap/bin/charmcraft pack -p tests/integration/data/charm
 lxc list
 IP=$(lxc list -c 4 --format csv | awk '{print $1}' | head -n 1)
 echo "IP=$IP"

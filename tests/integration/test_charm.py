@@ -24,20 +24,6 @@ from tests.integration.helpers import image_created_from_dispatch, wait_for_imag
 
 logger = logging.getLogger(__name__)
 
-@pytest.mark.asyncio
-async def test_charmcraft_pack(model: Model, proxy: ProxyConfig):
-    subprocess.check_call(  # nosec: B603
-        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
-    )
-    logging.info("Charmcraft pack completed successfully.")
-    if proxy.http:
-        logger.info("Setting model proxy: %s", proxy.http)
-        await model.set_config(
-            {
-                "juju-no-proxy": "",
-            }
-        )
-
 
 @pytest.mark.asyncio
 async def test_image_relation(app: Application, test_charm: Application):
