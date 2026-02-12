@@ -29,11 +29,12 @@ async def test_charmcraft_pack(model: Model, proxy: ProxyConfig):
     subprocess.check_call(  # nosec: B603
         ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
     )
+    logging.info("Charmcraft pack completed successfully.")
     if proxy.http:
         logger.info("Setting model proxy: %s", proxy.http)
         await model.set_config(
             {
-                "juju-no-proxy": "127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.launchpad.net,.internal,.jujucharms.com,.nip.io",
+                "juju-no-proxy": "",
             }
         )
 
