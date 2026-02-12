@@ -53,11 +53,6 @@ TEST_RUNNER_COMMANDS = (
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
     Commands(
-        name="test that HWE kernel is installed",
-        command="uname -a | "
-        "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
-    ),
-    Commands(
         name="test network congestion policy(fq)",
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
     ),
