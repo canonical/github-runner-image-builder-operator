@@ -7,6 +7,7 @@
 
 import json
 import logging
+import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -18,10 +19,23 @@ from openstack.connection import Connection
 from pytest_operator.plugin import OpsTest
 
 from builder import CRON_BUILD_SCHEDULE_PATH
-from state import BUILD_INTERVAL_CONFIG_NAME
+from state import BUILD_INTERVAL_CONFIG_NAME, ProxyConfig
 from tests.integration.helpers import image_created_from_dispatch, wait_for_images
 
 logger = logging.getLogger(__name__)
+
+@pytest.mark.asyncio
+async def test_charmcraft_pack(model: Model, proxy: ProxyConfig):
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    )
+    if proxy.http:
+        logger.info("Setting model proxy: %s", proxy.http)
+        await model.set_config(
+            {
+                "juju-no-proxy": "127.0.0.1,localhost,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.launchpad.net,.internal,.jujucharms.com,.nip.io",
+            }
+        )
 
 
 @pytest.mark.asyncio
