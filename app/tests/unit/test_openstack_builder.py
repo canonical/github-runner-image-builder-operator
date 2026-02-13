@@ -831,6 +831,12 @@ function install_yq() {{
     /usr/bin/snap remove go
 }}
 
+function install_opentelemetry_collector_snap() {{
+    echo "Installing OpenTelemetry Collector snap"
+    /usr/bin/sudo snap install opentelemetry-collector
+    /usr/bin/sudo snap disable opentelemetry-collector
+}}
+
 function install_github_runner() {{
     version="$1"
     arch="$2"
@@ -884,6 +890,7 @@ if [ $RELEASE != "focal" ]; then
     install_yarn
 fi
 install_yq
+install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\

@@ -18,16 +18,16 @@ that can be used for linting and formatting code when you're preparing contribut
 
 
 ```shell
-tox run -e format        # update your code according to linting rules
-tox run -e lint          # code style
-tox run -e unit          # unit tests
-tox run -e integration   # integration tests
-tox                      # runs 'format', 'lint', and 'unit' environments
+tox run -e format
+tox run -e lint
+tox run -e unit
+tox run -e integration
+tox
 ```
 
 
 The integration tests (both of the charm and the app)
-require options to be passed via the command line (see `tests/conftest.py`) and 
+require options to be passed through the command line (see `tests/conftest.py`) and 
 environment variables `OPENSTACK_PASSWORD` to be able to deploy the charm and/or upload images to OpenStack.
 
 ## Build the charm

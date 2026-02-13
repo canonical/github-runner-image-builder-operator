@@ -46,7 +46,7 @@ juju deploy github-runner-image-builder \
 --config openstack-user-name=$OPENSTACK_USERNAME
 ```
 
-- Verify that the image is being built via Juju logs:
+- Verify that the image is being built using Juju logs:
 ```
 juju debug-log --include=github-runner-image-builder/0
 ```

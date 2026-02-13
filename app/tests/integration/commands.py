@@ -38,6 +38,13 @@ TEST_RUNNER_COMMANDS = (
         name="check aproxy",
         command="sudo snap info aproxy && sudo snap services aproxy",
     ),
+    Commands(
+        name="check opentelemetry-collector snap installed and inactive",
+        command=(
+            "sudo snap services opentelemetry-collector | grep -q 'disabled' "
+            "&& sudo snap services opentelemetry-collector | grep -q 'inactive'"
+        ),
+    ),
     Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
     Commands(name="check python3 alias", command="python --version"),

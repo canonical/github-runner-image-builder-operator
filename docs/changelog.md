@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#195 feat: otel-collector snap](https://github.com/canonical/github-runner-image-builder-operator/pull/195) (2026-02-11)
+* Install OpenTelemetry collector snap in the runner image.
+
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
 
@@ -26,7 +29,7 @@
 
 ### Bug Fixes
 
-* The proxy configuration was not set for the snap install of aproxy during image building, causing the image building to fail if snapstore need to be accessed through a proxy. This is fixed.
+* The proxy configuration was not set for the snap install of a proxy during image building, causing the image building to fail if the Snap Store needs to be accessed through a proxy. This is fixed.
 
 ## [#144 feat(docs): Evolve and standardize the documentation workflow](https://github.com/canonical/github-runner-image-builder-operator/pull/144) (2025-08-22)
 

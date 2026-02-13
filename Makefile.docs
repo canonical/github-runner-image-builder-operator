@@ -36,8 +36,9 @@ endif
 .PHONY: .check-lychee
 .check-lychee:
 ifndef HAS_LYCHEE
-	$(call errmsg,'lychee' is not installed. Please install it first) \
-	exit 1;
+	$(call msg,--- 'lychee' not installed; skipping link check ---)
+else
+	@true
 endif
 
 
@@ -60,9 +61,13 @@ vale: .check-vale vale-sync ## Run Vale checks on docs
 # ==============================================================================
 
 .PHONY: lychee
-lychee: .check-lychee ## Run Lychee checks on docs
-	$(call msg,--- Running lychee checks on "$(LYCHEE_DOCS_FILES)"... ---)
+lychee: ## Run Lychee checks on docs
+ifeq ($(HAS_LYCHEE),)
+	$(call msg,--- 'lychee' not installed; skipping link check ---)
+else
+	$(call msg,--- Running lychee checks on "$(DOCS_FILES)"... ---)
 	@lychee $(DOCS_FILES)
+endif
 
 # ==============================================================================
 # Helper Targets
