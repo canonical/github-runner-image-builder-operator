@@ -833,7 +833,7 @@ function install_yq() {{
 
 function install_opentelemetry_collector_snap() {{
     echo "Installing OpenTelemetry Collector snap"
-    /usr/bin/sudo snap install opentelemetry-collector
+    /usr/bin/sudo snap install opentelemetry-collector --stable
     /usr/bin/sudo snap disable opentelemetry-collector
 }}
 
