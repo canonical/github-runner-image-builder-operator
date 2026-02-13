@@ -23,7 +23,7 @@ Deploy GitHub runner image builder with GitHub runners.
 
 <!--Indicate software and hardware prerequisites-->
 You'll need a working [OpenStack installation](https://microstack.run/docs/single-node) with
-flavors with a minimum of 2 CPU cores, 8GB RAM and 10GB disk.
+flavors with a minimum of two CPU cores, 8GB RAM and 10GB disk.
 
 ### Set up
 
