@@ -890,6 +890,7 @@ if [ $RELEASE != "focal" ]; then
     install_yarn
 fi
 install_yq
+install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users\
