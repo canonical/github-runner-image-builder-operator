@@ -1,0 +1,1836 @@
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  image-builder-operator-e68ae962/0 [executing] active: Building image.
+[32mINFO    [0m tests.integration.conftest:conftest.py:159 Cleaning up test charm.
+[32mINFO    [0m tests.integration.conftest:conftest.py:161 Test charm application test2-e68ae962 removed.
+[32mINFO    [0m tests.integration.conftest:conftest.py:143 Test charm application test-e68ae962 removed.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model            Controller           Cloud/Region         Version  SLA          Timestamp
+test-charm-ll0p  github-pr-e10aa-lxd  localhost/localhost  3.6.14   unsupported  16:49:06Z
+
+App                                            Version  Status      Scale  Charm                        Channel  Rev  Exposed  Message
+grafana-agent-image-builder-operator-e68ae962           blocked         1  grafana-agent                1/edge   603  no       Missing ['grafana-cloud-config']|['grafana-dashboards-provider']|['logging-consumer']|['send-remote-write'] for cos-a...
+image-builder-operator-e68ae962                         active          1  github-runner-image-builder             0  no       Building image.
+test2-e68ae962                                          terminated    0/1  test                                    1  no       
+test-e68ae962                                           terminated    0/1  test                                    0  no       
+
+Unit                                                Workload    Agent      Machine  Public address  Ports  Message
+image-builder-operator-e68ae962/0*                  active      executing  0        10.129.189.29          Building image.
+  grafana-agent-image-builder-operator-e68ae962/0*  blocked     idle                10.129.189.29          Missing ['grafana-cloud-config']|['grafana-dashboards-provider']|['logging-consumer']|['send-remote-write'] for cos-a...
+test2-e68ae962/0*                                   terminated  executing  2        10.129.189.83          (remove) 
+test-e68ae962/0                                     terminated  executing  1        10.129.189.158         (remove) 
+
+Machine  State    Address         Inst id        Base          AZ             Message
+0        started  10.129.189.29   juju-b7e528-0  ubuntu@22.04  github-runner  Running
+1        started  10.129.189.158  juju-b7e528-1  ubuntu@22.04  github-runner  Running
+2        started  10.129.189.83   juju-b7e528-2  ubuntu@22.04  github-runner  Running
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+machine-0: 15:24:46 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 15:24:46 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-e68ae962-0: 15:26:37 ERROR unit.image-builder-operator-e68ae962/0.juju-log Pipx command failed, code: 1, out: None, err: None
+machine-1: 15:38:05 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-1: 15:38:05 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-grafana-agent-image-builder-operator-e68ae962-0: 15:52:24 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: preparing operation "install ch:amd64/grafana-agent-603" for grafana-agent-image-builder-operator-e68ae962/0: failed to download charm "ch:amd64/grafana-agent-603" from API server: download request with archiveSha256 length 0 not valid
+machine-2: 15:55:00 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-2: 15:55:00 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+unit-image-builder-operator-e68ae962-0: 16:26:31 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: hello world
+..................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................., err: None, stdout: hello world
+...................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+unit-image-builder-operator-e68ae962-0: 16:26:38 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:26:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:26:54 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:27:12 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:27:12 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:28:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:28:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:28:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:28:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:28:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:28:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:29:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:29:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:29:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:29:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:29:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:29:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:30:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:30:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:30:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:30:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:30:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:30:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:31:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:31:11 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:31:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:31:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:31:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:31:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:32:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:32:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:32:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:32:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:32:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:32:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:33:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:33:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:33:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:33:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:33:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:33:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:34:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:34:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:34:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:34:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:34:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:34:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:35:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:35:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:35:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:35:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:35:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:35:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:36:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:36:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:36:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:36:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:36:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:36:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:37:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:37:11 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:37:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:37:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:37:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:37:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:38:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:38:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:38:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:38:28 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:38:46 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:38:46 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:39:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:39:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:39:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:39:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:39:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:39:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:40:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:40:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:40:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:40:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:40:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:40:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:41:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:41:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:41:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:41:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:41:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:41:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:42:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:42:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:42:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:42:28 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:42:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:42:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:43:05 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:43:11 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:43:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:43:28 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:43:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:43:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:44:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:44:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:44:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:44:26 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:44:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:44:44 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:45:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:45:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:45:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:45:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:45:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:45:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:46:04 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:46:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:46:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:46:28 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:46:46 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:46:46 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:47:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:47:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:47:18 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:47:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:47:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:47:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:48:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:48:10 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:48:17 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:48:27 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:48:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+unit-image-builder-operator-e68ae962-0: 16:48:45 ERROR unit.image-builder-operator-e68ae962/0.juju-log Uncaught exception while in charm code:
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 523, in _run
+    stdout = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg # nosec:B603
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/run-one', '/usr/bin/sudo', '--preserve-env', '/home/ubuntu/.local/bin/github-runner-image-builder', '--os-cloud', 'builder', 'run', 'image-builder-operator-e68ae962-noble-x64', '--flavor', 'shared.xsmall', '--keep-revisions', '5', '--network', 'net_stg-ps7-github-runner-test-amd64', '--prefix', 'image-builder-operator-e68ae962', '--upload-clouds', 'stg-ps7-github-runner-test-amd64_project_stg-ps7-github-runner-test-amd64', '--arch', 'x64', '--base-image', 'noble', '--script-url', 'https://raw.githubusercontent.com/canonical/github-runner-image-builder/refs/heads/main/tests/integration/testdata/test_script.sh', '--proxy', 'egress.ps7.internal:3128']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 553, in _run
+    raise BuilderRunError from exc
+exceptions.BuilderRunError
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 338, in <module>
+    ops.main.main(GithubRunnerImageBuilderCharm)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/__init__.py", line 363, in main
+    return _legacy_main.main(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/main.py", line 39, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/charm_utils.py", line 68, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 164, in _on_run
+    self._run()  # pragma: nocover
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/./src/charm.py", line 252, in _run
+    cloud_images = builder.run(
+  File "/var/lib/juju/agents/unit-image-builder-operator-e68ae962-0/charm/src/builder.py", line 435, in run
+    build_results = pool.map(_run, build_configs)
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/lib/python3.10/multiprocessing/pool.py", line 774, in get
+    raise self._value
+exceptions.BuilderRunError
+unit-image-builder-operator-e68ae962-0: 16:49:03 ERROR unit.image-builder-operator-e68ae962/0.juju-log Image build failed, code: 1, out: , err: None, stdout: 
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
+[32mINFO    [0m tests.integration.conftest:conftest.py:466 Cleaning up keypair.
+[32mINFO    [0m tests.integration.conftest:conftest.py:468 Keypair deleted.
