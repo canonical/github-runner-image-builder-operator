@@ -7,6 +7,7 @@
 
 import json
 import logging
+import os
 
 # We ignore low severity security warning for importing subprocess module
 import subprocess  # nosec B404
@@ -22,7 +23,6 @@ from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 import builder
 import charm_utils
 import image
-import proxy
 import state
 
 LOG_FILE_DIR = Path("/var/log/github-runner-image-builder")
@@ -102,10 +102,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle charm configuration change events."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following lines should be covered by integration tests.
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())  # pragma: no cover
         builder.install_clouds_yaml(  # pragma: no cover
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
@@ -119,6 +119,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_image_relation_changed(self, evt: ops.RelationChangedEvent) -> None:
         """Handle charm image relation changed event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not evt.unit:
             logger.info("No unit in image relation changed event. Skipping image building.")
             return
@@ -132,7 +133,6 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
                 evt.unit.name,
             )
             return
-        proxy.configure_aproxy(proxy=state.ProxyConfig.from_env())
         builder.install_clouds_yaml(
             cloud_config=builder_config_state.cloud_config.openstack_clouds_config
         )
@@ -158,6 +158,7 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
     def _on_run(self, _: RunEvent) -> None:
         """Handle the run event."""
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following line should be covered by the integration test.
@@ -171,16 +172,33 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event: The run action event.
         """
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+        self._setup_proxy_environment(builder_config_state.proxy)
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             event.fail("Image relation not yet ready.")
             return
         # The following line should be covered by the integration test.
         self._run()  # pragma: nocover
 
+    def _setup_proxy_environment(self, proxy_config: state.ProxyConfig | None) -> None:
+        """Set up proxy environment variables.
+
+        Args:
+            proxy_config: The proxy configuration to apply to environment variables.
+        """
+        if proxy_config:
+            os.environ["http_proxy"] = proxy_config.http
+            os.environ["https_proxy"] = proxy_config.https
+            os.environ["no_proxy"] = proxy_config.no_proxy
+            os.environ["HTTP_PROXY"] = proxy_config.http
+            os.environ["HTTPS_PROXY"] = proxy_config.https
+            os.environ["NO_PROXY"] = proxy_config.no_proxy
+
     def _setup_builder(self) -> None:
         """Set up the builder application."""
-        proxy.setup(proxy=state.ProxyConfig.from_env())
         builder_config_state = state.BuilderConfig.from_charm(charm=self)
+
+        self._setup_proxy_environment(builder_config_state.proxy)
+
         builder.initialize(
             app_init_config=builder.ApplicationInitializationConfig(
                 cloud_config=builder_config_state.cloud_config,

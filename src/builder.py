@@ -52,7 +52,7 @@ GITHUB_RUNNER_IMAGE_BUILDER_PATH = UBUNTU_HOME / ".local/bin/github-runner-image
 OPENSTACK_CLOUDS_YAML_PATH = UBUNTU_HOME / "clouds.yaml"
 
 # Bandit thinks this is a hardcoded secret
-IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: B105
+IMAGE_BUILDER_SECRET_PREFIX = "IMAGE_BUILDER_SECRET_"  # nosec: hardcoded_password_string
 
 
 @dataclasses.dataclass
@@ -188,6 +188,7 @@ def _build_init_command(
     """
     cmd = [
         "/usr/bin/sudo",
+        "--preserve-env=http_proxy,https_proxy,no_proxy,HTTP_PROXY,HTTPS_PROXY,NO_PROXY",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "--os-cloud",
         cloud_name,
@@ -528,6 +529,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
             env={
                 "HOME": str(UBUNTU_HOME),
                 **_transform_secrets(secrets=config.image.script_config.script_secrets),
+                **{k: v for (k, v) in os.environ.items() if "proxy" in k.lower()},
             },
         )
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"

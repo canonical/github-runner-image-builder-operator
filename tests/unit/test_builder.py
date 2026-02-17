@@ -186,6 +186,7 @@ def test__initialize_image_builder_error(
             None,
             [
                 "/usr/bin/sudo",
+                "--preserve-env=http_proxy,https_proxy,no_proxy,HTTP_PROXY,HTTPS_PROXY,NO_PROXY",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "--os-cloud",
                 "test-cloud-name",
@@ -199,6 +200,7 @@ def test__initialize_image_builder_error(
             "test-prefix",
             [
                 "/usr/bin/sudo",
+                "--preserve-env=http_proxy,https_proxy,no_proxy,HTTP_PROXY,HTTPS_PROXY,NO_PROXY",
                 "/home/ubuntu/.local/bin/github-runner-image-builder",
                 "--os-cloud",
                 "test-cloud-name",

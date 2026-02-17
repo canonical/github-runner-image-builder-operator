@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
+* Remove `aproxy` snap installation in the charm and inject proxy values from the model config into the workload process.
+
 ## [#195 feat: otel-collector snap](https://github.com/canonical/github-runner-image-builder-operator/pull/195) (2026-02-11)
 * Install opentelemetry collector snap in the runner image.
 

@@ -30,7 +30,7 @@ EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
-OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
+OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: hardcoded_password_string
 OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "openstack-project-domain-name"
 OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
 OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
@@ -39,8 +39,8 @@ REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
 # Bandit thinks this is a hardcoded password
-SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
-SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
+SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: hardcoded_password_string
+SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: hardcoded_password_string
 
 IMAGE_RELATION = "image"
 
