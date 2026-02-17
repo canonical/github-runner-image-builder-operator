@@ -10,10 +10,6 @@ import multiprocessing
 import os
 import secrets
 import string
-
-# subprocess module is used to call juju cli directly due to constraints with private-endpoint
-# models
-import subprocess  # nosec: B404
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
