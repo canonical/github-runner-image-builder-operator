@@ -152,7 +152,6 @@ def _initialize_image_builder(
     init_cmd = _build_init_command(
         cloud_name=cloud_name, image_arch=image_arch, resource_prefix=resource_prefix
     )
-    logger.info("Initialize image builder with env: %s", os.environ)
     try:
         subprocess.run(
             init_cmd,

@@ -8,7 +8,6 @@
 import gzip  # noqa: F401 # pylint: disable=unused-import
 import hashlib
 import logging
-import os
 import typing
 from datetime import date
 from pathlib import Path
@@ -122,7 +121,6 @@ def _download_base_image(
     # The ubuntu-cloud-images is a trusted source
     # Bandit thinks there is no timeout provided for the code below.
     try:
-        logger.info("Env inside image builder binary: %s", os.environ)
         request = requests.get(
             f"https://cloud-images.ubuntu.com/{base_image.value}/{release_dir}/{base_image.value}"
             f"-server-cloudimg-{bin_arch}.img",

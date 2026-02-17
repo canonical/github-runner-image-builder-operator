@@ -7,7 +7,6 @@
 
 import json
 import logging
-import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -19,7 +18,7 @@ from openstack.connection import Connection
 from pytest_operator.plugin import OpsTest
 
 from builder import CRON_BUILD_SCHEDULE_PATH
-from state import BUILD_INTERVAL_CONFIG_NAME, ProxyConfig
+from state import BUILD_INTERVAL_CONFIG_NAME
 from tests.integration.helpers import image_created_from_dispatch, wait_for_images
 
 logger = logging.getLogger(__name__)

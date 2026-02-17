@@ -105,11 +105,7 @@ async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator
             {
                 "juju-http-proxy": proxy.http,
                 "juju-https-proxy": proxy.https,
-                "juju-no-proxy": "",
-                "apt-http-proxy": proxy.http,
-                "apt-https-proxy": proxy.https,
-                "snap-http-proxy": proxy.http,
-                "snap-https-proxy": proxy.https,
+                "juju-no-proxy": proxy.no_proxy,
             }
         )
     yield ops_test.model
@@ -124,6 +120,9 @@ def dispatch_time_fixture():
 @pytest.fixture(scope="module", name="test_charm_file")
 def test_charm_file_fixture() -> str:
     """Build the charm and return the path to the built charm."""
+    subprocess.check_call(  # nosec: B603
+        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
+    )
     return "./test_ubuntu-22.04-amd64.charm"
 
 
