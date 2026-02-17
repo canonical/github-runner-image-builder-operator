@@ -188,7 +188,7 @@ def _build_init_command(
     """
     cmd = [
         "/usr/bin/sudo",
-        "--preserve-env",
+        "--preserve-env=http_proxy,https_proxy,no_proxy,HTTP_PROXY,HTTPS_PROXY,NO_PROXY",
         str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
         "--os-cloud",
         cloud_name,
@@ -529,7 +529,7 @@ def _run(config: RunConfig) -> list[CloudImage]:
             env={
                 "HOME": str(UBUNTU_HOME),
                 **_transform_secrets(secrets=config.image.script_config.script_secrets),
-                **os.environ,
+                **{k: v for (k, v) in os.environ.items() if "proxy" in k.lower()},
             },
         )
         # The return value of the CLI is "Image build success:\n<comma-separated-image-ids>"
