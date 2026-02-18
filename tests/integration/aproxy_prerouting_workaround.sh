@@ -3,6 +3,11 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Aproxy is installed on the CI runners and we want to test if the charm and workload respect the 
+# proxy values without aproxy. This script adds a nftables rule to bypass aproxy for any traffic 
+# originating from the LXD container, except for the juju controller traffic which is needed 
+# to spin up machines for the charms.
+
 set -euo pipefail
 
 # charmcraft pack runs inside the LXD container and needs to go through proxy so it 
