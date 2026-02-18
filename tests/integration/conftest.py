@@ -61,6 +61,8 @@ logger = logging.getLogger(__name__)
 nest_asyncio.apply()
 
 TEST_CHARM_FILE = "./test_ubuntu-22.04-amd64.charm"
+
+
 @dataclass
 class _Secret:
     """Data class for a secret.
@@ -124,7 +126,7 @@ async def test_charm_fixture(
 ) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     app_name = f"test-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, TEST_CHARM_FILE)
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
 
     yield app
 
@@ -140,7 +142,7 @@ async def test_charm_2(
 ) -> AsyncGenerator[Application, None]:
     """A second test charm that becomes active when valid relation data is given."""
     app_name = f"test2-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, TEST_CHARM_FILE)
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
 
     yield app
 
