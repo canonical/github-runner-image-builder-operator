@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#198 Update integration tests](https://github.com/canonical/github-runner-image-builder-operator/pull/198) (2026-02-17)
+* Update integration tests that were intentionally not done in #185.
+
 ## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
 * Remove `aproxy` snap installation in the charm and inject proxy values from the model config into the workload process.
 
