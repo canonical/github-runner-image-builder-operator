@@ -17,7 +17,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import yaml
-from charms.operator_libs_linux.v0 import apt
+from charmlibs import apt
 
 import builder
 import pipx
