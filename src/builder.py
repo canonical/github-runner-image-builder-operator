@@ -17,8 +17,7 @@ from pathlib import Path
 
 import tenacity
 import yaml
-from charms.operator_libs_linux.v0 import apt
-from charms.operator_libs_linux.v1 import systemd
+from charmlibs import apt, systemd
 
 import pipx
 import state
