@@ -3,6 +3,7 @@
 
 """Unit tests for charm module."""
 
+import os
 import secrets
 
 # We're monkeypatching the subprocess module for testing
@@ -16,7 +17,6 @@ from ops import RelationChangedEvent
 import builder
 import charm as charm_module
 import image
-import proxy
 import state
 from app.src.github_runner_image_builder.logging import LOG_FILE_PATH
 from charm import GithubRunnerImageBuilderCharm
@@ -38,7 +38,7 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         state.BuilderConfig,
         "from_charm",
-        MagicMock(return_value=MagicMock(image_config=image_config)),
+        MagicMock(return_value=MagicMock(image_config=image_config, proxy=None)),
     )
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=[]))
@@ -82,7 +82,6 @@ def test_hooks_that_trigger_run_for_all_clouds(
     act: when the hook is called.
     assert: the charm falls into ActiveStatus
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
 
     getattr(charm, hook)(MagicMock())
 
@@ -136,9 +135,10 @@ def test_installation(
     act: when _on_install is called.
     assert: setup_builder is called.
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    monkeypatch.setattr(
+        state.BuilderConfig, "from_charm", MagicMock(return_value=MagicMock(proxy=None))
+    )
     monkeypatch.setattr(image, "Observer", MagicMock())
-    monkeypatch.setattr(proxy, "setup", MagicMock())
     monkeypatch.setattr(builder, "initialize", (builder_setup_mock := MagicMock()))
     charm._setup_logrotate = (logrotate_setup_mock := MagicMock())
 
@@ -158,7 +158,6 @@ def test__on_image_relation_changed(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and run for the particular related unit is called.
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -193,7 +192,6 @@ def test__on_image_relation_changed_image_already_in_cloud(
     act: when _on_image_relation_changed is called.
     assert: charm is in active status and no run is triggered but image data is updated
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
     fake_clouds_auth_config = state.CloudsAuthConfig(
         auth_url="http://example.com",
@@ -236,7 +234,6 @@ def test__on_image_relation_changed_no_unit_auth_data(
     act: when _on_image_relation_changed is called.
     assert: charm is not building image
     """
-    monkeypatch.setattr(proxy, "configure_aproxy", MagicMock())
     charm.image_observer = MagicMock()
 
     monkeypatch.setattr(
@@ -309,3 +306,30 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     mock_check_call.assert_called_once_with(
         ["/usr/sbin/logrotate", str(logrotate_path), "--debug"]
     )
+
+
+def test_setup_proxy_environment_with_proxy_config(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given a ProxyConfig with http, https, and no_proxy values.
+    act: when _setup_proxy_environment is called.
+    assert: environment variables are set correctly.
+    """
+    for key in ["http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"]:
+        monkeypatch.delenv(key, raising=False)
+
+    proxy_config = state.ProxyConfig(
+        http="http://proxy.example.com:8080",
+        https="https://proxy.example.com:8443",
+        no_proxy="localhost,127.0.0.1",
+    )
+
+    charm._setup_proxy_environment(proxy_config)
+
+    assert os.environ["http_proxy"] == "http://proxy.example.com:8080"
+    assert os.environ["https_proxy"] == "https://proxy.example.com:8443"
+    assert os.environ["no_proxy"] == "localhost,127.0.0.1"
+    assert os.environ["HTTP_PROXY"] == "http://proxy.example.com:8080"
+    assert os.environ["HTTPS_PROXY"] == "https://proxy.example.com:8443"
+    assert os.environ["NO_PROXY"] == "localhost,127.0.0.1"

@@ -12,7 +12,7 @@ deployment onto any Kubernetes environment managed by [Juju][Juju].
 - **main.tf** - Defines the Juju application to be deployed.
 - **variables.tf** - Allows customization of the deployment. Also models the charm configuration, 
   except for exposing the deployment options (Juju model name, channel or application name).
-- **output.tf** - Integrates the module with other Terraform modules, primarily
+- **outputs.tf** - Integrates the module with other Terraform modules, primarily
   by defining potential integration endpoints (charm integrations), but also by exposing
   the Juju application name.
 - **versions.tf** - Defines the Terraform provider version.
@@ -24,13 +24,14 @@ like shown below:
 
 ```text
 data "juju_model" "my_model" {
-  name = var.model
+  name  = var.model
+  owner = "<your-juju-username>"
 }
 
 module "github_runner_image_builder" {
-  source = "git::https://github.com/canonical/github-runner-image-builder-operator//terraform"
+  source = "git::https://github.com/canonical/github-runner-image-builder-operator//terraform/charm"
 
-  model = juju_model.my_model.name
+  model_uuid = data.juju_model.my_model.uuid
   # (Customize configuration variables here if needed)
 }
 ```
@@ -63,13 +64,13 @@ The complete list of available integrations can be found [in the Integrations ta
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_juju"></a> [juju](#requirement\_juju) | >= 0.11.0 |
+| <a name="requirement_juju"></a> [juju](#requirement\_juju) | ~> 1.2.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_juju"></a> [juju](#provider\_juju) | >= 0.11.0 |
+| <a name="provider_juju"></a> [juju](#provider\_juju) | ~> 1.2.0 |
 
 ## Modules
 
@@ -90,7 +91,7 @@ No modules.
 | <a name="input_channel"></a> [channel](#input\_channel) | The channel to use when deploying a charm. | `string` | `"latest/stable"` | no |
 | <a name="input_config"></a> [config](#input\_config) | Application config. Details about available options can be found at https://charmhub.io/github-runner-image-builder/configurations | `map(string)` | `{}` | no |
 | <a name="input_constraints"></a> [constraints](#input\_constraints) | Juju constraints to apply for this application. | `string` | `""` | no |
-| <a name="input_model"></a> [model](#input\_model) | Reference to a `juju_model`. | `string` | `""` | no |
+| <a name="input_model_uuid"></a> [model\_uuid](#input\_model\_uuid) | Reference to a Juju model UUID. | `string` | `""` | no |
 | <a name="input_revision"></a> [revision](#input\_revision) | Revision number of the charm | `number` | `null` | no |
 | <a name="input_units"></a> [units](#input\_units) | Number of units to deploy | `number` | `1` | no |
 

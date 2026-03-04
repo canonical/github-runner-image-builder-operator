@@ -23,6 +23,8 @@ jobs:
       self-hosted-runner-arch: X64
       self-hosted-runner-label: pfe-ci
       builder-runner-label: X64
+      pre-run-script: |
+        -c "./tests/integration/aproxy_prerouting_workaround.sh"
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:

@@ -24,10 +24,6 @@ class BuilderRunError(BuilderBaseError):
     """Represents an error while running the image builder."""
 
 
-class ProxyInstallError(BuilderBaseError):
-    """Represents an error while installing proxy."""
-
-
 class GetLatestImageError(BuilderBaseError):
     """Represents an error while fetching the latest image."""
 

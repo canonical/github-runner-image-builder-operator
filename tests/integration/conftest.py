@@ -10,10 +10,6 @@ import multiprocessing
 import os
 import secrets
 import string
-
-# subprocess module is used to call juju cli directly due to constraints with private-endpoint
-# models
-import subprocess  # nosec: B404
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,6 +60,8 @@ logger = logging.getLogger(__name__)
 # This is required to dynamically load async fixtures in async def model_fixture()
 nest_asyncio.apply()
 
+TEST_CHARM_FILE = "./test_ubuntu-22.04-amd64.charm"
+
 
 @dataclass
 class _Secret:
@@ -105,7 +103,10 @@ async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator
             {
                 "juju-http-proxy": proxy.http,
                 "juju-https-proxy": proxy.https,
-                "juju-no-proxy": proxy.no_proxy,
+                "apt-http-proxy": proxy.http,
+                "apt-https-proxy": proxy.https,
+                "snap-http-proxy": proxy.http,
+                "snap-https-proxy": proxy.https,
             }
         )
     yield ops_test.model
@@ -117,25 +118,15 @@ def dispatch_time_fixture():
     return datetime.now(tz=timezone.utc)
 
 
-@pytest.fixture(scope="module", name="test_charm_file")
-def test_charm_file_fixture() -> str:
-    """Build the charm and return the path to the built charm."""
-    subprocess.check_call(  # nosec: B603
-        ["/snap/bin/charmcraft", "pack", "-p", "tests/integration/data/charm"]
-    )
-    return "./test_ubuntu-22.04-amd64.charm"
-
-
 @pytest_asyncio.fixture(scope="module", name="test_charm")
 async def test_charm_fixture(
     model: Model,
     test_id: str,
-    test_charm_file: str,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """The test charm that becomes active when valid relation data is given."""
     app_name = f"test-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, test_charm_file)
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
 
     yield app
 
@@ -147,12 +138,11 @@ async def test_charm_fixture(
 async def test_charm_2(
     model: Model,
     test_id: str,
-    test_charm_file: str,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """A second test charm that becomes active when valid relation data is given."""
     app_name = f"test2-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs, test_charm_file)
+    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
 
     yield app
 
@@ -165,7 +155,6 @@ async def _deploy_test_charm(
     app_name: str,
     model: Model,
     private_endpoint_configs: PrivateEndpointConfigs,
-    test_charm_file: str,
 ):
     """Deploy the test charm with the given application name.
 
@@ -173,12 +162,11 @@ async def _deploy_test_charm(
         app_name: The name of the application to deploy.
         model: The Juju model to deploy the charm in.
         private_endpoint_configs: The OpenStack private endpoint configurations.
-        test_charm_file: The path to the built test charm file.
 
     """
     logger.info("Deploying built test charm")
     app: Application = await model.deploy(
-        test_charm_file,
+        TEST_CHARM_FILE,
         app_name,
         config={
             "openstack-auth-url": private_endpoint_configs["auth_url"],

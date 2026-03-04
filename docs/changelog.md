@@ -1,6 +1,15 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#198 Update integration tests](https://github.com/canonical/github-runner-image-builder-operator/pull/198) (2026-02-17)
+* Update integration tests that were intentionally not done in #185.
+
+## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
+* Remove `aproxy` snap installation in the charm and inject proxy values from the model config into the workload process.
+
+## [#195 feat: otel-collector snap](https://github.com/canonical/github-runner-image-builder-operator/pull/195) (2026-02-11)
+* Install opentelemetry collector snap in the runner image.
+
 ## [#172 feat: apt upgrade](https://github.com/canonical/github-runner-image-builder-operator/pull/172) (2025-11-26)
 * Apply apt-update and apt-upgrade to GH runner images by applying them during cloud-init.
 

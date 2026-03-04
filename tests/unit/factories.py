@@ -104,7 +104,7 @@ class CloudAuthFactory(factory.DictFactory):
 
     auth_url = "http://testing-auth/keystone"
     # We need to use known password for unit testing
-    password = "test-password"  # nosec: B105:hardcoded_password_string
+    password = "test-password"  # nosec: hardcoded_password_string
     project_domain_name = "test-project-domain"
     project_name = "test-project-name"
     user_domain_name = "test-user-domain"
