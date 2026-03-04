@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [focal, jammy, noble]
+        image: [focal, jammy, noble, resolute]
         arch: [amd64, arm64, s390x, ppc64le]
         exclude:
           - image: focal
@@ -26,6 +26,12 @@ jobs:
           - image: jammy
             arch: ppc64le
           - image: jammy
+            arch: s390x
+          - image: resolute
+            arch: arm64
+          - image: resolute
+            arch: ppc64le
+          - image: resolute
             arch: s390x
     steps:
       - uses: actions/checkout@v6.0.2
