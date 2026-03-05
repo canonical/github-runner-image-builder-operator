@@ -59,9 +59,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
+    # Exclude 26.04 from HWE kernel test since there is no HWE kernel for it.
     Commands(
         name="test that HWE kernel is installed",
-        command="uname -a | "
+        command="lsb_release -r | grep 26.04 || uname -a | "
         "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
     ),
     Commands(
