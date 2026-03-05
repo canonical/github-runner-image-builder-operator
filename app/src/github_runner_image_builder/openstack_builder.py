@@ -145,6 +145,10 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
     )
+    logger.info("Downloading Resolute image.")
+    resolute_image_path = cloud_image.download_and_validate_image(
+        arch=arch, base_image=BaseImage.RESOLUTE
+    )
     logger.info("Uploading Focal image.")
     store.upload_image(
         arch=arch,
@@ -169,7 +173,14 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         image_path=noble_image_path,
         keep_revisions=1,
     )
-
+    logger.info("Uploading Resolute image.")
+    store.upload_image(
+        arch=arch,
+        cloud_name=cloud_name,
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.RESOLUTE, prefix=prefix),
+        image_path=resolute_image_path,
+        keep_revisions=1,
+    )
     with openstack.connect(cloud=cloud_name) as conn:
         _create_keypair(conn=conn, prefix=prefix)
         logger.info("Creating security group %s.", SHARED_SECURITY_GROUP_NAME)
