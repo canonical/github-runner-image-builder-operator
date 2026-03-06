@@ -71,7 +71,7 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="test network congestion policy",
-        command="lsb_release -r | grep 26.04 || sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
+        command="sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
     ),
     Commands(
         name="test external script",

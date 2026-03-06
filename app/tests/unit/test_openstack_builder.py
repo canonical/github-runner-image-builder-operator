@@ -800,6 +800,7 @@ function disable_unattended_upgrades() {{
 }}
 
 function enable_network_fair_queuing_congestion() {{
+    /usr/sbin/modprobe tcp_bbr
     /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
