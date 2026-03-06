@@ -70,6 +70,10 @@ TEST_RUNNER_COMMANDS = (
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
     ),
     Commands(
+        name="DEBUG",
+        command="sudo sysctl -a",
+    ),
+    Commands(
         name="test network congestion policy",
         command="sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
     ),
