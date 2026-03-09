@@ -721,6 +721,7 @@ def _get_ssh_connection(
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key)},
                 connect_timeout=SSH_CONNECT_TIMEOUT,
+                inline_ssh_env=True,
             )
             result: fabric.Result | None = connection.run(
                 "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT
