@@ -78,12 +78,20 @@ TEST_RUNNER_COMMANDS = (
         command="cat /home/ubuntu/test.txt | grep 'hello world'",
     ),
     Commands(
+        name="DEBUG",
+        command="cat /home/ubuntu/secret.txt",
+    ),
+    Commands(
+        name="DEBUG",
+        command="cat secret.txt",
+    ),
+    Commands(
         name="test external script secrets (should exist)",
-        command='grep -q "SHOULD_EXIST" secret.txt',
+        command='grep -q "SHOULD_EXIST" /home/ubuntu/secret.txt',
     ),
     Commands(
         name="test external script secrets (should not exist)",
-        command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
+        command='! grep -q "SHOULD_NOT_EXIST" /home/ubuntu/secret.txt',
     ),
     # following commands are security related - ensure no traces of the external script are
     # kept in the image
