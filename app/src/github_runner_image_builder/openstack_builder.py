@@ -641,7 +641,6 @@ def _execute_external_script(
         name="Run the external script using the secrets provided as environment variables",
         command=f"{script_secrets_str} sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
         timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
-        env=script_secrets,
     )
     script_rm_cmd = Command(
         name="Remove the external script",
