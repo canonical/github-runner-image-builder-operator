@@ -9,6 +9,7 @@
 import functools
 import itertools
 import logging
+from time import sleep
 import typing
 import urllib.parse
 from datetime import datetime, timezone
@@ -127,6 +128,10 @@ def image_ids_fixture(
             ),
             keep_revisions=1,
         )
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        print("SLEEPING")
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        sleep(600000000)
         yield image_ids.split(",")
 
     finally:

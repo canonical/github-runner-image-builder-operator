@@ -643,7 +643,7 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
     )
     print("####################")
-    print(script_secrets_str)
+    print(script_run_cmd.command)
     print("####################")
     script_rm_cmd = Command(
         name="Remove the external script",
