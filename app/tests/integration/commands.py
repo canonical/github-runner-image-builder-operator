@@ -15,12 +15,10 @@ class Commands:
     Attributes:
         name: The test name.
         command: The command to execute.
-        env: Additional run envs.
     """
 
     name: str
     command: str
-    env: dict | None = None
 
 
 TEST_RUNNER_COMMANDS = (
