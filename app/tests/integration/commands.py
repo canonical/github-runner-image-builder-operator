@@ -15,10 +15,12 @@ class Commands:
     Attributes:
         name: The test name.
         command: The command to execute.
+        env: Additional run envs.
     """
 
     name: str
     command: str
+    env: dict | None = None
 
 
 TEST_RUNNER_COMMANDS = (
@@ -86,7 +88,7 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="test external script secrets (should exist)",
-        command='grep -q "SHOULD_EXIST" /home/ubuntu/secret.txt',
+        command='grep -q "EXIST" /home/ubuntu/secret.txt',
     ),
     Commands(
         name="test external script secrets (should not exist)",
@@ -96,11 +98,11 @@ TEST_RUNNER_COMMANDS = (
     # kept in the image
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_EXIST'",
+        command="! journalctl | grep 'EXIST'",
     ),
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_NOT_EXIST'",
+        command="! journalctl | grep 'MISSING'",
     ),
     Commands(
         name="journal does not contain external script url",
@@ -112,11 +114,11 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_EXIST' /var/log/auth.log*",
+        command="! grep 'EXIST' /var/log/auth.log*",
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_NOT_EXIST' /var/log/auth.log*",
+        command="! grep 'MISSING' /var/log/auth.log*",
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script url",

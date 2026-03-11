@@ -416,14 +416,6 @@ def run_openstack_tests(ssh_connection: SSHConnection):
     Args:
         ssh_connection: The SSH connection instance to OpenStack test server.
     """
-    result: Result = ssh_connection.run("export TEST=hello; echo $TEST")
-    logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
-    result: Result = ssh_connection.run("'export TEST=123; echo $TEST'")
-    logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
-    logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    print("SLEEPING")
-    logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    time.sleep(600000000)
     for testcmd in commands.TEST_RUNNER_COMMANDS:
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)
