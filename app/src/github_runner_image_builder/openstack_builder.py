@@ -636,7 +636,7 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
     )
     # 26.04 requires SSH config with AcceptEnv and SendEnv to pass env vars. The workaround is to pass the env var inline.
-    script_secrets_str = " ".join(f"{key}={value}" for key, value in script_secrets.items())
+    script_secrets_str = " ".join(f"export {key}={value};" for key, value in script_secrets.items())
     script_run_cmd = Command(
         name="Run the external script using the secrets provided as environment variables",
         command=f"{script_secrets_str} sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
