@@ -724,7 +724,7 @@ def _get_ssh_connection(
                 inline_ssh_env=True,
             )
             result: fabric.Result | None = connection.run(
-                "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT}
+                "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT
             )
             if not result or not result.ok:
                 logger.warning(
