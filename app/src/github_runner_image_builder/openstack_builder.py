@@ -643,6 +643,10 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
         env=script_secrets,
     )
+    logger.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    logger.info(script_run_cmd.command)
+    logger.info("With environment variables: %s", script_secrets)
+    logger.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     script_rm_cmd = Command(
         name="Remove the external script",
         command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
