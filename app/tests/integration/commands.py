@@ -78,6 +78,16 @@ TEST_RUNNER_COMMANDS = (
         name="test external script",
         command="cat /home/ubuntu/test.txt | grep 'hello world'",
     ),
+    # DEBUG
+    Commands(
+        name="DEBUG",
+        command="export TEST=hello; echo $TEST",
+    ),
+    Commands(
+        name="DEBUG",
+        command="echo $TEST",
+        env={"TEST": "world"},
+    ),
     Commands(
         name="DEBUG",
         command="cat /home/ubuntu/secret.txt",
