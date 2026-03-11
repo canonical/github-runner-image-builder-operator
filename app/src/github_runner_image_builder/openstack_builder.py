@@ -623,24 +623,25 @@ def _execute_external_script(
     Raises:
         ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
     """
-    Command = namedtuple("Command", ["name", "command", "timeout"])
+    Command = namedtuple("Command", ["name", "command", "timeout", "env"])
     disable_sudo_log_cmd = Command(
         name="Disable sudo log",
         command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
     )
     script_setup_cmd = Command(
         name="Download the external script and set permissions",
         command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
         f"&& sudo chmod +x {EXTERNAL_SCRIPT_PATH}",
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
     )
-    # 26.04 requires SSH config with AcceptEnv and SendEnv to pass env vars. The workaround is to pass the env var inline.
-    script_secrets_str = " ".join(f"export {key}={value};" for key, value in script_secrets.items())
     script_run_cmd = Command(
         name="Run the external script using the secrets provided as environment variables",
-        command=f"{script_secrets_str} sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
+        command=f"sudo --preserve-env={','.join(script_secrets.keys())} {EXTERNAL_SCRIPT_PATH}",
         timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
+        env=script_secrets,
     )
     print("####################")
     print(script_run_cmd.command)
@@ -649,11 +650,13 @@ def _execute_external_script(
         name="Remove the external script",
         command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
     )
     enable_sudo_log_cmd = Command(
         name="Enable sudo log",
         command="sudo rm /etc/sudoers.d/99-no-syslog",
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
     )
 
     try:
@@ -665,7 +668,7 @@ def _execute_external_script(
             enable_sudo_log_cmd,
         ):
             logger.info("Running command via ssh: %s", cmd.name)
-            ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False)
+            ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
@@ -690,7 +693,7 @@ def _get_ssh_connection(
     """Get a valid SSH connection to OpenStack instance.
 
     Args:
-        conn: The Openstach connection instance.
+        conn: The OpenStack connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
         ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
 
