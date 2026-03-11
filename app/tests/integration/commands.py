@@ -103,7 +103,12 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="DEBUG",
-        command="./home/ubuntu/test_script.sh",
+        command="/home/ubuntu/test_script.sh",
+        env={"TEST": "test bash script"},
+    ),
+    Commands(
+        name="DEBUG",
+        command="sudo --preserve-env=TEST /home/ubuntu/test_script.sh",
         env={"TEST": "test bash script"},
     ),
     Commands(
