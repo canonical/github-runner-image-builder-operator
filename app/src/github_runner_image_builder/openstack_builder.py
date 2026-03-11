@@ -669,7 +669,8 @@ def _execute_external_script(
             enable_sudo_log_cmd,
         ):
             logger.info("Running command via ssh: %s", cmd.name)
-            ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
+            result = ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
+            logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
