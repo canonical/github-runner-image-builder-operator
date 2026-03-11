@@ -90,6 +90,24 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="DEBUG",
+        command="echo $TEST_ONE",
+        env={"TEST_ONE": "hello world"},
+    ),
+    Commands(
+        name="DEBUG",
+        command="echo 'echo $TEST' > /home/ubuntu/test_script.sh",
+    ),
+    Commands(
+        name="DEBUG",
+        command="sudo chmod +x /home/ubuntu/test_script.sh",
+    ),
+    Commands(
+        name="DEBUG",
+        command="./home/ubuntu/test_script.sh",
+        env={"TEST": "test bash script"},
+    ),
+    Commands(
+        name="DEBUG",
         command="cat /home/ubuntu/secret.txt",
     ),
     Commands(
