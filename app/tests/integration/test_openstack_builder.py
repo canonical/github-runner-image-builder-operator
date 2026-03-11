@@ -121,8 +121,8 @@ def image_ids_fixture(
                 script_config=config.ScriptConfig(
                     script_url=urllib.parse.urlparse(TESTDATA_TEST_SCRIPT_URL),
                     script_secrets={
-                        "SECRET0": "EXIST",  # nosec: hardcoded_password_string
-                        "SECRET1": "MISSING",  # nosec: hardcoded_password_string
+                        "SECRET": "EXIST",  # nosec: hardcoded_password_string
+                        "NOEXIST": "MISSING",  # nosec: hardcoded_password_string
                     },
                 ),
             ),
