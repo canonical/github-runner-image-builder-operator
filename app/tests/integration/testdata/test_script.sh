@@ -1,13 +1,8 @@
 #!/bin/bash
 
-set -x
+# This script is not directly used in the integration tests.
+# Modify the TESTDATA_TEST_SCRIPT_URL variable in the test code to point to this script on GitHub 
+# to change the script in the test.
 
-env
-echo "${SECRET}"
-sudo -H -u ubuntu 'printenv > /home/ubuntu/env.txt'
-sudo -H -u ubuntu bash -c 'printenv > /home/ubuntu/env-one.txt'
-sudo -H -u ubuntu bash -c '(set -o posix ; set) > /home/ubuntu/posix.txt'
 sudo -H -u ubuntu bash -c 'echo "hello world" > /home/ubuntu/test.txt'
 sudo -H --preserve-env=SECRET -u ubuntu 'echo "${SECRET}" > /home/ubuntu/secret.txt'
-sudo sync
-sudo -H -u sync
