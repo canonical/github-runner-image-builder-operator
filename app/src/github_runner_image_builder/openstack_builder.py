@@ -662,7 +662,7 @@ def _execute_external_script(
 
     try:
         for cmd in (
-            disable_sudo_log_cmd,
+            # disable_sudo_log_cmd,
             script_setup_cmd,
             script_run_cmd,
             script_rm_cmd,
