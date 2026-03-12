@@ -643,10 +643,10 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_RUN_TIMEOUT,
         env=script_secrets,
     )
-    logger.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     logger.info(script_run_cmd.command)
     logger.info("With environment variables: %s", script_secrets)
-    logger.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     script_rm_cmd = Command(
         name="Remove the external script",
         command=f"sudo rm {EXTERNAL_SCRIPT_PATH}",
@@ -668,9 +668,11 @@ def _execute_external_script(
             script_rm_cmd,
             enable_sudo_log_cmd,
         ):
+            logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             logger.info("Running command via ssh: %s", cmd.name)
             result = ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
             logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
+            logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"
