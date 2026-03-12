@@ -113,11 +113,11 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="DEBUG",
-        command="cat /home/ubuntu/secret.txt",
+        command="cat /home/ubuntu/secret_two.txt",
     ),
     Commands(
         name="DEBUG",
-        command="cat /home/ubuntu/secret_one.txt",
+        command="cat /home/ubuntu/secret.txt",
     ),
     Commands(
         name="DEBUG",
@@ -126,6 +126,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="DEBUG",
         command="cat /home/ubuntu/env.txt",
+    ),
+    Commands(
+        name="DEBUG",
+        command="cat /home/ubuntu/secret_one.txt",
     ),
     Commands(
         name="test external script secrets (should exist)",
