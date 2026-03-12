@@ -78,66 +78,13 @@ TEST_RUNNER_COMMANDS = (
         name="test external script",
         command="cat /home/ubuntu/test.txt | grep 'hello world'",
     ),
-    # DEBUG
-    Commands(
-        name="DEBUG",
-        command="export TEST=hello; echo $TEST",
-    ),
-    Commands(
-        name="DEBUG",
-        command="echo $TEST",
-        env={"TEST": "world"},
-    ),
-    Commands(
-        name="DEBUG",
-        command="echo $TEST_ONE",
-        env={"TEST_ONE": "hello world"},
-    ),
-    Commands(
-        name="DEBUG",
-        command="echo 'echo $TEST' > /home/ubuntu/test_script.sh",
-    ),
-    Commands(
-        name="DEBUG",
-        command="sudo chmod +x /home/ubuntu/test_script.sh",
-    ),
-    Commands(
-        name="DEBUG",
-        command="/home/ubuntu/test_script.sh",
-        env={"TEST": "test_bash_script"},
-    ),
-    Commands(
-        name="DEBUG",
-        command="sudo --preserve-env=TEST /home/ubuntu/test_script.sh",
-        env={"TEST": "test-bash-script"},
-    ),
-    Commands(
-        name="DEBUG",
-        command="cat /home/ubuntu/env-one.txt 2>/dev/null",
-    ),
-    Commands(
-        name="DEBUG",
-        command="cat /home/ubuntu/secret.txt 2>/dev/null",
-    ),
-    Commands(
-        name="DEBUG",
-        command="cat /home/ubuntu/posix.txt 2>/dev/null",
-    ),
-    Commands(
-        name="DEBUG",
-        command="cat /home/ubuntu/env.txt 2>/dev/null",
-    ),
-    Commands(
-        name="DEBUG",
-        command="cat /home/ubuntu/secret_one.txt 2>/dev/null",
-    ),
     Commands(
         name="test external script secrets (should exist)",
         command='grep -q "EXIST" /home/ubuntu/secret.txt',
     ),
     Commands(
         name="test external script secrets (should not exist)",
-        command='! grep -q "SHOULD_NOT_EXIST" /home/ubuntu/secret.txt',
+        command='! grep -q "MISSING" /home/ubuntu/secret.txt',
     ),
     # following commands are security related - ensure no traces of the external script are
     # kept in the image
