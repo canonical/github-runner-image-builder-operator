@@ -670,6 +670,7 @@ def _execute_external_script(
         ):
             logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             logger.info("Running command via ssh: %s", cmd.name)
+            logger.info("DEBUG: %s", cmd.command)
             result = ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
             logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
             logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
