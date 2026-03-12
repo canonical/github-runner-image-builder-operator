@@ -624,12 +624,12 @@ def _execute_external_script(
         ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
     """
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
-    # disable_sudo_log_cmd = Command(
-    #     name="Disable sudo log",
-    #     command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
-    #     timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
-    #     env={},
-    # )
+    disable_sudo_log_cmd = Command(
+        name="Disable sudo log",
+        command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
+    )
     script_setup_cmd = Command(
         name="Download the external script and set permissions",
         command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
@@ -666,7 +666,7 @@ def _execute_external_script(
             script_setup_cmd,
             script_run_cmd,
             script_rm_cmd,
-            enable_sudo_log_cmd,
+            # enable_sudo_log_cmd,
         ):
             logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             logger.info("Running command via ssh: %s", cmd.name)
