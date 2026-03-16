@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 TESTDATA_TEST_SCRIPT_URL = (
     "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
-    "1d0582749df7e07d903aa72932a979de4900c48c/app/tests/integration/testdata/test_script.sh"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
 )
 
 
