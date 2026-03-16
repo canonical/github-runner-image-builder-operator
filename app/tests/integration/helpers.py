@@ -420,7 +420,7 @@ def run_openstack_tests(ssh_connection: SSHConnection):
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
-        # assert result.return_code == 0
+        assert result.return_code == 0
 
 
 # This is a simple interface for filtering out openstack objects.
