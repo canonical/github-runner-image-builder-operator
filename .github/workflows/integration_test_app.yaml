@@ -16,25 +16,25 @@ jobs:
       matrix:
         image: [resolute]
         arch: [amd64]
-        # image: [focal, jammy, noble, resolute]
-        # arch: [amd64, arm64, s390x, ppc64le]
-        # exclude:
-        #   - image: focal
-        #     arch: ppc64le
-        #   - image: focal
-        #     arch: s390x
-        #   - image: jammy
-        #     arch: arm64
-        #   - image: jammy
-        #     arch: ppc64le
-        #   - image: jammy
-        #     arch: s390x
-        #   - image: resolute
-        #     arch: arm64
-        #   - image: resolute
-        #     arch: ppc64le
-        #   - image: resolute
-        #     arch: s390x
+        image: [focal, jammy, noble, resolute]
+        arch: [amd64, arm64, s390x, ppc64le]
+        exclude:
+          - image: focal
+            arch: ppc64le
+          - image: focal
+            arch: s390x
+          - image: jammy
+            arch: arm64
+          - image: jammy
+            arch: ppc64le
+          - image: jammy
+            arch: s390x
+          - image: resolute
+            arch: arm64
+          - image: resolute
+            arch: ppc64le
+          - image: resolute
+            arch: s390x
     steps:
       - name: Setup tmate session for debugging
         uses: canonical/action-tmate@main
