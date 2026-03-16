@@ -658,18 +658,14 @@ def _execute_external_script(
 
     try:
         for cmd in (
-            # disable_sudo_log_cmd,
+            disable_sudo_log_cmd,
             script_setup_cmd,
             script_run_cmd,
             script_rm_cmd,
-            # enable_sudo_log_cmd,
+            enable_sudo_log_cmd,
         ):
-            logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             logger.info("Running command via ssh: %s", cmd.name)
-            logger.info("DEBUG: %s", cmd.command)
-            result = ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
-            logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
-            logger.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            ssh_conn.run(cmd.command, timeout=cmd.timeout, warn=False, env=cmd.env)
     except invoke.exceptions.UnexpectedExit as exc:
         raise github_runner_image_builder.errors.ExternalScriptError(
             f"Unexpected exit code, reason: {exc.reason}, result: {exc.result}"

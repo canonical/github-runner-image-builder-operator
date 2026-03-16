@@ -9,7 +9,6 @@
 import functools
 import itertools
 import logging
-from time import sleep
 import typing
 import urllib.parse
 from datetime import datetime, timezone
