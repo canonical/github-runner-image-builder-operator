@@ -61,7 +61,7 @@ TEST_RUNNER_COMMANDS = (
     ),
     # Exclude 26.04 from HWE kernel test since there is no HWE kernel for it.
     Commands(
-        name="test that HWE kernel is installed",
+        name="test that HWE kernel is installed  (only for non-resolute)",
         command="lsb_release -r | grep 26.04 || uname -a | "
         "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
     ),
@@ -70,7 +70,7 @@ TEST_RUNNER_COMMANDS = (
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
     ),
     Commands(
-        name="test network congestion policy",
+        name="test network congestion policy (only for non-resolute)",
         command="lsb_release -r | grep 26.04 || "
         "sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
     ),
@@ -98,11 +98,11 @@ TEST_RUNNER_COMMANDS = (
     ),
     # The sudo-rs in 26.04 cannot be disable with "Defaults !syslog".
     Commands(
-        name="journal does not contain external script url",
+        name="journal does not contain external script url (only for non-resolute)",
         command=f"lsb_release -r | grep 26.04 || ! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
     Commands(
-        name="journal does not contain script content",
+        name="journal does not contain script content (only for non-resolute)",
         command="lsb_release -r | grep 26.04 || ! journalctl | grep '/home/ubuntu/secret.txt'",
     ),
     Commands(
