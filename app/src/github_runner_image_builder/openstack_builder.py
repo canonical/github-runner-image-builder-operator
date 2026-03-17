@@ -629,7 +629,7 @@ def _execute_external_script(
     if base == BaseImage.RESOLUTE:
         disable_sudo_log_cmd = Command(
             name="Disable sudo-rs log",
-            command="echo ':programname, isequal, \"sudo\" ~' | sudo tee /etc/rsyslog.d/00-nosudo.conf",
+            command="echo 'Defaults syslog=none' | sudo tee /etc/sudoers.d/99-no-syslog",
             timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
             env={},
         )
@@ -659,20 +659,12 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
-    if base == BaseImage.RESOLUTE:
-        enable_sudo_log_cmd = Command(
-            name="Enable sudo-rs log",
-            command="sudo rm /etc/rsyslog.d/00-nosudo.conf",
-            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
-            env={},
-        )
-    else:
-        enable_sudo_log_cmd = Command(
-            name="Enable sudo log",
-            command="sudo rm /etc/sudoers.d/99-no-syslog",
-            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
-            env={},
-        )
+    enable_sudo_log_cmd = Command(
+        name="Enable sudo log",
+        command="sudo rm /etc/sudoers.d/99-no-syslog",
+        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        env={},
+    )
 
     try:
         for cmd in (
