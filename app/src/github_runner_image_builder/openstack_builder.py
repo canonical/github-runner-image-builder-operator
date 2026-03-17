@@ -343,6 +343,7 @@ def run(
                 script_url=script_url.geturl(),
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
+                base=image_config.base,
             )
         _shutoff_server(conn=conn, server=builder)
         image = store.create_snapshot(
@@ -611,7 +612,7 @@ def _wait_for_cloud_init_complete(
 
 
 def _execute_external_script(
-    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
+    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection, base: BaseImage,
 ) -> None:
     """Execute the external script on the OpenStack instance.
 
@@ -619,17 +620,26 @@ def _execute_external_script(
         script_url: The external script URL to download and execute.
         script_secrets: The secrets to pass as environment variables to the script.
         ssh_conn: The SSH connection instance to the OpenStack server instance.
+        base: The ubuntu base image.
 
     Raises:
         ExternalScriptError: If the external script (or setup/cleanup of it) failed to execute.
     """
     Command = namedtuple("Command", ["name", "command", "timeout", "env"])
-    disable_sudo_log_cmd = Command(
-        name="Disable sudo log",
-        command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
-        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
-        env={},
-    )
+    if base == BaseImage.RESOLUTE:
+        disable_sudo_log_cmd = Command(
+            name="Disable sudo-rs log",
+            command="echo ':programname, isequal, \"sudo-rs\" ~' | sudo tee /etc/rsyslog.d/00-nosudo.conf",
+            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+            env={},
+        )
+    else:
+        disable_sudo_log_cmd = Command(
+            name="Disable sudo log",
+            command="echo 'Defaults !syslog' | sudo tee /etc/sudoers.d/99-no-syslog",
+            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+            env={},
+        )
     script_setup_cmd = Command(
         name="Download the external script and set permissions",
         command=f'sudo curl "{script_url}" -o {EXTERNAL_SCRIPT_PATH} '
@@ -649,12 +659,20 @@ def _execute_external_script(
         timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         env={},
     )
-    enable_sudo_log_cmd = Command(
-        name="Enable sudo log",
-        command="sudo rm /etc/sudoers.d/99-no-syslog",
-        timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
-        env={},
-    )
+    if base == BaseImage.RESOLUTE:
+        enable_sudo_log_cmd = Command(
+            name="Enable sudo-rs log",
+            command="sudo rm /etc/rsyslog.d/00-nosudo.conf",
+            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+            env={},
+        )
+    else:
+        enable_sudo_log_cmd = Command(
+            name="Enable sudo log",
+            command="sudo rm /etc/sudoers.d/99-no-syslog",
+            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+            env={},
+        )
 
     try:
         for cmd in (

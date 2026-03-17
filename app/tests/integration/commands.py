@@ -96,14 +96,13 @@ TEST_RUNNER_COMMANDS = (
         name="journal does not contain external script secrets",
         command="! journalctl | grep 'MISSING'",
     ),
-    # The sudo-rs in 26.04 does not work with 'Defaults !syslog'
     Commands(
         name="journal does not contain external script url",
-        command=f"lsb_release -r | grep 26.04 || ! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
+        command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
     Commands(
         name="journal does not contain script content",
-        command="lsb_release -r | grep 26.04 || ! journalctl | grep '/home/ubuntu/secret.txt'",
+        command="! journalctl | grep '/home/ubuntu/secret.txt'",
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script secrets",
