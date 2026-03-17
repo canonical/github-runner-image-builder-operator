@@ -783,7 +783,7 @@ main" > /etc/apt/sources.list.d/github-cli.list
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    # Exclude resolute from HWE kernel test since there is no HWE kernel for it.
+    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
     if [ $RELEASE != "resolute" ]; then
         echo "Installing linux-generic-hwe-${{hwe_version}}"
         DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}

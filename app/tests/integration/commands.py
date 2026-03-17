@@ -96,7 +96,7 @@ TEST_RUNNER_COMMANDS = (
         name="journal does not contain external script secrets",
         command="! journalctl | grep 'MISSING'",
     ),
-    # The sudo-rs in 26.04 cannot be disable with "Defaults !syslog".
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
     Commands(
         name="journal does not contain external script url (only for non-resolute)",
         command=f"lsb_release -r | grep 26.04 || ! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
@@ -113,13 +113,15 @@ TEST_RUNNER_COMMANDS = (
         name="/var/log/auth.logs does not contain external script secrets",
         command="! grep 'MISSING' /var/log/auth.log*",
     ),
-    # The sudo-rs in 26.04 cannot be disable with "Defaults !syslog".
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
     Commands(
         name="/var/log/auth.logs does not contain external script url",
-        command=f"lsb_release -r | grep 26.04 || ! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
     ),
     Commands(
         name="/var/log/auth.logs does not contain script content",
-        command="lsb_release -r | grep 26.04 || ! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        "! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )

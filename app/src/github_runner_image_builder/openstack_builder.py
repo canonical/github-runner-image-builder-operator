@@ -611,7 +611,9 @@ def _wait_for_cloud_init_complete(
 
 
 def _execute_external_script(
-    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection,
+    script_url: str,
+    script_secrets: dict[str, str],
+    ssh_conn: fabric.Connection,
 ) -> None:
     """Execute the external script on the OpenStack instance.
 
