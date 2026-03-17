@@ -34,11 +34,6 @@ jobs:
           - image: resolute
             arch: s390x
     steps:
-      - name: Setup tmate session for debugging
-        uses: canonical/action-tmate@main
-        with:
-          detached: true
-          timeout-minutes: 300
       - uses: actions/checkout@v6.0.2
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/setup-python@v6
