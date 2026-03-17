@@ -629,7 +629,7 @@ def _execute_external_script(
     if base == BaseImage.RESOLUTE:
         disable_sudo_log_cmd = Command(
             name="Disable sudo-rs log",
-            command="echo ':programname, isequal, \"sudo-rs\" ~' | sudo tee /etc/rsyslog.d/00-nosudo.conf",
+            command="echo ':programname, isequal, \"sudo\" ~' | sudo tee /etc/rsyslog.d/00-nosudo.conf",
             timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
             env={},
         )
