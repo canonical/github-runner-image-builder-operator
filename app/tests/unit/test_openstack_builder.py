@@ -783,8 +783,11 @@ main" > /etc/apt/sources.list.d/github-cli.list
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    echo "Installing linux-generic-hwe-${{hwe_version}}"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
+    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
+    if [ $RELEASE != "resolute" ]; then
+        echo "Installing linux-generic-hwe-${{hwe_version}}"
+        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
+    fi
 }}
 
 function disable_unattended_upgrades() {{
@@ -799,6 +802,7 @@ function disable_unattended_upgrades() {{
 function enable_network_fair_queuing_congestion() {{
     /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
 net.core.default_qdisc=fq
+# 26.04 does not support bbr by default, this will have no effect on 26.04.
 net.ipv4.tcp_congestion_control=bbr
 EOF
     /usr/sbin/sysctl -p

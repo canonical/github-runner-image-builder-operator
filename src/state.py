@@ -21,7 +21,12 @@ ARCHITECTURES_S390X = {"s390x"}
 ARCHITECTURES_PPC64LE = {"ppc64le", "ppc64el"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
-LTS_IMAGE_VERSION_TAG_MAP = {"20.04": "focal", "22.04": "jammy", "24.04": "noble"}
+LTS_IMAGE_VERSION_TAG_MAP = {
+    "20.04": "focal",
+    "22.04": "jammy",
+    "24.04": "noble",
+    "26.04": "resolute",
+}
 
 ARCHITECTURE_CONFIG_NAME = "architecture"
 BASE_IMAGE_CONFIG_NAME = "base-image"

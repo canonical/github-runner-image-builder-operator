@@ -145,6 +145,10 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
     )
+    logger.info("Downloading Resolute image.")
+    resolute_image_path = cloud_image.download_and_validate_image(
+        arch=arch, base_image=BaseImage.RESOLUTE
+    )
     logger.info("Uploading Focal image.")
     store.upload_image(
         arch=arch,
@@ -169,7 +173,14 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         image_path=noble_image_path,
         keep_revisions=1,
     )
-
+    logger.info("Uploading Resolute image.")
+    store.upload_image(
+        arch=arch,
+        cloud_name=cloud_name,
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.RESOLUTE, prefix=prefix),
+        image_path=resolute_image_path,
+        keep_revisions=1,
+    )
     with openstack.connect(cloud=cloud_name) as conn:
         _create_keypair(conn=conn, prefix=prefix)
         logger.info("Creating security group %s.", SHARED_SECURITY_GROUP_NAME)
@@ -600,7 +611,9 @@ def _wait_for_cloud_init_complete(
 
 
 def _execute_external_script(
-    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
+    script_url: str,
+    script_secrets: dict[str, str],
+    ssh_conn: fabric.Connection,
 ) -> None:
     """Execute the external script on the OpenStack instance.
 
@@ -679,7 +692,7 @@ def _get_ssh_connection(
     """Get a valid SSH connection to OpenStack instance.
 
     Args:
-        conn: The Openstach connection instance.
+        conn: The OpenStack connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
         ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
 
@@ -710,6 +723,7 @@ def _get_ssh_connection(
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key)},
                 connect_timeout=SSH_CONNECT_TIMEOUT,
+                inline_ssh_env=True,
             )
             result: fabric.Result | None = connection.run(
                 "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT

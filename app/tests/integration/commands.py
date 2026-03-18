@@ -59,9 +59,10 @@ TEST_RUNNER_COMMANDS = (
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
     ),
+    # Exclude 26.04 from HWE kernel test since there is no HWE kernel for it.
     Commands(
-        name="test that HWE kernel is installed",
-        command="uname -a | "
+        name="test that HWE kernel is installed  (only for non-resolute)",
+        command="lsb_release -r | grep 26.04 || uname -a | "
         "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
     ),
     Commands(
@@ -69,8 +70,9 @@ TEST_RUNNER_COMMANDS = (
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
     ),
     Commands(
-        name="test network congestion policy",
-        command="sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
+        name="test network congestion policy (only for non-resolute)",
+        command="lsb_release -r | grep 26.04 || "
+        "sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
     ),
     Commands(
         name="test external script",
@@ -78,44 +80,48 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="test external script secrets (should exist)",
-        command='grep -q "SHOULD_EXIST" secret.txt',
+        command='grep -q "EXIST" /home/ubuntu/secret.txt',
     ),
     Commands(
         name="test external script secrets (should not exist)",
-        command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
+        command='! grep -q "MISSING" /home/ubuntu/secret.txt',
     ),
     # following commands are security related - ensure no traces of the external script are
     # kept in the image
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_EXIST'",
+        command="! journalctl | grep 'EXIST'",
     ),
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_NOT_EXIST'",
+        command="! journalctl | grep 'MISSING'",
+    ),
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
+    Commands(
+        name="journal does not contain external script url (only for non-resolute)",
+        command=f"lsb_release -r | grep 26.04 || ! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
     Commands(
-        name="journal does not contain external script url",
-        command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
-    ),
-    Commands(
-        name="journal does not contain script content",
-        command="! journalctl | grep '/home/ubuntu/secret.txt'",
-    ),
-    Commands(
-        name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_EXIST' /var/log/auth.log*",
+        name="journal does not contain script content (only for non-resolute)",
+        command="lsb_release -r | grep 26.04 || ! journalctl | grep '/home/ubuntu/secret.txt'",
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_NOT_EXIST' /var/log/auth.log*",
+        command="! grep 'EXIST' /var/log/auth.log*",
     ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'MISSING' /var/log/auth.log*",
+    ),
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
     Commands(
         name="/var/log/auth.logs does not contain external script url",
-        command=f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
     ),
     Commands(
         name="/var/log/auth.logs does not contain script content",
-        command="! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        "! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )
