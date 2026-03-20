@@ -317,7 +317,7 @@ def test_configs_fixture(
 def image_configs_fixture():
     """The image configuration values used to parametrize image build."""
     return ImageConfigs(
-        bases=("noble",),
+        bases=("resolute",),
     )
 
 
