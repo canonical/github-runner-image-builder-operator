@@ -137,11 +137,13 @@ class BaseImage(str, Enum):
         FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
+        RESOLUTE: The resolute ubuntu LTS image.
     """
 
     FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
+    RESOLUTE = "resolute"
 
     def __str__(self) -> str:
         """Interpolate to string value.
