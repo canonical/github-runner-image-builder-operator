@@ -1,6 +1,10 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#206 Add resolute image support]
+
+* Add resolute image support.
+
 ## [#198 Update integration tests](https://github.com/canonical/github-runner-image-builder-operator/pull/198) (2026-02-17)
 * Update integration tests that were intentionally not done in #185.
 
