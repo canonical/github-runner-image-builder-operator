@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#213 Fix proxy setup]
+* Fix proxy setup for image-relation joined hook.
+
 ## [#206 Add resolute image support]
 * Add resolute image support.
 
