@@ -1,5 +1,5 @@
 .. meta::
-   :description: How-to guides for operating the github runner image builder charm, including basic operations, upgrades, and development. 
+   :description: How-to guides for operating the GitHub runner image builder charm, including basic operations, upgrades, and development. 
 
 .. _how_to_index:
 
@@ -7,7 +7,7 @@ How-to guides
 =============
 
 The following guides cover key processes and common tasks for managing and
-using the github runner image builder charm.
+using the GitHub runner image builder charm.
 
 .. vale Canonical.013-Spell-out-numbers-below-10 = NO
 .. vale Canonical.500-Repeated-words = NO

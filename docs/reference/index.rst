@@ -1,12 +1,12 @@
 .. meta::
-   :description: Technical reference documentation for the github runner image builder charm, including actions, configurations, and architecture.
+   :description: Technical reference documentation for the GitHub runner image builder charm, including actions, configurations, and architecture.
 
 .. _reference_index:
 
 Reference
 =========
 
-This section contains technical details and information about the github runner image builder charm.
+This section contains technical details and information about the GitHub runner image builder charm.
 
 .. vale Canonical.013-Spell-out-numbers-below-10 = NO
 .. vale Canonical.500-Repeated-words = NO
