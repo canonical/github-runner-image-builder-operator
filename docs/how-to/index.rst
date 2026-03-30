@@ -26,7 +26,7 @@ basic operations you can complete with the charm.
     Configure base image <configure-base-image>
     Configure build interval <configure-build-interval>
     Configure revision history limit <configure-revision-history>
-    Pin github runner version <pin-github-runner-version>
+    Pin GitHub runner version <pin-github-runner-version>
 
 Update and refresh
 ------------------
