@@ -77,7 +77,11 @@ def test__on_image_relation_joined(
     act: when _on_image_relation_joined hook is fired.
     assert: update_relation_data is called.
     """
-    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock())
+    mock_build_config = MagicMock()
+    mock_build_config.proxy = None
+    monkeypatch.setattr(
+        state.BuilderConfig, "from_charm", MagicMock(return_value=mock_build_config)
+    )
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value="test-id"))
