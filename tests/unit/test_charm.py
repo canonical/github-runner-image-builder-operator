@@ -325,7 +325,7 @@ def test_setup_proxy_environment_with_proxy_config(
         no_proxy="localhost,127.0.0.1",
     )
 
-    charm._setup_proxy_environment(proxy_config)
+    charm.setup_proxy_environment(proxy_config)
 
     assert os.environ["http_proxy"] == "http://proxy.example.com:8080"
     assert os.environ["https_proxy"] == "https://proxy.example.com:8443"
