@@ -15,7 +15,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@test/get-workflow-version-action
     secrets: inherit
     with:
-      juju-channel: 3.6/stable
+      juju-channel: 4.0/stable
       provider: lxd
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
