@@ -160,16 +160,17 @@ def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour
     logger.info("Cron file content: %s", cron_content)
     juju.ssh(unit_name, "sudo systemctl restart cron")
 
-    yield
-
-    juju.ssh(
-        unit_name,
-        rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
-        f"{CRON_BUILD_SCHEDULE_PATH}",
-    )
-    cron_content = juju.ssh(unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
-    logger.info("Cronfile content: %s", cron_content)
-    juju.ssh(unit_name, "sudo systemctl restart cron")
+    try:
+        yield
+    finally:
+        juju.ssh(
+            unit_name,
+            rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
+            f"{CRON_BUILD_SCHEDULE_PATH}",
+        )
+        cron_content = juju.ssh(unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
+        logger.info("Cronfile content: %s", cron_content)
+        juju.ssh(unit_name, "sudo systemctl restart cron")
 
 
 @pytest.mark.abort_on_fail
