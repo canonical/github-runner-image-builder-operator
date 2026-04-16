@@ -3,7 +3,6 @@
 
 """Test that no breaking change occurs when upgrading the charm."""
 
-import functools
 import logging
 from datetime import datetime, timezone
 
