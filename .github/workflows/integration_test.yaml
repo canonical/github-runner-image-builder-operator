@@ -15,7 +15,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@test/get-workflow-version-action
     secrets: inherit
     with:
-      juju-channel: 4.0/stable
+      juju-channel: 3.6/stable
       provider: lxd
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
@@ -24,8 +24,6 @@ jobs:
       builder-runner-label: X64
       pre-run-script: |
         -c "./tests/integration/aproxy_prerouting_workaround.sh"
-      tmate-debug: true
-      tmate-timeout: 90
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
