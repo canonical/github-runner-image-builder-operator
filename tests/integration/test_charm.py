@@ -66,7 +66,7 @@ def test_build_image(
 # Ignore the "too many arguments" warning, as this is not significant for a test function where
 # the arguments are fixtures and the function is not expected to be called directly.
 @pytest.mark.abort_on_fail
-def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R0917
+def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R0914,R0917
     juju: jubilant.Juju,
     app: str,
     test_charm: str,
