@@ -7,40 +7,34 @@ import functools
 import logging
 from datetime import datetime, timezone
 
+import jubilant
 import pytest
-import pytest_asyncio
-from juju.application import Application
-from juju.model import Model
-from juju.unit import Unit
-from openstack.connection import Connection
 
 from tests.integration.helpers import wait_for, wait_for_images
 from tests.integration.types import OpenstackMeta, TestConfigs
 
 
-@pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(
-    app_on_charmhub: Application,
+@pytest.fixture(scope="module", name="app")
+def app_fixture(
+    juju: jubilant.Juju,
+    app_on_charmhub: str,
     test_configs: TestConfigs,
     openstack_metadata: OpenstackMeta,
-    ops_test,
-) -> Application:
+) -> str:
     """Upgrade the charm from the local charm file."""
     logging.info("Refreshing the charm from the local charm file.")
-    await ops_test.juju(
-        "refresh",
-        "--path",
-        test_configs.charm_file,
-        "--config",
-        f"build-flavor={openstack_metadata.flavor}",
-        "--config",
-        f"build-network={openstack_metadata.network}",
-        app_on_charmhub.name,
+    juju.refresh(
+        app_on_charmhub,
+        path=test_configs.charm_file,
+        config={
+            "build-flavor": openstack_metadata.flavor,
+            "build-network": openstack_metadata.network,
+        },
     )
-    app = app_on_charmhub
-    unit = app.units[0]
+    status = juju.status()
+    unit_name = next(iter(status.apps[app_on_charmhub].units))
 
-    async def is_upgrade_charm_event_emitted(unit: Unit) -> bool:
+    def is_upgrade_charm_event_emitted() -> bool:
         """Check if the upgrade_charm event is emitted.
 
         This is to ensure false positives from only waiting for ACTIVE status or
@@ -48,35 +42,30 @@ async def app_fixture(
         We cannot rely on the juju status containing revision zero, because it changes instantly,
         and the hook upgrade-charm can run with a significant delay.
 
-        Args:
-            unit: The unit to check for upgrade charm event.
-
         Returns:
             bool: True if the event is emitted, False otherwise.
         """
-        unit_name_without_slash = unit.name.replace("/", "-")
+        unit_name_without_slash = unit_name.replace("/", "-")
         juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
-        stdout = await unit.ssh(command=f"cat {juju_unit_log_file}")
+        stdout = juju.ssh(unit_name, f"cat {juju_unit_log_file}")
         return "Emitting Juju event upgrade_charm." in stdout
 
-    await wait_for(
-        functools.partial(is_upgrade_charm_event_emitted, unit), timeout=360, check_interval=60
-    )
-    await app.model.wait_for_idle(
-        apps=[app.name],
-        raise_on_error=True,
+    wait_for(is_upgrade_charm_event_emitted, timeout=360, check_interval=60)
+    juju.wait(
+        lambda s: jubilant.all_agents_idle(s, app_on_charmhub),
+        error=jubilant.any_error,
         timeout=180 * 60,
-        check_freq=30,
+        delay=30,
     )
 
-    return app
+    return app_on_charmhub
 
 
-@pytest.mark.asyncio
-async def test_image_build(
-    app: Application,
-    test_charm: Application,
-    openstack_connection: Connection,
+def test_image_build(
+    juju: jubilant.Juju,
+    app: str,
+    test_charm: str,
+    openstack_connection,
     image_names: list[str],
 ):
     """
@@ -84,11 +73,10 @@ async def test_image_build(
     act: Integrate the refreshed charm with the test charm.
     assert: Image building is working.
     """
-    model: Model = app.model
     dispatch_time = datetime.now(tz=timezone.utc)
-    await model.integrate(app.name, test_charm.name)
+    juju.integrate(app, test_charm)
 
-    await wait_for_images(
+    wait_for_images(
         openstack_connection=openstack_connection,
         dispatch_time=dispatch_time,
         image_names=image_names,

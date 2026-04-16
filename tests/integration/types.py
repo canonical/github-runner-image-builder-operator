@@ -8,7 +8,7 @@ import typing
 from datetime import datetime
 from pathlib import Path
 
-from juju.model import Model
+import jubilant
 from openstack.compute.v2.keypair import Keypair
 from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
@@ -71,13 +71,13 @@ class TestConfigs(typing.NamedTuple):
     """Test configuration values.
 
     Attributes:
-        model: The juju test model.
+        juju: The jubilant Juju instance.
         charm_file: The charm file path.
         dispatch_time: The test start time.
         test_id: The test unique identifier.
     """
 
-    model: Model
+    juju: jubilant.Juju
     charm_file: str | Path
     dispatch_time: datetime
     test_id: str

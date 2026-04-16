@@ -5,12 +5,11 @@
 
 import dataclasses
 import functools
-import inspect
 import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Awaitable, Callable, ParamSpec, TypeVar, cast
+from typing import Callable, TypeVar
 
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 CREATE_SERVER_TIMEOUT_IN_SECONDS = 15 * 60
 
 
-async def wait_for_images(
+def wait_for_images(
     openstack_connection: Connection, dispatch_time: datetime, image_names: list[str]
 ):
     """Wait for images to be created.
@@ -33,7 +32,7 @@ async def wait_for_images(
         image_names: The image names to check for.
     """
     for image_name in image_names:
-        await wait_for(
+        wait_for(
             functools.partial(
                 image_created_from_dispatch,
                 connection=openstack_connection,
@@ -92,13 +91,11 @@ class OpenStackConnectionParams:
     ssh_key: Path
 
 
-P = ParamSpec("P")
 R = TypeVar("R")
-S = Callable[P, R] | Callable[P, Awaitable[R]]
 
 
-async def wait_for(
-    func: S,
+def wait_for(
+    func: Callable[[], R],
     timeout: int | float = 300,
     check_interval: int = 10,
 ) -> R:
@@ -116,23 +113,14 @@ async def wait_for(
         The result of the function if any.
     """
     deadline = time.time() + timeout
-    is_awaitable = inspect.iscoroutinefunction(func)
     while time.time() < deadline:
-        if is_awaitable:
-            if result := await cast(Awaitable, func()):
-                return result
-        else:
-            if result := func():
-                return cast(R, result)
+        if result := func():
+            return result
         time.sleep(check_interval)
 
     # final check before raising TimeoutError.
-    if is_awaitable:
-        if result := await cast(Awaitable, func()):
-            return result
-    else:
-        if result := func():
-            return cast(R, result)
+    if result := func():
+        return result
     raise TimeoutError()
 
 
