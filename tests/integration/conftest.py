@@ -332,12 +332,27 @@ async def script_secret_fixture(test_configs) -> _Secret:
     return _Secret(id=secret_id, name=secret_name)
 
 
-@pytest.fixture(scope="module", name="app_config")
-def app_config_fixture(
+@pytest_asyncio.fixture(scope="module", name="openstack_password_secret")
+async def openstack_password_secret_fixture(
+    test_configs: TestConfigs,
+    private_endpoint_configs: PrivateEndpointConfigs,
+) -> _Secret:
+    """The OpenStack password Juju secret."""
+    secret_name = f"openstack-password-{uuid4().hex}"
+    secret_id = await test_configs.model.add_secret(
+        name=secret_name,
+        data_args=[f"password={private_endpoint_configs['password']}"],
+    )  # note secret_id already contains "secret:" prefix
+    return _Secret(id=secret_id, name=secret_name)
+
+
+@pytest_asyncio.fixture(scope="module", name="app_config")
+async def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
     arch: state.Arch,
+    openstack_password_secret: _Secret,
 ) -> dict:
     """The image builder application config."""
     return {
@@ -346,7 +361,7 @@ def app_config_fixture(
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
-        OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
+        OPENSTACK_PASSWORD_CONFIG_NAME: openstack_password_secret.id,
         OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
@@ -372,6 +387,7 @@ async def app_fixture(
     base_machine_constraint: str,
     test_configs: TestConfigs,
     script_secret: _Secret,
+    openstack_password_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -381,6 +397,7 @@ async def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
+    await app.model.grant_secret(openstack_password_secret.name, app.name)
     await app.model.grant_secret(script_secret.name, app.name)
     await app.set_config(
         {
@@ -404,6 +421,7 @@ async def app_on_charmhub_fixture(
     app_config: dict,
     base_machine_constraint: str,
     ops_test,
+    openstack_password_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
     # Normally we would use latest/stable, but upgrading
@@ -429,6 +447,9 @@ async def app_on_charmhub_fixture(
         config=charmhub_app_config,
         channel=charmhub_channel,
     )
+
+    if OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options:
+        await app.model.grant_secret(openstack_password_secret.name, app.name)
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 

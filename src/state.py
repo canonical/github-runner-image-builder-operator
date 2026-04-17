@@ -628,13 +628,31 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
         The openstack clouds yaml.
     """
     auth_url = typing.cast(str, charm.config.get(OPENSTACK_AUTH_URL_CONFIG_NAME))
-    password = typing.cast(str, charm.config.get(OPENSTACK_PASSWORD_CONFIG_NAME))
+    password_secret_id = typing.cast(str, charm.config.get(OPENSTACK_PASSWORD_CONFIG_NAME))
     project_domain = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME))
     project = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_CONFIG_NAME))
     user_domain = typing.cast(str, charm.config.get(OPENSTACK_USER_DOMAIN_CONFIG_NAME))
     user = typing.cast(str, charm.config.get(OPENSTACK_USER_CONFIG_NAME))
-    if not all((auth_url, password, project_domain, project, user_domain, user)):
+    if not all((auth_url, password_secret_id, project_domain, project, user_domain, user)):
         raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
+
+    try:
+        secret = charm.model.get_secret(id=password_secret_id)
+    except ops.SecretNotFoundError as exc:
+        raise InvalidCloudConfigError(
+            f"OpenStack password secret not found: {password_secret_id}."
+        ) from exc
+    except ops.ModelError as exc:
+        raise InvalidCloudConfigError(
+            "Charm does not have access to the OpenStack password secret. "
+            "Please grant the charm read access to the secret."
+        ) from exc
+    secret_content = secret.get_content(refresh=True)
+    password = secret_content.get("password", "")
+    if not password:
+        raise InvalidCloudConfigError(
+            f"Secret {password_secret_id} does not contain a 'password' key."
+        )
 
     clouds_config = OpenstackCloudsConfig(
         clouds={

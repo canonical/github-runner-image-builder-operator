@@ -108,12 +108,12 @@ config:
         client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
         openstack.org/python-openstackclient/queens/configuration/index.html for more information.
     openstack-password:
-      type: string
-      default: ""
+      type: secret
       description: |
-        The password section of the clouds.yaml contents, used to authenticate the OpenStack \
-        client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
-        queens/configuration/index.html for more information.
+        The password section of the clouds.yaml contents, used to authenticate the OpenStack
+        client. A Juju user secret ID should be passed in the format of secret:<secret-id>.
+        The secret must contain a 'password' key with the OpenStack password as its value.
+        Example: juju add-secret openstack-password password=<value>.
     openstack-project-domain-name:
       type: string
       default: ""

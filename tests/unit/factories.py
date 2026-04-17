@@ -76,6 +76,7 @@ class MockCharmFactory(factory.Factory):
         """Configuration for factory."""  # noqa: DCO060
 
         model = MagicMock
+        exclude = ["_setup_mock_openstack_secret"]
 
     app = MockAppFactory()
     unit = MockUnitFactory()
@@ -86,7 +87,7 @@ class MockCharmFactory(factory.Factory):
             EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: "test-flavor",
             EXTERNAL_BUILD_NETWORK_CONFIG_NAME: "test-network",
             OPENSTACK_AUTH_URL_CONFIG_NAME: "http://testing-auth/keystone",
-            OPENSTACK_PASSWORD_CONFIG_NAME: "test-password",
+            OPENSTACK_PASSWORD_CONFIG_NAME: "secret:test-secret-id",  # nosec: hardcoded_password_string
             OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test-project-domain",
             OPENSTACK_PROJECT_CONFIG_NAME: "test-project-name",
             OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test-user-domain",
@@ -97,6 +98,16 @@ class MockCharmFactory(factory.Factory):
             SCRIPT_SECRET_ID_CONFIG_NAME: "test-secret-label",
         }
     )
+
+    @factory.post_generation
+    def _setup_mock_openstack_secret(  # noqa: DCO020
+        obj: MagicMock, create: bool, extracted: typing.Any, **kwargs: typing.Any
+    ) -> None:
+        mock_secret = MagicMock()
+        mock_secret.get_content.return_value = {
+            "password": "test-password"  # nosec: hardcoded_password_string
+        }
+        obj.model.get_secret.return_value = mock_secret
 
 
 class CloudAuthFactory(factory.DictFactory):

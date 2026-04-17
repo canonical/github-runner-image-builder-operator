@@ -422,6 +422,55 @@ def test__parse_openstack_clouds_config():
     )
 
 
+@pytest.mark.parametrize(
+    "exception, expected_error",
+    [
+        pytest.param(
+            ops.SecretNotFoundError,
+            "OpenStack password secret not found:",
+            id="secret-not-found",
+        ),
+        pytest.param(
+            ops.ModelError,
+            "Please grant the charm read access to the secret.",
+            id="access-denied",
+        ),
+    ],
+)
+def test__parse_openstack_clouds_config_secret_error(
+    exception: Exception, expected_error: str
+):
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.model.get_secret = MagicMock(side_effect=exception)
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert expected_error in str(exc)
+
+
+def test__parse_openstack_clouds_config_missing_password_key():
+    """
+    arrange: given a secret that does not contain a 'password' key.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    mock_secret = MagicMock()
+    mock_secret.get_content.return_value = {}
+    charm.model.get_secret.return_value = mock_secret
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert "does not contain a 'password' key" in str(exc)
+
+
 # pylint: enable=undefined-variable,unused-variable
 
 
