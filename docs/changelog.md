@@ -1,6 +1,9 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#219 Use Juju secrets]
+* Use Juju secrets for sensitive configuration values.
+
 ## [#206 Add resolute image support]
 * Add resolute image support.
 
