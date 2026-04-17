@@ -437,9 +437,7 @@ def test__parse_openstack_clouds_config():
         ),
     ],
 )
-def test__parse_openstack_clouds_config_secret_error(
-    exception: Exception, expected_error: str
-):
+def test__parse_openstack_clouds_config_secret_error(exception: Exception, expected_error: str):
     """
     arrange: given a mocked model get_secret method that raises a given error.
     act: when _parse_openstack_clouds_config is called.

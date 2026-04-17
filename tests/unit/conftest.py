@@ -25,9 +25,7 @@ def harness_fixture():
     harness = Harness(GithubRunnerImageBuilderCharm)
     harness.begin()
 
-    openstack_password_secret_id = harness.add_user_secret(
-        {"password": secrets.token_hex(16)}
-    )
+    openstack_password_secret_id = harness.add_user_secret({"password": secrets.token_hex(16)})
     harness.grant_secret(openstack_password_secret_id, harness.charm.app.name)
 
     # Replace config_changed handler temporarily.

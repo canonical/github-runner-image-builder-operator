@@ -415,17 +415,17 @@ async def app_fixture(
     await test_configs.model.remove_application(app_name=app.name)
 
 
-@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
-async def app_on_charmhub_fixture(
-    test_configs: TestConfigs,
-    app_config: dict,
-    base_machine_constraint: str,
-    ops_test,
-    openstack_password_secret: _Secret,
-) -> AsyncGenerator[Application, None]:
-    """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable, but upgrading
-    # from stable is currently broken, and therefore we are using edge. Change this in the future.
+async def _prepare_charmhub_app_config(ops_test, app_config: dict) -> tuple[str, dict, set]:
+    """Prepare the application config for charmhub deployment.
+
+    Args:
+        ops_test: The pytest operator test instance.
+        app_config: The base application configuration.
+
+    Returns:
+        A tuple of (channel, prepared_config, config_options).
+
+    """
     charmhub_channel = "edge"
     ret_code, stdout, stderr = await ops_test.juju(
         "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
@@ -440,6 +440,24 @@ async def app_on_charmhub_fixture(
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
         if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
             charmhub_app_config[legacy_opt] = app_config[opt]
+
+    return charmhub_channel, charmhub_app_config, charmhub_config_options
+
+
+@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
+async def app_on_charmhub_fixture(
+    test_configs: TestConfigs,
+    app_config: dict,
+    base_machine_constraint: str,
+    ops_test,
+    openstack_password_secret: _Secret,
+) -> AsyncGenerator[Application, None]:
+    """Fixture for deploying the charm from charmhub."""
+    # Normally we would use latest/stable, but upgrading
+    # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel, charmhub_app_config, charmhub_config_options = (
+        await _prepare_charmhub_app_config(ops_test, app_config)
+    )
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
