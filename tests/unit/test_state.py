@@ -7,6 +7,7 @@
 # pylint:disable=protected-access
 
 import os
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -475,12 +476,13 @@ def test__parse_openstack_clouds_config_legacy_password():
     assert: the clouds config is parsed correctly using the legacy password.
     """
     charm = factories.MockCharmFactory()
-    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = "legacy-password"
+    test_password = secrets.token_hex(16)
+    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = test_password
     charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
 
     clouds_config = state._parse_openstack_clouds_config(charm)
 
-    assert clouds_config.clouds[state.CLOUD_NAME].auth.password == "legacy-password"
+    assert clouds_config.clouds[state.CLOUD_NAME].auth.password == test_password
 
 
 def test__parse_openstack_clouds_config_no_password():
@@ -701,4 +703,5 @@ def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: di
     mock_charm = MagicMock()
     mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
 
+    assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
     assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map

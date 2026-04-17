@@ -36,8 +36,10 @@ EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: hardcoded_password_string
-# nosec: hardcoded_password_string
-OPENSTACK_PASSWORD_SECRET_CONFIG_NAME = "openstack-password-secret"
+# Bandit thinks this is a hardcoded password
+OPENSTACK_PASSWORD_SECRET_CONFIG_NAME = (
+    "openstack-password-secret"  # nosec: hardcoded_password_string
+)
 OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "openstack-project-domain-name"
 OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
 OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
