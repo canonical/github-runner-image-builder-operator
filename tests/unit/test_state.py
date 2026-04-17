@@ -374,7 +374,6 @@ def test__parse_runner_version(version: str, expected_version: str):
     "missing_config",
     [
         pytest.param(state.OPENSTACK_AUTH_URL_CONFIG_NAME),
-        pytest.param(state.OPENSTACK_PASSWORD_CONFIG_NAME),
         pytest.param(state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME),
         pytest.param(state.OPENSTACK_PROJECT_CONFIG_NAME),
         pytest.param(state.OPENSTACK_USER_DOMAIN_CONFIG_NAME),
@@ -467,6 +466,37 @@ def test__parse_openstack_clouds_config_missing_password_key():
         state._parse_openstack_clouds_config(charm)
 
     assert "does not contain a 'password' key" in str(exc)
+
+
+def test__parse_openstack_clouds_config_legacy_password():
+    """
+    arrange: given a charm with the legacy openstack-password config (string).
+    act: when _parse_openstack_clouds_config is called.
+    assert: the clouds config is parsed correctly using the legacy password.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = "legacy-password"
+    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
+
+    clouds_config = state._parse_openstack_clouds_config(charm)
+
+    assert clouds_config.clouds[state.CLOUD_NAME].auth.password == "legacy-password"
+
+
+def test__parse_openstack_clouds_config_no_password():
+    """
+    arrange: given a charm with neither password config set.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = ""
+    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert "Please supply OpenStack password" in str(exc)
 
 
 # pylint: enable=undefined-variable,unused-variable

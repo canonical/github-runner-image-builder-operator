@@ -18,6 +18,7 @@ from state import (
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
     OPENSTACK_USER_CONFIG_NAME,
@@ -87,7 +88,8 @@ class MockCharmFactory(factory.Factory):
             EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: "test-flavor",
             EXTERNAL_BUILD_NETWORK_CONFIG_NAME: "test-network",
             OPENSTACK_AUTH_URL_CONFIG_NAME: "http://testing-auth/keystone",
-            OPENSTACK_PASSWORD_CONFIG_NAME: "secret:test-secret-id",  # nosec: hardcoded_password_string
+            OPENSTACK_PASSWORD_CONFIG_NAME: "",
+            OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: "secret:test-secret-id",  # nosec: hardcoded_password_string
             OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test-project-domain",
             OPENSTACK_PROJECT_CONFIG_NAME: "test-project-name",
             OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test-user-domain",

@@ -25,16 +25,13 @@ def harness_fixture():
     harness = Harness(GithubRunnerImageBuilderCharm)
     harness.begin()
 
-    openstack_password_secret_id = harness.add_user_secret({"password": secrets.token_hex(16)})
-    harness.grant_secret(openstack_password_secret_id, harness.charm.app.name)
-
     # Replace config_changed handler temporarily.
     config_changed_handler = harness.charm._on_config_changed
     harness.charm._on_config_changed = MagicMock()
     harness.update_config(
         {
             state.OPENSTACK_AUTH_URL_CONFIG_NAME: "https://test-auth-url.com/",
-            state.OPENSTACK_PASSWORD_CONFIG_NAME: openstack_password_secret_id,
+            state.OPENSTACK_PASSWORD_CONFIG_NAME: secrets.token_hex(16),
             state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test",
             state.OPENSTACK_PROJECT_CONFIG_NAME: "test",
             state.OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test",

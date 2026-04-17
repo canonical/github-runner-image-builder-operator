@@ -37,7 +37,7 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
-    OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
     OPENSTACK_USER_CONFIG_NAME,
@@ -361,7 +361,7 @@ async def app_config_fixture(
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
-        OPENSTACK_PASSWORD_CONFIG_NAME: openstack_password_secret.id,
+        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id,
         OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
@@ -466,7 +466,7 @@ async def app_on_charmhub_fixture(
         channel=charmhub_channel,
     )
 
-    if OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options:
+    if OPENSTACK_PASSWORD_SECRET_CONFIG_NAME in charmhub_config_options:
         await app.model.grant_secret(openstack_password_secret.name, app.name)
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
