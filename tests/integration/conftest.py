@@ -458,7 +458,7 @@ async def _prepare_charmhub_app_config(
 
 
 @pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
-async def app_on_charmhub_fixture(
+async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: str,
@@ -478,9 +478,7 @@ async def app_on_charmhub_fixture(
     # Deploy without the secret-backed config so the charm doesn't try to read the secret
     # before the grant is in place.
     deploy_config = {
-        k: v
-        for k, v in charmhub_app_config.items()
-        if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
+        k: v for k, v in charmhub_app_config.items() if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
     }
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
@@ -494,9 +492,7 @@ async def app_on_charmhub_fixture(
         # Grant access first, then set the config to trigger a config-changed hook
         # after the charm already has read permissions for the secret.
         await app.model.grant_secret(openstack_password_secret.name, app.name)
-        await app.set_config(
-            {OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id}
-        )
+        await app.set_config({OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id})
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
