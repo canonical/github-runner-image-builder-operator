@@ -113,7 +113,7 @@ config:
       description: |
         The password section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
-        queens/configuration/index.html for more information. \
+        queens/configuration/index.html for more information.
         DEPRECATED: Use openstack-password-secret instead for better security.
     openstack-password-secret:
       type: secret

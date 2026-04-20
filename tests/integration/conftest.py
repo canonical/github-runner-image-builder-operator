@@ -37,6 +37,7 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
+    OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
@@ -415,12 +416,16 @@ async def app_fixture(
     await test_configs.model.remove_application(app_name=app.name)
 
 
-async def _prepare_charmhub_app_config(ops_test, app_config: dict) -> tuple[str, dict, set]:
+async def _prepare_charmhub_app_config(
+    ops_test, app_config: dict, openstack_password: str
+) -> tuple[str, dict, set[str]]:
     """Prepare the application config for charmhub deployment.
 
     Args:
         ops_test: The pytest operator test instance.
         app_config: The base application configuration.
+        openstack_password: The plaintext OpenStack password, used as a fallback when the
+            charmhub revision does not yet expose openstack-password-secret.
 
     Returns:
         A tuple of (channel, prepared_config, config_options).
@@ -432,7 +437,7 @@ async def _prepare_charmhub_app_config(ops_test, app_config: dict) -> tuple[str,
     )
     assert ret_code == 0, f"Failed to get charm info: {stderr}"
     charmhub_info = json.loads(stdout.strip())
-    charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
+    charmhub_config_options = set(charmhub_info["charm"]["config"]["Options"].keys())
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
     # We might need to test using the legacy config options.
@@ -440,6 +445,14 @@ async def _prepare_charmhub_app_config(ops_test, app_config: dict) -> tuple[str,
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
         if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
             charmhub_app_config[legacy_opt] = app_config[opt]
+
+    # If the charmhub revision doesn't expose openstack-password-secret yet, fall back to the
+    # legacy openstack-password option so the charm has credentials during initial deployment.
+    if (
+        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME not in charmhub_config_options
+        and OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options
+    ):
+        charmhub_app_config[OPENSTACK_PASSWORD_CONFIG_NAME] = openstack_password
 
     return charmhub_channel, charmhub_app_config, charmhub_config_options
 
@@ -451,23 +464,39 @@ async def app_on_charmhub_fixture(
     base_machine_constraint: str,
     ops_test,
     openstack_password_secret: _Secret,
+    private_endpoint_configs: PrivateEndpointConfigs,
 ) -> AsyncGenerator[Application, None]:
     """Fixture for deploying the charm from charmhub."""
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel, charmhub_app_config, charmhub_config_options = (
-        await _prepare_charmhub_app_config(ops_test, app_config)
+        await _prepare_charmhub_app_config(
+            ops_test, app_config, private_endpoint_configs["password"]
+        )
     )
+
+    # Deploy without the secret-backed config so the charm doesn't try to read the secret
+    # before the grant is in place.
+    deploy_config = {
+        k: v
+        for k, v in charmhub_app_config.items()
+        if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
+    }
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=charmhub_app_config,
+        config=deploy_config,
         channel=charmhub_channel,
     )
 
     if OPENSTACK_PASSWORD_SECRET_CONFIG_NAME in charmhub_config_options:
+        # Grant access first, then set the config to trigger a config-changed hook
+        # after the charm already has read permissions for the secret.
         await app.model.grant_secret(openstack_password_secret.name, app.name)
+        await app.set_config(
+            {OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id}
+        )
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 

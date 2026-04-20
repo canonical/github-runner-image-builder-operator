@@ -36,10 +36,7 @@ EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
 OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: hardcoded_password_string
-# Bandit thinks this is a hardcoded password
-OPENSTACK_PASSWORD_SECRET_CONFIG_NAME = (
-    "openstack-password-secret"  # nosec: hardcoded_password_string
-)
+OPENSTACK_PASSWORD_SECRET_CONFIG_NAME = "openstack-password-secret"
 OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "openstack-project-domain-name"
 OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
 OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
@@ -645,6 +642,18 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
 
     # Prefer the secret-based password if provided
     if password_secret_id:
+        juju_version = ops.JujuVersion.from_environ()
+        if juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
+            raise InvalidCloudConfigError(
+                f"Secrets are not supported in Juju version {juju_version}. "
+                "Please consider upgrading the Juju controller to >= 3.3 or use "
+                "the openstack-password configuration option."
+            )
+        if not password_secret_id.startswith("secret:"):
+            raise InvalidCloudConfigError(
+                f"Invalid value '{password_secret_id}' for openstack-password-secret. "
+                "Expected a Juju secret ID in the format 'secret:<secret-id>'."
+            )
         try:
             secret = charm.model.get_secret(id=password_secret_id)
         except ops.SecretNotFoundError as exc:
