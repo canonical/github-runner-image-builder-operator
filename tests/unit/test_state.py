@@ -504,21 +504,6 @@ def test__parse_openstack_clouds_config_no_password():
     assert "Please supply OpenStack password" in str(exc)
 
 
-@pytest.mark.usefixtures("patch_juju_version_29")
-def test__parse_openstack_clouds_config_secret_unsupported_juju():
-    """
-    arrange: given a charm with openstack-password-secret set but running on Juju < 3.3.
-    act: when _parse_openstack_clouds_config is called.
-    assert: InvalidCloudConfigError is raised with guidance to upgrade or use legacy option.
-    """
-    charm = factories.MockCharmFactory()
-
-    with pytest.raises(state.InvalidCloudConfigError) as exc:
-        state._parse_openstack_clouds_config(charm)
-
-    assert "openstack-password" in str(exc)
-
-
 @pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_openstack_clouds_config_invalid_secret_id_format():
     """

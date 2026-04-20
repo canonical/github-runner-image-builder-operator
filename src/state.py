@@ -642,13 +642,6 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
 
     # Prefer the secret-based password if provided
     if password_secret_id:
-        juju_version = ops.JujuVersion.from_environ()
-        if juju_version < MIN_JUJU_VERSION_WITH_SECRET_SUPPORT:
-            raise InvalidCloudConfigError(
-                f"Secrets are not supported in Juju version {juju_version}. "
-                "Please consider upgrading the Juju controller to >= 3.3 or use "
-                "the openstack-password configuration option."
-            )
         if not password_secret_id.startswith("secret:"):
             raise InvalidCloudConfigError(
                 f"Invalid value '{password_secret_id}' for openstack-password-secret. "
