@@ -474,7 +474,7 @@ def _prepare_charmhub_app_config(
 def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     test_configs: TestConfigs,
     app_config: dict,
-    base_machine_constraint: str,
+    base_machine_constraint: dict,
     openstack_password_secret: _Secret,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> Generator[str, None, None]:
