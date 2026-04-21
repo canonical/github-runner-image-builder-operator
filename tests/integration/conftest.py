@@ -178,7 +178,6 @@ def _deploy_test_charm(
             "openstack-user-name": private_endpoint_configs["username"],
         },
         constraints={"virt-type": "virtual-machine"},
-        log=False,
     )
     return app_name
 
@@ -402,7 +401,6 @@ def app_fixture(
         app_name,
         constraints=base_machine_constraint,
         config=app_config,
-        log=False,
     )
     test_configs.juju.grant_secret(openstack_password_secret.name, app_name)
     test_configs.juju.grant_secret(script_secret.name, app_name)
