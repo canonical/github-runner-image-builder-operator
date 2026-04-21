@@ -1,6 +1,11 @@
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#219 Use Juju secrets](https://github.com/canonical/github-runner-image-builder-operator/pull/219) (2026-04-17)
+* Add new `openstack-password-secret` configuration option to securely store OpenStack passwords using Juju secrets.
+* Deprecated `openstack-password` configuration option (still supported for backward compatibility).
+* Users can migrate to the new secret-based approach by setting `openstack-password-secret` instead of `openstack-password`.
+
 ## [#206 Add resolute image support]
 * Add resolute image support.
 

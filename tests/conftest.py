@@ -3,6 +3,8 @@
 
 """Fixtures for github runner charm."""
 
+import os
+
 from pytest import Parser
 
 
@@ -29,52 +31,60 @@ def pytest_addoption(parser: Parser):
         "--openstack-network-name-amd64",
         action="store",
         help="The Openstack network to create testing instances under.",
+        default=os.getenv("OPENSTACK_NETWORK_NAME_AMD64"),
     )
     parser.addoption(
         "--openstack-flavor-name-amd64",
         action="store",
         help="The Openstack flavor to create testing instances with.",
+        default=os.getenv("OPENSTACK_FLAVOR_NAME_AMD64"),
     )
     parser.addoption(
         "--openstack-auth-url-amd64",
         action="store",
         help="The URL to Openstack authentication service, i.e. keystone.",
+        default=os.getenv("OPENSTACK_AUTH_URL_AMD64"),
     )
     parser.addoption(
         "--openstack-project-domain-name-amd64",
         action="store",
         help="The Openstack project domain name to use.",
+        default=os.getenv("OPENSTACK_PROJECT_DOMAIN_NAME_AMD64"),
     )
     parser.addoption(
         "--openstack-project-name-amd64",
         action="store",
         help="The Openstack project name to use.",
+        default=os.getenv("OPENSTACK_PROJECT_NAME_AMD64"),
     )
     parser.addoption(
         "--openstack-user-domain-name-amd64",
         action="store",
         help="The Openstack user domain name to use.",
+        default=os.getenv("OPENSTACK_USER_DOMAIN_NAME_AMD64"),
     )
     parser.addoption(
         "--openstack-username-amd64",
         action="store",
         help="The Openstack user to authenticate as.",
+        default=os.getenv("OPENSTACK_USERNAME_AMD64"),
     )
     parser.addoption(
         "--openstack-region-name-amd64",
         action="store",
         help="The Openstack region to authenticate to.",
+        default=os.getenv("OPENSTACK_REGION_NAME_AMD64"),
     )
     # Shared private endpoint options
     parser.addoption(
         "--proxy",
         action="store",
         help="The HTTP proxy URL to apply on the Openstack runners.",
-        default=None,
+        default=os.getenv("PROXY"),
     )
     parser.addoption(
         "--no-proxy",
         action="store",
         help="The no proxy URL(s) to apply on the Openstack runners.",
-        default=None,
+        default=os.getenv("NO_PROXY"),
     )
