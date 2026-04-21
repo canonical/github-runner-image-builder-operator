@@ -44,7 +44,6 @@ def test_cos_agent_relation(juju: jubilant.Juju, app: str):
         grafana_agent_name,
         channel="1/edge",
         base="ubuntu@22.04",
-        log=False,
     )
     juju.integrate(f"{app}:cos-agent", f"{grafana_agent_name}:cos-agent")
     juju.wait(lambda s: jubilant.all_active(s, app), timeout=30 * 60)

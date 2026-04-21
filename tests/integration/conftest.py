@@ -482,10 +482,8 @@ def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-posi
     app_name = f"image-builder-charmhub-{test_configs.test_id}"
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
-    charmhub_channel, charmhub_app_config, charmhub_config_options = (
-        _prepare_charmhub_app_config(
-            test_configs.juju, app_config, private_endpoint_configs["password"]
-        )
+    charmhub_channel, charmhub_app_config, charmhub_config_options = _prepare_charmhub_app_config(
+        test_configs.juju, app_config, private_endpoint_configs["password"]
     )
 
     # Deploy without the secret-backed config so the charm doesn't try to read the secret
