@@ -334,22 +334,22 @@ def script_secret_fixture(juju: jubilant.Juju) -> _Secret:
     return _Secret(id=str(secret_uri), name=secret_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="openstack_password_secret")
-async def openstack_password_secret_fixture(
+@pytest.fixture(scope="module", name="openstack_password_secret")
+def openstack_password_secret_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> _Secret:
     """The OpenStack password Juju secret."""
     secret_name = f"openstack-password-{uuid4().hex}"
-    secret_id = await test_configs.model.add_secret(
-        name=secret_name,
-        data_args=[f"password={private_endpoint_configs['password']}"],
-    )  # note secret_id already contains "secret:" prefix
-    return _Secret(id=secret_id, name=secret_name)
+    secret_uri = test_configs.juju.add_secret(
+        secret_name,
+        {"password": private_endpoint_configs["password"]},
+    )
+    return _Secret(id=str(secret_uri), name=secret_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="app_config")
-async def app_config_fixture(
+@pytest.fixture(scope="module", name="app_config")
+def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
@@ -393,7 +393,7 @@ def app_fixture(
     test_configs: TestConfigs,
     script_secret: _Secret,
     openstack_password_secret: _Secret,
-) -> AsyncGenerator[Application, None]:
+) -> Generator[str, None, None]:
     """The deployed application fixture."""
     app_name = f"image-builder-operator-{test_configs.test_id}"
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -404,9 +404,10 @@ def app_fixture(
         config=app_config,
         log=False,
     )
-    await app.model.grant_secret(openstack_password_secret.name, app.name)
-    await app.model.grant_secret(script_secret.name, app.name)
-    await app.set_config(
+    test_configs.juju.grant_secret(openstack_password_secret.name, app_name)
+    test_configs.juju.grant_secret(script_secret.name, app_name)
+    test_configs.juju.config(
+        app_name,
         {
             SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
             "github-runner-image-builder/refs/heads/main/tests/integration/"
@@ -425,13 +426,13 @@ def app_fixture(
     test_configs.juju.remove_application(app_name)
 
 
-async def _prepare_charmhub_app_config(
-    ops_test, app_config: dict, openstack_password: str
+def _prepare_charmhub_app_config(
+    juju: jubilant.Juju, app_config: dict, openstack_password: str
 ) -> tuple[str, dict, set[str]]:
     """Prepare the application config for charmhub deployment.
 
     Args:
-        ops_test: The pytest operator test instance.
+        juju: The jubilant Juju instance.
         app_config: The base application configuration.
         openstack_password: The plaintext OpenStack password, used as a fallback when the
             charmhub revision does not yet expose openstack-password-secret.
@@ -441,7 +442,7 @@ async def _prepare_charmhub_app_config(
 
     """
     charmhub_channel = "edge"
-    stdout = test_configs.juju.cli(
+    stdout = juju.cli(
         "info",
         "--format",
         "json",
@@ -471,21 +472,21 @@ async def _prepare_charmhub_app_config(
     return charmhub_channel, charmhub_app_config, charmhub_config_options
 
 
-@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
-async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+@pytest.fixture(scope="module", name="app_on_charmhub")
+def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: str,
-    ops_test,
     openstack_password_secret: _Secret,
     private_endpoint_configs: PrivateEndpointConfigs,
-) -> AsyncGenerator[Application, None]:
+) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
+    app_name = f"image-builder-charmhub-{test_configs.test_id}"
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel, charmhub_app_config, charmhub_config_options = (
-        await _prepare_charmhub_app_config(
-            ops_test, app_config, private_endpoint_configs["password"]
+        _prepare_charmhub_app_config(
+            test_configs.juju, app_config, private_endpoint_configs["password"]
         )
     )
 
@@ -494,13 +495,12 @@ async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-man
     deploy_config = {
         k: v for k, v in charmhub_app_config.items() if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
     }
-    app: Application = await test_configs.model.deploy(
+    test_configs.juju.deploy(
         "github-runner-image-builder",
         app_name,
         constraints=base_machine_constraint,
         config=deploy_config,
         channel=charmhub_channel,
-        log=False,
     )
     test_configs.juju.wait(
         lambda s: jubilant.all_agents_idle(s, app_name),
@@ -510,12 +510,17 @@ async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-man
     if OPENSTACK_PASSWORD_SECRET_CONFIG_NAME in charmhub_config_options:
         # Grant access first, then set the config to trigger a config-changed hook
         # after the charm already has read permissions for the secret.
-        await app.model.grant_secret(openstack_password_secret.name, app.name)
-        await app.set_config({OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id})
+        test_configs.juju.grant_secret(openstack_password_secret.name, app_name)
+        test_configs.juju.config(
+            app_name, {OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id}
+        )
 
-    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
+    test_configs.juju.wait(
+        lambda s: jubilant.all_agents_idle(s, app_name),
+        timeout=60 * 30,
+    )
 
-    yield app
+    yield app_name
 
     test_configs.juju.remove_application(app_name)
 
