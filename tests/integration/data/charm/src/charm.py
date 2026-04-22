@@ -50,7 +50,7 @@ class RelationCharm(ops.CharmBase):
         if not secret_id:
             logger.warning("openstack-password-secret not set.")
             return
-        secret = self.model.get_secret(id=secret_id)
+        secret = self.model.get_secret(id=str(secret_id))
         password = secret.get_content()["password"]
         event.relation.data[self.unit].update(
             typing.cast(
