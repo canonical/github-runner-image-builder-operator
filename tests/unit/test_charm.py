@@ -65,11 +65,7 @@ def test_block_on_image_relation_not_ready(
     monkeypatch.setattr(
         state.BuilderConfig,
         "from_charm",
-        MagicMock(
-            return_value=MagicMock(
-                proxy=None, cloud_config=MagicMock(upload_cloud_ids=[])
-            )
-        ),
+        MagicMock(return_value=MagicMock(proxy=None, cloud_config=MagicMock(upload_cloud_ids=[]))),
     )
     getattr(charm, hook)(MagicMock())
 

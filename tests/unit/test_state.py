@@ -834,7 +834,7 @@ def test__parse_openstack_clouds_auth_configs_from_relation_with_units(
         app_or_unit="github-runner/0",
         key_values={
             "auth_url": "http://test-auth/keystone",
-            "password": "test-pass",  # nosec: B106:hardcoded_password_funcarg
+            "password": "test-pass",  # nosec: B105:hardcoded_password_string
             "project_domain_name": "test-domain",
             "project_name": "test-project",
             "user_domain_name": "test-user-domain",
