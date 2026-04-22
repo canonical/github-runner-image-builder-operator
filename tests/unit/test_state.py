@@ -7,7 +7,6 @@
 # pylint:disable=protected-access
 
 import os
-import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -472,30 +471,13 @@ def test__parse_openstack_clouds_config_missing_password_key():
     assert "does not contain a 'password' key" in str(exc)
 
 
-def test__parse_openstack_clouds_config_legacy_password():
+def test__parse_openstack_clouds_config_no_password_secret():
     """
-    arrange: given a charm with the legacy openstack-password config (string).
-    act: when _parse_openstack_clouds_config is called.
-    assert: the clouds config is parsed correctly using the legacy password.
-    """
-    charm = factories.MockCharmFactory()
-    test_password = secrets.token_hex(16)
-    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = test_password
-    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
-
-    clouds_config = state._parse_openstack_clouds_config(charm)
-
-    assert clouds_config.clouds[state.CLOUD_NAME].auth.password == test_password
-
-
-def test__parse_openstack_clouds_config_no_password():
-    """
-    arrange: given a charm with neither password config set.
+    arrange: given a charm with no password secret config set.
     act: when _parse_openstack_clouds_config is called.
     assert: InvalidCloudConfigError is raised.
     """
     charm = factories.MockCharmFactory()
-    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = ""
     charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
 
     with pytest.raises(state.InvalidCloudConfigError) as exc:

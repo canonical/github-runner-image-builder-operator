@@ -33,7 +33,6 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
-    OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
@@ -430,15 +429,13 @@ def app_fixture(
 
 
 def _prepare_charmhub_app_config(
-    juju: jubilant.Juju, app_config: dict, openstack_password: str
+    juju: jubilant.Juju, app_config: dict
 ) -> tuple[str, dict, set[str]]:
     """Prepare the application config for charmhub deployment.
 
     Args:
         juju: The jubilant Juju instance.
         app_config: The base application configuration.
-        openstack_password: The plaintext OpenStack password, used as a fallback when the
-            charmhub revision does not yet expose openstack-password-secret.
 
     Returns:
         A tuple of (channel, prepared_config, config_options).
@@ -458,37 +455,23 @@ def _prepare_charmhub_app_config(
     charmhub_config_options = set(charmhub_info["charm"]["config"]["Options"].keys())
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
-    # We might need to test using the legacy config options.
-    legacy_config_prefix = "experimental-external-"
-    for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
-        if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
-            charmhub_app_config[legacy_opt] = app_config[opt]
-
-    # If the charmhub revision doesn't expose openstack-password-secret yet, fall back to the
-    # legacy openstack-password option so the charm has credentials during initial deployment.
-    if (
-        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME not in charmhub_config_options
-        and OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options
-    ):
-        charmhub_app_config[OPENSTACK_PASSWORD_CONFIG_NAME] = openstack_password
 
     return charmhub_channel, charmhub_app_config, charmhub_config_options
 
 
 @pytest.fixture(scope="module", name="app_on_charmhub")
-def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
     base_machine_constraint: dict,
     openstack_password_secret: _Secret,
-    private_endpoint_configs: PrivateEndpointConfigs,
 ) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
     app_name = f"image-builder-charmhub-{test_configs.test_id}"
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel, charmhub_app_config, charmhub_config_options = _prepare_charmhub_app_config(
-        test_configs.juju, app_config, private_endpoint_configs["password"]
+        test_configs.juju, app_config
     )
 
     # Deploy without the secret-backed config so the charm doesn't try to read the secret
