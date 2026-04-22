@@ -122,10 +122,11 @@ def test_charm_fixture(
     juju: jubilant.Juju,
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
+    openstack_password_secret: _Secret,
 ) -> Generator[str, None, None]:
     """The test charm that becomes active when valid relation data is given."""
     app_name = f"test-{test_id}"
-    _deploy_test_charm(juju, app_name, private_endpoint_configs)
+    _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
     yield app_name
 
@@ -138,10 +139,11 @@ def test_charm_2_fixture(
     juju: jubilant.Juju,
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
+    openstack_password_secret: _Secret,
 ) -> Generator[str, None, None]:
     """A second test charm that becomes active when valid relation data is given."""
     app_name = f"test2-{test_id}"
-    _deploy_test_charm(juju, app_name, private_endpoint_configs)
+    _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
     yield app_name
 
@@ -154,6 +156,7 @@ def _deploy_test_charm(
     juju: jubilant.Juju,
     app_name: str,
     private_endpoint_configs: PrivateEndpointConfigs,
+    openstack_password_secret: _Secret,
 ) -> str:
     """Deploy the test charm with the given application name.
 
@@ -161,6 +164,7 @@ def _deploy_test_charm(
         juju: The jubilant Juju instance.
         app_name: The name of the application to deploy.
         private_endpoint_configs: The OpenStack private endpoint configurations.
+        openstack_password_secret: The juju secret containing the OpenStack password.
 
     Returns:
         The application name.
@@ -171,7 +175,7 @@ def _deploy_test_charm(
         app_name,
         config={
             "openstack-auth-url": private_endpoint_configs["auth_url"],
-            "openstack-password": private_endpoint_configs["password"],
+            "openstack-password-secret": openstack_password_secret.id,
             "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
             "openstack-project-name": private_endpoint_configs["project_name"],
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
@@ -179,6 +183,7 @@ def _deploy_test_charm(
         },
         constraints={"virt-type": "virtual-machine"},
     )
+    juju.grant_secret(openstack_password_secret.name, app_name)
     return app_name
 
 
