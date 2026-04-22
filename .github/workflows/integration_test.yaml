@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@fix/pip-break-flag-workarounds
     secrets: inherit
     with:
       juju-channel: 3.6/stable
