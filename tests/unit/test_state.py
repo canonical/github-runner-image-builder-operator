@@ -706,3 +706,169 @@ def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: di
 
     assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
     assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
+
+
+def test__parse_script_secrets_no_secrets():
+    """
+    arrange: given a charm with no script secrets configured.
+    act: when _parse_script_secrets is called.
+    assert: empty dict is returned.
+    """
+    mock_charm = MagicMock()
+    mock_charm.config = {
+        state.SCRIPT_SECRET_ID_CONFIG_NAME: "",
+        state.SCRIPT_SECRET_CONFIG_NAME: "",
+    }
+
+    assert state._parse_script_secrets(charm=mock_charm) == {}
+
+
+def test_image_config_from_charm():
+    """
+    arrange: given a mock charm with all required image config values.
+    act: when ImageConfig.from_charm is called.
+    assert: expected image config is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = "amd64"
+    charm.config[state.SCRIPT_SECRET_ID_CONFIG_NAME] = ""
+
+    image_config = state.ImageConfig.from_charm(charm=charm)
+
+    assert image_config.arch == state.Arch.X64
+    assert state.BaseImage.JAMMY in image_config.bases
+    assert image_config.script_secrets == {}
+
+
+def test_cloud_config_upload_cloud_ids():
+    """
+    arrange: given a CloudConfig with no upload clouds beyond the build cloud.
+    act: when upload_cloud_ids property is accessed.
+    assert: empty list is returned since no upload clouds are configured.
+    """
+    cloud_config = state.CloudConfig(
+        openstack_clouds_config=state.OpenstackCloudsConfig(
+            clouds={state.CLOUD_NAME: state._CloudsConfig(auth=None)}
+        ),
+        external_build_config=state.ExternalBuildConfig(flavor="test", network="test"),
+        num_revisions=5,
+    )
+
+    assert cloud_config.upload_cloud_ids == []
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test_cloud_config_from_charm():
+    """
+    arrange: given a mock charm with all required cloud config values.
+    act: when CloudConfig.from_charm is called.
+    assert: expected cloud config is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.model.relations.get.return_value = []
+
+    cloud_config = state.CloudConfig.from_charm(charm=charm)
+
+    assert cloud_config.cloud_name == state.CLOUD_NAME
+    assert cloud_config.num_revisions > 0
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test_builder_config_from_charm():
+    """
+    arrange: given a mock charm with all required builder config values.
+    act: when BuilderConfig.from_charm is called.
+    assert: expected builder config is returned.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.ARCHITECTURE_CONFIG_NAME] = "amd64"
+    charm.config[state.SCRIPT_SECRET_ID_CONFIG_NAME] = ""
+    charm.model.relations.get.return_value = []
+
+    builder_config = state.BuilderConfig.from_charm(charm=charm)
+
+    assert builder_config.cloud_config.cloud_name == state.CLOUD_NAME
+    assert builder_config.image_config.arch == state.Arch.X64
+    assert builder_config.app_config.parallel_build >= 1
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_openstack_clouds_config_with_upload_auths(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a charm where the image relation has units with cloud auth data.
+    act: when _parse_openstack_clouds_config is called.
+    assert: the upload cloud auth configs are merged into the clouds config.
+    """
+    charm = factories.MockCharmFactory()
+    upload_auth = state.CloudsAuthConfig(
+        auth_url="http://upload-auth/keystone",
+        password="upload-pass",  # nosec: B106:hardcoded_password_funcarg
+        project_domain_name="upload-domain",
+        project_name="upload-project",
+        user_domain_name="upload-user-domain",
+        username="upload-user",
+    )
+    monkeypatch.setattr(
+        state,
+        "_parse_openstack_clouds_auth_configs_from_relation",
+        MagicMock(return_value={upload_auth}),
+    )
+
+    clouds_config = state._parse_openstack_clouds_config(charm=charm)
+
+    assert upload_auth.get_id() in clouds_config.clouds
+
+
+def test__parse_openstack_clouds_auth_configs_from_relation_with_units(
+    harness: Harness, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given an image relation with units that have cloud auth data.
+    act: when _parse_openstack_clouds_auth_configs_from_relation is called.
+    assert: the cloud auth configs are returned.
+    """
+    relation_id = harness.add_relation(state.IMAGE_RELATION, "github-runner")
+    harness.add_relation_unit(relation_id=relation_id, remote_unit_name="github-runner/0")
+    harness.update_relation_data(
+        relation_id=relation_id,
+        app_or_unit="github-runner/0",
+        key_values={
+            "auth_url": "http://test-auth/keystone",
+            "password": "test-pass",  # nosec: B106:hardcoded_password_funcarg
+            "project_domain_name": "test-domain",
+            "project_name": "test-project",
+            "user_domain_name": "test-user-domain",
+            "username": "test-user",
+        },
+    )
+
+    result = state._parse_openstack_clouds_auth_configs_from_relation(charm=charm)
+
+    assert len(result) == 1
+    auth = next(iter(result))
+    assert auth.auth_url == "http://test-auth/keystone"
+    assert auth.username == "test-user"
+
+
+def test__parse_openstack_clouds_auth_configs_from_relation_incomplete_unit_data(
+    harness: Harness,
+    charm: GithubRunnerImageBuilderCharm,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given an image relation with a unit that has incomplete cloud auth data.
+    act: when _parse_openstack_clouds_auth_configs_from_relation is called.
+    assert: the unit is skipped and a warning is logged.
+    """
+    relation_id = harness.add_relation(state.IMAGE_RELATION, "github-runner")
+    harness.add_relation_unit(relation_id=relation_id, remote_unit_name="github-runner/0")
+    harness.update_relation_data(
+        relation_id=relation_id,
+        app_or_unit="github-runner/0",
+        key_values={"auth_url": "http://test-auth/keystone"},
+    )
+
+    result = state._parse_openstack_clouds_auth_configs_from_relation(charm=charm)
+
+    assert len(result) == 0
+    assert any("Required field not yet set on" in msg for msg in caplog.messages)

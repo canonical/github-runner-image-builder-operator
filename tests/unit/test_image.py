@@ -9,6 +9,7 @@
 import secrets
 from unittest.mock import MagicMock
 
+import ops
 import pytest
 from ops.testing import Harness
 
@@ -67,6 +68,27 @@ def test__on_image_relation_joined_no_image(
     observer._on_image_relation_joined(mock_event)
 
     assert all(f"Image not yet ready for {test_unit_name}." in log for log in caplog.messages)
+
+
+def test__on_image_relation_joined_no_upload_cloud_ids(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: given a BuilderConfig with no upload_cloud_ids (image relation not yet configured).
+    act: when _on_image_relation_joined hook is fired.
+    assert: unit status is set to BlockedStatus with image integration required message.
+    """
+    mock_config = MagicMock()
+    mock_config.cloud_config.upload_cloud_ids = []
+    monkeypatch.setattr(state.BuilderConfig, "from_charm", MagicMock(return_value=mock_config))
+
+    mock_charm = MagicMock()
+    observer = image.Observer(mock_charm)
+    observer._on_image_relation_joined(MagicMock())
+
+    mock_charm.unit.status = observer.model.unit.status
+    assert isinstance(observer.model.unit.status, ops.BlockedStatus)
+    assert state.IMAGE_RELATION in str(observer.model.unit.status.message)
 
 
 def test__on_image_relation_joined(

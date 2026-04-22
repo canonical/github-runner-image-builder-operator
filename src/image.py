@@ -47,6 +47,14 @@ class Observer(ops.Object):
             charm.on[state.IMAGE_RELATION].relation_joined, self._on_image_relation_joined
         )
 
+    def update_status(self, status: ops.StatusBase) -> None:
+        """Update the unit status.
+
+        Args:
+            status: The desired status instance.
+        """
+        self.model.unit.status = status
+
     @charm_utils.block_if_invalid_config(defer=False)
     def _on_image_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
         """Handle the image relation joined event.

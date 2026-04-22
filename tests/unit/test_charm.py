@@ -54,12 +54,23 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
         pytest.param("_on_run", id="run event"),
     ],
 )
-def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm, hook: str):
+def test_block_on_image_relation_not_ready(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, hook: str
+):
     """
     arrange: given hooks that should not run build when image relation is not yet ready.
     act: when the hook is called.
     assert: the charm falls into BlockedStatus.
     """
+    monkeypatch.setattr(
+        state.BuilderConfig,
+        "from_charm",
+        MagicMock(
+            return_value=MagicMock(
+                proxy=None, cloud_config=MagicMock(upload_cloud_ids=[])
+            )
+        ),
+    )
     getattr(charm, hook)(MagicMock())
 
     assert charm.unit.status == ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
