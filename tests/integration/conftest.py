@@ -55,6 +55,9 @@ logger = logging.getLogger(__name__)
 
 TEST_CHARM_FILE = "./test_ubuntu-22.04-amd64.charm"
 
+# Legacy config name kept here (not in state.py) for upgrade-compatibility testing only.
+_OPENSTACK_LEGACY_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: hardcoded_password_string
+
 
 @dataclass
 class _Secret:
@@ -429,13 +432,15 @@ def app_fixture(
 
 
 def _prepare_charmhub_app_config(
-    juju: jubilant.Juju, app_config: dict
+    juju: jubilant.Juju, app_config: dict, openstack_password: str
 ) -> tuple[str, dict, set[str]]:
     """Prepare the application config for charmhub deployment.
 
     Args:
         juju: The jubilant Juju instance.
         app_config: The base application configuration.
+        openstack_password: The plaintext OpenStack password, used as a fallback when the
+            charmhub revision does not yet expose openstack-password-secret.
 
     Returns:
         A tuple of (channel, prepared_config, config_options).
@@ -456,6 +461,14 @@ def _prepare_charmhub_app_config(
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
 
+    # If the charmhub revision doesn't expose openstack-password-secret yet, fall back to the
+    # legacy openstack-password option so the charm has credentials during initial deployment.
+    if (
+        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME not in charmhub_config_options
+        and _OPENSTACK_LEGACY_PASSWORD_CONFIG_NAME in charmhub_config_options
+    ):
+        charmhub_app_config[_OPENSTACK_LEGACY_PASSWORD_CONFIG_NAME] = openstack_password
+
     return charmhub_channel, charmhub_app_config, charmhub_config_options
 
 
@@ -465,13 +478,14 @@ def app_on_charmhub_fixture(
     app_config: dict,
     base_machine_constraint: dict,
     openstack_password_secret: _Secret,
+    private_endpoint_configs: PrivateEndpointConfigs,
 ) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
     app_name = f"image-builder-charmhub-{test_configs.test_id}"
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel, charmhub_app_config, charmhub_config_options = _prepare_charmhub_app_config(
-        test_configs.juju, app_config
+        test_configs.juju, app_config, private_endpoint_configs["password"]
     )
 
     # Deploy without the secret-backed config so the charm doesn't try to read the secret
