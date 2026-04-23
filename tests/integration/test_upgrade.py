@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 import jubilant
 import pytest
 
+from state import OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
+from tests.integration.conftest import _Secret
 from tests.integration.helpers import wait_for, wait_for_images
 from tests.integration.types import OpenstackMeta, TestConfigs
 
@@ -19,6 +21,7 @@ def app_fixture(
     app_on_charmhub: str,
     test_configs: TestConfigs,
     openstack_metadata: OpenstackMeta,
+    openstack_password_secret: _Secret,
 ) -> str:
     """Upgrade the charm from the local charm file."""
     logging.info("Refreshing the charm from the local charm file.")
@@ -29,6 +32,12 @@ def app_fixture(
             "build-flavor": openstack_metadata.flavor,
             "build-network": openstack_metadata.network,
         },
+    )
+    # The new charm requires openstack-password-secret; grant and set it now
+    # in case the charmhub version did not support this config option yet.
+    juju.grant_secret(openstack_password_secret.name, app_on_charmhub)
+    juju.config(
+        app_on_charmhub, {OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id}
     )
     status = juju.status()
     unit_name = next(iter(status.apps[app_on_charmhub].units))
