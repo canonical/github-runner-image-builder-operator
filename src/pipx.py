@@ -7,6 +7,7 @@
 # Code is abstracting process interactions and is currently tested in integration tests.
 
 import logging
+import os
 import subprocess  # nosec
 
 from exceptions import PipXError
@@ -50,23 +51,31 @@ def _pipx_cmd(*args: str) -> None:  # pragma: no cover
     Raises:
         PipXError: If there was an error running the pipx command
     """
+    cmd = ["/usr/bin/pipx", "--verbose", *args]
+    logger.info("Running pipx command: %s", cmd)
+    logger.info(
+        "Proxy env: HTTP_PROXY=%s, HTTPS_PROXY=%s, NO_PROXY=%s",
+        os.environ.get("HTTP_PROXY", ""),
+        os.environ.get("HTTPS_PROXY", ""),
+        os.environ.get("NO_PROXY", ""),
+    )
     try:
         subprocess.run(  # nosec: B603
-            [
-                "/usr/bin/pipx",
-                *args,
-            ],
+            cmd,
             timeout=5 * 60,
             check=True,
             user=UBUNTU_USER,
+            capture_output=True,
+            text=True,
         )
     except subprocess.CalledProcessError as exc:
         logger.error(
-            "Pipx command failed, code: %s, out: %s, err: %s",
+            "Pipx command failed, code: %s, stdout: %s, stderr: %s",
             exc.returncode,
             exc.stdout,
             exc.stderr,
         )
         raise PipXError from exc
     except subprocess.SubprocessError as exc:
+        logger.error("Pipx subprocess error: %s", exc)
         raise PipXError from exc
