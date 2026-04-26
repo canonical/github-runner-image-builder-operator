@@ -92,6 +92,11 @@ def juju_fixture(
     """Juju instance with a temporary model for testing."""
     keep_models = bool(request.config.getoption("--keep-models"))
     with jubilant.temp_model(keep=keep_models) as juju:
+        # 2026/04/27 - ssh configuration is currently corrupt. Delete it.
+        Path("~/.ssh/config").unlink(missing_ok=True)
+        # Add id_rsa.pub to Juju
+        juju.add_ssh_key(Path("~/.ssh/id_rsa.pub").read_text(encoding="utf-8"))
+        # add juju add-ssh-key "$(cat ~/.ssh/id_rsa.pub)"
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
             juju.model_config(
