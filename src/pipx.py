@@ -67,7 +67,6 @@ def _pipx_cmd(*args: str) -> None:  # pragma: no cover
             user=UBUNTU_USER,
             capture_output=True,
             text=True,
-            env=os.environ,
         )
     except subprocess.CalledProcessError as exc:
         logger.error(
