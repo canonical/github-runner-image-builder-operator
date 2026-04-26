@@ -25,7 +25,7 @@ jobs:
       pre-run-script: |
         -c "./tests/integration/aproxy_prerouting_workaround.sh"
       tmate-debug: true
-      tmate-timeout: 90
+      tmate-timeout: 120
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
