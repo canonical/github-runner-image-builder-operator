@@ -51,7 +51,7 @@ def _pipx_cmd(*args: str) -> None:  # pragma: no cover
     Raises:
         PipXError: If there was an error running the pipx command
     """
-    cmd = ["/usr/bin/pipx", "--verbose", *args]
+    cmd = ["/usr/bin/pipx", *args]
     logger.info("Running pipx command: %s", cmd)
     logger.info(
         "Proxy env: HTTP_PROXY=%s, HTTPS_PROXY=%s, NO_PROXY=%s",
@@ -67,6 +67,7 @@ def _pipx_cmd(*args: str) -> None:  # pragma: no cover
             user=UBUNTU_USER,
             capture_output=True,
             text=True,
+            env=os.environ,
         )
     except subprocess.CalledProcessError as exc:
         logger.error(
