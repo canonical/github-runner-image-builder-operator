@@ -191,7 +191,7 @@ def test_log_rotated(juju: jubilant.Juju, app: str):
 
     # Test that the configuration is loaded successfully using --debug flag
     logrotate_debug_output = juju.ssh(
-        unit_name, "sudo /usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1"
+        unit_name, "sudo bash -c '/usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1'"
     )
     assert (
         "rotating pattern: /var/log/github-runner-image-builder/info.log" in logrotate_debug_output

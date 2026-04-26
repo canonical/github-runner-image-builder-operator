@@ -55,7 +55,7 @@ def app_fixture(
         """
         unit_name_without_slash = unit_name.replace("/", "-")
         juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
-        stdout = juju.ssh(unit_name, f"cat {juju_unit_log_file}")
+        stdout = juju.ssh(unit_name, f"sudo cat {juju_unit_log_file}")
         return "Emitting Juju event upgrade_charm." in stdout
 
     wait_for(is_upgrade_charm_event_emitted, timeout=360, check_interval=60)
