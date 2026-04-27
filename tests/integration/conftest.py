@@ -92,9 +92,6 @@ def juju_fixture(
     """Juju instance with a temporary model for testing."""
     keep_models = bool(request.config.getoption("--keep-models"))
     with jubilant.temp_model(keep=keep_models) as juju:
-        # 2026/04/27 - ssh configuration is currently corrupt. Delete it.
-        ssh_dir = Path.home() / ".ssh"
-        (ssh_dir / "config").unlink(missing_ok=True)
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
             juju.model_config(
@@ -632,7 +629,26 @@ def bare_image_id_fixture(
 def juju_ssh_key_fixture(juju: jubilant.Juju) -> Generator[None, None, None]:
     """Add the default ssh key to juju for use in tests."""
     ssh_dir = Path.home() / ".ssh"
-    public_key_path = ssh_dir / "id_rsa.pub"
-    if public_key_path.exists():
+    # 2026/04/27 - ssh configuration is currently corrupt. Delete it.
+    logger.info("Cleaning up ssh config.")
+    (ssh_dir / "config").unlink(missing_ok=True)
+
+    # 2026/04/27 - add ssh key to juju for ssh commands in tests.
+    if (public_key_path := ssh_dir / "id_rsa.pub").exists():
+        import subprocess  # nosec
+
+        result = subprocess.run(
+            ["/usr/bin/ssh-keygen", "-lf", str(public_key_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        logger.info("SSH key fingerprint: %s", result.stdout.strip())
+
+        logger.info("Adding ssh key to juju.")
         juju.add_ssh_key(public_key_path.read_text(encoding="utf-8"))
+
+        listed_keys = juju.cli("list-ssh-keys")
+        logger.info("Juju SSH keys after add:\n%s", listed_keys)
+
     yield
