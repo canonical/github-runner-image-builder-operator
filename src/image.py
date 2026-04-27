@@ -63,6 +63,7 @@ class Observer(ops.Object):
             event: The event emitted when a relation is joined.
         """
         build_config = state.BuilderConfig.from_charm(charm=self.charm)
+        self.charm._setup_proxy_environment(build_config.proxy)
         proxy = state.ProxyConfig.from_env()
         if not build_config.cloud_config.upload_cloud_ids:
             self.model.unit.status = ops.BlockedStatus(
