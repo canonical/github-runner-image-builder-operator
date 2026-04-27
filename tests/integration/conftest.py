@@ -100,7 +100,12 @@ def juju_fixture(
         # 2026/04/27 - Add ssh-key from the host - there's a bug that leads to ssh failure.
         ssh_pub_key_path = Path.home() / ".ssh" / "id_rsa.pub"
         if ssh_pub_key_path.exists():
+            logger.info("Adding SSH key from host: %s", ssh_pub_key_path)
             juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
+        else:
+            pytest.fail(
+                f"SSH public key not found at {ssh_pub_key_path}. Please generate an SSH key pair or specify a different path."
+            )
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
             juju.model_config(
