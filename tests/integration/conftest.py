@@ -623,32 +623,3 @@ def bare_image_id_fixture(
     )
     assert image, "Bare image not found"
     return image.id
-
-
-@pytest.fixture(scope="module", name="juju_ssh_key")
-def juju_ssh_key_fixture(juju: jubilant.Juju) -> Generator[None, None, None]:
-    """Add the default ssh key to juju for use in tests."""
-    ssh_dir = Path.home() / ".ssh"
-    # 2026/04/27 - ssh configuration is currently corrupt. Delete it.
-    logger.info("Cleaning up ssh config.")
-    (ssh_dir / "config").unlink(missing_ok=True)
-
-    # 2026/04/27 - add ssh key to juju for ssh commands in tests.
-    if (public_key_path := ssh_dir / "id_rsa.pub").exists():
-        import subprocess  # nosec
-
-        result = subprocess.run(
-            ["/usr/bin/ssh-keygen", "-lf", str(public_key_path)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        logger.info("SSH key fingerprint: %s", result.stdout.strip())
-
-        logger.info("Adding ssh key to juju.")
-        juju.add_ssh_key(public_key_path.read_text(encoding="utf-8"))
-
-        listed_keys = juju.cli("list-ssh-keys")
-        logger.info("Juju SSH keys after add:\n%s", listed_keys)
-
-    yield
