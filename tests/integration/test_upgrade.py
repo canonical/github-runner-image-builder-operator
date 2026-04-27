@@ -16,13 +16,13 @@ from tests.integration.types import OpenstackMeta, TestConfigs
 
 
 @pytest.fixture(scope="module", name="app")
-@pytest.mark.usefixtures("juju_ssh_key")
 def app_fixture(
     juju: jubilant.Juju,
     app_on_charmhub: str,
     test_configs: TestConfigs,
     openstack_metadata: OpenstackMeta,
     openstack_password_secret: _Secret,
+    juju_ssh_key,
 ) -> str:
     """Upgrade the charm from the local charm file."""
     logging.info("Refreshing the charm from the local charm file.")
