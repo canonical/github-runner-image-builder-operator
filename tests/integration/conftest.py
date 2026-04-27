@@ -97,6 +97,10 @@ def juju_fixture(
 ) -> Generator[jubilant.Juju, None, None]:
     """Juju instance with a temporary model for testing."""
     with jubilant.temp_model(keep=keep_models) as juju:
+        # 2026/04/27 - Add ssh-key from the host - there's a bug that leads to ssh failure.
+        ssh_pub_key_path = Path.home() / ".ssh" / "id_rsa.pub"
+        if ssh_pub_key_path.exists():
+            juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
             juju.model_config(
