@@ -7,6 +7,7 @@
 # pylint:disable=protected-access
 
 import os
+import secrets
 from unittest.mock import MagicMock
 
 import ops
@@ -374,7 +375,6 @@ def test__parse_runner_version(version: str, expected_version: str):
     "missing_config",
     [
         pytest.param(state.OPENSTACK_AUTH_URL_CONFIG_NAME),
-        pytest.param(state.OPENSTACK_PASSWORD_CONFIG_NAME),
         pytest.param(state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME),
         pytest.param(state.OPENSTACK_PROJECT_CONFIG_NAME),
         pytest.param(state.OPENSTACK_USER_DOMAIN_CONFIG_NAME),
@@ -396,6 +396,7 @@ def test__parse_openstack_clouds_config_invalid(missing_config: str):
     assert "Please supply all OpenStack configurations." in str(exc)
 
 
+@pytest.mark.usefixtures("patch_juju_version_33")
 def test__parse_openstack_clouds_config():
     """
     arrange: given mock charm from factory.
@@ -420,6 +421,103 @@ def test__parse_openstack_clouds_config():
             )
         }
     )
+
+
+@pytest.mark.parametrize(
+    "exception, expected_error",
+    [
+        pytest.param(
+            ops.SecretNotFoundError,
+            "OpenStack password secret not found:",
+            id="secret-not-found",
+        ),
+        pytest.param(
+            ops.ModelError,
+            "Please grant the charm read access to the secret.",
+            id="access-denied",
+        ),
+    ],
+)
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_openstack_clouds_config_secret_error(exception: Exception, expected_error: str):
+    """
+    arrange: given a mocked model get_secret method that raises a given error.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.model.get_secret = MagicMock(side_effect=exception)
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert expected_error in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_openstack_clouds_config_missing_password_key():
+    """
+    arrange: given a secret that does not contain a 'password' key.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    mock_secret = MagicMock()
+    mock_secret.get_content.return_value = {}
+    charm.model.get_secret.return_value = mock_secret
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert "does not contain a 'password' key" in str(exc)
+
+
+def test__parse_openstack_clouds_config_legacy_password():
+    """
+    arrange: given a charm with the legacy openstack-password config (string).
+    act: when _parse_openstack_clouds_config is called.
+    assert: the clouds config is parsed correctly using the legacy password.
+    """
+    charm = factories.MockCharmFactory()
+    test_password = secrets.token_hex(16)
+    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = test_password
+    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
+
+    clouds_config = state._parse_openstack_clouds_config(charm)
+
+    assert clouds_config.clouds[state.CLOUD_NAME].auth.password == test_password
+
+
+def test__parse_openstack_clouds_config_no_password():
+    """
+    arrange: given a charm with neither password config set.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.OPENSTACK_PASSWORD_CONFIG_NAME] = ""
+    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = ""
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert "Please supply OpenStack password" in str(exc)
+
+
+@pytest.mark.usefixtures("patch_juju_version_33")
+def test__parse_openstack_clouds_config_invalid_secret_id_format():
+    """
+    arrange: given a charm with openstack-password-secret set to a non-secret-id value.
+    act: when _parse_openstack_clouds_config is called.
+    assert: InvalidCloudConfigError is raised with guidance on the expected format.
+    """
+    charm = factories.MockCharmFactory()
+    charm.config[state.OPENSTACK_PASSWORD_SECRET_CONFIG_NAME] = "not-a-secret-id"
+
+    with pytest.raises(state.InvalidCloudConfigError) as exc:
+        state._parse_openstack_clouds_config(charm)
+
+    assert "secret:<secret-id>" in str(exc)
 
 
 # pylint: enable=undefined-variable,unused-variable
@@ -624,4 +722,5 @@ def test__parse_script_secrets_from_config(secret: str, expected_secrets_map: di
     mock_charm = MagicMock()
     mock_charm.config = {state.SCRIPT_SECRET_CONFIG_NAME: secret}
 
+    assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map
     assert state._parse_script_secrets(charm=mock_charm) == expected_secrets_map

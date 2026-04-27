@@ -38,6 +38,7 @@ from state import (
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
     OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
     OPENSTACK_USER_CONFIG_NAME,
@@ -332,12 +333,27 @@ async def script_secret_fixture(test_configs) -> _Secret:
     return _Secret(id=secret_id, name=secret_name)
 
 
-@pytest.fixture(scope="module", name="app_config")
-def app_config_fixture(
+@pytest_asyncio.fixture(scope="module", name="openstack_password_secret")
+async def openstack_password_secret_fixture(
+    test_configs: TestConfigs,
+    private_endpoint_configs: PrivateEndpointConfigs,
+) -> _Secret:
+    """The OpenStack password Juju secret."""
+    secret_name = f"openstack-password-{uuid4().hex}"
+    secret_id = await test_configs.model.add_secret(
+        name=secret_name,
+        data_args=[f"password={private_endpoint_configs['password']}"],
+    )  # note secret_id already contains "secret:" prefix
+    return _Secret(id=secret_id, name=secret_name)
+
+
+@pytest_asyncio.fixture(scope="module", name="app_config")
+async def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
     arch: state.Arch,
+    openstack_password_secret: _Secret,
 ) -> dict:
     """The image builder application config."""
     return {
@@ -346,7 +362,7 @@ def app_config_fixture(
         BUILD_INTERVAL_CONFIG_NAME: 12,
         REVISION_HISTORY_LIMIT_CONFIG_NAME: 5,
         OPENSTACK_AUTH_URL_CONFIG_NAME: private_endpoint_configs["auth_url"],
-        OPENSTACK_PASSWORD_CONFIG_NAME: private_endpoint_configs["password"],
+        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id,
         OPENSTACK_PROJECT_CONFIG_NAME: private_endpoint_configs["project_name"],
         OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: private_endpoint_configs["project_domain_name"],
         OPENSTACK_USER_CONFIG_NAME: private_endpoint_configs["username"],
@@ -372,6 +388,7 @@ async def app_fixture(
     base_machine_constraint: str,
     test_configs: TestConfigs,
     script_secret: _Secret,
+    openstack_password_secret: _Secret,
 ) -> AsyncGenerator[Application, None]:
     """The deployed application fixture."""
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
@@ -381,6 +398,7 @@ async def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
+    await app.model.grant_secret(openstack_password_secret.name, app.name)
     await app.model.grant_secret(script_secret.name, app.name)
     await app.set_config(
         {
@@ -398,23 +416,28 @@ async def app_fixture(
     await test_configs.model.remove_application(app_name=app.name)
 
 
-@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
-async def app_on_charmhub_fixture(
-    test_configs: TestConfigs,
-    app_config: dict,
-    base_machine_constraint: str,
-    ops_test,
-) -> AsyncGenerator[Application, None]:
-    """Fixture for deploying the charm from charmhub."""
-    # Normally we would use latest/stable, but upgrading
-    # from stable is currently broken, and therefore we are using edge. Change this in the future.
+async def _prepare_charmhub_app_config(
+    ops_test, app_config: dict, openstack_password: str
+) -> tuple[str, dict, set[str]]:
+    """Prepare the application config for charmhub deployment.
+
+    Args:
+        ops_test: The pytest operator test instance.
+        app_config: The base application configuration.
+        openstack_password: The plaintext OpenStack password, used as a fallback when the
+            charmhub revision does not yet expose openstack-password-secret.
+
+    Returns:
+        A tuple of (channel, prepared_config, config_options).
+
+    """
     charmhub_channel = "edge"
     ret_code, stdout, stderr = await ops_test.juju(
         "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
     )
     assert ret_code == 0, f"Failed to get charm info: {stderr}"
     charmhub_info = json.loads(stdout.strip())
-    charmhub_config_options = charmhub_info["charm"]["config"]["Options"].keys()
+    charmhub_config_options = set(charmhub_info["charm"]["config"]["Options"].keys())
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
     # We might need to test using the legacy config options.
@@ -422,13 +445,54 @@ async def app_on_charmhub_fixture(
     for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
         if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
             charmhub_app_config[legacy_opt] = app_config[opt]
+
+    # If the charmhub revision doesn't expose openstack-password-secret yet, fall back to the
+    # legacy openstack-password option so the charm has credentials during initial deployment.
+    if (
+        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME not in charmhub_config_options
+        and OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options
+    ):
+        charmhub_app_config[OPENSTACK_PASSWORD_CONFIG_NAME] = openstack_password
+
+    return charmhub_channel, charmhub_app_config, charmhub_config_options
+
+
+@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
+async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    test_configs: TestConfigs,
+    app_config: dict,
+    base_machine_constraint: str,
+    ops_test,
+    openstack_password_secret: _Secret,
+    private_endpoint_configs: PrivateEndpointConfigs,
+) -> AsyncGenerator[Application, None]:
+    """Fixture for deploying the charm from charmhub."""
+    # Normally we would use latest/stable, but upgrading
+    # from stable is currently broken, and therefore we are using edge. Change this in the future.
+    charmhub_channel, charmhub_app_config, charmhub_config_options = (
+        await _prepare_charmhub_app_config(
+            ops_test, app_config, private_endpoint_configs["password"]
+        )
+    )
+
+    # Deploy without the secret-backed config so the charm doesn't try to read the secret
+    # before the grant is in place.
+    deploy_config = {
+        k: v for k, v in charmhub_app_config.items() if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
+    }
     app: Application = await test_configs.model.deploy(
         "github-runner-image-builder",
         application_name=f"image-builder-operator-{test_configs.test_id}",
         constraints=base_machine_constraint,
-        config=charmhub_app_config,
+        config=deploy_config,
         channel=charmhub_channel,
     )
+
+    if OPENSTACK_PASSWORD_SECRET_CONFIG_NAME in charmhub_config_options:
+        # Grant access first, then set the config to trigger a config-changed hook
+        # after the charm already has read permissions for the secret.
+        await app.model.grant_secret(openstack_password_secret.name, app.name)
+        await app.set_config({OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id})
 
     await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
 
