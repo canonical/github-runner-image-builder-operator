@@ -16,7 +16,7 @@ from openstack.connection import Connection
 
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
-from tests.integration.helpers import image_created_from_dispatch, wait_for_images
+from tests.integration.helpers import image_created_from_dispatch, juju_ssh, wait_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -151,26 +151,28 @@ def test_periodic_rebuilt(
 def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour_interval: int):
     """Context manager to change the crontab to run every minute."""
     minute_interval = 1
-    juju.ssh(
+    juju_ssh(
+        juju,
         unit_name,
         rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}",
     )
-    cron_content = juju.ssh(unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
     logger.info("Cron file content: %s", cron_content)
-    juju.ssh(unit_name, "sudo systemctl restart cron")
+    juju_ssh(juju, unit_name, "sudo systemctl restart cron")
 
     try:
         yield
     finally:
-        juju.ssh(
+        juju_ssh(
+            juju,
             unit_name,
             rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
             f"{CRON_BUILD_SCHEDULE_PATH}",
         )
-        cron_content = juju.ssh(unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
+        cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
         logger.info("Cronfile content: %s", cron_content)
-        juju.ssh(unit_name, "sudo systemctl restart cron")
+        juju_ssh(juju, unit_name, "sudo systemctl restart cron")
 
 
 @pytest.mark.abort_on_fail
@@ -184,19 +186,22 @@ def test_log_rotated(juju: jubilant.Juju, app: str):
     status = juju.status()
     unit_name = next(iter(status.apps[app].units))
     test_log = "this log should be rotated"
-    juju.ssh(
+    juju_ssh(
+        juju,
         unit_name,
         f"echo '{test_log}' | sudo tee -a /var/log/github-runner-image-builder/info.log",
     )
 
     # Test that the configuration is loaded successfully using --debug flag
-    logrotate_debug_output = juju.ssh(
-        unit_name, "sudo bash -c '/usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1'"
+    logrotate_debug_output = juju_ssh(
+        juju, unit_name, "sudo bash -c '/usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1'"
     )
     assert (
         "rotating pattern: /var/log/github-runner-image-builder/info.log" in logrotate_debug_output
     )
     # Manually trigger logrotate using --force flag
-    juju.ssh(unit_name, "sudo /usr/sbin/logrotate /etc/logrotate.conf --force")
-    log_output = juju.ssh(unit_name, "sudo cat /var/log/github-runner-image-builder/info.log")
+    juju_ssh(juju, unit_name, "sudo /usr/sbin/logrotate /etc/logrotate.conf --force")
+    log_output = juju_ssh(
+        juju, unit_name, "sudo cat /var/log/github-runner-image-builder/info.log"
+    )
     assert test_log not in log_output

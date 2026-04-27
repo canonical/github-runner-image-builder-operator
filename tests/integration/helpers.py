@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, TypeVar
 
+import jubilant
+import tenacity
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 
@@ -19,6 +21,30 @@ from tests.integration.types import ProxyConfig
 logger = logging.getLogger(__name__)
 
 CREATE_SERVER_TIMEOUT_IN_SECONDS = 15 * 60
+
+_JUJU_SSH_RETRY_ATTEMPTS = 5
+_JUJU_SSH_RETRY_WAIT_SECONDS = 30
+
+
+@tenacity.retry(
+    retry=tenacity.retry_if_exception_type(jubilant.CLIError),
+    wait=tenacity.wait_fixed(_JUJU_SSH_RETRY_WAIT_SECONDS),
+    stop=tenacity.stop_after_attempt(_JUJU_SSH_RETRY_ATTEMPTS),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+def juju_ssh(juju: jubilant.Juju, unit_name: str, command: str) -> str:
+    """Run a command over SSH on a Juju unit, retrying on transient failures.
+
+    Args:
+        juju: The jubilant Juju instance.
+        unit_name: The name of the unit (e.g. ``myapp/0``).
+        command: Shell command to execute on the unit.
+
+    Returns:
+        The standard output of the command.
+    """
+    return juju.ssh(unit_name, command)
 
 
 def wait_for_images(
