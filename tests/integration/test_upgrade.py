@@ -16,6 +16,7 @@ from tests.integration.types import OpenstackMeta, TestConfigs
 
 
 @pytest.fixture(scope="module", name="app")
+@pytest.mark.usefixtures("juju_ssh_key")
 def app_fixture(
     juju: jubilant.Juju,
     app_on_charmhub: str,

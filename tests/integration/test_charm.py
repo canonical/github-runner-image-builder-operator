@@ -120,6 +120,7 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("juju_ssh_key")
 def test_periodic_rebuilt(
     juju: jubilant.Juju,
     app: str,
@@ -174,6 +175,7 @@ def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("juju_ssh_key")
 def test_log_rotated(juju: jubilant.Juju, app: str):
     """
     arrange: A deployed active charm and manually write something to the log file.

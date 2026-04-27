@@ -626,3 +626,13 @@ def bare_image_id_fixture(
     )
     assert image, "Bare image not found"
     return image.id
+
+
+@pytest.fixture(scope="module", name="juju_ssh_key")
+def juju_ssh_key_fixture(juju: jubilant.Juju) -> Generator[None, None, None]:
+    """Add the default ssh key to juju for use in tests."""
+    ssh_dir = Path.home() / ".ssh"
+    public_key_path = ssh_dir / "id_rsa.pub"
+    if public_key_path.exists():
+        juju.add_ssh_key(public_key_path.read_text(encoding="utf-8"))
+    yield
