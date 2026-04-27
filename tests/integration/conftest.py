@@ -92,24 +92,36 @@ def keep_models_fixture(pytestconfig: pytest.Config) -> bool:
     return pytestconfig.getoption("--keep-models")
 
 
+@pytest.fixture(scope="module", name="juju_ssh_key_path")
+def juju_ssh_key_path_fixture() -> Path:
+    """Path to the private SSH key used for juju ssh commands.
+
+    Generates an RSA key pair at ~/.ssh/juju_id_rsa if it does not already
+    exist, and returns the path to the private key.
+    """
+    ssh_dir = Path.home() / ".ssh"
+    ssh_dir.mkdir(mode=0o700, exist_ok=True)
+    ssh_key_path = ssh_dir / "juju_id_rsa"
+    if not ssh_key_path.exists():
+        logger.info("Generating SSH key pair at %s", ssh_key_path)
+        subprocess.run(
+            ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path), "-N", ""],
+            check=True,
+            capture_output=True,
+        )
+    return ssh_key_path
+
+
 @pytest.fixture(scope="module", name="juju")
 def juju_fixture(
-    proxy: ProxyConfig, keep_models: bool, request: pytest.FixtureRequest
+    proxy: ProxyConfig,
+    keep_models: bool,
+    request: pytest.FixtureRequest,
+    juju_ssh_key_path: Path,
 ) -> Generator[jubilant.Juju, None, None]:
     """Juju instance with a temporary model for testing."""
     with jubilant.temp_model(keep=keep_models) as juju:
-        # 2026/04/27 - Add ssh-key to juju - there's a bug that leads to ssh failure.
-        ssh_dir = Path.home() / ".ssh"
-        ssh_dir.mkdir(mode=0o700, exist_ok=True)
-        ssh_key_path = ssh_dir / "juju_id_rsa"
-        ssh_pub_key_path = ssh_key_path.with_suffix(".pub")
-        if not ssh_key_path.exists():
-            logger.info("Generating SSH key pair at %s", ssh_key_path)
-            subprocess.run(
-                ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path), "-N", ""],
-                check=True,
-                capture_output=True,
-            )
+        ssh_pub_key_path = juju_ssh_key_path.with_suffix(".pub")
         logger.info("Adding SSH public key to juju: %s", ssh_pub_key_path)
         juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
         if proxy.http:

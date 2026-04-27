@@ -5,6 +5,7 @@
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 import jubilant
 import pytest
@@ -22,6 +23,7 @@ def app_fixture(
     test_configs: TestConfigs,
     openstack_metadata: OpenstackMeta,
     openstack_password_secret: _Secret,
+    juju_ssh_key_path: Path,
 ) -> str:
     """Upgrade the charm from the local charm file."""
     logging.info("Refreshing the charm from the local charm file.")
@@ -55,7 +57,7 @@ def app_fixture(
         """
         unit_name_without_slash = unit_name.replace("/", "-")
         juju_unit_log_file = f"/var/log/juju/unit-{unit_name_without_slash}.log"
-        stdout = juju_ssh(juju, unit_name, f"sudo cat {juju_unit_log_file}")
+        stdout = juju_ssh(juju, unit_name, f"sudo cat {juju_unit_log_file}", juju_ssh_key_path)
         return "Emitting Juju event upgrade_charm." in stdout
 
     wait_for(is_upgrade_charm_event_emitted, timeout=360, check_interval=60)

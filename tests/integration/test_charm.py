@@ -9,6 +9,7 @@ import contextlib
 import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 import jubilant
 import pytest
@@ -126,6 +127,7 @@ def test_periodic_rebuilt(
     app_config: dict,
     openstack_connection: Connection,
     image_names: list[str],
+    juju_ssh_key_path: Path,
 ):
     """
     arrange: A deployed active charm.
@@ -138,7 +140,10 @@ def test_periodic_rebuilt(
     status = juju.status()
     unit_name = next(iter(status.apps[app].units))
     with _change_cronjob_to_minutes(
-        juju, unit_name, current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME]
+        juju,
+        unit_name,
+        current_hour_interval=app_config[BUILD_INTERVAL_CONFIG_NAME],
+        ssh_key_path=juju_ssh_key_path,
     ):
         wait_for_images(
             openstack_connection=openstack_connection,
@@ -148,7 +153,9 @@ def test_periodic_rebuilt(
 
 
 @contextlib.contextmanager
-def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour_interval: int):
+def _change_cronjob_to_minutes(
+    juju: jubilant.Juju, unit_name: str, current_hour_interval: int, ssh_key_path: Path
+):
     """Context manager to change the crontab to run every minute."""
     minute_interval = 1
     juju_ssh(
@@ -156,10 +163,11 @@ def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour
         unit_name,
         rf"sudo sed -i 's/0 \*\/{current_hour_interval}/\*\/{minute_interval} \*/g'  "
         f"{CRON_BUILD_SCHEDULE_PATH}",
+        ssh_key_path,
     )
-    cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
+    cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}", ssh_key_path)
     logger.info("Cron file content: %s", cron_content)
-    juju_ssh(juju, unit_name, "sudo systemctl restart cron")
+    juju_ssh(juju, unit_name, "sudo systemctl restart cron", ssh_key_path)
 
     try:
         yield
@@ -169,14 +177,15 @@ def _change_cronjob_to_minutes(juju: jubilant.Juju, unit_name: str, current_hour
             unit_name,
             rf"sudo sed -i 's/\*\/{minute_interval} \*/0 \*\/{current_hour_interval}/g'  "
             f"{CRON_BUILD_SCHEDULE_PATH}",
+            ssh_key_path,
         )
-        cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}")
+        cron_content = juju_ssh(juju, unit_name, f"cat {CRON_BUILD_SCHEDULE_PATH}", ssh_key_path)
         logger.info("Cronfile content: %s", cron_content)
-        juju_ssh(juju, unit_name, "sudo systemctl restart cron")
+        juju_ssh(juju, unit_name, "sudo systemctl restart cron", ssh_key_path)
 
 
 @pytest.mark.abort_on_fail
-def test_log_rotated(juju: jubilant.Juju, app: str):
+def test_log_rotated(juju: jubilant.Juju, app: str, juju_ssh_key_path: Path):
     """
     arrange: A deployed active charm and manually write something to the log file.
     act: trigger logrotate manually
@@ -190,18 +199,27 @@ def test_log_rotated(juju: jubilant.Juju, app: str):
         juju,
         unit_name,
         f"echo '{test_log}' | sudo tee -a /var/log/github-runner-image-builder/info.log",
+        juju_ssh_key_path,
     )
 
     # Test that the configuration is loaded successfully using --debug flag
     logrotate_debug_output = juju_ssh(
-        juju, unit_name, "sudo bash -c '/usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1'"
+        juju,
+        unit_name,
+        "sudo bash -c '/usr/sbin/logrotate /etc/logrotate.conf --debug 2>&1'",
+        juju_ssh_key_path,
     )
     assert (
         "rotating pattern: /var/log/github-runner-image-builder/info.log" in logrotate_debug_output
     )
     # Manually trigger logrotate using --force flag
-    juju_ssh(juju, unit_name, "sudo /usr/sbin/logrotate /etc/logrotate.conf --force")
+    juju_ssh(
+        juju, unit_name, "sudo /usr/sbin/logrotate /etc/logrotate.conf --force", juju_ssh_key_path
+    )
     log_output = juju_ssh(
-        juju, unit_name, "sudo cat /var/log/github-runner-image-builder/info.log"
+        juju,
+        unit_name,
+        "sudo cat /var/log/github-runner-image-builder/info.log",
+        juju_ssh_key_path,
     )
     assert test_log not in log_output

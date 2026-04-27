@@ -33,18 +33,19 @@ _JUJU_SSH_RETRY_WAIT_SECONDS = 30
     before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
     reraise=True,
 )
-def juju_ssh(juju: jubilant.Juju, unit_name: str, command: str) -> str:
+def juju_ssh(juju: jubilant.Juju, unit_name: str, command: str, ssh_key_path: Path) -> str:
     """Run a command over SSH on a Juju unit, retrying on transient failures.
 
     Args:
         juju: The jubilant Juju instance.
         unit_name: The name of the unit (e.g. ``myapp/0``).
         command: Shell command to execute on the unit.
+        ssh_key_path: Path to the private SSH key to authenticate with.
 
     Returns:
         The standard output of the command.
     """
-    return juju.ssh(unit_name, command)
+    return juju.ssh(unit_name, command, ssh_options=["-i", str(ssh_key_path)])
 
 
 def wait_for_images(
