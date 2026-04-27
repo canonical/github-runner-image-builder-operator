@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import secrets
 import string
+import subprocess  # nosec
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,15 +98,20 @@ def juju_fixture(
 ) -> Generator[jubilant.Juju, None, None]:
     """Juju instance with a temporary model for testing."""
     with jubilant.temp_model(keep=keep_models) as juju:
-        # 2026/04/27 - Add ssh-key from the host - there's a bug that leads to ssh failure.
-        ssh_pub_key_path = Path.home() / ".ssh" / "id_rsa.pub"
-        if ssh_pub_key_path.exists():
-            logger.info("Adding SSH key from host: %s", ssh_pub_key_path)
-            juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
-        else:
-            pytest.fail(
-                f"SSH public key not found at {ssh_pub_key_path}. Please generate an SSH key pair or specify a different path."
+        # 2026/04/27 - Add ssh-key to juju - there's a bug that leads to ssh failure.
+        ssh_dir = Path.home() / ".ssh"
+        ssh_dir.mkdir(mode=0o700, exist_ok=True)
+        ssh_key_path = ssh_dir / "juju_id_rsa"
+        ssh_pub_key_path = ssh_key_path.with_suffix(".pub")
+        if not ssh_key_path.exists():
+            logger.info("Generating SSH key pair at %s", ssh_key_path)
+            subprocess.run(
+                ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path), "-N", ""],
+                check=True,
+                capture_output=True,
             )
+        logger.info("Adding SSH public key to juju: %s", ssh_pub_key_path)
+        juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
             juju.model_config(
