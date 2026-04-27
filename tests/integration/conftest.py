@@ -85,12 +85,17 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
+@pytest.fixture(scope="module", name="keep_models")
+def keep_models_fixture(pytestconfig: pytest.Config) -> bool:
+    """Whether to keep the testing models after tests complete."""
+    return pytestconfig.getoption("--keep-models")
+
+
 @pytest.fixture(scope="module", name="juju")
 def juju_fixture(
-    proxy: ProxyConfig, request: pytest.FixtureRequest
+    proxy: ProxyConfig, keep_models: bool, request: pytest.FixtureRequest
 ) -> Generator[jubilant.Juju, None, None]:
     """Juju instance with a temporary model for testing."""
-    keep_models = bool(request.config.getoption("--keep-models"))
     with jubilant.temp_model(keep=keep_models) as juju:
         if proxy.http:
             logger.info("Setting model proxy: %s", proxy.http)
@@ -122,6 +127,7 @@ def test_charm_fixture(
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
     openstack_password_secret: _Secret,
+    keep_models: bool,
 ) -> Generator[str, None, None]:
     """The test charm that becomes active when valid relation data is given."""
     app_name = f"test-{test_id}"
@@ -129,8 +135,9 @@ def test_charm_fixture(
 
     yield app_name
 
-    juju.remove_application(app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    if not keep_models:
+        juju.remove_application(app_name)
+        logger.info("Test charm application %s removed.", app_name)
 
 
 @pytest.fixture(scope="module", name="test_charm_2")
@@ -139,6 +146,7 @@ def test_charm_2_fixture(
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
     openstack_password_secret: _Secret,
+    keep_models: bool,
 ) -> Generator[str, None, None]:
     """A second test charm that becomes active when valid relation data is given."""
     app_name = f"test2-{test_id}"
@@ -146,9 +154,10 @@ def test_charm_2_fixture(
 
     yield app_name
 
-    logger.info("Cleaning up test charm.")
-    juju.remove_application(app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    if not keep_models:
+        logger.info("Cleaning up test charm.")
+        juju.remove_application(app_name)
+        logger.info("Test charm application %s removed.", app_name)
 
 
 def _deploy_test_charm(
@@ -396,6 +405,7 @@ def app_fixture(
     test_configs: TestConfigs,
     script_secret: _Secret,
     openstack_password_secret: _Secret,
+    keep_models: bool,
 ) -> Generator[str, None, None]:
     """The deployed application fixture."""
     app_name = f"image-builder-operator-{test_configs.test_id}"
@@ -425,7 +435,8 @@ def app_fixture(
 
     yield app_name
 
-    test_configs.juju.remove_application(app_name)
+    if not keep_models:
+        test_configs.juju.remove_application(app_name)
 
 
 def _prepare_charmhub_app_config(
@@ -465,6 +476,7 @@ def app_on_charmhub_fixture(
     app_config: dict,
     base_machine_constraint: dict,
     openstack_password_secret: _Secret,
+    keep_models: bool,
 ) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
     app_name = f"image-builder-charmhub-{test_configs.test_id}"
@@ -506,7 +518,8 @@ def app_on_charmhub_fixture(
 
     yield app_name
 
-    test_configs.juju.remove_application(app_name)
+    if not keep_models:
+        test_configs.juju.remove_application(app_name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
