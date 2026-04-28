@@ -104,7 +104,7 @@ def juju_ssh_key_path_fixture() -> Path:
     ssh_key_path = ssh_dir / "juju_id_rsa"
     if not ssh_key_path.exists():
         logger.info("Generating SSH key pair at %s", ssh_key_path)
-        subprocess.run(
+        subprocess.run(  # nosec B603 B607
             ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path), "-N", ""],
             check=True,
             capture_output=True,
