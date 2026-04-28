@@ -87,15 +87,20 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
     juju.integrate(app, test_charm_2)
     juju.wait(lambda s: jubilant.all_active(s, test_charm_2), timeout=30 * 60)
 
+    # Wait for any potential build to complete and ensure the charm is idle.
+    juju.wait(lambda s: jubilant.all_agents_idle(s, app), timeout=30 * 60)
+
     # Check that no new image is created
     for image_name in image_names:
-        assert (
-            image_created_from_dispatch(
-                image_name=image_name,
-                connection=openstack_connection,
-                dispatch_time=time_before_relation,
-            )
-            is None
+        image = image_created_from_dispatch(
+            image_name=image_name,
+            connection=openstack_connection,
+            dispatch_time=time_before_relation,
+        )
+        assert image is None, (
+            f"Image {image_name} was unexpectedly rebuilt after second relation join "
+            f"(image_id={image.id}, created_at={image.created_at}, "
+            f"time_before_relation={time_before_relation})"
         )
 
     # Check that images in relation data is same for both test charms
