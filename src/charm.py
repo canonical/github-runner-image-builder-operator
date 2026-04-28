@@ -12,9 +12,9 @@ import os
 # We ignore low severity security warning for importing subprocess module
 import subprocess  # nosec B404
 import time
-from datetime import datetime, timezone
 import typing
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from textwrap import dedent
 
@@ -155,6 +155,14 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             )
 
             self.image_observer.update_image_data([cloud_images])
+        elif builder.has_any_images(
+            config_matrix=configs.config_matrix, static_config=static_config
+        ):
+            logger.info(
+                "Image upload in progress for %s in cloud %s. Skipping rebuild.",
+                evt.unit.name,
+                cloud_id,
+            )
         else:
             logger.info(
                 "Triggering image build: event=image-relation-changed, unit=%s, cloud_id=%s, "

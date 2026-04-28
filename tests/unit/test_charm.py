@@ -42,6 +42,7 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=[]))
+    monkeypatch.setattr(builder, "has_any_images", MagicMock(return_value=False))
     monkeypatch.setattr(builder, "run", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
 
@@ -223,6 +224,40 @@ def test__on_image_relation_changed_image_already_in_cloud(
     assert charm.unit.status == ops.ActiveStatus()
     assert builder.run.call_count == 0
     charm.image_observer.update_image_data.assert_called_with([[cloud_image]])
+
+
+@pytest.mark.usefixtures("mock_builder")
+def test__on_image_relation_changed_image_upload_in_progress(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given get_latest_images returning empty (image not yet active) but has_any_images
+        returning True (image upload in progress).
+    act: when _on_image_relation_changed is called.
+    assert: charm does not trigger a rebuild.
+    """
+    charm.image_observer = MagicMock()
+    monkeypatch.setattr(
+        state.CloudsAuthConfig,
+        "from_unit_relation_data",
+        MagicMock(
+            return_value=state.CloudsAuthConfig(
+                auth_url="http://example.com",
+                username="user",
+                password="pass",  # nosec no real password
+                project_name="project_name",
+                project_domain_name="project_domain_name",
+                user_domain_name="user_domain_name",
+            )
+        ),
+    )
+    builder.get_latest_images.return_value = []
+    builder.has_any_images.return_value = True
+
+    charm._on_image_relation_changed(MagicMock())
+
+    assert charm.unit.status == ops.ActiveStatus()
+    builder.run.assert_not_called()
 
 
 @pytest.mark.usefixtures("mock_builder")

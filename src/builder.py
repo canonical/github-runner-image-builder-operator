@@ -15,6 +15,7 @@ import subprocess  # nosec
 import typing
 from pathlib import Path
 
+import openstack as openstack_module
 import tenacity
 import yaml
 from charms.operator_libs_linux.v0 import apt
@@ -757,6 +758,36 @@ def get_latest_images(
     except multiprocessing.ProcessError as exc:
         raise GetLatestImageError("Failed to run parallel fetch") from exc
     return list(filter(lambda image: image.image_id, get_results))
+
+
+def has_any_images(config_matrix: ConfigMatrix, static_config: StaticConfigs) -> bool:
+    """Check if any images exist for the given configuration, regardless of their upload status.
+
+    This complements get_latest_images (which only returns active images). It is used to
+    detect the case where an image upload is in progress but the image is not yet active,
+    so that a redundant rebuild is not triggered.
+
+    Args:
+        config_matrix: Matricized values of configurable image parameters.
+        static_config: Static configurations that are used to interact with the image repository.
+
+    Returns:
+        True if any image exists (in any status) for any of the configured upload clouds.
+    """
+    fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
+    prior = os.environ.get("OS_CLIENT_CONFIG_FILE")
+    os.environ["OS_CLIENT_CONFIG_FILE"] = str(OPENSTACK_CLOUDS_YAML_PATH)
+    try:
+        for config in fetch_configs:
+            with openstack_module.connect(cloud=config.cloud_id) as conn:
+                if conn.search_images(config.image_name):
+                    return True
+    finally:
+        if prior is None:
+            os.environ.pop("OS_CLIENT_CONFIG_FILE", None)
+        else:
+            os.environ["OS_CLIENT_CONFIG_FILE"] = prior
+    return False
 
 
 @dataclasses.dataclass

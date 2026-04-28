@@ -7,14 +7,14 @@
 # We are testing extensively with data structures, hence the many lines.
 # pylint:disable=protected-access, too-many-lines
 
+import os
 import secrets
 
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
 import typing
 from pathlib import Path
-from unittest.mock import MagicMock
-
+from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charms.operator_libs_linux.v0 import apt
@@ -1112,3 +1112,76 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
         cloud_id="test-cloud",
         image_id="test-image",
     )
+
+
+@pytest.mark.parametrize(
+    "search_result, expected",
+    [
+        pytest.param(["some-image"], True, id="images found"),
+        pytest.param([], False, id="no images found"),
+    ],
+)
+def test_has_any_images(
+    monkeypatch: pytest.MonkeyPatch, search_result: list, expected: bool
+):
+    """
+    arrange: given monkeypatched _parametrize_fetch and openstack connection.
+    act: when has_any_images is called.
+    assert: returns True when images exist in any status, False otherwise.
+    """
+    monkeypatch.setattr(
+        builder,
+        "_parametrize_fetch",
+        MagicMock(
+            return_value=[
+                builder.FetchConfig(
+                    arch=state.Arch.X64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="test-cloud",
+                    prefix="app-name",
+                )
+            ]
+        ),
+    )
+    conn_mock = MagicMock()
+    conn_mock.__enter__ = MagicMock(return_value=conn_mock)
+    conn_mock.__exit__ = MagicMock(return_value=False)
+    conn_mock.search_images.return_value = search_result
+
+    with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
+        result = builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
+
+    assert result == expected
+
+
+def test_has_any_images_restores_env_var(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a pre-existing OS_CLIENT_CONFIG_FILE environment variable.
+    act: when has_any_images is called.
+    assert: the original value of OS_CLIENT_CONFIG_FILE is restored after the call.
+    """
+    prior_value = "/prior/clouds.yaml"
+    monkeypatch.setenv("OS_CLIENT_CONFIG_FILE", prior_value)
+    monkeypatch.setattr(
+        builder,
+        "_parametrize_fetch",
+        MagicMock(
+            return_value=[
+                builder.FetchConfig(
+                    arch=state.Arch.X64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="test-cloud",
+                    prefix="app-name",
+                )
+            ]
+        ),
+    )
+    conn_mock = MagicMock()
+    conn_mock.__enter__ = MagicMock(return_value=conn_mock)
+    conn_mock.__exit__ = MagicMock(return_value=False)
+    conn_mock.search_images.return_value = []
+
+    with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
+        builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
+
+    assert os.environ.get("OS_CLIENT_CONFIG_FILE") == prior_value
