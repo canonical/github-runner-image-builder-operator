@@ -74,7 +74,6 @@ def test_main_invalid_action(cli_runner: CliRunner, invalid_action: str):
     [
         pytest.param("init", id="init"),
         pytest.param("latest-build-id", id="latest-build-id"),
-        pytest.param("any-build-id", id="any-build-id"),
         pytest.param("run", id="run"),
     ],
 )
@@ -151,36 +150,6 @@ def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner)
 
     result = cli_runner.invoke(
         main, args=[*REQUIRED_MAIN_INPUTS, "latest-build-id", "test-image-name"]
-    )
-
-    assert result.output == test_id
-
-
-def test_invalid_any_build_id_args(cli_runner: CliRunner):
-    """
-    arrange: none.
-    act: when any-build-id is called with no image name.
-    assert: Error output is printed.
-    """
-    result = cli_runner.invoke(main, args=[*REQUIRED_MAIN_INPUTS, "any-build-id"])
-
-    assert "Error: Missing argument " in result.output
-
-
-def test_any_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
-    """
-    arrange: given valid any-build-id args.
-    act: when cli is invoked with any-build-id.
-    assert: any-build-id is returned.
-    """
-    monkeypatch.setattr(
-        cli.store,
-        "get_latest_build_id_any_status",
-        MagicMock(return_value=(test_id := "test-id")),
-    )
-
-    result = cli_runner.invoke(
-        main, args=[*REQUIRED_MAIN_INPUTS, "any-build-id", "test-image-name"]
     )
 
     assert result.output == test_id

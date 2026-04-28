@@ -7,13 +7,14 @@
 # We are testing extensively with data structures, hence the many lines.
 # pylint:disable=protected-access, too-many-lines
 
+import os
 import secrets
 
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
 import typing
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charms.operator_libs_linux.v0 import apt
@@ -1114,103 +1115,73 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "images, expected",
+    "search_result, expected",
     [
-        pytest.param(
-            [
-                builder.CloudImage(
-                    arch=state.Arch.X64,
-                    base=state.BaseImage.NOBLE,
-                    cloud_id="test-cloud",
-                    image_id="some-image-id",
-                )
-            ],
-            True,
-            id="images found",
-        ),
+        pytest.param(["some-image"], True, id="images found"),
         pytest.param([], False, id="no images found"),
     ],
 )
 def test_has_any_images(
-    monkeypatch: pytest.MonkeyPatch, images: list, expected: bool
+    monkeypatch: pytest.MonkeyPatch, search_result: list, expected: bool
 ):
     """
-    arrange: given monkeypatched get_latest_images returning images in any status.
+    arrange: given monkeypatched _parametrize_fetch and openstack connection.
     act: when has_any_images is called.
     assert: returns True when images exist in any status, False otherwise.
     """
-    monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=images))
+    monkeypatch.setattr(
+        builder,
+        "_parametrize_fetch",
+        MagicMock(
+            return_value=[
+                builder.FetchConfig(
+                    arch=state.Arch.X64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="test-cloud",
+                    prefix="app-name",
+                )
+            ]
+        ),
+    )
+    conn_mock = MagicMock()
+    conn_mock.__enter__ = MagicMock(return_value=conn_mock)
+    conn_mock.__exit__ = MagicMock(return_value=False)
+    conn_mock.search_images.return_value = search_result
 
-    result = builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
+    with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
+        result = builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
 
     assert result == expected
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        pytest.param(
-            subprocess.CalledProcessError(1, [], "", "error running image builder any-build-id"),
-            id="process error",
+def test_has_any_images_restores_env_var(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a pre-existing OS_CLIENT_CONFIG_FILE environment variable.
+    act: when has_any_images is called.
+    assert: the original value of OS_CLIENT_CONFIG_FILE is restored after the call.
+    """
+    prior_value = "/prior/clouds.yaml"
+    monkeypatch.setenv("OS_CLIENT_CONFIG_FILE", prior_value)
+    monkeypatch.setattr(
+        builder,
+        "_parametrize_fetch",
+        MagicMock(
+            return_value=[
+                builder.FetchConfig(
+                    arch=state.Arch.X64,
+                    base=state.BaseImage.NOBLE,
+                    cloud_id="test-cloud",
+                    prefix="app-name",
+                )
+            ]
         ),
-        pytest.param(
-            subprocess.SubprocessError("Something happened"),
-            id="general error",
-        ),
-    ],
-)
-def test__get_latest_image_any_status_error(
-    monkeypatch: pytest.MonkeyPatch,
-    error: subprocess.CalledProcessError | subprocess.SubprocessError,
-):
-    """
-    arrange: given monkeypatched subprocess.check_output that raises an error.
-    act: when _get_latest_image_any_status is called.
-    assert: GetLatestImageError is raised.
-    """
-    monkeypatch.setattr(subprocess, "check_output", MagicMock(side_effect=error))
-
-    with pytest.raises(builder.GetLatestImageError):
-        builder._get_latest_image_any_status(config=MagicMock())
-
-
-def test__get_latest_image_any_status(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given monkeypatched subprocess.check_output that returns an image_id.
-    act: when _get_latest_image_any_status is called.
-    assert: expected CloudImage is returned.
-    """
-    monkeypatch.setattr(subprocess, "check_output", MagicMock(return_value="test-image"))
-
-    assert builder._get_latest_image_any_status(
-        config=builder.FetchConfig(
-            arch=state.Arch.ARM64,
-            base=state.BaseImage.JAMMY,
-            cloud_id="test-cloud",
-            prefix="app-name",
-        )
-    ) == builder.CloudImage(
-        arch=state.Arch.ARM64,
-        base=state.BaseImage.JAMMY,
-        cloud_id="test-cloud",
-        image_id="test-image",
     )
+    conn_mock = MagicMock()
+    conn_mock.__enter__ = MagicMock(return_value=conn_mock)
+    conn_mock.__exit__ = MagicMock(return_value=False)
+    conn_mock.search_images.return_value = []
 
+    with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
+        builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
 
-def test_get_latest_images_any_status(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a monkeypatched _get_latest_image_any_status function.
-    act: when get_latest_images is called with active_only=False.
-    assert: _get_latest_image_any_status results are returned.
-    """
-    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
-    monkeypatch.setattr(builder, "_get_latest_image_any_status", _patched__get_latest_image)
-
-    assert [
-        builder.CloudImage(
-            arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
-        )
-        for cloud_id in ["test1", "test2"]
-    ] == builder.get_latest_images(
-        config_matrix=MagicMock(), static_config=MagicMock(), active_only=False
-    )
+    assert os.environ.get("OS_CLIENT_CONFIG_FILE") == prior_value
