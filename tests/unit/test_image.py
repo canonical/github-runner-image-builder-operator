@@ -103,6 +103,7 @@ def test__on_image_relation_joined(
     monkeypatch.setattr(state.CloudsAuthConfig, "from_unit_relation_data", MagicMock())
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value="test-id"))
+    monkeypatch.setattr(image_observer.charm, "_setup_proxy_environment", MagicMock())
 
     image_observer.update_image_data = (update_relation_data_mock := MagicMock())
     image_observer._on_image_relation_joined(MagicMock())

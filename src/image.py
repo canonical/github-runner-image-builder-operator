@@ -6,13 +6,16 @@
 import json
 import logging
 from collections import defaultdict
-from typing import Mapping, TypedDict, cast
+from typing import TYPE_CHECKING, Mapping, TypedDict, cast
 
 import ops
 
 import builder
 import charm_utils
 import state
+
+if TYPE_CHECKING:
+    from charm import GithubRunnerImageBuilderCharm
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ class ImageRelationData(TypedDict, total=False):
 class Observer(ops.Object):
     """The image relation observer."""
 
-    def __init__(self, charm: ops.CharmBase):
+    def __init__(self, charm: "GithubRunnerImageBuilderCharm"):
         """Initialize the observer and register event handlers.
 
         Args:
