@@ -12,6 +12,7 @@ import os
 # We ignore low severity security warning for importing subprocess module
 import subprocess  # nosec B404
 import time
+from datetime import datetime, timezone
 import typing
 from dataclasses import dataclass
 from pathlib import Path
@@ -112,6 +113,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if builder.configure_cron(  # pragma: no cover
             unit_name=self.unit.name, interval=builder_config_state.app_config.build_interval
         ):
+            logger.info(
+                "Triggering image build: event=config-changed, timestamp=%s",
+                datetime.now(tz=timezone.utc).isoformat(),
+            )
             self._run()
         self.unit.status = ops.ActiveStatus()  # pragma: no cover
 
@@ -151,6 +156,13 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
 
             self.image_observer.update_image_data([cloud_images])
         else:
+            logger.info(
+                "Triggering image build: event=image-relation-changed, unit=%s, cloud_id=%s, "
+                "timestamp=%s",
+                evt.unit.name,
+                cloud_id,
+                datetime.now(tz=timezone.utc).isoformat(),
+            )
             self._run(cloud_id=cloud_id)
         self.unit.status = ops.ActiveStatus()
 
@@ -162,6 +174,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
         if not self._is_any_image_relation_ready(cloud_config=builder_config_state.cloud_config):
             return
         # The following line should be covered by the integration test.
+        logger.info(
+            "Triggering image build: event=run (cron), timestamp=%s",
+            datetime.now(tz=timezone.utc).isoformat(),
+        )
         self._run()  # pragma: nocover
 
     @charm_utils.block_if_invalid_config(defer=False)
@@ -177,6 +193,10 @@ class GithubRunnerImageBuilderCharm(ops.CharmBase):
             event.fail("Image relation not yet ready.")
             return
         # The following line should be covered by the integration test.
+        logger.info(
+            "Triggering image build: event=run-action, timestamp=%s",
+            datetime.now(tz=timezone.utc).isoformat(),
+        )
         self._run()  # pragma: nocover
 
     def setup_proxy_environment(self, proxy_config: state.ProxyConfig | None) -> None:
