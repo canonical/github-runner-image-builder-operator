@@ -4,6 +4,7 @@
 """Module for interacting with qemu image builder."""
 
 import dataclasses
+import functools
 import logging
 import multiprocessing
 import os
@@ -15,7 +16,6 @@ import subprocess  # nosec
 import typing
 from pathlib import Path
 
-import openstack as openstack_module
 import tenacity
 import yaml
 from charms.operator_libs_linux.v0 import apt
@@ -736,13 +736,14 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
 
 
 def get_latest_images(
-    config_matrix: ConfigMatrix, static_config: StaticConfigs
+    config_matrix: ConfigMatrix, static_config: StaticConfigs, active_only: bool = True
 ) -> list[CloudImage]:
     """Fetch the latest image build IDs for the clouds.
 
     Args:
         config_matrix: Matricized values of configurable image parameters.
         static_config: Static configurations that are used to interact with the image repository.
+        active_only: If True, only return active images. If False, include images in any status.
 
     Raises:
         GetLatestImageError: If there was an error fetching the latest image.
@@ -753,8 +754,9 @@ def get_latest_images(
     fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
     try:
         num_cores = multiprocessing.cpu_count() - 1
+        image_fetcher = functools.partial(_get_latest_image, active_only=active_only)
         with multiprocessing.Pool(min(len(fetch_configs), num_cores)) as pool:
-            get_results = pool.map(_get_latest_image, fetch_configs)
+            get_results = pool.map(image_fetcher, fetch_configs)
     except multiprocessing.ProcessError as exc:
         raise GetLatestImageError("Failed to run parallel fetch") from exc
     return list(filter(lambda image: image.image_id, get_results))
@@ -774,20 +776,7 @@ def has_any_images(config_matrix: ConfigMatrix, static_config: StaticConfigs) ->
     Returns:
         True if any image exists (in any status) for any of the configured upload clouds.
     """
-    fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
-    prior = os.environ.get("OS_CLIENT_CONFIG_FILE")
-    os.environ["OS_CLIENT_CONFIG_FILE"] = str(OPENSTACK_CLOUDS_YAML_PATH)
-    try:
-        for config in fetch_configs:
-            with openstack_module.connect(cloud=config.cloud_id) as conn:
-                if conn.search_images(config.image_name):
-                    return True
-    finally:
-        if prior is None:
-            os.environ.pop("OS_CLIENT_CONFIG_FILE", None)
-        else:
-            os.environ["OS_CLIENT_CONFIG_FILE"] = prior
-    return False
+    return bool(get_latest_images(config_matrix, static_config, active_only=False))
 
 
 @dataclasses.dataclass
@@ -843,11 +832,12 @@ def _parametrize_fetch(
     return tuple(configs)
 
 
-def _get_latest_image(config: FetchConfig) -> CloudImage:
+def _get_latest_image(config: FetchConfig, active_only: bool = True) -> CloudImage:
     """Fetch the latest image.
 
     Args:
         config: The fetch image configuration parameters.
+        active_only: If True, only return active images. If False, include images in any status.
 
     Raises:
         GetLatestImageError: If there was something wrong calling the image builder CLI.
@@ -856,17 +846,20 @@ def _get_latest_image(config: FetchConfig) -> CloudImage:
         The built cloud image.
     """
     try:
+        cmd = [
+            "/usr/bin/sudo",
+            "--preserve-env",
+            str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
+            "--os-cloud",
+            config.cloud_id,
+            "latest-build-id",
+            config.image_name,
+        ]
+        if not active_only:
+            cmd.append("--any-status")
         # the user keyword argument exists but pylint doesn't think so.
         image_id = subprocess.check_output(  # pylint: disable=unexpected-keyword-arg
-            [
-                "/usr/bin/sudo",
-                "--preserve-env",
-                str(GITHUB_RUNNER_IMAGE_BUILDER_PATH),
-                "--os-cloud",
-                config.cloud_id,
-                "latest-build-id",
-                config.image_name,
-            ],
+            cmd,
             user=UBUNTU_USER,
             cwd=UBUNTU_HOME,
             timeout=10 * 60,
