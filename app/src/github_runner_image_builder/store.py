@@ -123,6 +123,35 @@ def _prune_old_images(
             raise OpenstackError from exc
 
 
+def get_latest_build_id_any_status(cloud_name: str, image_name: str) -> str:
+    """Fetch the latest image id regardless of its upload status.
+
+    Unlike get_latest_build_id, this function returns the ID of the most recently created
+    image even while it is still uploading (i.e. in saving/queued/uploading status). It is
+    intended to detect in-progress uploads so that redundant rebuilds are not triggered.
+
+    Args:
+        cloud_name: The Openstack cloud to use from clouds.yaml.
+        image_name: The image name to search for.
+
+    Returns:
+        The image ID if any image exists, empty string otherwise.
+    """
+    with openstack.connect(cloud=cloud_name) as connection:
+        try:
+            images = sorted(
+                (img for img in connection.image.images(name=image_name)),
+                key=lambda img: img.created_at,
+                reverse=True,
+            )
+        except openstack.exceptions.OpenStackCloudException as exc:
+            logger.exception("Failed to list images with name %s.", image_name)
+            raise OpenstackError from exc
+        if not images:
+            return ""
+        return images[0].id  # type: ignore
+
+
 def get_latest_build_id(cloud_name: str, image_name: str) -> str:
     """Fetch the latest image id.
 

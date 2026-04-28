@@ -225,3 +225,54 @@ def test_get_latest_image_id(
     )
 
     assert store.get_latest_build_id(cloud_name=MagicMock(), image_name=MagicMock()) == expected_id
+
+
+@pytest.mark.parametrize(
+    "images, expected_id",
+    [
+        pytest.param([], "", id="No images"),
+        pytest.param(
+            [
+                MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z"),
+                MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z"),
+            ],
+            "2",
+            id="Multiple images - latest first",
+        ),
+    ],
+)
+def test_get_latest_build_id_any_status(
+    images: list[Image],
+    expected_id: str,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_connection: MagicMock,
+):
+    """
+    arrange: given a mocked openstack image connection returning images of any status.
+    act: when get_latest_build_id_any_status is called.
+    assert: the most recently created image ID is returned (empty string if none).
+    """
+    mock_connection.image.images.return_value = iter(images)
+
+    assert (
+        store.get_latest_build_id_any_status(
+            cloud_name=MagicMock(), image_name=MagicMock()
+        )
+        == expected_id
+    )
+
+
+def test_get_latest_build_id_any_status_error(
+    monkeypatch: pytest.MonkeyPatch, mock_connection: MagicMock
+):
+    """
+    arrange: given a mocked openstack connection that raises an exception.
+    act: when get_latest_build_id_any_status is called.
+    assert: OpenstackError is raised.
+    """
+    mock_connection.image.images.side_effect = openstack.exceptions.OpenStackCloudException(
+        "cloud error"
+    )
+
+    with pytest.raises(store.OpenstackError):
+        store.get_latest_build_id_any_status(cloud_name=MagicMock(), image_name=MagicMock())

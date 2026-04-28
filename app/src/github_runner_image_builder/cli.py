@@ -108,6 +108,31 @@ def get_latest_build_id(ctx: click.Context, image_name: str) -> None:
     )
 
 
+@main.command(name="any-build-id")
+@click.argument("image_name")
+@click.pass_context
+def get_any_build_id(ctx: click.Context, image_name: str) -> None:
+    # Click arguments do not take help parameter, display help through docstrings.
+    """Get latest build ID of <IMAGE_NAME> in any upload status from Openstack <--os-cloud>.
+
+    Unlike latest-build-id, this returns the ID of the most recently created image even
+    while it is still uploading.
+
+    \f # this is to prevent click from using Args section of the docstring as help documentation.
+
+    Args:
+        ctx: click.Context object for passing shared state.
+        image_name: The image name uploaded to Openstack.
+    """  # noqa: D301 - the \f should not be escaped for click to properly format the docstring.
+    state = cast(SharedState, ctx.obj)
+    click.echo(
+        message=store.get_latest_build_id_any_status(
+            cloud_name=state.cloud, image_name=image_name
+        ),
+        nl=False,
+    )
+
+
 # The arguments are necessary input for click validation function.
 def _parse_url(
     ctx: click.Context, param: click.Parameter, value: str  # pylint: disable=unused-argument
