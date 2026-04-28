@@ -74,7 +74,7 @@ def wait_for_images(
 def image_created_from_dispatch(
     image_name: str, connection: Connection, dispatch_time: datetime
 ) -> Image | None:
-    """Return whether there is an image created after dispatch has been called.
+    """Return whether there is an active image created after dispatch has been called.
 
     Args:
         image_name: The image name to check for.
@@ -82,7 +82,7 @@ def image_created_from_dispatch(
         dispatch_time: Time when the image build was dispatched.
 
     Returns:
-        Whether there exists an image that has been created after dispatch time.
+        Whether there exists an active image that has been created after dispatch time.
     """
     images: list[Image] = connection.search_images(image_name)
     logger.info(
@@ -96,6 +96,7 @@ def image_created_from_dispatch(
         if (
             datetime.strptime(image.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
             >= dispatch_time
+            and image.status == "active"
         ):
             return image
     return None
