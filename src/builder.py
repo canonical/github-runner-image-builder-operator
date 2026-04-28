@@ -736,13 +736,18 @@ def _build_run_service_options(service_options: _ServiceOptions) -> list[str]:
 
 
 def get_latest_images(
-    config_matrix: ConfigMatrix, static_config: StaticConfigs
+    config_matrix: ConfigMatrix,
+    static_config: StaticConfigs,
+    active_only: bool = True,
 ) -> list[CloudImage]:
-    """Fetch the latest image build IDs for the clouds.
+    """Fetch image build IDs for the clouds.
 
     Args:
         config_matrix: Matricized values of configurable image parameters.
         static_config: Static configurations that are used to interact with the image repository.
+        active_only: If True (default), only return images in active status via the
+            image-builder CLI. If False, return images in any status via the OpenStack SDK;
+            this is useful for detecting in-progress uploads.
 
     Raises:
         GetLatestImageError: If there was an error fetching the latest image.
@@ -750,6 +755,10 @@ def get_latest_images(
     Returns:
         The latest successful image build information.
     """
+    if not active_only:
+        return _get_images_any_status(
+            config_matrix=config_matrix, static_config=static_config
+        )
     fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
     try:
         num_cores = multiprocessing.cpu_count() - 1
@@ -758,6 +767,43 @@ def get_latest_images(
     except multiprocessing.ProcessError as exc:
         raise GetLatestImageError("Failed to run parallel fetch") from exc
     return list(filter(lambda image: image.image_id, get_results))
+
+
+def _get_images_any_status(
+    config_matrix: ConfigMatrix, static_config: StaticConfigs
+) -> list[CloudImage]:
+    """Fetch images for the clouds regardless of their upload status via the OpenStack SDK.
+
+    Args:
+        config_matrix: Matricized values of configurable image parameters.
+        static_config: Static configurations that are used to interact with the image repository.
+
+    Returns:
+        Images found in any status (active, uploading, etc.) for the configured upload clouds.
+    """
+    fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
+    prior = os.environ.get("OS_CLIENT_CONFIG_FILE")
+    os.environ["OS_CLIENT_CONFIG_FILE"] = str(OPENSTACK_CLOUDS_YAML_PATH)
+    result = []
+    try:
+        for config in fetch_configs:
+            with openstack_module.connect(cloud=config.cloud_id) as conn:
+                images = conn.search_images(config.image_name)
+                if images:
+                    result.append(
+                        CloudImage(
+                            arch=config.arch,
+                            base=config.base,
+                            cloud_id=config.cloud_id,
+                            image_id=images[0].id,
+                        )
+                    )
+    finally:
+        if prior is None:
+            os.environ.pop("OS_CLIENT_CONFIG_FILE", None)
+        else:
+            os.environ["OS_CLIENT_CONFIG_FILE"] = prior
+    return result
 
 
 def has_any_images(config_matrix: ConfigMatrix, static_config: StaticConfigs) -> bool:
@@ -774,20 +820,7 @@ def has_any_images(config_matrix: ConfigMatrix, static_config: StaticConfigs) ->
     Returns:
         True if any image exists (in any status) for any of the configured upload clouds.
     """
-    fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
-    prior = os.environ.get("OS_CLIENT_CONFIG_FILE")
-    os.environ["OS_CLIENT_CONFIG_FILE"] = str(OPENSTACK_CLOUDS_YAML_PATH)
-    try:
-        for config in fetch_configs:
-            with openstack_module.connect(cloud=config.cloud_id) as conn:
-                if conn.search_images(config.image_name):
-                    return True
-    finally:
-        if prior is None:
-            os.environ.pop("OS_CLIENT_CONFIG_FILE", None)
-        else:
-            os.environ["OS_CLIENT_CONFIG_FILE"] = prior
-    return False
+    return bool(get_latest_images(config_matrix=config_matrix, static_config=static_config, active_only=False))
 
 
 @dataclasses.dataclass

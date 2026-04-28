@@ -1115,20 +1115,20 @@ def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "search_result, expected",
+    "expected",
     [
-        pytest.param(["some-image"], True, id="images found"),
-        pytest.param([], False, id="no images found"),
+        pytest.param(True, id="images found"),
+        pytest.param(False, id="no images found"),
     ],
 )
-def test_has_any_images(
-    monkeypatch: pytest.MonkeyPatch, search_result: list, expected: bool
-):
+def test_has_any_images(monkeypatch: pytest.MonkeyPatch, expected: bool):
     """
     arrange: given monkeypatched _parametrize_fetch and openstack connection.
     act: when has_any_images is called.
     assert: returns True when images exist in any status, False otherwise.
     """
+    image_mock = MagicMock()
+    image_mock.id = "test-image-id"
     monkeypatch.setattr(
         builder,
         "_parametrize_fetch",
@@ -1146,7 +1146,7 @@ def test_has_any_images(
     conn_mock = MagicMock()
     conn_mock.__enter__ = MagicMock(return_value=conn_mock)
     conn_mock.__exit__ = MagicMock(return_value=False)
-    conn_mock.search_images.return_value = search_result
+    conn_mock.search_images.return_value = [image_mock] if expected else []
 
     with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
         result = builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
@@ -1179,7 +1179,7 @@ def test_has_any_images_restores_env_var(monkeypatch: pytest.MonkeyPatch):
     conn_mock = MagicMock()
     conn_mock.__enter__ = MagicMock(return_value=conn_mock)
     conn_mock.__exit__ = MagicMock(return_value=False)
-    conn_mock.search_images.return_value = []
+    conn_mock.search_images.return_value = []  # no images — just checking env restoration
 
     with patch.object(builder.openstack_module, "connect", return_value=conn_mock):
         builder.has_any_images(config_matrix=MagicMock(), static_config=MagicMock())
