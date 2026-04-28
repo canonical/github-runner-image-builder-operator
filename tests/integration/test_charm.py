@@ -97,6 +97,12 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
             connection=openstack_connection,
             dispatch_time=time_before_relation,
         )
+        logger.info(
+            "Image created after relation join: %s, created_at: %s, time_before_relation: %s",
+            image,
+            image.created_at if image else None,
+            time_before_relation,
+        )
         assert image is None, (
             f"Image {image_name} was unexpectedly rebuilt after second relation join "
             f"(image_id={image.id}, created_at={image.created_at}, "
