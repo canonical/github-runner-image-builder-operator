@@ -98,6 +98,45 @@ def test__get_sorted_images_by_created_at(mock_connection: MagicMock):
     ) == [third, second, first]
 
 
+def test__get_sorted_images_by_created_at_any_status(mock_connection: MagicMock):
+    """
+    arrange: given a mocked openstack connection returning images via image proxy.
+    act: when _get_sorted_images_by_created_at is called with active_only=False.
+    assert: connection.image.images is used (not search_images) and result is sorted.
+    """
+    mock_connection.image = MagicMock()
+    mock_connection.image.images.return_value = iter([
+        (first := MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")),
+        (third := MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")),
+        (second := MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")),
+    ])
+
+    result = store._get_sorted_images_by_created_at(
+        connection=mock_connection, image_name="test-image", active_only=False
+    )
+
+    mock_connection.image.images.assert_called_once_with(name="test-image")
+    mock_connection.search_images.assert_not_called()
+    assert result == [third, second, first]
+
+
+def test__get_sorted_images_by_created_at_any_status_error(mock_connection: MagicMock):
+    """
+    arrange: given a mocked openstack connection that raises on image proxy call.
+    act: when _get_sorted_images_by_created_at is called with active_only=False.
+    assert: OpenstackError is raised.
+    """
+    mock_connection.image = MagicMock()
+    mock_connection.image.images.side_effect = openstack.exceptions.OpenStackCloudException(
+        "Network error"
+    )
+
+    with pytest.raises(OpenstackError):
+        store._get_sorted_images_by_created_at(
+            connection=mock_connection, image_name=MagicMock, active_only=False
+        )
+
+
 def test__prune_old_images_error(mock_connection: MagicMock):
     """
     arrange: given a mocked delete function that raises an exception.
