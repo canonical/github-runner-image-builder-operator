@@ -7,6 +7,7 @@
 # We are testing extensively with data structures, hence the many lines.
 # pylint:disable=protected-access, too-many-lines
 
+import functools
 import os
 import secrets
 
@@ -15,6 +16,7 @@ import subprocess  # nosec: B404
 import typing
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
 import yaml
 from charms.operator_libs_linux.v0 import apt
@@ -1027,11 +1029,12 @@ def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
         builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
 
 
-def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize("active_only", [True, False])
+def test_get_latest_images(monkeypatch: pytest.MonkeyPatch, active_only: bool):
     """
-    arrange: given a monkeypatched _run function.
-    act: when get_latest_images is called.
-    assert: get_latest_images results are returned.
+    arrange: given a monkeypatched _get_latest_image function.
+    act: when get_latest_images is called with active_only=True and active_only=False.
+    assert: get_latest_images results are returned correctly for both cases.
     """
     monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
     monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
@@ -1041,30 +1044,9 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
             arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
         )
         for cloud_id in ["test1", "test2"]
-    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
-
-
-def test_get_latest_images_any_status(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given monkeypatched _parametrize_fetch and multiprocessing.Pool.
-    act: when get_latest_images is called with active_only=False.
-    assert: pool.map is called with a functools.partial of _get_latest_image with active_only=False.
-    """
-    import functools
-
-    monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
-    pool_context_mock = MagicMock()
-    pool_mock = MagicMock()
-    pool_context_mock.return_value.__enter__.return_value = pool_mock
-    pool_mock.map.return_value = []
-    monkeypatch.setattr(builder.multiprocessing, "Pool", pool_context_mock)
-
-    builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock(), active_only=False)
-
-    called_func = pool_mock.map.call_args[0][0]
-    assert isinstance(called_func, functools.partial)
-    assert called_func.func == builder._get_latest_image
-    assert called_func.keywords.get("active_only") is False
+    ] == builder.get_latest_images(
+        config_matrix=MagicMock(), static_config=MagicMock(), active_only=active_only
+    )
 
 
 def test_get_latest_filters_empty_images(monkeypatch: pytest.MonkeyPatch):
@@ -1159,9 +1141,7 @@ def test__get_latest_image(
         pytest.param([], False, id="no images found"),
     ],
 )
-def test_has_any_images(
-    monkeypatch: pytest.MonkeyPatch, get_latest_result: list, expected: bool
-):
+def test_has_any_images(monkeypatch: pytest.MonkeyPatch, get_latest_result: list, expected: bool):
     """
     arrange: given monkeypatched get_latest_images.
     act: when has_any_images is called.

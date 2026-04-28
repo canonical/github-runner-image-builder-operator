@@ -752,9 +752,9 @@ def get_latest_images(
         The latest successful image build information.
     """
     fetch_configs = _parametrize_fetch(config_matrix=config_matrix, static_config=static_config)
+    image_fetcher = functools.partial(_get_latest_image, active_only=active_only)
     try:
         num_cores = multiprocessing.cpu_count() - 1
-        image_fetcher = functools.partial(_get_latest_image, active_only=active_only)
         with multiprocessing.Pool(min(len(fetch_configs), num_cores)) as pool:
             get_results = pool.map(image_fetcher, fetch_configs)
     except multiprocessing.ProcessError as exc:
