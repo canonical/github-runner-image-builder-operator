@@ -315,12 +315,12 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     )
 
 
-def test_setup_proxy_environment_with_proxy_config(
+def testsetup_proxy_environment_with_proxy_config(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
     """
     arrange: given a ProxyConfig with http, https, and no_proxy values.
-    act: when _setup_proxy_environment is called.
+    act: when setup_proxy_environment is called.
     assert: environment variables are set correctly.
     """
     for key in ["http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"]:
@@ -332,7 +332,7 @@ def test_setup_proxy_environment_with_proxy_config(
         no_proxy="localhost,127.0.0.1",
     )
 
-    charm._setup_proxy_environment(proxy_config)
+    charm.setup_proxy_environment(proxy_config)
 
     assert os.environ["http_proxy"] == "http://proxy.example.com:8080"
     assert os.environ["https_proxy"] == "https://proxy.example.com:8443"

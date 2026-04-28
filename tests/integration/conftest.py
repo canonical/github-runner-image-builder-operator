@@ -45,6 +45,7 @@ from state import (
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (
     ImageConfigs,
+    ImageVerificationContext,
     OpenstackMeta,
     PrivateEndpointConfigs,
     ProxyConfig,
@@ -68,6 +69,19 @@ class _Secret:
 
     id: str
     name: str
+
+
+@dataclass
+class CharmSecrets:
+    """Juju secrets required by the charm.
+
+    Attributes:
+        script: The script secret.
+        openstack_password: The OpenStack password secret.
+    """
+
+    script: _Secret
+    openstack_password: _Secret
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -387,6 +401,15 @@ def openstack_password_secret_fixture(
     return _Secret(id=str(secret_uri), name=secret_name)
 
 
+@pytest.fixture(scope="module", name="charm_secrets")
+def charm_secrets_fixture(
+    script_secret: _Secret,
+    openstack_password_secret: _Secret,
+) -> CharmSecrets:
+    """The Juju secrets required by the charm."""
+    return CharmSecrets(script=script_secret, openstack_password=openstack_password_secret)
+
+
 @pytest.fixture(scope="module", name="app_config")
 def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
@@ -430,8 +453,7 @@ def app_fixture(
     app_config: dict,
     base_machine_constraint: dict,
     test_configs: TestConfigs,
-    script_secret: _Secret,
-    openstack_password_secret: _Secret,
+    charm_secrets: CharmSecrets,
     keep_models: bool,
 ) -> Generator[str, None, None]:
     """The deployed application fixture."""
@@ -443,15 +465,15 @@ def app_fixture(
         constraints=base_machine_constraint,
         config=app_config,
     )
-    test_configs.juju.grant_secret(openstack_password_secret.name, app_name)
-    test_configs.juju.grant_secret(script_secret.name, app_name)
+    test_configs.juju.grant_secret(charm_secrets.openstack_password.name, app_name)
+    test_configs.juju.grant_secret(charm_secrets.script.name, app_name)
     test_configs.juju.config(
         app_name,
         {
             SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
             "github-runner-image-builder/refs/heads/main/tests/integration/"
             "testdata/test_script.sh",
-            state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
+            state.SCRIPT_SECRET_ID_CONFIG_NAME: charm_secrets.script.id,
         },
     )
     # This takes long due to having to wait for the machine to come up.
@@ -640,6 +662,18 @@ def image_names_fixture(image_configs: ImageConfigs, app: str, arch: state.Arch)
     for base in image_configs.bases:
         image_names.append(f"{app}-{base}-{arch.value}")
     return image_names
+
+
+@pytest.fixture(scope="module", name="image_verification_context")
+def image_verification_context_fixture(
+    openstack_connection: Connection,
+    image_names: list[str],
+) -> ImageVerificationContext:
+    """Context required to verify images built on OpenStack."""
+    return ImageVerificationContext(
+        openstack_connection=openstack_connection,
+        image_names=image_names,
+    )
 
 
 @pytest.fixture(scope="module", name="bare_image_id")

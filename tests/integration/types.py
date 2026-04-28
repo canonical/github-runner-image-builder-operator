@@ -111,6 +111,18 @@ class OpenstackMeta(typing.NamedTuple):
     flavor: str
 
 
+class ImageVerificationContext(typing.NamedTuple):
+    """Context required to verify images built on OpenStack.
+
+    Attributes:
+        openstack_connection: The connection instance to Openstack.
+        image_names: The expected image names after a builder run.
+    """
+
+    openstack_connection: Connection
+    image_names: list[str]
+
+
 @dataclasses.dataclass
 class Commands:
     """Test commands to execute.

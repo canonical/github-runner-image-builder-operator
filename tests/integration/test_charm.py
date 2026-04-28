@@ -18,6 +18,7 @@ from openstack.connection import Connection
 from builder import CRON_BUILD_SCHEDULE_PATH
 from state import BUILD_INTERVAL_CONFIG_NAME
 from tests.integration.helpers import image_created_from_dispatch, juju_ssh, wait_for_images
+from tests.integration.types import ImageVerificationContext
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +126,7 @@ def test_periodic_rebuilt(
     juju: jubilant.Juju,
     app: str,
     app_config: dict,
-    openstack_connection: Connection,
-    image_names: list[str],
+    image_verification_context: ImageVerificationContext,
     juju_ssh_key_path: Path,
 ):
     """
@@ -146,9 +146,9 @@ def test_periodic_rebuilt(
         ssh_key_path=juju_ssh_key_path,
     ):
         wait_for_images(
-            openstack_connection=openstack_connection,
+            openstack_connection=image_verification_context.openstack_connection,
             dispatch_time=dispatch_time,
-            image_names=image_names,
+            image_names=image_verification_context.image_names,
         )
 
 
