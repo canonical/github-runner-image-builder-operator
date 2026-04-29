@@ -151,9 +151,10 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
     logger.info("Test charm 2 unit data: %s", test_charm_2_unit_data_str)
     test_charm_2_unit_data = json.loads(test_charm_2_unit_data_str)
 
-    assert (
-        _get_images_from_unit_data(test_charm_unit_data, test_charm_unit_name, image_builder_unit_name)
-        == _get_images_from_unit_data(test_charm_2_unit_data, test_charm_2_unit_name, image_builder_unit_name)
+    assert _get_images_from_unit_data(
+        test_charm_unit_data, test_charm_unit_name, image_builder_unit_name
+    ) == _get_images_from_unit_data(
+        test_charm_2_unit_data, test_charm_2_unit_name, image_builder_unit_name
     )
 
 
