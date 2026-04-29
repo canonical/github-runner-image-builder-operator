@@ -7,7 +7,6 @@
 # We are testing extensively with data structures, hence the many lines.
 # pylint:disable=protected-access, too-many-lines
 
-import functools
 import os
 import secrets
 

@@ -105,11 +105,13 @@ def test__get_sorted_images_by_created_at_any_status(mock_connection: MagicMock)
     assert: connection.image.images is used (not search_images) and result is sorted.
     """
     mock_connection.image = MagicMock()
-    mock_connection.image.images.return_value = iter([
-        (first := MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")),
-        (third := MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")),
-        (second := MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")),
-    ])
+    mock_connection.image.images.return_value = iter(
+        [
+            (first := MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")),
+            (third := MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")),
+            (second := MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")),
+        ]
+    )
 
     result = store._get_sorted_images_by_created_at(
         connection=mock_connection, image_name="test-image", active_only=False
