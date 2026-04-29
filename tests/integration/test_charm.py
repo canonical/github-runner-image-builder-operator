@@ -82,6 +82,11 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
     act: Integrate the test_charm_2 with the app.
     assert: No additional image is created but instead the already created ones are reused.
     """
+    # Ensure the initial build (from test_build_image) is fully complete before recording
+    # dispatch_time. Without this, the build's final upload step could complete after
+    # dispatch_time, causing the test to incorrectly flag it as a spurious rebuild.
+    juju.wait(lambda s: jubilant.all_agents_idle(s, app), timeout=30 * 60)
+
     time_before_relation = datetime.now(tz=timezone.utc)
 
     juju.integrate(app, test_charm_2)
