@@ -16,11 +16,35 @@ import pytest
 from openstack.connection import Connection
 
 from builder import CRON_BUILD_SCHEDULE_PATH
-from state import BUILD_INTERVAL_CONFIG_NAME
+from state import BUILD_INTERVAL_CONFIG_NAME, IMAGE_RELATION
 from tests.integration.helpers import image_created_from_dispatch, juju_ssh, wait_for_images
 from tests.integration.types import ImageVerificationContext
 
 logger = logging.getLogger(__name__)
+
+
+def _get_images_from_unit_data(
+    unit_data: dict, unit_name: str, image_builder_unit_name: str
+) -> str | None:
+    """Extract image data from juju show-unit output for the image relation.
+
+    Args:
+        unit_data: Parsed JSON from juju show-unit.
+        unit_name: The unit whose data to inspect.
+        image_builder_unit_name: The image-builder-operator unit name.
+
+    Returns:
+        The images string from relation data, or None if not found.
+    """
+    for relation in unit_data.get(unit_name, {}).get("relation-info", []):
+        if relation.get("related-endpoint") == IMAGE_RELATION:
+            return (
+                relation.get("related-units", {})
+                .get(image_builder_unit_name, {})
+                .get("data", {})
+                .get("images")
+            )
+    return None
 
 
 def test_image_relation(juju: jubilant.Juju, app: str, test_charm: str):
@@ -128,12 +152,8 @@ def test_charm_another_app_does_not_rebuild_image(  # pylint: disable=R0913,R091
     test_charm_2_unit_data = json.loads(test_charm_2_unit_data_str)
 
     assert (
-        test_charm_unit_data[test_charm_unit_name]["relation-info"][0]["related-units"][
-            image_builder_unit_name
-        ]["data"]["images"]
-        == test_charm_2_unit_data[test_charm_2_unit_name]["relation-info"][0]["related-units"][
-            image_builder_unit_name
-        ]["data"]["images"]
+        _get_images_from_unit_data(test_charm_unit_data, test_charm_unit_name, image_builder_unit_name)
+        == _get_images_from_unit_data(test_charm_2_unit_data, test_charm_2_unit_name, image_builder_unit_name)
     )
 
 
