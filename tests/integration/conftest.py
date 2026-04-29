@@ -10,24 +10,21 @@ import multiprocessing
 import os
 import secrets
 import string
+import subprocess  # nosec
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncGenerator, Generator, Optional
+from typing import Generator, Optional
 from uuid import uuid4
 
-import nest_asyncio
+import jubilant
 import openstack
 import pytest
-import pytest_asyncio
 import yaml
-from juju.application import Application
-from juju.model import Model
 from openstack.compute.v2.keypair import Keypair
 from openstack.connection import Connection
 from openstack.image.v2.image import Image
 from openstack.network.v2.security_group import SecurityGroup
-from pytest_operator.plugin import OpsTest
 
 import state
 from state import (
@@ -37,7 +34,6 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
-    OPENSTACK_PASSWORD_CONFIG_NAME,
     OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
@@ -49,6 +45,7 @@ from state import (
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.types import (
     ImageConfigs,
+    ImageVerificationContext,
     OpenstackMeta,
     PrivateEndpointConfigs,
     ProxyConfig,
@@ -57,9 +54,6 @@ from tests.integration.types import (
 )
 
 logger = logging.getLogger(__name__)
-
-# This is required to dynamically load async fixtures in async def model_fixture()
-nest_asyncio.apply()
 
 TEST_CHARM_FILE = "./test_ubuntu-22.04-amd64.charm"
 
@@ -75,6 +69,19 @@ class _Secret:
 
     id: str
     name: str
+
+
+@dataclass
+class CharmSecrets:
+    """Juju secrets required by the charm.
+
+    Attributes:
+        script: The script secret.
+        openstack_password: The OpenStack password secret.
+    """
+
+    script: _Secret
+    openstack_password: _Secret
 
 
 @pytest.fixture(scope="module", name="charm_file")
@@ -93,24 +100,60 @@ def proxy_fixture(pytestconfig: pytest.Config) -> ProxyConfig:
     return ProxyConfig(http=proxy, https=proxy, no_proxy=no_proxy)
 
 
-@pytest_asyncio.fixture(scope="module", name="model")
-async def model_fixture(proxy: ProxyConfig, ops_test: OpsTest) -> AsyncGenerator[Model, None]:
-    """Juju model used in the test."""
-    assert ops_test.model is not None
-    # Set model proxy for the runners
-    if proxy.http:
-        logger.info("Setting model proxy: %s", proxy.http)
-        await ops_test.model.set_config(
-            {
-                "juju-http-proxy": proxy.http,
-                "juju-https-proxy": proxy.https,
-                "apt-http-proxy": proxy.http,
-                "apt-https-proxy": proxy.https,
-                "snap-http-proxy": proxy.http,
-                "snap-https-proxy": proxy.https,
-            }
+@pytest.fixture(scope="module", name="keep_models")
+def keep_models_fixture(pytestconfig: pytest.Config) -> bool:
+    """Whether to keep the testing models after tests complete."""
+    return pytestconfig.getoption("--keep-models")
+
+
+@pytest.fixture(scope="module", name="juju_ssh_key_path")
+def juju_ssh_key_path_fixture() -> Path:
+    """Path to the private SSH key used for juju ssh commands.
+
+    Generates an RSA key pair at ~/.ssh/juju_id_rsa if it does not already
+    exist, and returns the path to the private key.
+    """
+    ssh_dir = Path.home() / ".ssh"
+    ssh_dir.mkdir(mode=0o700, exist_ok=True)
+    ssh_key_path = ssh_dir / "juju_id_rsa"
+    if not ssh_key_path.exists():
+        logger.info("Generating SSH key pair at %s", ssh_key_path)
+        subprocess.run(  # nosec B603 B607
+            ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path), "-N", ""],
+            check=True,
+            capture_output=True,
         )
-    yield ops_test.model
+    return ssh_key_path
+
+
+@pytest.fixture(scope="module", name="juju")
+def juju_fixture(
+    proxy: ProxyConfig,
+    keep_models: bool,
+    request: pytest.FixtureRequest,
+    juju_ssh_key_path: Path,
+) -> Generator[jubilant.Juju, None, None]:
+    """Juju instance with a temporary model for testing."""
+    with jubilant.temp_model(keep=keep_models) as juju:
+        ssh_pub_key_path = juju_ssh_key_path.with_suffix(".pub")
+        logger.info("Adding SSH public key to juju: %s", ssh_pub_key_path)
+        juju.add_ssh_key(ssh_pub_key_path.read_text(encoding="utf-8"))
+        if proxy.http:
+            logger.info("Setting model proxy: %s", proxy.http)
+            juju.model_config(
+                {
+                    "juju-http-proxy": proxy.http,
+                    "juju-https-proxy": proxy.https,
+                    "apt-http-proxy": proxy.http,
+                    "apt-https-proxy": proxy.https,
+                    "snap-http-proxy": proxy.http,
+                    "snap-https-proxy": proxy.https,
+                }
+            )
+        yield juju
+        if request.session.testsfailed:
+            log = juju.debug_log(limit=1000)
+            print(log, end="")
 
 
 @pytest.fixture(scope="module", name="dispatch_time")
@@ -119,67 +162,78 @@ def dispatch_time_fixture():
     return datetime.now(tz=timezone.utc)
 
 
-@pytest_asyncio.fixture(scope="module", name="test_charm")
-async def test_charm_fixture(
-    model: Model,
+@pytest.fixture(scope="module", name="test_charm")
+def test_charm_fixture(
+    juju: jubilant.Juju,
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
-) -> AsyncGenerator[Application, None]:
+    openstack_password_secret: _Secret,
+    keep_models: bool,
+) -> Generator[str, None, None]:
     """The test charm that becomes active when valid relation data is given."""
     app_name = f"test-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
+    _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
-    yield app
+    yield app_name
 
-    await model.remove_application(app_name=app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    if not keep_models:
+        juju.remove_application(app_name)
+        logger.info("Test charm application %s removed.", app_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="test_charm_2")
-async def test_charm_2(
-    model: Model,
+@pytest.fixture(scope="module", name="test_charm_2")
+def test_charm_2_fixture(
+    juju: jubilant.Juju,
     test_id: str,
     private_endpoint_configs: PrivateEndpointConfigs,
-) -> AsyncGenerator[Application, None]:
+    openstack_password_secret: _Secret,
+    keep_models: bool,
+) -> Generator[str, None, None]:
     """A second test charm that becomes active when valid relation data is given."""
     app_name = f"test2-{test_id}"
-    app = await _deploy_test_charm(app_name, model, private_endpoint_configs)
+    _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
-    yield app
+    yield app_name
 
-    logger.info("Cleaning up test charm.")
-    await model.remove_application(app_name=app_name)
-    logger.info("Test charm application %s removed.", app_name)
+    if not keep_models:
+        logger.info("Cleaning up test charm.")
+        juju.remove_application(app_name)
+        logger.info("Test charm application %s removed.", app_name)
 
 
-async def _deploy_test_charm(
+def _deploy_test_charm(
+    juju: jubilant.Juju,
     app_name: str,
-    model: Model,
     private_endpoint_configs: PrivateEndpointConfigs,
-):
+    openstack_password_secret: _Secret,
+) -> str:
     """Deploy the test charm with the given application name.
 
     Args:
+        juju: The jubilant Juju instance.
         app_name: The name of the application to deploy.
-        model: The Juju model to deploy the charm in.
         private_endpoint_configs: The OpenStack private endpoint configurations.
+        openstack_password_secret: The juju secret containing the OpenStack password.
 
+    Returns:
+        The application name.
     """
     logger.info("Deploying built test charm")
-    app: Application = await model.deploy(
+    juju.deploy(
         TEST_CHARM_FILE,
         app_name,
         config={
             "openstack-auth-url": private_endpoint_configs["auth_url"],
-            "openstack-password": private_endpoint_configs["password"],
+            "openstack-password-secret": openstack_password_secret.id,
             "openstack-project-domain-name": private_endpoint_configs["project_domain_name"],
             "openstack-project-name": private_endpoint_configs["project_name"],
             "openstack-user-domain-name": private_endpoint_configs["user_domain_name"],
             "openstack-user-name": private_endpoint_configs["username"],
         },
-        constraints="virt-type=virtual-machine",
+        constraints={"virt-type": "virtual-machine"},
     )
-    return app
+    juju.grant_secret(openstack_password_secret.name, app_name)
+    return app_name
 
 
 @pytest.fixture(scope="module", name="arch")
@@ -300,14 +354,14 @@ def test_id_fixture() -> str:
 
 @pytest.fixture(scope="module", name="test_configs")
 def test_configs_fixture(
-    model: Model,
+    juju: jubilant.Juju,
     charm_file: str,
     test_id: str,
     dispatch_time: datetime,
 ) -> TestConfigs:
     """The test configuration values."""
     return TestConfigs(
-        model=model,
+        juju=juju,
         charm_file=charm_file,
         dispatch_time=dispatch_time,
         test_id=test_id,
@@ -322,33 +376,42 @@ def image_configs_fixture():
     )
 
 
-@pytest_asyncio.fixture(scope="module", name="script_secret")
-async def script_secret_fixture(test_configs) -> _Secret:
+@pytest.fixture(scope="module", name="script_secret")
+def script_secret_fixture(juju: jubilant.Juju) -> _Secret:
     """The script secret."""
     secret_name = f"script-{uuid4().hex}"
-    secret_id = await test_configs.model.add_secret(
-        name=secret_name,
-        data_args=["testsecret=TEST_VALUE"],
-    )  # note secret_id already contains "secret:" prefix
-    return _Secret(id=secret_id, name=secret_name)
+    secret_uri = juju.add_secret(
+        secret_name,
+        {"testsecret": "TEST_VALUE"},
+    )
+    return _Secret(id=str(secret_uri), name=secret_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="openstack_password_secret")
-async def openstack_password_secret_fixture(
+@pytest.fixture(scope="module", name="openstack_password_secret")
+def openstack_password_secret_fixture(
     test_configs: TestConfigs,
     private_endpoint_configs: PrivateEndpointConfigs,
 ) -> _Secret:
     """The OpenStack password Juju secret."""
     secret_name = f"openstack-password-{uuid4().hex}"
-    secret_id = await test_configs.model.add_secret(
-        name=secret_name,
-        data_args=[f"password={private_endpoint_configs['password']}"],
-    )  # note secret_id already contains "secret:" prefix
-    return _Secret(id=secret_id, name=secret_name)
+    secret_uri = test_configs.juju.add_secret(
+        secret_name,
+        {"password": private_endpoint_configs["password"]},
+    )
+    return _Secret(id=str(secret_uri), name=secret_name)
 
 
-@pytest_asyncio.fixture(scope="module", name="app_config")
-async def app_config_fixture(
+@pytest.fixture(scope="module", name="charm_secrets")
+def charm_secrets_fixture(
+    script_secret: _Secret,
+    openstack_password_secret: _Secret,
+) -> CharmSecrets:
+    """The Juju secrets required by the charm."""
+    return CharmSecrets(script=script_secret, openstack_password=openstack_password_secret)
+
+
+@pytest.fixture(scope="module", name="app_config")
+def app_config_fixture(
     private_endpoint_configs: PrivateEndpointConfigs,
     image_configs: ImageConfigs,
     openstack_metadata: OpenstackMeta,
@@ -373,106 +436,103 @@ async def app_config_fixture(
 
 
 @pytest.fixture(scope="module", name="base_machine_constraint")
-def base_machine_constraint_fixture() -> str:
+def base_machine_constraint_fixture() -> dict:
     """The base machine constraint."""
     num_cores = max(1, multiprocessing.cpu_count() - 1)
-    base_machine_constraint = (
-        f"arch=amd64 cores={num_cores} mem=4G root-disk=20G virt-type=virtual-machine"
-    )
-    return base_machine_constraint
+    return {
+        "arch": "amd64",
+        "cores": num_cores,
+        "mem": "4G",
+        "root-disk": "20G",
+        "virt-type": "virtual-machine",
+    }
 
 
-@pytest_asyncio.fixture(scope="module", name="app")
-async def app_fixture(
+@pytest.fixture(scope="module", name="app")
+def app_fixture(
     app_config: dict,
-    base_machine_constraint: str,
+    base_machine_constraint: dict,
     test_configs: TestConfigs,
-    script_secret: _Secret,
-    openstack_password_secret: _Secret,
-) -> AsyncGenerator[Application, None]:
+    charm_secrets: CharmSecrets,
+    keep_models: bool,
+) -> Generator[str, None, None]:
     """The deployed application fixture."""
+    app_name = f"image-builder-operator-{test_configs.test_id}"
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
-    app: Application = await test_configs.model.deploy(
+    test_configs.juju.deploy(
         test_configs.charm_file,
-        application_name=f"image-builder-operator-{test_configs.test_id}",
+        app_name,
         constraints=base_machine_constraint,
         config=app_config,
     )
-    await app.model.grant_secret(openstack_password_secret.name, app.name)
-    await app.model.grant_secret(script_secret.name, app.name)
-    await app.set_config(
+    test_configs.juju.grant_secret(charm_secrets.openstack_password.name, app_name)
+    test_configs.juju.grant_secret(charm_secrets.script.name, app_name)
+    test_configs.juju.config(
+        app_name,
         {
             SCRIPT_URL_CONFIG_NAME: "https://raw.githubusercontent.com/canonical/"
             "github-runner-image-builder/refs/heads/main/tests/integration/"
             "testdata/test_script.sh",
-            state.SCRIPT_SECRET_ID_CONFIG_NAME: script_secret.id,
-        }
+            state.SCRIPT_SECRET_ID_CONFIG_NAME: charm_secrets.script.id,
+        },
     )
     # This takes long due to having to wait for the machine to come up.
-    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
+    test_configs.juju.wait(
+        lambda s: jubilant.all_agents_idle(s, app_name),
+        timeout=60 * 30,
+    )
 
-    yield app
+    yield app_name
 
-    await test_configs.model.remove_application(app_name=app.name)
+    if not keep_models:
+        test_configs.juju.remove_application(app_name)
 
 
-async def _prepare_charmhub_app_config(
-    ops_test, app_config: dict, openstack_password: str
+def _prepare_charmhub_app_config(
+    juju: jubilant.Juju, app_config: dict
 ) -> tuple[str, dict, set[str]]:
     """Prepare the application config for charmhub deployment.
 
     Args:
-        ops_test: The pytest operator test instance.
+        juju: The jubilant Juju instance.
         app_config: The base application configuration.
-        openstack_password: The plaintext OpenStack password, used as a fallback when the
-            charmhub revision does not yet expose openstack-password-secret.
 
     Returns:
         A tuple of (channel, prepared_config, config_options).
 
     """
     charmhub_channel = "edge"
-    ret_code, stdout, stderr = await ops_test.juju(
-        "info", "--format", "json", "--channel", charmhub_channel, "github-runner-image-builder"
+    stdout = juju.cli(
+        "info",
+        "--format",
+        "json",
+        "--channel",
+        charmhub_channel,
+        "github-runner-image-builder",
+        include_model=False,
     )
-    assert ret_code == 0, f"Failed to get charm info: {stderr}"
     charmhub_info = json.loads(stdout.strip())
     charmhub_config_options = set(charmhub_info["charm"]["config"]["Options"].keys())
 
     charmhub_app_config = {k: v for k, v in app_config.items() if k in charmhub_config_options}
-    # We might need to test using the legacy config options.
-    legacy_config_prefix = "experimental-external-"
-    for opt in (EXTERNAL_BUILD_FLAVOR_CONFIG_NAME, EXTERNAL_BUILD_NETWORK_CONFIG_NAME):
-        if (legacy_opt := f"{legacy_config_prefix}{opt}") in charmhub_config_options:
-            charmhub_app_config[legacy_opt] = app_config[opt]
-
-    # If the charmhub revision doesn't expose openstack-password-secret yet, fall back to the
-    # legacy openstack-password option so the charm has credentials during initial deployment.
-    if (
-        OPENSTACK_PASSWORD_SECRET_CONFIG_NAME not in charmhub_config_options
-        and OPENSTACK_PASSWORD_CONFIG_NAME in charmhub_config_options
-    ):
-        charmhub_app_config[OPENSTACK_PASSWORD_CONFIG_NAME] = openstack_password
 
     return charmhub_channel, charmhub_app_config, charmhub_config_options
 
 
-@pytest_asyncio.fixture(scope="module", name="app_on_charmhub")
-async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+@pytest.fixture(scope="module", name="app_on_charmhub")
+def app_on_charmhub_fixture(
     test_configs: TestConfigs,
     app_config: dict,
-    base_machine_constraint: str,
-    ops_test,
+    base_machine_constraint: dict,
     openstack_password_secret: _Secret,
-    private_endpoint_configs: PrivateEndpointConfigs,
-) -> AsyncGenerator[Application, None]:
+    keep_models: bool,
+) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
+    app_name = f"image-builder-charmhub-{test_configs.test_id}"
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
-    charmhub_channel, charmhub_app_config, charmhub_config_options = (
-        await _prepare_charmhub_app_config(
-            ops_test, app_config, private_endpoint_configs["password"]
-        )
+    charmhub_channel, charmhub_app_config, charmhub_config_options = _prepare_charmhub_app_config(
+        test_configs.juju, app_config
     )
 
     # Deploy without the secret-backed config so the charm doesn't try to read the secret
@@ -480,25 +540,35 @@ async def app_on_charmhub_fixture(  # pylint: disable=too-many-arguments,too-man
     deploy_config = {
         k: v for k, v in charmhub_app_config.items() if k != OPENSTACK_PASSWORD_SECRET_CONFIG_NAME
     }
-    app: Application = await test_configs.model.deploy(
+    test_configs.juju.deploy(
         "github-runner-image-builder",
-        application_name=f"image-builder-operator-{test_configs.test_id}",
+        app_name,
         constraints=base_machine_constraint,
         config=deploy_config,
         channel=charmhub_channel,
+    )
+    test_configs.juju.wait(
+        lambda s: jubilant.all_agents_idle(s, app_name),
+        timeout=60 * 30,
     )
 
     if OPENSTACK_PASSWORD_SECRET_CONFIG_NAME in charmhub_config_options:
         # Grant access first, then set the config to trigger a config-changed hook
         # after the charm already has read permissions for the secret.
-        await app.model.grant_secret(openstack_password_secret.name, app.name)
-        await app.set_config({OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id})
+        test_configs.juju.grant_secret(openstack_password_secret.name, app_name)
+        test_configs.juju.config(
+            app_name, {OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: openstack_password_secret.id}
+        )
 
-    await test_configs.model.wait_for_idle(apps=[app.name], idle_period=30, timeout=60 * 30)
+    test_configs.juju.wait(
+        lambda s: jubilant.all_agents_idle(s, app_name),
+        timeout=60 * 30,
+    )
 
-    yield app
+    yield app_name
 
-    await test_configs.model.remove_application(app_name=app.name)
+    if not keep_models:
+        test_configs.juju.remove_application(app_name)
 
 
 @pytest.fixture(scope="module", name="ssh_key")
@@ -586,27 +656,39 @@ def openstack_metadata_fixture(
 
 
 @pytest.fixture(scope="module", name="image_names")
-def image_names_fixture(image_configs: ImageConfigs, app: Application, arch: state.Arch):
+def image_names_fixture(image_configs: ImageConfigs, app: str, arch: state.Arch):
     """Expected image names after imagebuilder run."""
     image_names = []
     for base in image_configs.bases:
-        image_names.append(f"{app.name}-{base}-{arch.value}")
+        image_names.append(f"{app}-{base}-{arch.value}")
     return image_names
 
 
-@pytest_asyncio.fixture(scope="module", name="bare_image_id")
-async def bare_image_id_fixture(
+@pytest.fixture(scope="module", name="image_verification_context")
+def image_verification_context_fixture(
+    openstack_connection: Connection,
+    image_names: list[str],
+) -> ImageVerificationContext:
+    """Context required to verify images built on OpenStack."""
+    return ImageVerificationContext(
+        openstack_connection=openstack_connection,
+        image_names=image_names,
+    )
+
+
+@pytest.fixture(scope="module", name="bare_image_id")
+def bare_image_id_fixture(
     openstack_connection: Connection,
     dispatch_time: datetime,
     image_configs: ImageConfigs,
-    app: Application,
+    app: str,
     arch: state.Arch,
 ):
     """The bare image expected from builder application."""
-    image: Image | None = await wait_for(
+    image: Image | None = wait_for(
         functools.partial(
             image_created_from_dispatch,
-            image_name=f"{app.name}-{image_configs.bases[0]}-{arch.value}",
+            image_name=f"{app}-{image_configs.bases[0]}-{arch.value}",
             connection=openstack_connection,
             dispatch_time=dispatch_time,
         ),

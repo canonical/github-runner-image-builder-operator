@@ -22,25 +22,25 @@ links:
 type: charm
 bases:
   - build-on:
-    - name: "ubuntu"
-      channel: "22.04"
-      architectures:
-      - amd64
+      - name: "ubuntu"
+        channel: "22.04"
+        architectures:
+          - amd64
     run-on:
-    - name: "ubuntu"
-      channel: "22.04"
-      architectures:
-      - amd64
+      - name: "ubuntu"
+        channel: "22.04"
+        architectures:
+          - amd64
   - build-on:
-    - name: "ubuntu"
-      channel: "22.04"
-      architectures:
-      - arm64
+      - name: "ubuntu"
+        channel: "22.04"
+        architectures:
+          - arm64
     run-on:
-    - name: "ubuntu"
-      channel: "22.04"
-      architectures:
-      - arm64
+      - name: "ubuntu"
+        channel: "22.04"
+        architectures:
+          - arm64
 
 config:
   options:
@@ -55,13 +55,12 @@ config:
         The auth_url section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
         openstack.org/python-openstackclient/queens/configuration/index.html for more information.
-    openstack-password:
-      type: string
-      default: ""
+    openstack-password-secret:
+      type: secret
       description: |
-        The password section of the clouds.yaml contents, used to authenticate the OpenStack \
-        client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
-        queens/configuration/index.html for more information.
+        The juju secret ID containing the OpenStack password used to authenticate the OpenStack \
+        client. The secret should contain a "password" key. See https://docs.openstack.org/\
+        python-openstackclient/queens/configuration/index.html for more information.
     openstack-project-domain-name:
       type: string
       default: ""

@@ -15,6 +15,12 @@ def pytest_addoption(parser: Parser):
         parser: The pytest argument parser.
     """
     parser.addoption(
+        "--keep-models",
+        action="store_true",
+        default=False,
+        help="Keep temporarily-created Juju models after tests complete.",
+    )
+    parser.addoption(
         "--charm-file",
         action="append",
         help="The prebuilt github-runner-image-builder-operator charm file.",

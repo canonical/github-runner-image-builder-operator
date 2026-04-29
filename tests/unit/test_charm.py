@@ -42,6 +42,7 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(builder, "install_clouds_yaml", MagicMock())
     monkeypatch.setattr(builder, "get_latest_images", MagicMock(return_value=[]))
+    monkeypatch.setattr(builder, "has_any_images", MagicMock(return_value=False))
     monkeypatch.setattr(builder, "run", MagicMock())
     monkeypatch.setattr(builder, "configure_cron", MagicMock(return_value=True))
 
@@ -54,12 +55,19 @@ def mock_builder_fixture(monkeypatch: pytest.MonkeyPatch):
         pytest.param("_on_run", id="run event"),
     ],
 )
-def test_block_on_image_relation_not_ready(charm: GithubRunnerImageBuilderCharm, hook: str):
+def test_block_on_image_relation_not_ready(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm, hook: str
+):
     """
     arrange: given hooks that should not run build when image relation is not yet ready.
     act: when the hook is called.
     assert: the charm falls into BlockedStatus.
     """
+    monkeypatch.setattr(
+        state.BuilderConfig,
+        "from_charm",
+        MagicMock(return_value=MagicMock(proxy=None, cloud_config=MagicMock(upload_cloud_ids=[]))),
+    )
     getattr(charm, hook)(MagicMock())
 
     assert charm.unit.status == ops.BlockedStatus(f"{state.IMAGE_RELATION} integration required.")
@@ -219,6 +227,40 @@ def test__on_image_relation_changed_image_already_in_cloud(
 
 
 @pytest.mark.usefixtures("mock_builder")
+def test__on_image_relation_changed_image_upload_in_progress(
+    monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
+):
+    """
+    arrange: given get_latest_images returning empty (image not yet active) but has_any_images
+        returning True (image upload in progress).
+    act: when _on_image_relation_changed is called.
+    assert: charm does not trigger a rebuild.
+    """
+    charm.image_observer = MagicMock()
+    monkeypatch.setattr(
+        state.CloudsAuthConfig,
+        "from_unit_relation_data",
+        MagicMock(
+            return_value=state.CloudsAuthConfig(
+                auth_url="http://example.com",
+                username="user",
+                password="pass",  # nosec no real password
+                project_name="project_name",
+                project_domain_name="project_domain_name",
+                user_domain_name="user_domain_name",
+            )
+        ),
+    )
+    builder.get_latest_images.return_value = []
+    builder.has_any_images.return_value = True
+
+    charm._on_image_relation_changed(MagicMock())
+
+    assert charm.unit.status == ops.ActiveStatus()
+    builder.run.assert_not_called()
+
+
+@pytest.mark.usefixtures("mock_builder")
 @pytest.mark.parametrize(
     "with_unit",
     [
@@ -308,12 +350,12 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     )
 
 
-def test_setup_proxy_environment_with_proxy_config(
+def testsetup_proxy_environment_with_proxy_config(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
     """
     arrange: given a ProxyConfig with http, https, and no_proxy values.
-    act: when _setup_proxy_environment is called.
+    act: when setup_proxy_environment is called.
     assert: environment variables are set correctly.
     """
     for key in ["http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"]:
@@ -325,7 +367,7 @@ def test_setup_proxy_environment_with_proxy_config(
         no_proxy="localhost,127.0.0.1",
     )
 
-    charm._setup_proxy_environment(proxy_config)
+    charm.setup_proxy_environment(proxy_config)
 
     assert os.environ["http_proxy"] == "http://proxy.example.com:8080"
     assert os.environ["https_proxy"] == "https://proxy.example.com:8443"
