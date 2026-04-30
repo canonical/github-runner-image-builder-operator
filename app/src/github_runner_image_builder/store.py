@@ -123,18 +123,22 @@ def _prune_old_images(
             raise OpenstackError from exc
 
 
-def get_latest_build_id(cloud_name: str, image_name: str) -> str:
+def get_latest_build_id(cloud_name: str, image_name: str, active_only: bool = True) -> str:
     """Fetch the latest image id.
 
     Args:
         cloud_name: The Openstack cloud to use from clouds.yaml.
         image_name: The image name to search for.
+        active_only: If True (default), only return active images. If False, return the
+            latest image in any upload status (including saving/queued).
 
     Returns:
-        The image ID if exists, None otherwise.
+        The image ID if exists, empty string otherwise.
     """
     with openstack.connect(cloud=cloud_name) as connection:
-        images = _get_sorted_images_by_created_at(connection=connection, image_name=image_name)
+        images = _get_sorted_images_by_created_at(
+            connection=connection, image_name=image_name, active_only=active_only
+        )
         if not images:
             return ""
         # The type of ID is in string but the library does not provide correct type hints for it.
@@ -142,13 +146,17 @@ def get_latest_build_id(cloud_name: str, image_name: str) -> str:
 
 
 def _get_sorted_images_by_created_at(
-    connection: openstack.connection.Connection, image_name: str
+    connection: openstack.connection.Connection,
+    image_name: str,
+    active_only: bool = True,
 ) -> list[Image]:
     """Fetch the images sorted by created_at date.
 
     Args:
         connection: The connected openstack cloud instance.
         image_name: The image name to search for.
+        active_only: If True (default), query only active images via search_images.
+            If False, query all images regardless of status via the image proxy API.
 
     Raises:
         OpenstackError: if there was an error fetching the images.
@@ -157,7 +165,10 @@ def _get_sorted_images_by_created_at(
         The images sorted by created_at date with latest first.
     """
     try:
-        images = cast(list[Image], connection.search_images(image_name))
+        if active_only:
+            images = cast(list[Image], connection.search_images(image_name))
+        else:
+            images = list(connection.image.images(name=image_name))
     except openstack.exceptions.OpenStackCloudException as exc:
         logger.exception("Failed to search images with name %s.", image_name)
         raise OpenstackError from exc
