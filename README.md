@@ -53,6 +53,7 @@ juju deploy github-runner-image-builder \
 --config openstack-password-secret=$OPENSTACK_PASSWORD_SECRET \
 --config openstack-project-domain-name=<OPENSTACK-PROJECT-DOMAIN-NAME> \
 --config openstack-project-name=<OPENSTACK-PROJECT-NAME> \
+--config openstack-user-domain-name=<OPENSTACK-USER-DOMAIN-NAME> \
 --config openstack-user-name=<OPENSTACK-USER-NAME>
 
 juju integrate github-runner-image-builder github-runner

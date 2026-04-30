@@ -350,7 +350,7 @@ def test__setup_logrotate(monkeypatch, tmp_path, charm: GithubRunnerImageBuilder
     )
 
 
-def testsetup_proxy_environment_with_proxy_config(
+def test_setup_proxy_environment_with_proxy_config(
     monkeypatch: pytest.MonkeyPatch, charm: GithubRunnerImageBuilderCharm
 ):
     """

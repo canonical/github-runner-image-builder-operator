@@ -125,7 +125,6 @@
 ### Other Changes
 
 - None
--
 
 ## [#91 Feature: Add focal support](https://github.com/canonical/github-runner-image-builder-operator/pull/91) (2025-03-07)
 
