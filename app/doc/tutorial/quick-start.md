@@ -16,8 +16,7 @@
 
 ### Recommended resources for deployment
 
-For reliable image builds, ensure your OpenStack environment has a flavor for build VMs
-with at least:
+For reliable image builds, use a recommended flavor for build VMs with:
 
 - 2 vCPUs
 - 8 GiB RAM
