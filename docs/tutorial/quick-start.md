@@ -9,7 +9,7 @@ This quick start guide will help you deploy the GitHub Runner Image Builder char
 
 ## Requirements
 
-- A working station, e.g., a laptop, with amd64 architecture.
+- A working station, for example, a laptop, with amd64 architecture.
 - Juju 3 installed and bootstrapped to a LXD controller. You can accomplish this process by
   using a Multipass VM as outlined in this guide:
   [Set up your test environment](https://documentation.ubuntu.com/juju/3.6/howto/manage-your-juju-deployment/set-up-your-juju-deployment-local-testing-and-development/)
@@ -20,11 +20,13 @@ This quick start guide will help you deploy the GitHub Runner Image Builder char
 For stable builds and fewer deployment failures, use a dedicated OpenStack flavor for
 the builder VM with:
 
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
 - 2 vCPUs
 - 8 GiB RAM
 - 20 GiB disk
 
 The charm itself enforces a lower minimum flavor (2 vCPUs, 1 GiB RAM, 20 GiB disk).
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
 If possible, set the `build-flavor` config to a flavor that meets the recommendation.
 

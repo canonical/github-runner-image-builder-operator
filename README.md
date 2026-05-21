@@ -33,6 +33,7 @@ flavors for the builder VM.
 
 Recommended builder VM resources:
 
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
 - 2 vCPUs
 - 8 GiB RAM
 - 20 GiB disk
@@ -42,6 +43,7 @@ Minimum accepted builder VM resources:
 - 2 vCPUs
 - 1 GiB RAM
 - 20 GiB disk
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
 Using the recommended resources helps avoid failures during image build and initialization.
 

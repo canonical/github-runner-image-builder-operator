@@ -2,7 +2,9 @@
 
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
 - Add 2 vCPUs, 8 GiB RAM, and 20 GiB disk OpenStack flavor recommendation.
+<!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
 ## [#219 Use Juju secrets](https://github.com/canonical/github-runner-image-builder-operator/pull/219) (2026-04-17)
 
