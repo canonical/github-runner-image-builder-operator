@@ -16,7 +16,7 @@
 
 ### Recommended resources for deployment
 
-For reliable image builds, use a recommended flavor for build VMs with:
+For reliable image builds, use the following recommended flavor for build VMs:
 
 - 2 vCPUs
 - 8 GiB RAM
