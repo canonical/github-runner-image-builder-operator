@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#222 Add PPA for dotnet backport during image building](https://github.com/canonical/github-runner-image-builder-operator/pull/222) (2026-05-22)
+
+- Add dotnet PPA in image building. This allows wider range of dotnet version to be installed.
+
 ## [#219 Use Juju secrets](https://github.com/canonical/github-runner-image-builder-operator/pull/219) (2026-04-17)
 
 - Require `openstack-password-secret` configuration option to securely store OpenStack passwords using Juju secrets.
