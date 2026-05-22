@@ -777,6 +777,8 @@ signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.co
 main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
+    echo "Adding dotnet backports PPA"
+    DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Upgrading apt packages"
