@@ -3,3 +3,4 @@ chroot
 cron
 opentelemetry
 pipx
+vCPUs
