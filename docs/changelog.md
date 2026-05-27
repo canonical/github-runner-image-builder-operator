@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#222 Add PPA for .NET backport during image building](https://github.com/canonical/github-runner-image-builder-operator/pull/222) (2026-05-22)
+
+- Add .NET PPA in image building. This allows wider range of .NET version to be installed.
+
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
