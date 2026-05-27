@@ -884,6 +884,9 @@ function configure_system_users() {{
     echo "Configuring runner user alias for GARM compatibility"
     UBUNTU_UID=$(/usr/bin/id -u ubuntu)
     UBUNTU_GID=$(/usr/bin/id -g ubuntu)
+    # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
+    # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    # 2>/dev/null || true: ignore errors (e.g. runner user already exists) without failing the script.
     /usr/sbin/useradd --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner 2>/dev/null || true
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner 2>/dev/null || true
 }}
