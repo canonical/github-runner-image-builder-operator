@@ -3,6 +3,9 @@
 ## [#TBD Fix GARM image incompatibility]
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
+## [#222 Add PPA for .NET backport during image building](https://github.com/canonical/github-runner-image-builder-operator/pull/222) (2026-05-22)
+
+- Add .NET PPA in image building. This allows wider range of .NET version to be installed.
 
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
