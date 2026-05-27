@@ -1,8 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
-## [#TBD Fix GARM image incompatibility]
+## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
+
 ## [#222 Add PPA for .NET backport during image building](https://github.com/canonical/github-runner-image-builder-operator/pull/222) (2026-05-22)
 
 - Add .NET PPA in image building. This allows wider range of .NET version to be installed.
@@ -10,6 +11,7 @@
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
+
 - Add 2 vCPUs, 8 GiB RAM, and 20 GiB disk OpenStack flavor recommendation.
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
