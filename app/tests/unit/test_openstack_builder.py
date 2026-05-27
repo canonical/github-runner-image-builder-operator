@@ -878,6 +878,14 @@ function configure_system_users() {{
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+
+    # Create runner user as alias to ubuntu for GARM compatibility.
+    # GARM expects a runner user with /home/runner/actions-runner path.
+    echo "Configuring runner user alias for GARM compatibility"
+    UBUNTU_UID=$(/usr/bin/id -u ubuntu)
+    UBUNTU_GID=$(/usr/bin/id -g ubuntu)
+    /usr/sbin/useradd --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner 2>/dev/null || true
+    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner 2>/dev/null || true
 }}
 
 
