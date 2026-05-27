@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#TBD Fix GARM image incompatibility]
+
+- Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
+
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
