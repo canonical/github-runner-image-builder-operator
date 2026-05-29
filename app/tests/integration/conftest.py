@@ -152,11 +152,10 @@ def openstack_connection_fixture(
     with openstack.connect(cloud_name) as conn:
         yield conn
 
-        # TMP: remove cleanup
-        # images = conn.list_images()
-        # for image in images:
-        #     if str(image.name).startswith(test_id):
-        #         conn.delete_image(image)
+        images = conn.list_images()
+        for image in images:
+            if str(image.name).startswith(test_id):
+                conn.delete_image(image)
 
 
 @pytest.fixture(scope="module", name="dockerhub_mirror")
