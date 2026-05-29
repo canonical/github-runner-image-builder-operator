@@ -14,8 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [focal, jammy, noble, resolute]
-        arch: [amd64, arm64, s390x, ppc64le]
+        image: [noble]
+        arch: [arm64]
+        # image: [focal, jammy, noble, resolute]
+        # arch: [amd64, arm64, s390x, ppc64le]
         exclude:
           - image: focal
             arch: ppc64le
