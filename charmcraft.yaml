@@ -47,10 +47,9 @@ parts:
       tar -cvzf app.tar.gz app
       cp app.tar.gz /root/stage
     organize:
-        app.tar.gz: app.tar.gz
+      app.tar.gz: app.tar.gz
     prime:
-        - app.tar.gz
-
+      - app.tar.gz
 
 bases:
   - build-on:
@@ -107,14 +106,6 @@ config:
         The auth_url section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
         openstack.org/python-openstackclient/queens/configuration/index.html for more information.
-    openstack-password:
-      type: string
-      default: ""
-      description: |
-        The password section of the clouds.yaml contents, used to authenticate the OpenStack \
-        client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
-        queens/configuration/index.html for more information.
-        DEPRECATED: Use openstack-password-secret instead for better security.
     openstack-password-secret:
       type: secret
       description: |
@@ -122,7 +113,6 @@ config:
         client. A Juju user secret ID should be passed in the format of secret:<secret-id>.
         The secret must contain a 'password' key with the OpenStack password as its value.
         Example: juju add-secret openstack-password password=<value>.
-        This option takes precedence over openstack-password if both are set.
     openstack-project-domain-name:
       type: string
       default: ""

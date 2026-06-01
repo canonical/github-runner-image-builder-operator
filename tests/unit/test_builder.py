@@ -7,13 +7,14 @@
 # We are testing extensively with data structures, hence the many lines.
 # pylint:disable=protected-access, too-many-lines
 
+import os
 import secrets
 
 # The subprocess module is imported for monkeypatching.
 import subprocess  # nosec: B404
 import typing
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -1027,11 +1028,12 @@ def test_get_latest_images_error(monkeypatch: pytest.MonkeyPatch):
         builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
 
 
-def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize("active_only", [True, False])
+def test_get_latest_images(monkeypatch: pytest.MonkeyPatch, active_only: bool):
     """
-    arrange: given a monkeypatched _run function.
-    act: when get_latest_images is called.
-    assert: get_latest_images results are returned.
+    arrange: given a monkeypatched _get_latest_image function.
+    act: when get_latest_images is called with active_only=True and active_only=False.
+    assert: get_latest_images results are returned correctly for both cases.
     """
     monkeypatch.setattr(builder, "_parametrize_fetch", MagicMock(return_value=["test1", "test2"]))
     monkeypatch.setattr(builder, "_get_latest_image", _patched__get_latest_image)
@@ -1041,7 +1043,9 @@ def test_get_latest_images(monkeypatch: pytest.MonkeyPatch):
             arch=state.Arch.X64, base=state.BaseImage.NOBLE, cloud_id=cloud_id, image_id="test_id"
         )
         for cloud_id in ["test1", "test2"]
-    ] == builder.get_latest_images(config_matrix=MagicMock(), static_config=MagicMock())
+    ] == builder.get_latest_images(
+        config_matrix=MagicMock(), static_config=MagicMock(), active_only=active_only
+    )
 
 
 def test_get_latest_filters_empty_images(monkeypatch: pytest.MonkeyPatch):
@@ -1091,24 +1095,67 @@ def test__get_latest_image_error(
         builder._get_latest_image(config=MagicMock())
 
 
-def test__get_latest_image(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "active_only, expect_any_status",
+    [
+        pytest.param(True, False, id="active_only=True"),
+        pytest.param(False, True, id="active_only=False"),
+    ],
+)
+def test__get_latest_image(
+    monkeypatch: pytest.MonkeyPatch, active_only: bool, expect_any_status: bool
+):
     """
     arrange: given monkeypatched subprocess.check_output that returns an image_id.
-    act: when _get_latest_image is called.
-    assert: expected CloudImage is returned.
+    act: when _get_latest_image is called with different active_only values.
+    assert: expected CloudImage is returned and --any-status flag is present only when needed.
     """
-    monkeypatch.setattr(subprocess, "check_output", MagicMock(return_value="test-image"))
+    check_output_mock = MagicMock(return_value="test-image")
+    monkeypatch.setattr(subprocess, "check_output", check_output_mock)
 
-    assert builder._get_latest_image(
+    result = builder._get_latest_image(
         config=builder.FetchConfig(
             arch=state.Arch.ARM64,
             base=state.BaseImage.JAMMY,
             cloud_id="test-cloud",
             prefix="app-name",
-        )
-    ) == builder.CloudImage(
+        ),
+        active_only=active_only,
+    )
+
+    call_args = check_output_mock.call_args[0][0]
+    assert ("--any-status" in call_args) == expect_any_status
+    assert result == builder.CloudImage(
         arch=state.Arch.ARM64,
         base=state.BaseImage.JAMMY,
         cloud_id="test-cloud",
         image_id="test-image",
     )
+
+
+@pytest.mark.parametrize(
+    "get_latest_result, expected",
+    [
+        pytest.param([MagicMock()], True, id="images found"),
+        pytest.param([], False, id="no images found"),
+    ],
+)
+def test_has_any_images(monkeypatch: pytest.MonkeyPatch, get_latest_result: list, expected: bool):
+    """
+    arrange: given monkeypatched get_latest_images.
+    act: when has_any_images is called.
+    assert: returns True when images exist in any status, False otherwise.
+    """
+    mock_get_latest = MagicMock(return_value=get_latest_result)
+    monkeypatch.setattr(builder, "get_latest_images", mock_get_latest)
+    config_matrix_mock = MagicMock()
+    static_config_mock = MagicMock()
+
+    result = builder.has_any_images(
+        config_matrix=config_matrix_mock, static_config=static_config_mock
+    )
+
+    mock_get_latest.assert_called_once_with(
+        config_matrix_mock, static_config_mock, active_only=False
+    )
+    assert result == expected

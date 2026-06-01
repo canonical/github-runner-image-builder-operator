@@ -46,12 +46,18 @@ class RelationCharm(ops.CharmBase):
             event: The event fired when relation is joined.
         """
         logger.info("Relation joined.")
+        secret_id = self.config.get("openstack-password-secret")
+        if not secret_id:
+            logger.warning("openstack-password-secret not set.")
+            return
+        secret = self.model.get_secret(id=str(secret_id))
+        password = secret.get_content()["password"]
         event.relation.data[self.unit].update(
             typing.cast(
                 dict[str, str],
                 {
                     "auth_url": self.config["openstack-auth-url"],
-                    "password": self.config["openstack-password"],
+                    "password": password,
                     "project_domain_name": self.config["openstack-project-domain-name"],
                     "project_name": self.config["openstack-project-name"],
                     "user_domain_name": self.config["openstack-user-domain-name"],

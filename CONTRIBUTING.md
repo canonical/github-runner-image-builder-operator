@@ -27,8 +27,11 @@ tox                      # runs 'format', 'lint', and 'unit' environments
 
 
 The integration tests (both of the charm and the app)
-require options to be passed via the command line (see `tests/conftest.py`) and 
-environment variables `OPENSTACK_PASSWORD` to be able to deploy the charm and/or upload images to OpenStack.
+require options to be passed through the command line (see `tests/conftest.py`) and
+architecture-specific OpenStack password environment variables, for example
+`OPENSTACK_PASSWORD_AMD64`, to deploy the charm and/or upload images to OpenStack.
+If you are testing multiple architectures, set the corresponding `OPENSTACK_PASSWORD_<ARCH>`
+variables for each one. The tests create and use Juju secrets from these values during setup.
 
 ## Build the charm
 

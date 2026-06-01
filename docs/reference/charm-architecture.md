@@ -45,13 +45,13 @@ The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacks
 by a config option. Using an external OpenStack VM instead of the charm's machine allows for more features
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
 [cloud-init](https://cloud-init.io/) is used to install the necessary dependencies for spawning self-hosted runners
-([github actions runner binary](https://github.com/actions/runner)) and tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
+([GitHub Actions runner binary](https://github.com/actions/runner)) and tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
 The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project
-and deletes the VM. This specified OpenStack project is determined via the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
+and deletes the VM. This specified OpenStack project is determined through the `image:github_runner_image_v0` integration with another charm (e.g. [GitHub Runner Charm](https://charmhub.io/github-runner)).
 
 The other charm can then use the image to create a VM instance with the required software preinstalled. It receives
-the image ID from the Image Builder charm via the integration mentioned above.
+the image ID from the Image Builder charm through the integration mentioned above.
 
 Depending on the configuration, the charm will trigger multiple image builds in parallel to speed up the process. This
 leads to multiple OpenStack VMs in the OpenStack cloud (and requires corresponding OpenStack quotas) and multiple
@@ -66,7 +66,7 @@ and uploaded to OpenStack.
 
 The image-builder application is initialized by the charm before it can be used. Initialization includes
 
-- Downloading and validating the base images (e.g. Ubuntu 22.04 or 24.04)
+- Downloading and validating the base images (e.g. Ubuntu 22.04 LTS or Ubuntu 24.04 LTS)
 - Uploading the base images to OpenStack
 - Creating key pairs and security groups in OpenStack 
 

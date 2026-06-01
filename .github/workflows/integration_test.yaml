@@ -6,16 +6,15 @@ on:
     - cron: "0 15 * * SAT"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number ||
-    github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@test/get-workflow-version-action
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      juju-channel: 3.6/stable
+      juju-channel: 4/stable
       provider: lxd
       modules: '["test_charm", "test_upgrade"]'
       self-hosted-runner: true
