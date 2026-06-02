@@ -344,6 +344,8 @@ def run(
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
             )
+        logger.info("Cleaning cloud-init state before snapshot.")
+        ssh_conn.run("sudo cloud-init clean", timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT)
         _shutoff_server(conn=conn, server=builder)
         image = store.create_snapshot(
             cloud_name=cloud_config.cloud_name,
