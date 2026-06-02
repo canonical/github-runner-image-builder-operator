@@ -346,7 +346,7 @@ def run(
             )
         logger.info("Cleaning cloud-init state before snapshot.")
         ssh_conn.run(
-            "sudo cloud-init clean --logs --machine-id --seed",
+            "sudo cloud-init clean --logs --machine-id --seed --configs all",
             timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
         )
         _shutoff_server(conn=conn, server=builder)
