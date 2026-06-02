@@ -14,10 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [noble]
-        arch: [arm64]
-        # image: [focal, jammy, noble, resolute]
-        # arch: [amd64, arm64, s390x, ppc64le]
+        image: [focal, jammy, noble, resolute]
+        arch: [amd64, arm64, s390x, ppc64le]
         exclude:
           - image: focal
             arch: ppc64le
@@ -40,7 +38,7 @@ jobs:
       - uses: canonical/setup-lxd@v0.1.3
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
+          python-version: "3.14"
       - name: Install tox
         run: |
           sudo apt-get update
