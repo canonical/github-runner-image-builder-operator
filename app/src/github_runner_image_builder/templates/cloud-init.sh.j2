@@ -175,15 +175,24 @@ function configure_system_users() {
     # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
     # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
     # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
-    # 2>/dev/null || true: ignore errors (e.g. runner user already exists) without failing the script.
-    /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner 2>/dev/null || true
-    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner 2>/dev/null || true
+    if /usr/bin/id -u runner >/dev/null 2>&1; then
+        echo "runner user already exists; ensuring UID/GID/home match ubuntu"
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+    else
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+    fi
+    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
     # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
-    # If /home/runner exists as a plain directory (not a symlink), remove it first; otherwise ln -sfnT would
-    # create the symlink inside the directory instead of replacing it.
-    # -T: treat destination as a file path, never as a directory target (prevents ln from creating the
-    #     symlink inside /home/runner if it exists as a directory after rmdir fails).
-    [ -d /home/runner ] && ! [ -L /home/runner ] && rmdir /home/runner 2>/dev/null || true
+    # If /home/runner exists as a plain directory (not a symlink), remove it first; otherwise ln -sfnT cannot
+    # replace it. A non-empty directory is an unexpected state, so fail with a clear error instead of letting
+    # ln fail later with a less specific message.
+    # -T: treat destination as a file path, never as a directory target.
+    if [ -d /home/runner ] && ! [ -L /home/runner ]; then
+        if ! rmdir /home/runner 2>/dev/null; then
+            echo "ERROR: /home/runner exists and is not empty; cannot replace it with a symlink to /home/ubuntu" >&2
+            return 1
+        fi
+    fi
     /usr/bin/ln -sfnT /home/ubuntu /home/runner
 }
 
