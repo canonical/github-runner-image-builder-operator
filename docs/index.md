@@ -17,7 +17,7 @@ DevOps or SRE teams through Juju's clean interface.
 | **Get started** | [Quick-start tutorial](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) — deploy the charm and build your first runner image |
 | **Deployment** | [Configure base image](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) \| [Configure build interval](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-build-interval) \| [Configure revision history](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-revision-history) \| [Pin GitHub runner version](https://charmhub.io/github-runner-image-builder/docs/how-to-pin-github-runner-version) |
 | **Operations** | [Upgrade](https://charmhub.io/github-runner-image-builder/docs/how-to-upgrade) |
-| **Design** | [Charm architecture](https://charmhub.io/github-runner-image-builder/docs/reference-charm-architecture) |
+| **Design** | [Charm architecture](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) |
 
 ## How this documentation is organised
 
@@ -25,7 +25,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) structure:
 
 - The [Tutorial](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) takes you step-by-step through deploying the charm and building your first runner image.
 - [How-to guides](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) assume basic familiarity with the charm. They cover configuring, operating, and upgrading your deployment.
-- [Reference](https://charmhub.io/github-runner-image-builder/docs/reference-charm-architecture) provides technical details on the charm architecture and design.
+- [Explanation](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) provides technical details on the charm architecture and design.
 
 ## Contributing to this documentation
 
