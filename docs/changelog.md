@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
+
+- Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
+
 ## [#213 Fix proxy setup]
 
 - Fix proxy setup for image-relation joined hook.
@@ -11,6 +15,7 @@
 ## [#221 Add resource recommendation for charm deployment](https://github.com/canonical/github-runner-image-builder-operator/pull/221)
 
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = NO -->
+
 - Add 2 vCPUs, 8 GiB RAM, and 20 GiB disk OpenStack flavor recommendation.
 <!-- vale Canonical.013-Spell-out-numbers-below-10 = YES -->
 
