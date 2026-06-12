@@ -108,7 +108,7 @@ storing OpenStack credentials on disk and initializing the image-builder applica
 2. [config-changed](https://documentation.ubuntu.com/juju/3.6/reference/hook/#config-changed): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or OpenStack credentials).
 3. `run`: This is a custom event that is periodically triggered by a cron job. It is used to call the image-builder application to build the image.
 4. `run-action`: This is an action event fired by the user to manually trigger the image-builder to build the image.
-5. `image-relation-changed`: This is a [relation event](https://documentation.ubuntu.com/juju/3.6/reference/hook/) that fires when relation data changes. It also triggers the image-builder to build the image.
+5. `image-relation-changed`: This is a [relation event](https://documentation.ubuntu.com/juju/3.6/reference/hook/#relation-hooks) that fires when relation data changes. It also triggers the image-builder to build the image.
 Once the build is complete, the image-builder will upload the image taking into account the newly changed relation data (e.g. if the OpenStack project has changed).
 
 > See more about events in the ops docs: [Event](https://documentation.ubuntu.com/juju/3.6/reference/hook/)
