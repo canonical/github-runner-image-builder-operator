@@ -5,7 +5,8 @@ The charm operates a set of isolated, single-use OpenStack virtual machines to b
 images for GitHub runners. Images are rebuilt on a configurable schedule so that runner VMs always
 include the latest software and security patches. The
 [Landscape Client charm](https://charmhub.io/landscape-client) can be integrated to keep additional
-dependencies up to date between scheduled builds.
+[Landscape Client charm](https://charmhub.io/landscape-client) can be integrated to keep additional
+charm dependencies up to date between scheduled builds.
 
 This charm makes operating GitHub self-hosted runner image builds simple and straightforward for
 DevOps or SRE teams through Juju's clean interface.
