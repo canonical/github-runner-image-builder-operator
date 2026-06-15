@@ -42,4 +42,4 @@ The GitHub runner image builder charm is a member of the Ubuntu family. It's an 
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md)
 
-Thinking about using the GitHub runner image builder charm for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)! 
+Thinking about using the GitHub runner image builder charm for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
