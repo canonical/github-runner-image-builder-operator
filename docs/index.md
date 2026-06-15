@@ -14,12 +14,12 @@ DevOps or SRE teams through Juju's clean interface.
 
 | | |
 |--|--|
-| **Get started** | [Quick-start tutorial](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) — deploy the charm and build your first runner image |
+| **Get started** | [Deploy the GitHub runner image builder charm](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) |
 | **Deployment** | [Configure base image](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) \| [Configure build interval](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-build-interval) \| [Configure revision history](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-revision-history) \| [Pin GitHub runner version](https://charmhub.io/github-runner-image-builder/docs/how-to-pin-github-runner-version) |
 | **Operations** | [Upgrade](https://charmhub.io/github-runner-image-builder/docs/how-to-upgrade) |
 | **Design** | [Charm architecture](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) |
 
-## How this documentation is organised
+## How this documentation is organized
 
 This documentation follows the [Diátaxis](https://diataxis.fr/) structure:
 
@@ -37,7 +37,7 @@ If there's a particular area of documentation that you'd like to see that's miss
 
 The GitHub runner image builder charm is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
 
-- [Code of conduct](https://ubuntu.com/community/code-of-conduct)
+- [Code of conduct](https://ubuntu.com/community/docs/ethos/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute](https://github.com/canonical/github-runner-image-builder-operator/blob/main/CONTRIBUTING.md)
