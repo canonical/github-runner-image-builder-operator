@@ -16,7 +16,6 @@ DevOps or SRE teams through Juju's clean interface.
 |--|--|
 | **Get started** | [Deploy the GitHub runner image builder charm](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) |
 | **Deployment** | [Configure base image](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) \| [Configure build interval](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-build-interval) \| [Configure revision history](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-revision-history) \| [Pin GitHub runner version](https://charmhub.io/github-runner-image-builder/docs/how-to-pin-github-runner-version) |
-| **Operations** | [Upgrade](https://charmhub.io/github-runner-image-builder/docs/how-to-upgrade) |
 | **Design** | [Charm architecture](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) |
 
 ## How this documentation is organized
