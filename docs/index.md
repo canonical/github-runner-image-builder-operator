@@ -25,7 +25,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) structure:
 
 - The [Tutorial](https://charmhub.io/github-runner-image-builder/docs/tutorial-quick-start) takes you step-by-step through deploying the charm and building your first runner image.
 - [How-to guides](https://charmhub.io/github-runner-image-builder/docs/how-to-configure-base-image) assume basic familiarity with the charm. They cover configuring, operating, and upgrading your deployment.
-- [Explanation](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) provides technical details on the charm architecture and design.
+- [Reference](https://charmhub.io/github-runner-image-builder/docs/explanation-charm-architecture) provides technical details on the charm architecture and design.
 
 ## Contributing to this documentation
 
