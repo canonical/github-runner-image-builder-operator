@@ -15,6 +15,7 @@ header:
     - '**/*.txt'
     - '.codespellignore'
     - '.copier-answers.yml'
+    - 'docs/**'
     - '.flake8'
     - '.jujuignore'
     - '.gitignore'

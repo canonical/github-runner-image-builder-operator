@@ -90,8 +90,15 @@ def initialize(ctx: click.Context, arch: config.Arch, prefix: str) -> None:
 
 @main.command(name="latest-build-id")
 @click.argument("image_name")
+@click.option(
+    "--any-status",
+    "any_status",
+    is_flag=True,
+    default=False,
+    help="Return the latest image in any upload status (including saving/queued).",
+)
 @click.pass_context
-def get_latest_build_id(ctx: click.Context, image_name: str) -> None:
+def get_latest_build_id(ctx: click.Context, image_name: str, any_status: bool) -> None:
     # Click arguments do not take help parameter, display help through docstrings.
     """Get latest build ID of <IMAGE_NAME> from Openstack <--os-cloud>.
 
@@ -100,10 +107,13 @@ def get_latest_build_id(ctx: click.Context, image_name: str) -> None:
     Args:
         ctx: click.Context object for passing shared state.
         image_name: The image name uploaded to Openstack.
+        any_status: If True, return the latest image in any upload status.
     """  # noqa: D301 - the \f should not be escaped for click to properly format the docstring.
     state = cast(SharedState, ctx.obj)
     click.echo(
-        message=store.get_latest_build_id(cloud_name=state.cloud, image_name=image_name),
+        message=store.get_latest_build_id(
+            cloud_name=state.cloud, image_name=image_name, active_only=not any_status
+        ),
         nl=False,
     )
 

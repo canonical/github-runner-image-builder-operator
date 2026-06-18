@@ -47,10 +47,9 @@ parts:
       tar -cvzf app.tar.gz app
       cp app.tar.gz /root/stage
     organize:
-        app.tar.gz: app.tar.gz
+      app.tar.gz: app.tar.gz
     prime:
-        - app.tar.gz
-
+      - app.tar.gz
 
 bases:
   - build-on:
@@ -82,7 +81,7 @@ config:
       description: |
         The base ubuntu OS image to use for the runners. Codename (e.g. "noble") or version tag
         (e.g. 24.04) is supported as input. Currently only supports LTS versions of focal and
-        higher, i.e. focal, jammy, noble.
+        higher, i.e. focal, jammy, noble, resolute.
     build-flavor:
       type: string
       default: ""
@@ -107,13 +106,13 @@ config:
         The auth_url section of the clouds.yaml contents, used to authenticate the OpenStack \
         client (e.g. http://my-openstack-deployment/openstack-keystone). See https://docs.\
         openstack.org/python-openstackclient/queens/configuration/index.html for more information.
-    openstack-password:
-      type: string
-      default: ""
+    openstack-password-secret:
+      type: secret
       description: |
-        The password section of the clouds.yaml contents, used to authenticate the OpenStack \
-        client (e.g. myverysecurepassword). See https://docs.openstack.org/python-openstackclient/\
-        queens/configuration/index.html for more information.
+        The password section of the clouds.yaml contents, used to authenticate the OpenStack
+        client. A Juju user secret ID should be passed in the format of secret:<secret-id>.
+        The secret must contain a 'password' key with the OpenStack password as its value.
+        Example: juju add-secret openstack-password password=<value>.
     openstack-project-domain-name:
       type: string
       default: ""

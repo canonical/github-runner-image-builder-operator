@@ -8,11 +8,22 @@
 
 ## Requirements
 
-- [pipx installed](https://pipx.pypa.io/stable/installation/)
+- [pipx installed](https://pipx.pypa.io/stable/how-to/install-pipx/)
 - Apt packages `gcc`, `pipx`, `python3-dev`
   - `sudo apt-get install -y python3-dev gcc pipx`
 - Working [OpenStack environment](https://microstack.run/docs/single-node)
 - A `clouds.yaml` configuration with the OpenStack environment
+
+### Recommended resources for deployment
+
+For reliable image builds, use the following recommended flavor for build VMs:
+
+- 2 vCPUs
+- 8 GiB RAM
+- 20 GiB disk
+
+The CLI can work with lower memory if a smaller flavor is selected, but using the
+recommended flavor significantly reduces build failures.
 
 ## Steps
 
