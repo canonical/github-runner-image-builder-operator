@@ -20,7 +20,11 @@ import tenacity
 import yaml
 
 from github_runner_image_builder import cloud_image, errors, openstack_builder, store
-from github_runner_image_builder.config import Arch
+from github_runner_image_builder.config import (
+    FORK_RUNNER_BINARY_REPO,
+    RUNNER_BINARY_REPO_OVERRIDES,
+    Arch,
+)
 from github_runner_image_builder.errors import ExternalScriptError
 from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
 
@@ -147,6 +151,30 @@ def test_initialize_release_date(monkeypatch: pytest.MonkeyPatch, arch: Arch):
     archs_from_calls = {call[1]["arch"] for call in download_mock.call_args_list}
     assert openstack_builder.BaseImage.NOBLE in base_images_from_calls
     assert arch in archs_from_calls
+
+
+def test_initialize_riscv64_skips_focal(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given monkeypatched cloud_image, store and openstack module functions.
+    act: when initialize is called for riscv64.
+    assert: focal base image is not downloaded/uploaded (no riscv64 focal cloud image exists),
+        while jammy/noble/resolute are.
+    """
+    monkeypatch.setattr(cloud_image, "download_and_validate_image", (download_mock := MagicMock()))
+    monkeypatch.setattr(store, "upload_image", MagicMock())
+    monkeypatch.setattr(openstack_builder.openstack, "connect", MagicMock())
+    monkeypatch.setattr(openstack_builder, "_create_keypair", MagicMock())
+    monkeypatch.setattr(openstack_builder, "_create_security_group", MagicMock())
+
+    prefix = secrets.token_hex(8)
+    cloud_name = "test-cloud"
+    openstack_builder.initialize(arch=Arch.RISCV64, cloud_name=cloud_name, prefix=prefix)
+
+    base_images_from_calls = {call[1]["base_image"] for call in download_mock.call_args_list}
+    assert openstack_builder.BaseImage.FOCAL not in base_images_from_calls
+    assert openstack_builder.BaseImage.JAMMY in base_images_from_calls
+    assert openstack_builder.BaseImage.NOBLE in base_images_from_calls
+    assert openstack_builder.BaseImage.RESOLUTE in base_images_from_calls
 
 
 def test__create_keypair_already_exists(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path):
@@ -676,6 +704,7 @@ def test__determine_network(network_name: str | None):
             ["dotnet-runtime-8.0"],
             id="ppc64le",
         ),
+        pytest.param(openstack_builder.Arch.RISCV64, [], id="riscv64"),
     ],
 )
 def test__generate_cloud_init_script(
@@ -914,7 +943,7 @@ apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-pyt
 hwe_version="22.04"
 github_runner_version=""
 github_runner_arch="{arch.value}"
-runner_binary_repo="canonical/github-actions-runner"
+runner_binary_repo="{RUNNER_BINARY_REPO_OVERRIDES.get(arch, FORK_RUNNER_BINARY_REPO)}"
 
 configure_proxy "$proxy"
 install_apt_packages "$apt_packages" "$hwe_version"

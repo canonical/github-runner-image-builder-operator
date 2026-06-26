@@ -95,6 +95,7 @@ def test_main(cli_runner: CliRunner, action: str):
         pytest.param("x64", config.Arch.X64, id="amd64"),
         pytest.param("s390x", config.Arch.S390X, id="s390x"),
         pytest.param("ppc64le", config.Arch.PPC64LE, id="ppc64le"),
+        pytest.param("riscv64", config.Arch.RISCV64, id="riscv64"),
     ],
 )
 def test_initialize(
