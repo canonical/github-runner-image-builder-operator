@@ -42,6 +42,7 @@ from github_runner_image_builder import cloud_image, config, store
 from github_runner_image_builder.config import (
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
+    RUNNER_BINARY_REPO_OVERRIDES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
     Arch,
     BaseImage,
@@ -77,6 +78,10 @@ EXTERNAL_SCRIPT_RUN_TIMEOUT = 60 * 60  # 60 minutes
 MIN_CPU = 2
 MIN_RAM = 1024  # M
 MIN_DISK = 20  # G
+
+# Focal does not publish riscv64 cloud images on cloud-images.ubuntu.com, so the
+# focal base cannot be seeded for riscv64.
+RISCV64_UNSUPPORTED_BASES = {BaseImage.FOCAL}
 
 # We saw an issue with arm noble images with the latest release date, so we are using a fixed date.
 NOBLE_ARM64_RELEASE_DATE = date(2025, 11, 13)
@@ -128,59 +133,30 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         prefix: The prefix to use for OpenStack resource names.
     """
     logger.info("Initializing external builder.")
-    logger.info("Downloading Focal image.")
-    focal_image_path = cloud_image.download_and_validate_image(
-        arch=arch, base_image=BaseImage.FOCAL
+    unsupported_bases = (
+        RISCV64_UNSUPPORTED_BASES if arch == Arch.RISCV64 else set()
     )
-    logger.info("Downloading Jammy image.")
-    jammy_image_path = cloud_image.download_and_validate_image(
-        arch=arch, base_image=BaseImage.JAMMY
-    )
-    logger.info("Downloading Noble image.")
-    # 2025/11/18 We've seen issues with the latest noble arm64 image, the decision is to keep the
-    # option to pin a specific release date if needed in the future. The comment code snippet below
-    # is kept for reference. If we want to pin a specific date again, we can expose it as a config
-    # option on the charm side to enable it on the operations side.
-    noble_release_date = None  # NOBLE_ARM64_RELEASE_DATE if arch == Arch.ARM64 else None
-    noble_image_path = cloud_image.download_and_validate_image(
-        arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
-    )
-    logger.info("Downloading Resolute image.")
-    resolute_image_path = cloud_image.download_and_validate_image(
-        arch=arch, base_image=BaseImage.RESOLUTE
-    )
-    logger.info("Uploading Focal image.")
-    store.upload_image(
-        arch=arch,
-        cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.FOCAL, prefix=prefix),
-        image_path=focal_image_path,
-        keep_revisions=1,
-    )
-    logger.info("Uploading Jammy image.")
-    store.upload_image(
-        arch=arch,
-        cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.JAMMY, prefix=prefix),
-        image_path=jammy_image_path,
-        keep_revisions=1,
-    )
-    logger.info("Uploading Noble image.")
-    store.upload_image(
-        arch=arch,
-        cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.NOBLE, prefix=prefix),
-        image_path=noble_image_path,
-        keep_revisions=1,
-    )
-    logger.info("Uploading Resolute image.")
-    store.upload_image(
-        arch=arch,
-        cloud_name=cloud_name,
-        image_name=_get_base_image_name(arch=arch, base=BaseImage.RESOLUTE, prefix=prefix),
-        image_path=resolute_image_path,
-        keep_revisions=1,
-    )
+    bases: list[BaseImage] = [
+        base for base in BaseImage if base not in unsupported_bases
+    ]
+    for base in bases:
+        logger.info("Downloading %s image.", base.value.capitalize())
+        # 2025/11/18 We've seen issues with the latest noble arm64 image, the decision is to keep the
+        # option to pin a specific release date if needed in the future. The comment code snippet below
+        # is kept for reference. If we want to pin a specific date again, we can expose it as a config
+        # option on the charm side to enable it on the operations side.
+        release_date = None  # NOBLE_ARM64_RELEASE_DATE if arch == Arch.ARM64 else None
+        image_path = cloud_image.download_and_validate_image(
+            arch=arch, base_image=base, release_date=release_date
+        )
+        logger.info("Uploading %s image.", base.value.capitalize())
+        store.upload_image(
+            arch=arch,
+            cloud_name=cloud_name,
+            image_name=_get_base_image_name(arch=arch, base=base, prefix=prefix),
+            image_path=image_path,
+            keep_revisions=1,
+        )
     with openstack.connect(cloud=cloud_name) as conn:
         _create_keypair(conn=conn, prefix=prefix)
         logger.info("Creating security group %s.", SHARED_SECURITY_GROUP_NAME)
@@ -558,7 +534,9 @@ def _generate_cloud_init_script(
         HWE_VERSION=BaseImage.get_version(image_config.base),
         RUNNER_VERSION=image_config.runner_version,
         RUNNER_ARCH=image_config.arch.value,
-        RUNNER_BINARY_REPO=FORK_RUNNER_BINARY_REPO,
+        RUNNER_BINARY_REPO=RUNNER_BINARY_REPO_OVERRIDES.get(
+            image_config.arch, FORK_RUNNER_BINARY_REPO
+        ),
     )
 
 
