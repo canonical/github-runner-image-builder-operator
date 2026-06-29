@@ -8,7 +8,7 @@ This page describes the relation endpoints supported by the GitHub Runner Image 
 * **Supported charms**: [GitHub Runner operator](https://charmhub.io/github-runner)
 
 Provides built VM images to charms that manage GitHub self-hosted runners. When a relation is
-joined, the image builder shares the latest built image ID and its associated tags (e.g. `amd64`,
+joined, the image builder shares the latest built image ID and its associated tags (e.g. `x64`,
 `jammy`) via the relation data.
 
 The relation data published by this charm includes:
@@ -16,7 +16,7 @@ The relation data published by this charm includes:
 | Key | Type | Description |
 |-----|------|-------------|
 | `id` | string | ID of the latest built image. |
-| `tags` | string | Comma-separated tags describing the image (e.g. `amd64,jammy`). |
+| `tags` | string | Comma-separated tags describing the image (e.g. `x64,jammy`). |
 | `images` | JSON string | List of image objects, each with `id` and `tags` fields. |
 
 Example integrate command:
