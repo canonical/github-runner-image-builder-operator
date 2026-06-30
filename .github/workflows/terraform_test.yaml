@@ -15,7 +15,7 @@ jobs:
     outputs:
       terraform: ${{ steps.filter.outputs.terraform }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -32,17 +32,17 @@ jobs:
       WORKING_DIR: "terraform/charm"
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4.0.0
+        uses: hashicorp/setup-terraform@v4.0.1
 
       - name: Run terraform fmt
         run: terraform fmt -check -recursive
         working-directory: ${{env.WORKING_DIR}}
 
       - name: Setup Tflint
-        uses: terraform-linters/setup-tflint@v6.2.2
+        uses: terraform-linters/setup-tflint@v6.3.0
         with:
           tflint_wrapper_enabled: true
 
@@ -88,7 +88,7 @@ jobs:
     env:
       WORKING_DIR: "terraform/charm/tests"
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
       - uses: charmed-kubernetes/actions-operator@main
         with:
           provider: "microk8s"
@@ -112,7 +112,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_ENV"
       - run: juju add-model test-deploy-image-builder
-      - uses: hashicorp/setup-terraform@v4.0.0
+      - uses: hashicorp/setup-terraform@v4.0.1
       - run: terraform init
         working-directory: ${{env.WORKING_DIR}}
       - run: terraform validate
