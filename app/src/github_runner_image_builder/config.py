@@ -20,12 +20,14 @@ class Arch(str, Enum):
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
         PPC64LE: Represents a PPC64LE system architecture.
+        RISCV64: Represents a RISCV64 system architecture.
     """
 
     ARM64 = "arm64"
     X64 = "x64"
     S390X = "s390x"
     PPC64LE = "ppc64le"
+    RISCV64 = "riscv64"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
@@ -42,6 +44,8 @@ class Arch(str, Enum):
                 return "s390x"
             case Arch.PPC64LE:
                 return "ppc64le"
+            case Arch.RISCV64:
+                return "riscv64"
         raise ValueError  # pragma: nocover
 
 
@@ -139,6 +143,14 @@ LOG_LEVELS = tuple(
 )
 
 FORK_RUNNER_BINARY_REPO = "canonical/github-actions-runner"
+
+# Per-architecture overrides for the GitHub repository that publishes the runner
+# release tarballs. The default (canonical/github-actions-runner) is used for any
+# architecture not listed here. riscv64 is published on a fork until the tarball
+# is folded into the canonical fork's release pipeline.
+RUNNER_BINARY_REPO_OVERRIDES: dict[Arch, str] = {
+    Arch.RISCV64: "vhaudiquet/actions-runner-riscv",
+}
 
 
 @dataclasses.dataclass
