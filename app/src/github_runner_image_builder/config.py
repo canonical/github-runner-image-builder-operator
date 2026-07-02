@@ -20,12 +20,14 @@ class Arch(str, Enum):
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
         PPC64LE: Represents a PPC64LE system architecture.
+        ARM: Represents an ARM (32-bit armhf) system architecture.
     """
 
     ARM64 = "arm64"
     X64 = "x64"
     S390X = "s390x"
     PPC64LE = "ppc64le"
+    ARM = "arm"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
@@ -42,6 +44,8 @@ class Arch(str, Enum):
                 return "s390x"
             case Arch.PPC64LE:
                 return "ppc64le"
+            case Arch.ARM:
+                return "armhf"
         raise ValueError  # pragma: nocover
 
 
@@ -127,6 +131,9 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "wget",
 ]
 S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
+# The linux-arm runner tarball is self-contained but its bundled .NET runtime needs libicu and
+# libatomic present on the system at runtime.
+ARM_ADDITIONAL_APT_PACKAGES = ["libicu74", "libatomic1"]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(

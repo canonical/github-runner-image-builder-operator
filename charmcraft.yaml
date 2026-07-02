@@ -73,8 +73,10 @@ config:
       type: string
       description: |
         The image architecture to build for using external builder. Can be one of "amd64", "arm64", "s390x", 
-        "ppc64le" (alternatively "ppc64el").
-        Support for "s390x" and "ppc64el" is considered experimental.
+        "ppc64le" (alternatively "ppc64el") or "armhf" (alternatively "arm", 32-bit ARM).
+        Support for "s390x", "ppc64el" and "armhf" is considered experimental.
+        Note: "armhf" images are built on arm64 (aarch64) hardware running a 32-bit userspace, and use
+        the GitHub runner binary published by the canonical/github-actions-runner fork.
     base-image:
       type: string
       default: noble

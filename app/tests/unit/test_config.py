@@ -22,6 +22,7 @@ from github_runner_image_builder.config import (
         pytest.param(Arch.X64, "x86_64", id="amd64"),
         pytest.param(Arch.S390X, "s390x", id="s390x"),
         pytest.param(Arch.PPC64LE, "ppc64le", id="ppc64le"),
+        pytest.param(Arch.ARM, "armhf", id="arm"),
     ],
 )
 def test_arch_openstack_conversion(arch: Arch, expected: str):

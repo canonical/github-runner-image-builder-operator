@@ -20,7 +20,7 @@ from github_runner_image_builder.utils import retry
 
 logger = logging.getLogger(__name__)
 
-SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x", "ppc64el"]
+SupportedBaseImageArch = typing.Literal["amd64", "arm64", "s390x", "ppc64el", "armhf"]
 
 CHECKSUM_BUF_SIZE = 65536  # 65kb
 
@@ -95,6 +95,8 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
             return "s390x"
         case Arch.PPC64LE:
             return "ppc64el"  # cloud-images.ubuntu.com uses ppc64el instead of ppc64le
+        case Arch.ARM:
+            return "armhf"  # cloud-images.ubuntu.com uses armhf for 32-bit arm
         case _:
             raise UnsupportedArchitectureError(f"Detected system arch: {arch} is unsupported.")
 

@@ -676,6 +676,11 @@ def test__determine_network(network_name: str | None):
             ["dotnet-runtime-8.0"],
             id="ppc64le",
         ),
+        pytest.param(
+            openstack_builder.Arch.ARM,
+            ["libicu74", "libatomic1"],
+            id="arm",
+        ),
     ],
 )
 def test__generate_cloud_init_script(

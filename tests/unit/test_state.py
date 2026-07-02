@@ -41,6 +41,8 @@ def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
         pytest.param("amd64", state.Arch.X64, id="amd64"),
         pytest.param("s390x", state.Arch.S390X, id="s390x"),
         pytest.param("ppc64le", state.Arch.PPC64LE, id="ppc64le"),
+        pytest.param("armhf", state.Arch.ARM, id="armhf"),
+        pytest.param("arm", state.Arch.ARM, id="arm"),
     ],
 )
 def test_arch_from_charm(arch: str, expected: state.Arch):

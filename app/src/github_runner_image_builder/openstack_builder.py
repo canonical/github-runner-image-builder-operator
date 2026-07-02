@@ -40,6 +40,7 @@ from cryptography.hazmat.primitives import serialization
 import github_runner_image_builder.errors
 from github_runner_image_builder import cloud_image, config, store
 from github_runner_image_builder.config import (
+    ARM_ADDITIONAL_APT_PACKAGES,
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
@@ -552,6 +553,8 @@ def _generate_cloud_init_script(
     apt_packages = IMAGE_DEFAULT_APT_PACKAGES
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
+    elif image_config.arch == Arch.ARM:
+        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + ARM_ADDITIONAL_APT_PACKAGES
     return template.render(
         PROXY=proxy,
         APT_PACKAGES=" ".join(apt_packages),
