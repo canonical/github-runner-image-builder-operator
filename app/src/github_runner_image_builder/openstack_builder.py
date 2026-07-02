@@ -61,6 +61,10 @@ BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
 EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
 
+# armhf additional apt packages (libicu74, rustup, docker-buildx) are only available from the
+# noble (24.04) archive onwards, so armhf images can only be built on these base images.
+ARM_SUPPORTED_BASE_IMAGES = (BaseImage.NOBLE, BaseImage.RESOLUTE)
+
 # Server operation timeout constants (in seconds)
 CREATE_SERVER_TIMEOUT = 20 * 60  # 20 minutes
 DELETE_SERVER_TIMEOUT = 20 * 60  # 20 minutes
@@ -554,6 +558,15 @@ def _generate_cloud_init_script(
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
     elif image_config.arch == Arch.ARM:
+        # The armhf additional apt packages (libicu74, rustup, docker-buildx) are only available
+        # from the noble (24.04) archive onwards, so fail fast on older bases rather than letting
+        # apt-get fail midway through the image build.
+        if image_config.base not in ARM_SUPPORTED_BASE_IMAGES:
+            raise github_runner_image_builder.errors.UnsupportedArchitectureError(
+                f"armhf images require a base image of "
+                f"{[base.value for base in ARM_SUPPORTED_BASE_IMAGES]} or newer, "
+                f"got: {image_config.base.value}."
+            )
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + ARM_ADDITIONAL_APT_PACKAGES
     return template.render(
         PROXY=proxy,

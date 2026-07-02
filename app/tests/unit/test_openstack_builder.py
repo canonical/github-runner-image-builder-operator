@@ -692,11 +692,17 @@ def test__generate_cloud_init_script(
     act: when _generate_cloud_init_script is run.
     assert: expected cloud init template is generated.
     """
+    base = (
+        openstack_builder.BaseImage.NOBLE
+        if arch == openstack_builder.Arch.ARM
+        else openstack_builder.BaseImage.JAMMY
+    )
+    expected_hwe = openstack_builder.BaseImage.get_version(base)
     assert (
         openstack_builder._generate_cloud_init_script(
             image_config=openstack_builder.config.ImageConfig(
                 arch=arch,
-                base=openstack_builder.BaseImage.JAMMY,
+                base=base,
                 runner_version="",
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
@@ -916,7 +922,7 @@ function configure_system_users() {{
 
 proxy="test.proxy.internal:3128"
 apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
-hwe_version="22.04"
+hwe_version="{expected_hwe}"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
@@ -944,6 +950,36 @@ fi\
 """  # nosec # noqa: E501
     )
     # pylint: enable=R0801
+
+
+@pytest.mark.parametrize(
+    "base",
+    [
+        pytest.param(openstack_builder.BaseImage.FOCAL, id="focal"),
+        pytest.param(openstack_builder.BaseImage.JAMMY, id="jammy"),
+    ],
+)
+def test__generate_cloud_init_script_arm_unsupported_base(base: openstack_builder.BaseImage):
+    """
+    arrange: ARM architecture paired with a pre-noble base image.
+    act: when _generate_cloud_init_script is run.
+    assert: UnsupportedArchitectureError is raised because the armhf apt packages \
+        (e.g. libicu74, rustup, docker-buildx) are only available from noble onwards.
+    """
+    with pytest.raises(errors.UnsupportedArchitectureError):
+        openstack_builder._generate_cloud_init_script(
+            image_config=openstack_builder.config.ImageConfig(
+                arch=openstack_builder.Arch.ARM,
+                base=base,
+                runner_version="",
+                name="test-image",
+                script_config=openstack_builder.config.ScriptConfig(
+                    script_url=None,
+                    script_secrets={},
+                ),
+            ),
+            proxy="test.proxy.internal:3128",
+        )
 
 
 def test__wait_for_cloud_init_complete_fail():
