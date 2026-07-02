@@ -678,7 +678,7 @@ def test__determine_network(network_name: str | None):
         ),
         pytest.param(
             openstack_builder.Arch.ARM,
-            ["libicu74", "libatomic1"],
+            ["libicu74", "libatomic1", "rustup", "docker-buildx"],
             id="arm",
         ),
     ],
@@ -934,7 +934,13 @@ install_yq
 install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-configure_system_users\
+configure_system_users
+
+# Set the default Rust toolchain for the ubuntu user. rustup is only installed on
+# armhf images, so this block is a no-op on other architectures.
+if [ "$github_runner_arch" == "arm" ]; then
+    sudo -u ubuntu rustup default stable
+fi\
 """  # nosec # noqa: E501
     )
     # pylint: enable=R0801
