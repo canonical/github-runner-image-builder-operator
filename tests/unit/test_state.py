@@ -43,6 +43,7 @@ def patch_juju_version_29_fixture(monkeypatch: pytest.MonkeyPatch):
         pytest.param("ppc64le", state.Arch.PPC64LE, id="ppc64le"),
         pytest.param("armhf", state.Arch.ARM, id="armhf"),
         pytest.param("arm", state.Arch.ARM, id="arm"),
+        pytest.param("armv7l", state.Arch.ARM, id="armv7l"),
     ],
 )
 def test_arch_from_charm(arch: str, expected: state.Arch):
