@@ -33,6 +33,8 @@ def arch_fixture(pytestconfig: pytest.Config):
     match arch:
         case "arm64":
             return config.Arch.ARM64
+        case "armhf":
+            return config.Arch.ARM
         case "amd64":
             return config.Arch.X64
         case "s390x":
