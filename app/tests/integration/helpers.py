@@ -37,12 +37,6 @@ from tests.integration import commands, types
 logger = logging.getLogger(__name__)
 
 
-TESTDATA_TEST_SCRIPT_URL = (
-    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
-    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
-)
-
-
 P = ParamSpec("P")
 R = TypeVar("R")
 S = Callable[P, R] | Callable[P, Awaitable[R]]

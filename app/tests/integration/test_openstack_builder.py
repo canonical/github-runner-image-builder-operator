@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from fabric.connection import Connection as SSHConnection
-from integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from integration.commands import TESTDATA_TEST_SCRIPT_URL
 from openstack.compute.v2.image import Image
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection

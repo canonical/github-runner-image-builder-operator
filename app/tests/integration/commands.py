@@ -5,7 +5,12 @@
 
 import dataclasses
 
-from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from github_runner_image_builder.config import Arch
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
+)
 
 
 @dataclasses.dataclass
