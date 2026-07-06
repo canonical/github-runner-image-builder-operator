@@ -219,6 +219,7 @@ async def ssh_connection_fixture(
 def test_run(
     ssh_connection: SSHConnection,
     proxy: types.ProxyConfig,
+    arch: config.Arch,
 ):
     """
     arrange: given openstack cloud instance.
@@ -227,7 +228,7 @@ def test_run(
     """
     if proxy.http is not None:
         helpers.setup_aproxy(ssh_connection, proxy.http)
-    helpers.run_openstack_tests(ssh_connection=ssh_connection)
+    helpers.run_openstack_tests(ssh_connection=ssh_connection, arch=arch)
 
 
 def test_openstack_state(

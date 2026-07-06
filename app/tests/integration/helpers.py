@@ -32,6 +32,7 @@ from pylxd.models.image import Image as LXDImage
 from pylxd.models.instance import Instance, InstanceState
 from requests_toolbelt import MultipartEncoder
 
+from github_runner_image_builder.config import Arch
 from tests.integration import commands, types
 
 logger = logging.getLogger(__name__)
@@ -404,13 +405,14 @@ EOF
         assert False, "Aproxy did not start up correctly."
 
 
-def run_openstack_tests(ssh_connection: SSHConnection):
+def run_openstack_tests(ssh_connection: SSHConnection, arch: Arch):
     """Run test commands on the openstack instance via ssh.
 
     Args:
         ssh_connection: The SSH connection instance to OpenStack test server.
+        arch: The architecture under test, selecting arch-specific commands.
     """
-    for testcmd in commands.TEST_RUNNER_COMMANDS:
+    for testcmd in commands.commands_for_arch(arch):
         logger.info("Running command: %s", testcmd.command)
         result: Result = ssh_connection.run(testcmd.command, env=testcmd.env)
         logger.info("Command output: %s %s %s", result.return_code, result.stdout, result.stderr)
