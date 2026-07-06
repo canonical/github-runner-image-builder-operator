@@ -44,7 +44,7 @@ which can then be reused by the other charm to spawn VM instances with the neces
 The image-builder uses the [OpenStack SDK](https://docs.openstack.org/openstacksdk/latest/)  to spawn a VM instance in a cloud specified
 by a config option. Using an external OpenStack VM instead of the charm's machine allows for more features
 (using chroot has some limitations, e.g. for building snaps) and parallel image building.
-[cloud-init](https://cloud-init.io/) is used to install the necessary dependencies for spawning self-hosted runners
+[cloud-init](https://github.com/canonical/cloud-init) is used to install the necessary dependencies for spawning self-hosted runners
 ([GitHub Actions runner binary](https://github.com/actions/runner)) and tools for automatic proxy support ([aproxy](https://github.com/canonical/aproxy)). 
 There is also a custom script configuration combined with a secret that is run in the cloud-init script to allow further customization of the images.
 The image-builder repeatedly checks to see if the cloud-init script has finished successfully, then snapshots the VM, uploads the image to a specified OpenStack project
