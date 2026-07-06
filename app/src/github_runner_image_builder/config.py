@@ -45,7 +45,10 @@ class Arch(str, Enum):
             case Arch.PPC64LE:
                 return "ppc64le"
             case Arch.ARM:
-                return "armhf"
+                # Nova/libvirt use the canonical "armv7l" for 32-bit ARM as the image
+                # architecture property; "armhf" (the Ubuntu userland ABI name) is rejected by
+                # Nova. The cloud-image download filename still uses "armhf" (see cloud_image.py).
+                return "armv7l"
         raise ValueError  # pragma: nocover
 
 
