@@ -545,6 +545,10 @@ def _generate_cloud_init_script(
         image_config: The target image configuration values.
         proxy: The proxy to enable while setting up the VM.
 
+    Raises:
+        UnsupportedArchitectureError: If an armhf image is requested on a base image older than
+            the supported ARM base images (noble and newer).
+
     Returns:
         The cloud-init script to create snapshot image.
     """
