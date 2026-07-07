@@ -16,7 +16,7 @@ jobs:
       terraform: ${{ steps.filter.outputs.terraform }}
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -35,14 +35,14 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
+        uses: hashicorp/setup-terraform@v4.0.0
 
       - name: Run terraform fmt
         run: terraform fmt -check -recursive
         working-directory: ${{env.WORKING_DIR}}
 
       - name: Setup Tflint
-        uses: terraform-linters/setup-tflint@v6.2.1
+        uses: terraform-linters/setup-tflint@v6.2.2
         with:
           tflint_wrapper_enabled: true
 
@@ -112,7 +112,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_ENV"
       - run: juju add-model test-deploy-image-builder
-      - uses: hashicorp/setup-terraform@v3.1.2
+      - uses: hashicorp/setup-terraform@v4.0.0
       - run: terraform init
         working-directory: ${{env.WORKING_DIR}}
       - run: terraform validate

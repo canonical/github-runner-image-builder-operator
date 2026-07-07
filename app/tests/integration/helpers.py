@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 TESTDATA_TEST_SCRIPT_URL = (
     "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
-    "cc9d06c43a5feabd278265ab580eca14d5acffd4/app/tests/integration/testdata/test_script.sh"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
 )
 
 
@@ -114,7 +114,7 @@ def create_lxd_vm_image(
     return lxd_image
 
 
-IMAGE_TO_TAG = {"focal": "20.04", "jammy": "22.04", "noble": "24.04"}
+IMAGE_TO_TAG = {"focal": "20.04", "jammy": "22.04", "noble": "24.04", "resolute": "26.04"}
 
 
 def _create_metadata_tar_gz(image: str, tmp_path: Path) -> Path:

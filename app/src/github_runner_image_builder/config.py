@@ -52,14 +52,16 @@ class BaseImage(str, Enum):
         FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
+        RESOLUTE: The resolute ubuntu LTS image.
     """
 
     FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
+    RESOLUTE = "resolute"
 
     @classmethod
-    def get_version(cls, base: "BaseImage") -> Literal["20.04", "22.04", "24.04"]:
+    def get_version(cls, base: "BaseImage") -> Literal["20.04", "22.04", "24.04", "26.04"]:
         """Change the codename to version tag.
 
         Args:
@@ -75,6 +77,8 @@ class BaseImage(str, Enum):
                 return "22.04"
             case BaseImage.NOBLE:
                 return "24.04"
+            case BaseImage.RESOLUTE:
+                return "26.04"
 
     @classmethod
     def from_str(cls, tag_or_name: str) -> "BaseImage":
@@ -95,6 +99,7 @@ LTS_IMAGE_VERSION_TAG_MAP = {
     "20.04": BaseImage.FOCAL.value,
     "22.04": BaseImage.JAMMY.value,
     "24.04": BaseImage.NOBLE.value,
+    "26.04": BaseImage.RESOLUTE.value,
 }
 BASE_CHOICES = tuple(
     itertools.chain.from_iterable((tag, name) for (tag, name) in LTS_IMAGE_VERSION_TAG_MAP.items())

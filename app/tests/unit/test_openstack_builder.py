@@ -777,14 +777,21 @@ signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.co
 main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
+    if [ $RELEASE == "resolute" ]; then
+        echo "Adding dotnet backports PPA"
+        DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
+    fi
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Upgrading apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    echo "Installing linux-generic-hwe-${{hwe_version}}"
-    DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
+    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
+    if [ $RELEASE != "resolute" ]; then
+        echo "Installing linux-generic-hwe-${{hwe_version}}"
+        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
+    fi
 }}
 
 function disable_unattended_upgrades() {{
@@ -799,6 +806,7 @@ function disable_unattended_upgrades() {{
 function enable_network_fair_queuing_congestion() {{
     /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
 net.core.default_qdisc=fq
+# 26.04 does not support bbr by default, this will have no effect on 26.04.
 net.ipv4.tcp_congestion_control=bbr
 EOF
     /usr/sbin/sysctl -p
@@ -870,6 +878,34 @@ function configure_system_users() {{
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+
+    # Create runner user as alias to ubuntu for GARM compatibility.
+    # GARM expects a runner user with /home/runner/actions-runner path.
+    echo "Configuring runner user alias for GARM compatibility"
+    UBUNTU_UID=$(/usr/bin/id -u ubuntu)
+    UBUNTU_GID=$(/usr/bin/id -g ubuntu)
+    # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
+    # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
+    # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    if /usr/bin/id -u runner >/dev/null 2>&1; then
+        echo "runner user already exists; ensuring UID/GID/home match ubuntu"
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+    else
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+    fi
+    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
+    # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
+    # If /home/runner exists as a plain directory (not a symlink), remove it first; otherwise ln -sfnT cannot
+    # replace it. A non-empty directory is an unexpected state, so fail with a clear error instead of letting
+    # ln fail later with a less specific message.
+    # -T: treat destination as a file path, never as a directory target.
+    if [ -d /home/runner ] && ! [ -L /home/runner ]; then
+        if ! rmdir /home/runner 2>/dev/null; then
+            echo "ERROR: /home/runner exists and is not empty; cannot replace it with a symlink to /home/ubuntu" >&2
+            return 1
+        fi
+    fi
+    /usr/bin/ln -sfnT /home/ubuntu /home/runner
 }}
 
 
