@@ -258,7 +258,10 @@ def test_upload_image_arm_uses_virtio_properties(mock_connection: MagicMock):
     assert properties["architecture"] == "armv7l"
     assert properties["hw_machine_type"] == "virt"
     assert properties["hw_disk_bus"] == "virtio"
-    assert properties["hw_cdrom_bus"] == "scsi"
+    # The config drive must be reachable over virtio-blk (the same bus as the root disk).
+    # A virtio-scsi CD-ROM is unreadable by the 32-bit armhf guest kernel, which leaves
+    # cloud-init without network metadata so the VM never becomes SSH-reachable.
+    assert properties["hw_cdrom_bus"] == "virtio"
 
 
 def test_upload_image_amd64_omits_virtio_properties(mock_connection: MagicMock):
