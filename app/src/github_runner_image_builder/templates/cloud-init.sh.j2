@@ -55,7 +55,21 @@ EOF
 
 function enable_armhf_multiarch() {
     echo "Enabling armhf multiarch"
+    native_arch=$(/usr/bin/dpkg --print-architecture)
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
     /usr/bin/dpkg --add-architecture armhf
+    # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
+    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
+    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
+    /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: $codename $codename-updates $codename-security
+Components: main restricted universe multiverse
+Architectures: armhf
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
 }
 
 function install_apt_packages() {
