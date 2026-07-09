@@ -96,7 +96,10 @@ def _get_supported_runner_arch(arch: Arch) -> SupportedBaseImageArch:
         case Arch.PPC64LE:
             return "ppc64el"  # cloud-images.ubuntu.com uses ppc64el instead of ppc64le
         case Arch.ARM:
-            return "armhf"  # cloud-images.ubuntu.com uses armhf for 32-bit arm
+            # Download the arm64 (64-bit) base cloud image, not armhf. The armhf runner image is
+            # an arm64 boot image (64-bit kernel) that runs the 32-bit linux-arm runner via
+            # multiarch; a native armhf (32-bit kernel) image does not boot on the aarch64 hosts.
+            return "arm64"
         case _:
             raise UnsupportedArchitectureError(f"Detected system arch: {arch} is unsupported.")
 
