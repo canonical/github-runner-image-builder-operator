@@ -12,7 +12,6 @@ import pytest
 from openstack.connection import Connection
 
 from github_runner_image_builder import store
-from github_runner_image_builder.config import Arch
 from github_runner_image_builder.store import Image, OpenstackError, UploadImageError, openstack
 from tests.unit.factories import MockOpenstackImageFactory
 
@@ -235,55 +234,6 @@ def test_upload_image(mock_connection: MagicMock):
         )
         == test_image
     )
-
-
-def test_upload_image_arm_uses_virtio_properties(mock_connection: MagicMock):
-    """
-    arrange: given a mocked openstack create_image function.
-    act: when upload_image is called with the 32-bit ARM architecture.
-    assert: create_image is called with virtio/scsi hw properties so that the
-        aarch64 "virt" machine type (which has no IDE bus) can boot the image.
-    """
-    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1")
-
-    store.upload_image(
-        arch=Arch.ARM,
-        cloud_name=MagicMock(),
-        image_name=MagicMock(),
-        image_path=MagicMock(),
-        keep_revisions=MagicMock(),
-    )
-
-    properties = mock_connection.create_image.call_args.kwargs["properties"]
-    assert properties["architecture"] == "armv7l"
-    assert properties["hw_machine_type"] == "virt"
-    assert properties["hw_disk_bus"] == "virtio"
-    # virtio-blk cannot back ejectable CD-ROM media, so the config-drive CD-ROM must ride a
-    # virtio-scsi controller (the same bus the arm64 images boot with on these hosts).
-    assert properties["hw_cdrom_bus"] == "scsi"
-
-
-def test_upload_image_amd64_omits_virtio_properties(mock_connection: MagicMock):
-    """
-    arrange: given a mocked openstack create_image function.
-    act: when upload_image is called with the amd64 architecture.
-    assert: create_image is called without the ARM-only virtio/machine-type
-        properties (amd64 uses the default PC machine type with IDE support).
-    """
-    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1")
-
-    store.upload_image(
-        arch=Arch.X64,
-        cloud_name=MagicMock(),
-        image_name=MagicMock(),
-        image_path=MagicMock(),
-        keep_revisions=MagicMock(),
-    )
-
-    properties = mock_connection.create_image.call_args.kwargs["properties"]
-    assert "hw_machine_type" not in properties
-    assert "hw_disk_bus" not in properties
-    assert "hw_cdrom_bus" not in properties
 
 
 @pytest.mark.usefixtures("mock_connection")

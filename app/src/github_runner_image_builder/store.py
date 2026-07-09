@@ -18,20 +18,6 @@ from github_runner_image_builder.errors import OpenstackError, UploadImageError
 
 logger = logging.getLogger(__name__)
 
-# The 32-bit ARM (armhf) base images are booted on aarch64 compute hosts, which use the
-# QEMU "virt" machine type. That machine type has no IDE bus, so without these properties
-# libvirt defaults to an IDE controller for the root disk and the config-drive CD-ROM and
-# rejects the domain with "IDE controllers are unsupported for this QEMU binary or machine
-# type". The root disk uses virtio-blk and the config-drive CD-ROM uses a virtio-scsi
-# controller (virtio-blk cannot back ejectable CD-ROM media). This matches the buses the
-# 64-bit arm64 images boot with on the same hosts.
-_ARM_IMAGE_PROPERTIES = {
-    "hw_machine_type": "virt",
-    "hw_disk_bus": "virtio",
-    "hw_cdrom_bus": "scsi",
-    "hw_scsi_model": "virtio-scsi",
-}
-
 # Timeout constants (in seconds)
 SNAPSHOT_CREATION_TIMEOUT = 60 * 30  # 30 minutes
 
@@ -92,8 +78,6 @@ def upload_image(
         try:
             logger.info("Uploading image %s.", image_name)
             image_properties = {"architecture": arch.to_openstack()}
-            if arch == Arch.ARM:
-                image_properties.update(_ARM_IMAGE_PROPERTIES)
             # ignore type since the library does not provide correct type hinting but the docstring
             # does define the return type.
             image: Image = connection.create_image(
