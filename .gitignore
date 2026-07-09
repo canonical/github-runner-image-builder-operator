@@ -30,3 +30,6 @@ testing_key.pem
 .vale/styles/config/vocabularies/*
 !.vale/styles/config/vocabularies/local
 # END VALE WORKFLOW IGNORE
+
+# Superpowers internal planning artifacts (not product docs)
+docs/superpowers/
