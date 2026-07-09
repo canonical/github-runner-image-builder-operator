@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 # QEMU "virt" machine type. That machine type has no IDE bus, so without these properties
 # libvirt defaults to an IDE controller for the root disk and the config-drive CD-ROM and
 # rejects the domain with "IDE controllers are unsupported for this QEMU binary or machine
-# type". Both the root disk and the config drive are placed on the virtio-blk bus: the
-# 32-bit armhf guest kernel has the virtio-blk driver, but not virtio-scsi, so a virtio-scsi
-# config-drive CD-ROM would be unreadable and cloud-init would never receive its network
-# metadata, leaving the VM unreachable over SSH.
+# type". The root disk uses virtio-blk and the config-drive CD-ROM uses a virtio-scsi
+# controller (virtio-blk cannot back ejectable CD-ROM media). This matches the buses the
+# 64-bit arm64 images boot with on the same hosts.
 _ARM_IMAGE_PROPERTIES = {
     "hw_machine_type": "virt",
     "hw_disk_bus": "virtio",
-    "hw_cdrom_bus": "virtio",
+    "hw_cdrom_bus": "scsi",
+    "hw_scsi_model": "virtio-scsi",
 }
 
 # Timeout constants (in seconds)
