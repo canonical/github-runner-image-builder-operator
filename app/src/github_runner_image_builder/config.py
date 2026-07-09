@@ -136,10 +136,17 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "wget",
 ]
 S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
-# The linux-arm runner tarball is self-contained but its bundled .NET runtime needs libicu and
-# libatomic present on the system at runtime. rustup and docker-buildx are additionally
-# pre-installed on armhf images for arm32 build workloads.
-ARM_ADDITIONAL_APT_PACKAGES = ["libicu74", "libatomic1", "rustup", "docker-buildx"]
+# The 32-bit linux-arm runner agent runs via the host's native AArch32 support on the arm64
+# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf builds of
+# its .NET runtime dependencies (libicu, libatomic). rustup and docker-buildx are additionally
+# pre-installed (arm64 host tools) for arm32 build workloads.
+ARM_ADDITIONAL_APT_PACKAGES = [
+    "libc6:armhf",
+    "libicu74:armhf",
+    "libatomic1:armhf",
+    "rustup",
+    "docker-buildx",
+]
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(

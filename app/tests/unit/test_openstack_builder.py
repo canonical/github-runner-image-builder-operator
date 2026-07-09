@@ -678,7 +678,7 @@ def test__determine_network(network_name: str | None):
         ),
         pytest.param(
             openstack_builder.Arch.ARM,
-            ["libicu74", "libatomic1", "rustup", "docker-buildx"],
+            ["libc6:armhf", "libicu74:armhf", "libatomic1:armhf", "rustup", "docker-buildx"],
             id="arm",
         ),
     ],
