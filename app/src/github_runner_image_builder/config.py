@@ -45,10 +45,12 @@ class Arch(str, Enum):
             case Arch.PPC64LE:
                 return "ppc64le"
             case Arch.ARM:
-                # Nova/libvirt use the canonical "armv7l" for 32-bit ARM as the image
-                # architecture property; "armhf" (the Ubuntu userland ABI name) is rejected by
-                # Nova. The cloud-image download filename still uses "armhf" (see cloud_image.py).
-                return "armv7l"
+                # The armhf runner image is an arm64 boot image (64-bit kernel) that carries a
+                # 32-bit linux-arm runner payload. Native armhf images (32-bit kernel) do not boot
+                # on the aarch64 "virt" machine, so the glance architecture is aarch64 so the base
+                # image and snapshot schedule and boot on arm64 hosts. The 32-bit runner is
+                # installed via multiarch (see cloud-init.sh.j2 and ARM_ADDITIONAL_APT_PACKAGES).
+                return "aarch64"
         raise ValueError  # pragma: nocover
 
 
