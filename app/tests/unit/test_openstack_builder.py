@@ -772,6 +772,11 @@ EOF
     sleep 5
 }}
 
+function enable_armhf_multiarch() {{
+    echo "Enabling armhf multiarch"
+    /usr/bin/dpkg --add-architecture armhf
+}}
+
 function install_apt_packages() {{
     local packages="$1"
     local hwe_version="$2"
@@ -928,6 +933,11 @@ github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
 
 configure_proxy "$proxy"
+# Enable armhf multiarch before installing packages so the 32-bit linux-arm runner agent and
+# its armhf runtime dependencies can be installed and executed via native AArch32.
+if [ "$github_runner_arch" == "arm" ]; then
+    enable_armhf_multiarch
+fi
 install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
