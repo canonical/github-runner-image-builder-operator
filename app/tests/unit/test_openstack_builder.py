@@ -798,6 +798,15 @@ Components: main restricted universe multiverse
 Architectures: armhf
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 EOF
+    # The runner VM boots from a snapshot whose cloud-init state was cleared (see the
+    # "cloud-init clean" before snapshot), so cloud-init regenerates the stock apt sources on
+    # first boot and drops the architecture pin above while the armhf dpkg architecture persists,
+    # breaking "apt-get update". Tell cloud-init to preserve the pinned sources baked into the
+    # image so the 32-bit multiarch configuration survives on the runner VM.
+    /usr/bin/tee /etc/cloud/cloud.cfg.d/99-armhf-preserve-apt-sources.cfg >/dev/null <<EOF
+apt:
+  preserve_sources_list: true
+EOF
 }}
 
 function install_apt_packages() {{
