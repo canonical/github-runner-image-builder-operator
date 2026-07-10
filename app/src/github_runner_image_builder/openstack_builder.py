@@ -41,6 +41,8 @@ import github_runner_image_builder.errors
 from github_runner_image_builder import cloud_image, config, store
 from github_runner_image_builder.config import (
     ARM_ADDITIONAL_APT_PACKAGES,
+    ARM_EXCLUDED_DEFAULT_APT_PACKAGES,
+    ARM_LIBICU_APT_PACKAGE_BY_BASE,
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
@@ -562,16 +564,28 @@ def _generate_cloud_init_script(
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
     elif image_config.arch == Arch.ARM:
-        # The armhf additional apt packages (libicu74, rustup, docker-buildx) are only available
-        # from the noble (24.04) archive onwards, so fail fast on older bases rather than letting
-        # apt-get fail midway through the image build.
+        # The armhf additional apt packages (rustup, docker-buildx, the armhf multiarch libs) and
+        # the release-specific libicu are only available from the noble (24.04) archive onwards,
+        # so fail fast on older bases rather than letting apt-get fail midway through the build.
         if image_config.base not in ARM_SUPPORTED_BASE_IMAGES:
             raise github_runner_image_builder.errors.UnsupportedArchitectureError(
                 f"armhf images require a base image of "
                 f"{[base.value for base in ARM_SUPPORTED_BASE_IMAGES]} or newer, "
                 f"got: {image_config.base.value}."
             )
-        apt_packages = IMAGE_DEFAULT_APT_PACKAGES + ARM_ADDITIONAL_APT_PACKAGES
+        # rustup provides the armhf/armv7 Rust toolchain and conflicts with the distro cargo/rustc
+        # packages, so drop those from the default set. libicu's soname is release-specific, so
+        # add the armhf build matching the base image.
+        default_packages = [
+            package
+            for package in IMAGE_DEFAULT_APT_PACKAGES
+            if package not in ARM_EXCLUDED_DEFAULT_APT_PACKAGES
+        ]
+        apt_packages = (
+            default_packages
+            + ARM_ADDITIONAL_APT_PACKAGES
+            + [ARM_LIBICU_APT_PACKAGE_BY_BASE[image_config.base]]
+        )
     return template.render(
         PROXY=proxy,
         APT_PACKAGES=" ".join(apt_packages),

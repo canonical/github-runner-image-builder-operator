@@ -137,16 +137,25 @@ IMAGE_DEFAULT_APT_PACKAGES = [
 ]
 S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 # The 32-bit linux-arm runner agent runs via the host's native AArch32 support on the arm64
-# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf builds of
-# its .NET runtime dependencies (libicu, libatomic). rustup and docker-buildx are additionally
-# pre-installed (arm64 host tools) for arm32 build workloads.
+# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf build of
+# libatomic (a .NET runtime dependency). rustup provides the armhf/armv7 Rust toolchain and
+# docker-buildx enables arm32 container builds. libicu (the other .NET runtime dependency) is
+# release-specific and handled by ARM_LIBICU_APT_PACKAGE_BY_BASE below.
 ARM_ADDITIONAL_APT_PACKAGES = [
     "libc6:armhf",
-    "libicu74:armhf",
     "libatomic1:armhf",
     "rustup",
     "docker-buildx",
 ]
+# rustup (installed on armhf images) conflicts with the distro cargo and rustc packages, so these
+# are dropped from the default apt package set on armhf; rustup provides cargo and rustc instead.
+ARM_EXCLUDED_DEFAULT_APT_PACKAGES = ("cargo", "rustc")
+# The linux-arm runner's bundled .NET runtime dlopens libicu, whose soname is release-specific
+# (noble ships libicu74, resolute ships libicu78). Install the armhf build matching the base image.
+ARM_LIBICU_APT_PACKAGE_BY_BASE = {
+    BaseImage.NOBLE: "libicu74:armhf",
+    BaseImage.RESOLUTE: "libicu78:armhf",
+}
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(

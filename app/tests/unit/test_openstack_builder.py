@@ -661,31 +661,40 @@ def test__determine_network(network_name: str | None):
     )
 
 
+_DEFAULT_APT_PACKAGES = (
+    "build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev "
+    "python3-pip rustc shellcheck socat tar time unzip wget"
+)
+# armhf drops the distro cargo/rustc (replaced by rustup) and adds the armhf multiarch runtime
+# libs, rustup, docker-buildx and the release-specific libicu (libicu74 on noble).
+_ARM_APT_PACKAGES = (
+    "build-essential docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip "
+    "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf rustup docker-buildx "
+    "libicu74:armhf"
+)
+
+
 @pytest.mark.parametrize(
-    "arch, additional_apt_packages",
+    "arch, expected_apt_packages",
     [
-        pytest.param(openstack_builder.Arch.X64, [], id="x64"),
-        pytest.param(openstack_builder.Arch.ARM64, [], id="arm64"),
+        pytest.param(openstack_builder.Arch.X64, _DEFAULT_APT_PACKAGES, id="x64"),
+        pytest.param(openstack_builder.Arch.ARM64, _DEFAULT_APT_PACKAGES, id="arm64"),
         pytest.param(
             openstack_builder.Arch.S390X,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="s390x",
         ),
         pytest.param(
             openstack_builder.Arch.PPC64LE,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="ppc64le",
         ),
-        pytest.param(
-            openstack_builder.Arch.ARM,
-            ["libc6:armhf", "libicu74:armhf", "libatomic1:armhf", "rustup", "docker-buildx"],
-            id="arm",
-        ),
+        pytest.param(openstack_builder.Arch.ARM, _ARM_APT_PACKAGES, id="arm"),
     ],
 )
 def test__generate_cloud_init_script(
     arch: openstack_builder.Arch,
-    additional_apt_packages: list[str],
+    expected_apt_packages: str,
 ):
     """
     arrange: A certain architecture.
@@ -940,7 +949,7 @@ function configure_system_users() {{
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
+apt_packages="{expected_apt_packages}"
 hwe_version="{expected_hwe}"
 github_runner_version=""
 github_runner_arch="{arch.value}"
