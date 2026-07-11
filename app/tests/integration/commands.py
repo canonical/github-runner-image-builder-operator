@@ -5,7 +5,12 @@
 
 import dataclasses
 
-from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from github_runner_image_builder.config import Arch
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
+)
 
 
 @dataclasses.dataclass
@@ -125,3 +130,34 @@ TEST_RUNNER_COMMANDS = (
         "! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )
+
+
+# armhf-specific assertions. These packages/binaries are only installed on armhf images
+# (see ARM_ADDITIONAL_APT_PACKAGES and the rustup cloud-init step), so they must not run on
+# other architectures.
+ARM_RUNNER_COMMANDS = (
+    Commands(name="rustc version (rustup default stable)", command="rustc --version"),
+    Commands(name="cargo version", command="cargo --version"),
+    Commands(name="docker buildx version", command="docker buildx version"),
+    Commands(
+        name="github runner binary is 32-bit ARM",
+        command=(
+            "file /home/ubuntu/actions-runner/bin/Runner.Listener | grep -i 'ELF 32-bit' | "
+            "grep -i 'ARM'"
+        ),
+    ),
+)
+
+
+def commands_for_arch(arch: Arch) -> tuple[Commands, ...]:
+    """Return the test commands to run for the given architecture.
+
+    Args:
+        arch: The architecture under test.
+
+    Returns:
+        The base test commands, plus armhf-specific commands when arch is ARM.
+    """
+    if arch == Arch.ARM:
+        return TEST_RUNNER_COMMANDS + ARM_RUNNER_COMMANDS
+    return TEST_RUNNER_COMMANDS

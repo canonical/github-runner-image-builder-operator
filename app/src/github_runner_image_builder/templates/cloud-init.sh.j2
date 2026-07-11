@@ -53,6 +53,34 @@ EOF
     sleep 5
 }
 
+function enable_armhf_multiarch() {
+    echo "Enabling armhf multiarch"
+    native_arch=$(/usr/bin/dpkg --print-architecture)
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+    /usr/bin/dpkg --add-architecture armhf
+    # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
+    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
+    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
+    /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: $codename $codename-updates $codename-security
+Components: main restricted universe multiverse
+Architectures: armhf
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+    # The runner VM boots from a snapshot whose cloud-init state was cleared (see the
+    # "cloud-init clean" before snapshot), so cloud-init regenerates the stock apt sources on
+    # first boot and drops the architecture pin above while the armhf dpkg architecture persists,
+    # breaking "apt-get update". Tell cloud-init to preserve the pinned sources baked into the
+    # image so the 32-bit multiarch configuration survives on the runner VM.
+    /usr/bin/tee /etc/cloud/cloud.cfg.d/99-armhf-preserve-apt-sources.cfg >/dev/null <<EOF
+apt:
+  preserve_sources_list: true
+EOF
+}
+
 function install_apt_packages() {
     local packages="$1"
     local hwe_version="$2"
@@ -205,6 +233,11 @@ github_runner_arch="{{ RUNNER_ARCH }}"
 runner_binary_repo="{{ RUNNER_BINARY_REPO }}"
 
 configure_proxy "$proxy"
+# Enable armhf multiarch before installing packages so the 32-bit linux-arm runner agent and
+# its armhf runtime dependencies can be installed and executed via native AArch32.
+if [ "$github_runner_arch" == "arm" ]; then
+    enable_armhf_multiarch
+fi
 install_apt_packages "$apt_packages" "$hwe_version"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
@@ -218,3 +251,9 @@ install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users
+
+# Set the default Rust toolchain for the ubuntu user. rustup is only installed on
+# armhf images, so this block is a no-op on other architectures.
+if [ "$github_runner_arch" == "arm" ]; then
+    sudo -u ubuntu rustup default stable
+fi
