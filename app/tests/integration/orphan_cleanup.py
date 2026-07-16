@@ -25,7 +25,7 @@ _NAME_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p)
     for p in (
         r"^test-image-builder-",
-        r"^[a-z0-9]{2,16}-image-builder-(base-|ssh-key$|test$|[a-z0-9]+-[a-z0-9]+$)",
+        r"^[a-z]{2}-image-builder-(base-|ssh-key$|test$|[a-z0-9]+-[a-z0-9]+$)",
     )
 )
 

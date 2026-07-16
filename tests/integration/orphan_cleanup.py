@@ -30,7 +30,7 @@ _NAME_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
         r"^test-image-builder-",
         r"^test2?-[0-9a-f]{6,16}($|-)",  # secondary test charms
         # app IT: {2-char test_id}-image-builder-...
-        r"^[a-z0-9]{2,16}-image-builder-(base-|ssh-key$|test$|[a-z0-9]+-[a-z0-9]+$)",
+        r"^[a-z]{2}-image-builder-(base-|ssh-key$|test$|[a-z0-9]+-[a-z0-9]+$)",
     )
 )
 
