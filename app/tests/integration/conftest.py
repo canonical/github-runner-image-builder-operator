@@ -152,6 +152,10 @@ def openstack_connection_fixture(
 ) -> typing.Generator[Connection, None, None]:
     """The openstack connection instance."""
     with openstack.connect(cloud_name) as conn:
+        # Reclaim leftovers from force-cancelled previous CI runs before creating new ones.
+        from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
+
+        cleanup_stale_openstack_resources(conn)
         yield conn
 
         images = conn.list_images()
