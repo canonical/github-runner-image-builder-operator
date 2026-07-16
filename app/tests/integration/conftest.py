@@ -21,7 +21,7 @@ from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config
 from tests.integration import types
-from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
+from .orphan_cleanup import cleanup_stale_openstack_resources
 
 logger = logging.getLogger(__name__)
 
