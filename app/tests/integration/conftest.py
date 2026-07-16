@@ -21,6 +21,7 @@ from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config
 from tests.integration import types
+from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +154,6 @@ def openstack_connection_fixture(
     """The openstack connection instance."""
     with openstack.connect(cloud_name) as conn:
         # Reclaim leftovers from force-cancelled previous CI runs before creating new ones.
-        from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
-
         cleanup_stale_openstack_resources(conn)
         yield conn
 
