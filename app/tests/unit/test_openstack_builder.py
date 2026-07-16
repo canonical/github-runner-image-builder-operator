@@ -926,6 +926,10 @@ function configure_system_users() {{
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+    # snapd creates an app's tracking cgroup through the per-user systemd manager, and logind
+    # removes /run/user/<uid> once the last session ends. A runner started as a system service
+    # has no login session, so linger is what keeps both alive.
+    /usr/bin/loginctl enable-linger ubuntu
 
     # Create runner user as alias to ubuntu for GARM compatibility.
     # GARM expects a runner user with /home/runner/actions-runner path.
