@@ -154,7 +154,10 @@ def openstack_connection_fixture(
     """The openstack connection instance."""
     with openstack.connect(cloud_name) as conn:
         # Reclaim leftovers from force-cancelled previous CI runs before creating new ones.
-        cleanup_stale_openstack_resources(conn)
+        try:
+            cleanup_stale_openstack_resources(conn)
+        except Exception as exc:  # noqa: BLE001 - best-effort hygiene must not block the suite
+            logger.warning("OpenStack orphan cleanup failed: %s", exc)
         yield conn
 
         images = conn.list_images()

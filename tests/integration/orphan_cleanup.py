@@ -67,7 +67,7 @@ def cleanup_stale_openstack_resources(
         _safe_delete(
             "server",
             name or server.id,
-            lambda s=server: connection.delete_server(s.id, wait=False),
+            lambda s=server: connection.delete_server(s.id, wait=True),
         )
 
     for image in connection.list_images() or []:

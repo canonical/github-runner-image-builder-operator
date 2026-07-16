@@ -333,7 +333,10 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Generator[Connect
     first_cloud = list(clouds_yaml["clouds"].keys())[0]
     with openstack.connect(first_cloud) as conn:
         # Reclaim leftovers from force-cancelled previous CI runs before creating new ones.
-        cleanup_stale_openstack_resources(conn)
+        try:
+            cleanup_stale_openstack_resources(conn)
+        except Exception as exc:  # noqa: BLE001 - best-effort hygiene must not block the suite
+            logger.warning("OpenStack orphan cleanup failed: %s", exc)
         yield conn
 
 
