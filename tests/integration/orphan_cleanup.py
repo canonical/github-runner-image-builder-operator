@@ -38,7 +38,7 @@ _SG_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p)
     for p in (
         r"^github-runner-image-builder-test-security-group-",
-        r"^github-runner-image-builder-operator-test-security-group",
+        r"^github-runner-image-builder-operator-test-security-group$",
     )
 )
 
@@ -82,7 +82,7 @@ def cleanup_stale_openstack_resources(
         _safe_delete(
             "image",
             name or image.id,
-            lambda im=image: connection.delete_image(im.id, wait=False),
+            lambda im=image: connection.delete_image(im.id),
         )
 
     for keypair in connection.list_keypairs() or []:
@@ -115,7 +115,7 @@ def _safe_delete(label: str, name: str, delete_fn: Callable[[], object]) -> None
         delete_fn()
         logger.info("Orphan cleanup deleted %s %s", label, name)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Orphan cleanup failed deleting %s %s: %s", label, name, exc)
+        logger.warning("Orphan cleanup failed deleting %s %s: %s", label, name, exc, exc_info=True)
 
 
 def _is_stale(created_at: object, min_age: timedelta, now: datetime) -> bool:

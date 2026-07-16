@@ -336,7 +336,7 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Generator[Connect
         try:
             cleanup_stale_openstack_resources(conn)
         except Exception as exc:  # noqa: BLE001 - best-effort hygiene must not block the suite
-            logger.warning("OpenStack orphan cleanup failed: %s", exc)
+            logger.warning("OpenStack orphan cleanup failed: %s", exc, exc_info=True)
         yield conn
 
 
