@@ -44,6 +44,14 @@ from state import (
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
 from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
+from tests.integration.naming import (
+    charmhub_app_name,
+    generate_test_id,
+    operator_app_name,
+    ssh_key_name,
+    test_charm_2_app_name,
+    test_charm_app_name,
+)
 from tests.integration.types import (
     ImageConfigs,
     ImageVerificationContext,
@@ -172,7 +180,7 @@ def test_charm_fixture(
     keep_models: bool,
 ) -> Generator[str, None, None]:
     """The test charm that becomes active when valid relation data is given."""
-    app_name = f"test-{test_id}"
+    app_name = test_charm_app_name(test_id)
     _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
     yield app_name
@@ -191,7 +199,7 @@ def test_charm_2_fixture(
     keep_models: bool,
 ) -> Generator[str, None, None]:
     """A second test charm that becomes active when valid relation data is given."""
-    app_name = f"test2-{test_id}"
+    app_name = test_charm_2_app_name(test_id)
     _deploy_test_charm(juju, app_name, private_endpoint_configs, openstack_password_secret)
 
     yield app_name
@@ -332,7 +340,10 @@ def openstack_connection_fixture(clouds_yaml_contents: str) -> Generator[Connect
     clouds_yaml_path.write_text(data=clouds_yaml_contents, encoding="utf-8")
     first_cloud = list(clouds_yaml["clouds"].keys())[0]
     with openstack.connect(first_cloud) as conn:
-        # Reclaim leftovers from force-cancelled previous CI runs before creating new ones.
+        # Previous force-cancelled image-builder charm integration jobs can leave OpenStack
+        # servers/images/keypairs under our suite name prefixes. Delete ones older than the
+        # default min age so they cannot accumulate. Failures are logged and ignored so a
+        # flaky OpenStack API cannot block the suite.
         try:
             cleanup_stale_openstack_resources(conn)
         except Exception as exc:  # noqa: BLE001 - best-effort hygiene must not block the suite
@@ -355,7 +366,7 @@ def cleanup_resources_fixture(
 @pytest.fixture(scope="module", name="test_id")
 def test_id_fixture() -> str:
     """The test ID fixture."""
-    return secrets.token_hex(4)
+    return generate_test_id()
 
 
 @pytest.fixture(scope="module", name="test_configs")
@@ -463,7 +474,7 @@ def app_fixture(
     keep_models: bool,
 ) -> Generator[str, None, None]:
     """The deployed application fixture."""
-    app_name = f"image-builder-operator-{test_configs.test_id}"
+    app_name = operator_app_name(test_configs.test_id)
     logger.info("Deploying image builder: %s", test_configs.dispatch_time)
     test_configs.juju.deploy(
         test_configs.charm_file,
@@ -534,7 +545,7 @@ def app_on_charmhub_fixture(
     keep_models: bool,
 ) -> Generator[str, None, None]:
     """Fixture for deploying the charm from charmhub."""
-    app_name = f"image-builder-charmhub-{test_configs.test_id}"
+    app_name = charmhub_app_name(test_configs.test_id)
     # Normally we would use latest/stable, but upgrading
     # from stable is currently broken, and therefore we are using edge. Change this in the future.
     charmhub_channel, charmhub_app_config, charmhub_config_options = _prepare_charmhub_app_config(
@@ -582,9 +593,7 @@ def ssh_key_fixture(
     openstack_connection: Connection, test_id: str
 ) -> Generator[SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair(
-        f"test-image-builder-operator-keys-{test_id}"
-    )
+    keypair: Keypair = openstack_connection.create_keypair(ssh_key_name(test_id))
     ssh_key_path = Path("testing_key.pem")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
