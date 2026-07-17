@@ -19,7 +19,7 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config
-from tests.integration import types
+from . import types
 from .naming import (
     generate_test_id,
     security_group_name as suite_security_group_name,
