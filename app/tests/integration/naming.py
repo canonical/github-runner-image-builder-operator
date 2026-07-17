@@ -22,32 +22,71 @@ SHARED_SECURITY_GROUP = "github-runner-image-builder-v1"
 
 
 def generate_test_id() -> str:
-    """Return a unique id for one suite run."""
+    """Return a unique id for one suite run.
+
+    Returns:
+        A 2-character lowercase string.
+    """
     return "".join(secrets.choice(TEST_ID_ALPHABET) for _ in range(TEST_ID_LENGTH))
 
 
 def ssh_key_name(test_id: str) -> str:
-    """Return the OpenStack keypair name for *test_id*."""
+    """Return the OpenStack keypair name for *test_id*.
+
+    Args:
+        test_id: The suite test id.
+
+    Returns:
+        The keypair name.
+    """
     return f"{SSH_KEY_PREFIX}{test_id}"
 
 
 def test_server_name(test_id: str) -> str:
-    """Return the validation server name for *test_id*."""
+    """Return the validation server name for *test_id*.
+
+    Args:
+        test_id: The suite test id.
+
+    Returns:
+        The server name.
+    """
     return f"{TEST_SERVER_PREFIX}{test_id}"
 
 
 def security_group_name(test_id: str) -> str:
-    """Return the suite-scoped OpenStack security group name for *test_id*."""
+    """Return the suite-scoped OpenStack security group name for *test_id*.
+
+    Args:
+        test_id: The suite test id.
+
+    Returns:
+        The security group name.
+    """
     return f"{SECURITY_GROUP_PREFIX}{test_id}"
 
 
 def built_resource_prefix(test_id: str) -> str:
-    """Return the prefix used by the app for built images and builder artifacts."""
+    """Return the prefix used by the app for built images and builder artifacts.
+
+    Args:
+        test_id: The suite test id.
+
+    Returns:
+        The prefix string.
+    """
     return f"{test_id}-image-builder-"
 
 
 def is_app_openstack_resource_name(name: str | None) -> bool:
-    """Return True if *name* belongs to this suite's OpenStack resources."""
+    """Return True if *name* belongs to this suite's OpenStack resources.
+
+    Args:
+        name: The OpenStack resource name to check.
+
+    Returns:
+        Whether the name matches a known app suite prefix and test id.
+    """
     if not name or name == SHARED_SECURITY_GROUP:
         return False
     # Suite-scoped fixture resources.
@@ -69,8 +108,17 @@ def is_app_openstack_resource_name(name: str | None) -> bool:
 
 
 def is_app_test_security_group_name(name: str | None) -> bool:
-    """Return True if *name* is a suite-scoped test security group."""
+    """Return True if *name* is a suite-scoped test security group.
+
+    Args:
+        name: The OpenStack security group name to check.
+
+    Returns:
+        Whether the name matches the suite-scoped SG prefix.
+    """
     if not name or not name.startswith(SECURITY_GROUP_PREFIX):
         return False
     rest = name[len(SECURITY_GROUP_PREFIX) :]
-    return len(rest) >= TEST_ID_LENGTH and all(c in TEST_ID_ALPHABET for c in rest[:TEST_ID_LENGTH])
+    return len(rest) >= TEST_ID_LENGTH and all(
+        c in TEST_ID_ALPHABET for c in rest[:TEST_ID_LENGTH]
+    )
