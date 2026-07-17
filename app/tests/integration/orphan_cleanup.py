@@ -24,7 +24,7 @@ from .naming import (
 logger = logging.getLogger(__name__)
 
 
-def _delete_resource(connection: Connection, label: str, name: str, delete_fn):
+def _delete_resource(label: str, name: str, delete_fn):
     """Delete a resource and log success or expected failure."""
     try:
         delete_fn()
@@ -46,7 +46,6 @@ def _cleanup_servers(connection: Connection, now: datetime, min_age: timedelta):
         ):
             continue
         _delete_resource(
-            connection,
             "server",
             name or server.id,
             lambda s=server: connection.delete_server(s.id, wait=True),
@@ -65,7 +64,6 @@ def _cleanup_images(connection: Connection, now: datetime, min_age: timedelta):
         if not _is_stale(getattr(image, "created_at", None), min_age, now):
             continue
         _delete_resource(
-            connection,
             "image",
             name or image.id,
             lambda im=image: connection.delete_image(im.id),
@@ -81,7 +79,6 @@ def _cleanup_keypairs(connection: Connection, now: datetime, min_age: timedelta)
         if not _is_stale(getattr(keypair, "created_at", None), min_age, now):
             continue
         _delete_resource(
-            connection,
             "keypair",
             name or "",
             lambda n=name: connection.delete_keypair(name=n),
@@ -97,7 +94,6 @@ def _cleanup_security_groups(connection: Connection, now: datetime, min_age: tim
         if not _is_stale(getattr(sg, "created_at", None), min_age, now):
             continue
         _delete_resource(
-            connection,
             "security_group",
             name or sg.id,
             lambda g=sg: connection.delete_security_group(g.id),
@@ -115,7 +111,9 @@ def cleanup_stale_openstack_resources(
         min_age: Age threshold; resources newer than this are left alone.
     """
     now = datetime.now(tz=timezone.utc)
-    logger.info("OpenStack orphan cleanup starting (min_age=%sh)", min_age.total_seconds() / 3600.0)
+    logger.info(
+        "OpenStack orphan cleanup starting (min_age=%sh)", min_age.total_seconds() / 3600.0
+    )
     _cleanup_servers(connection, now, min_age)
     _cleanup_images(connection, now, min_age)
     _cleanup_keypairs(connection, now, min_age)

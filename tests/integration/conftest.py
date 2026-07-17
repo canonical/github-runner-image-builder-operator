@@ -42,7 +42,6 @@ from state import (
     SCRIPT_URL_CONFIG_NAME,
 )
 from tests.integration.helpers import image_created_from_dispatch, wait_for
-from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
 from tests.integration.naming import (
     charmhub_app_name,
     generate_test_id,
@@ -51,6 +50,7 @@ from tests.integration.naming import (
     test_charm_2_app_name,
     test_charm_app_name,
 )
+from tests.integration.orphan_cleanup import cleanup_stale_openstack_resources
 from tests.integration.types import (
     ImageConfigs,
     ImageVerificationContext,
