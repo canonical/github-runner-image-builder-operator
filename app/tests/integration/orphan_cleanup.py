@@ -24,13 +24,25 @@ from .naming import (
 logger = logging.getLogger(__name__)
 
 
-def _delete_resource(label: str, name: str, delete_fn):
-    """Delete a resource and log success or expected failure."""
-    try:
-        delete_fn()
-        logger.info("Orphan cleanup deleted %s %s", label, name)
-    except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
-        logger.warning("Orphan cleanup failed deleting %s %s", label, name, exc_info=True)
+def cleanup_stale_openstack_resources(
+    connection: Connection,
+    min_age: timedelta = timedelta(hours=6),
+) -> None:
+    """Delete leftover OpenStack resources from previous suite runs.
+
+    Args:
+        connection: Authenticated OpenStack connection.
+        min_age: Age threshold; resources newer than this are left alone.
+    """
+    now = datetime.now(tz=timezone.utc)
+    logger.info(
+        "OpenStack orphan cleanup starting (min_age=%sh)", min_age.total_seconds() / 3600.0
+    )
+    _cleanup_servers(connection, now, min_age)
+    _cleanup_images(connection, now, min_age)
+    _cleanup_keypairs(connection, now, min_age)
+    _cleanup_security_groups(connection, now, min_age)
+    logger.info("OpenStack orphan cleanup finished")
 
 
 def _cleanup_servers(connection: Connection, now: datetime, min_age: timedelta):
@@ -100,25 +112,13 @@ def _cleanup_security_groups(connection: Connection, now: datetime, min_age: tim
         )
 
 
-def cleanup_stale_openstack_resources(
-    connection: Connection,
-    min_age: timedelta = timedelta(hours=6),
-) -> None:
-    """Delete leftover OpenStack resources from previous suite runs.
-
-    Args:
-        connection: Authenticated OpenStack connection.
-        min_age: Age threshold; resources newer than this are left alone.
-    """
-    now = datetime.now(tz=timezone.utc)
-    logger.info(
-        "OpenStack orphan cleanup starting (min_age=%sh)", min_age.total_seconds() / 3600.0
-    )
-    _cleanup_servers(connection, now, min_age)
-    _cleanup_images(connection, now, min_age)
-    _cleanup_keypairs(connection, now, min_age)
-    _cleanup_security_groups(connection, now, min_age)
-    logger.info("OpenStack orphan cleanup finished")
+def _delete_resource(label: str, name: str, delete_fn):
+    """Delete a resource and log success or expected failure."""
+    try:
+        delete_fn()
+        logger.info("Orphan cleanup deleted %s %s", label, name)
+    except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
+        logger.warning("Orphan cleanup failed deleting %s %s", label, name, exc_info=True)
 
 
 def _is_stale(created_at: object, min_age: timedelta, now: datetime) -> bool:
