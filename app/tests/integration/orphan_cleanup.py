@@ -97,7 +97,7 @@ def _safe_delete(label: str, name: str, delete_fn: Callable[[], object]) -> None
     try:
         delete_fn()
         logger.info("Orphan cleanup deleted %s %s", label, name)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.warning(
             "Orphan cleanup failed deleting %s %s: %s", label, name, exc, exc_info=True
         )
