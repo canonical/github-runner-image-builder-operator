@@ -11,9 +11,9 @@ job is force-cancelled. The next suite start calls
 """
 
 import logging
-from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
+import openstack.exceptions
 from openstack.connection import Connection
 
 from .naming import (
@@ -45,11 +45,13 @@ def cleanup_stale_openstack_resources(
             now,
         ):
             continue
-        _safe_delete(
-            "server",
-            name or server.id,
-            lambda s=server: connection.delete_server(s.id, wait=True),
-        )
+        try:
+            connection.delete_server(server.id, wait=True)
+            logger.info("Orphan cleanup deleted server %s", name or server.id)
+        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
+            logger.warning(
+                "Orphan cleanup failed deleting server %s", name or server.id, exc_info=True
+            )
 
     for image in connection.list_images() or []:
         name = getattr(image, "name", None)
@@ -60,11 +62,13 @@ def cleanup_stale_openstack_resources(
             continue
         if not _is_stale(getattr(image, "created_at", None), min_age, now):
             continue
-        _safe_delete(
-            "image",
-            name or image.id,
-            lambda im=image: connection.delete_image(im.id),
-        )
+        try:
+            connection.delete_image(image.id)
+            logger.info("Orphan cleanup deleted image %s", name or image.id)
+        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
+            logger.warning(
+                "Orphan cleanup failed deleting image %s", name or image.id, exc_info=True
+            )
 
     for keypair in connection.list_keypairs() or []:
         name = getattr(keypair, "name", None)
@@ -72,11 +76,13 @@ def cleanup_stale_openstack_resources(
             continue
         if not _is_stale(getattr(keypair, "created_at", None), min_age, now):
             continue
-        _safe_delete(
-            "keypair",
-            name or "",
-            lambda n=name: connection.delete_keypair(name=n),
-        )
+        try:
+            connection.delete_keypair(name)
+            logger.info("Orphan cleanup deleted keypair %s", name)
+        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
+            logger.warning(
+                "Orphan cleanup failed deleting keypair %s", name, exc_info=True
+            )
 
     for sg in connection.list_security_groups() or []:
         name = getattr(sg, "name", None)
@@ -84,23 +90,15 @@ def cleanup_stale_openstack_resources(
             continue
         if not _is_stale(getattr(sg, "created_at", None), min_age, now):
             continue
-        _safe_delete(
-            "security_group",
-            name or sg.id,
-            lambda g=sg: connection.delete_security_group(g.id),
-        )
+        try:
+            connection.delete_security_group(sg.id)
+            logger.info("Orphan cleanup deleted security_group %s", name or sg.id)
+        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException):
+            logger.warning(
+                "Orphan cleanup failed deleting security_group %s", name or sg.id, exc_info=True
+            )
 
     logger.info("OpenStack orphan cleanup finished")
-
-
-def _safe_delete(label: str, name: str, delete_fn: Callable[[], object]) -> None:
-    try:
-        delete_fn()
-        logger.info("Orphan cleanup deleted %s %s", label, name)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.warning(
-            "Orphan cleanup failed deleting %s %s: %s", label, name, exc, exc_info=True
-        )
 
 
 def _is_stale(created_at: object, min_age: timedelta, now: datetime) -> bool:
