@@ -163,7 +163,7 @@ def openstack_connection_fixture(
         # ignored so a flaky OpenStack API cannot block the suite.
         try:
             cleanup_stale_openstack_resources(conn)
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException) as exc:
             logger.warning("OpenStack orphan cleanup failed: %s", exc, exc_info=True)
         yield conn
 
