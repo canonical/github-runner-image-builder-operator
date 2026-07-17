@@ -19,10 +19,13 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config
+
 from . import types
 from .naming import (
     generate_test_id,
-    security_group_name as suite_security_group_name,
+)
+from .naming import security_group_name as suite_security_group_name
+from .naming import (
     ssh_key_name,
 )
 from .orphan_cleanup import cleanup_stale_openstack_resources
@@ -163,7 +166,10 @@ def openstack_connection_fixture(
         # ignored so a flaky OpenStack API cannot block the suite.
         try:
             cleanup_stale_openstack_resources(conn)
-        except (openstack.exceptions.ResourceNotFound, openstack.exceptions.ConflictException) as exc:
+        except (
+            openstack.exceptions.ResourceNotFound,
+            openstack.exceptions.ConflictException,
+        ) as exc:
             logger.warning("OpenStack orphan cleanup failed: %s", exc, exc_info=True)
         yield conn
 
