@@ -8,11 +8,10 @@ resource name formats cannot drift.
 """
 
 import secrets
-import string
 
 # secrets.token_hex(4) → 8 hex characters
 TEST_ID_LENGTH = 8
-TEST_ID_ALPHABET = string.hexdigits.lower()
+TEST_ID_ALPHABET = "0123456789abcdef"
 
 OPERATOR_APP_PREFIX = "image-builder-operator-"
 CHARMHUB_APP_PREFIX = "image-builder-charmhub-"
