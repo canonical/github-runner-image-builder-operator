@@ -5,7 +5,6 @@
 
 import logging
 import os
-import secrets
 import string
 import typing
 import urllib.parse
@@ -20,7 +19,16 @@ from openstack.connection import Connection
 from openstack.network.v2.security_group import SecurityGroup
 
 from github_runner_image_builder import config
-from tests.integration import types
+
+from . import types
+from .naming import (
+    generate_test_id,
+)
+from .naming import security_group_name as suite_security_group_name
+from .naming import (
+    ssh_key_name,
+)
+from .orphan_cleanup import cleanup_stale_openstack_resources
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +55,7 @@ def arch_fixture(pytestconfig: pytest.Config):
 @pytest.fixture(scope="module", name="test_id")
 def test_id_fixture() -> str:
     """The random 2 char test id."""
-    return "".join(secrets.choice(string.ascii_lowercase) for _ in range(2))
+    return generate_test_id()
 
 
 @pytest.fixture(scope="module", name="image")
@@ -152,6 +160,17 @@ def openstack_connection_fixture(
 ) -> typing.Generator[Connection, None, None]:
     """The openstack connection instance."""
     with openstack.connect(cloud_name) as conn:
+        # Previous force-cancelled image-builder app integration jobs can leave OpenStack
+        # servers/images/keypairs/security groups under our suite name prefixes. Delete ones
+        # older than the default min age so they cannot accumulate. Failures are logged and
+        # ignored so a flaky OpenStack API cannot block the suite.
+        try:
+            cleanup_stale_openstack_resources(conn)
+        except (
+            openstack.exceptions.ResourceNotFound,
+            openstack.exceptions.ConflictException,
+        ) as exc:
+            logger.warning("OpenStack orphan cleanup failed: %s", exc, exc_info=True)
         yield conn
 
         images = conn.list_images()
@@ -178,7 +197,7 @@ def ssh_key_fixture(
     openstack_connection: Connection, test_id: str
 ) -> typing.Generator[types.SSHKey, None, None]:
     """The openstack ssh key fixture."""
-    keypair: Keypair = openstack_connection.create_keypair(f"test-image-builder-keys-{test_id}")
+    keypair: Keypair = openstack_connection.create_keypair(ssh_key_name(test_id))
     ssh_key_path = Path("testing_key.pem")
     ssh_key_path.touch(exist_ok=True)
     ssh_key_path.write_text(keypair.private_key, encoding="utf-8")
@@ -209,7 +228,7 @@ def openstack_metadata_fixture(
 @pytest.fixture(scope="module", name="openstack_security_group")
 def openstack_security_group_fixture(openstack_connection: Connection, test_id: str):
     """An ssh-connectable security group."""
-    security_group_name = f"github-runner-image-builder-test-security-group-{test_id}"
+    security_group_name = suite_security_group_name(test_id)
     security_group: SecurityGroup | None = openstack_connection.get_security_group(
         name_or_id=security_group_name
     )
