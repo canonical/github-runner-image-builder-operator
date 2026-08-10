@@ -22,6 +22,7 @@ from github_runner_image_builder.config import (
         pytest.param(Arch.X64, "x86_64", id="amd64"),
         pytest.param(Arch.S390X, "s390x", id="s390x"),
         pytest.param(Arch.PPC64LE, "ppc64le", id="ppc64le"),
+        pytest.param(Arch.ARM, "aarch64", id="arm"),
     ],
 )
 def test_arch_openstack_conversion(arch: Arch, expected: str):
@@ -75,6 +76,7 @@ def test_base_image(image: str, expected_base_image: BaseImage):
         pytest.param(BaseImage.FOCAL, "20.04", id="focal"),
         pytest.param(BaseImage.JAMMY, "22.04", id="jammy"),
         pytest.param(BaseImage.NOBLE, "24.04", id="noble"),
+        pytest.param(BaseImage.RESOLUTE, "26.04", id="resolute"),
         pytest.param(None, None, id="None"),
     ],
 )

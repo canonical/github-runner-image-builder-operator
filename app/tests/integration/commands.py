@@ -5,7 +5,12 @@
 
 import dataclasses
 
-from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from github_runner_image_builder.config import Arch
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
+)
 
 
 @dataclasses.dataclass
@@ -38,6 +43,13 @@ TEST_RUNNER_COMMANDS = (
         name="check aproxy",
         command="sudo snap info aproxy && sudo snap services aproxy",
     ),
+    Commands(
+        name="check opentelemetry-collector snap installed and inactive",
+        command=(
+            "sudo snap services opentelemetry-collector | grep -q 'disabled' "
+            "&& sudo snap services opentelemetry-collector | grep -q 'inactive'"
+        ),
+    ),
     Commands(name="update apt in docker", command="docker run python:3.10-slim apt-get update"),
     Commands(name="docker version", command="docker version"),
     Commands(name="check python3 alias", command="python --version"),
@@ -57,8 +69,9 @@ TEST_RUNNER_COMMANDS = (
         command="sudo sysctl -a | grep 'net.core.default_qdisc = fq'",
     ),
     Commands(
-        name="test network congestion policy",
-        command="sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
+        name="test network congestion policy (only for non-resolute)",
+        command="lsb_release -r | grep 26.04 || "
+        "sudo sysctl -a | grep 'net.ipv4.tcp_congestion_control = bbr'",
     ),
     Commands(
         name="test external script",
@@ -66,44 +79,79 @@ TEST_RUNNER_COMMANDS = (
     ),
     Commands(
         name="test external script secrets (should exist)",
-        command='grep -q "SHOULD_EXIST" secret.txt',
+        command='grep -q "EXIST" /home/ubuntu/secret.txt',
     ),
     Commands(
         name="test external script secrets (should not exist)",
-        command='! grep -q "SHOULD_NOT_EXIST" secret.txt',
+        command='! grep -q "MISSING" /home/ubuntu/secret.txt',
     ),
     # following commands are security related - ensure no traces of the external script are
     # kept in the image
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_EXIST'",
+        command="! journalctl | grep 'EXIST'",
     ),
     Commands(
         name="journal does not contain external script secrets",
-        command="! journalctl | grep 'SHOULD_NOT_EXIST'",
+        command="! journalctl | grep 'MISSING'",
+    ),
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
+    Commands(
+        name="journal does not contain external script url (only for non-resolute)",
+        command=f"lsb_release -r | grep 26.04 || ! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
     ),
     Commands(
-        name="journal does not contain external script url",
-        command=f"! journalctl | grep '{TESTDATA_TEST_SCRIPT_URL}'",
-    ),
-    Commands(
-        name="journal does not contain script content",
-        command="! journalctl | grep '/home/ubuntu/secret.txt'",
-    ),
-    Commands(
-        name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_EXIST' /var/log/auth.log*",
+        name="journal does not contain script content (only for non-resolute)",
+        command="lsb_release -r | grep 26.04 || ! journalctl | grep '/home/ubuntu/secret.txt'",
     ),
     Commands(
         name="/var/log/auth.logs does not contain external script secrets",
-        command="! grep 'SHOULD_NOT_EXIST' /var/log/auth.log*",
+        command="! grep 'EXIST' /var/log/auth.log*",
     ),
+    Commands(
+        name="/var/log/auth.logs does not contain external script secrets",
+        command="! grep 'MISSING' /var/log/auth.log*",
+    ),
+    # The sudo-rs in 26.04 cannot be disabled with "Defaults !syslog".
     Commands(
         name="/var/log/auth.logs does not contain external script url",
-        command=f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        f"! grep '{TESTDATA_TEST_SCRIPT_URL}' /var/log/auth.log*",
     ),
     Commands(
         name="/var/log/auth.logs does not contain script content",
-        command="! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
+        command="lsb_release -r | grep 26.04 || "
+        "! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )
+
+
+# armhf-specific assertions. These packages/binaries are only installed on armhf images
+# (see ARM_ADDITIONAL_APT_PACKAGES and the rustup cloud-init step), so they must not run on
+# other architectures.
+ARM_RUNNER_COMMANDS = (
+    Commands(name="rustc version (rustup default stable)", command="rustc --version"),
+    Commands(name="cargo version", command="cargo --version"),
+    Commands(name="docker buildx version", command="docker buildx version"),
+    Commands(
+        name="github runner binary is 32-bit ARM",
+        command=(
+            "file /home/ubuntu/actions-runner/bin/Runner.Listener | grep -i 'ELF 32-bit' | "
+            "grep -i 'ARM'"
+        ),
+    ),
+)
+
+
+def commands_for_arch(arch: Arch) -> tuple[Commands, ...]:
+    """Return the test commands to run for the given architecture.
+
+    Args:
+        arch: The architecture under test.
+
+    Returns:
+        The base test commands, plus armhf-specific commands when arch is ARM.
+    """
+    if arch == Arch.ARM:
+        return TEST_RUNNER_COMMANDS + ARM_RUNNER_COMMANDS
+    return TEST_RUNNER_COMMANDS

@@ -1,3 +1,6 @@
+aproxy
 chroot
 cron
+opentelemetry
 pipx
+vCPUs

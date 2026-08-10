@@ -138,20 +138,34 @@ def test_invalid_latest_build_id_args(cli_runner: CliRunner):
     assert "Error: Missing argument " in result.output
 
 
-def test_latest_build_id(monkeypatch: pytest.MonkeyPatch, cli_runner: CliRunner):
+@pytest.mark.parametrize(
+    "extra_args, expected_active_only",
+    [
+        pytest.param([], True, id="default active-only"),
+        pytest.param(["--any-status"], False, id="any-status flag"),
+    ],
+)
+def test_latest_build_id(
+    monkeypatch: pytest.MonkeyPatch,
+    cli_runner: CliRunner,
+    extra_args: list[str],
+    expected_active_only: bool,
+):
     """
-    arrange: given valid latest-build-id args.
+    arrange: given valid latest-build-id args (with and without --any-status).
     act: when cli is invoked with latest-build-id.
-    assert: latest-build-id is returned.
+    assert: store.get_latest_build_id is called with the correct active_only value.
     """
-    monkeypatch.setattr(
-        cli.store, "get_latest_build_id", MagicMock(return_value=(test_id := "test-id"))
-    )
+    get_latest_mock = MagicMock(return_value=(test_id := "test-id"))
+    monkeypatch.setattr(cli.store, "get_latest_build_id", get_latest_mock)
 
     result = cli_runner.invoke(
-        main, args=[*REQUIRED_MAIN_INPUTS, "latest-build-id", "test-image-name"]
+        main, args=[*REQUIRED_MAIN_INPUTS, "latest-build-id", *extra_args, "test-image-name"]
     )
 
+    get_latest_mock.assert_called_once_with(
+        cloud_name=TEST_CLOUD_NAME, image_name="test-image-name", active_only=expected_active_only
+    )
     assert result.output == test_id
 
 

@@ -40,6 +40,9 @@ from cryptography.hazmat.primitives import serialization
 import github_runner_image_builder.errors
 from github_runner_image_builder import cloud_image, config, store
 from github_runner_image_builder.config import (
+    ARM_ADDITIONAL_APT_PACKAGES,
+    ARM_EXCLUDED_DEFAULT_APT_PACKAGES,
+    ARM_LIBICU_APT_PACKAGE_BY_BASE,
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
@@ -59,6 +62,10 @@ CLOUD_YAML_PATHS = (
 BUILDER_KEY_PATH = pathlib.Path("/home/ubuntu/.ssh/builder_key")
 SHARED_SECURITY_GROUP_NAME = "github-runner-image-builder-v1"
 EXTERNAL_SCRIPT_PATH = pathlib.Path("/root/external.sh")
+
+# armhf additional apt packages (libicu74, rustup, docker-buildx) are only available from the
+# noble (24.04) archive onwards, so armhf images can only be built on these base images.
+ARM_SUPPORTED_BASE_IMAGES = (BaseImage.NOBLE, BaseImage.RESOLUTE)
 
 # Server operation timeout constants (in seconds)
 CREATE_SERVER_TIMEOUT = 20 * 60  # 20 minutes
@@ -145,6 +152,10 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
     noble_image_path = cloud_image.download_and_validate_image(
         arch=arch, base_image=BaseImage.NOBLE, release_date=noble_release_date
     )
+    logger.info("Downloading Resolute image.")
+    resolute_image_path = cloud_image.download_and_validate_image(
+        arch=arch, base_image=BaseImage.RESOLUTE
+    )
     logger.info("Uploading Focal image.")
     store.upload_image(
         arch=arch,
@@ -169,7 +180,14 @@ def initialize(arch: Arch, cloud_name: str, prefix: str) -> None:
         image_path=noble_image_path,
         keep_revisions=1,
     )
-
+    logger.info("Uploading Resolute image.")
+    store.upload_image(
+        arch=arch,
+        cloud_name=cloud_name,
+        image_name=_get_base_image_name(arch=arch, base=BaseImage.RESOLUTE, prefix=prefix),
+        image_path=resolute_image_path,
+        keep_revisions=1,
+    )
     with openstack.connect(cloud=cloud_name) as conn:
         _create_keypair(conn=conn, prefix=prefix)
         logger.info("Creating security group %s.", SHARED_SECURITY_GROUP_NAME)
@@ -333,6 +351,12 @@ def run(
                 script_secrets=image_config.script_config.script_secrets,
                 ssh_conn=ssh_conn,
             )
+        # Cleaning is needed to be compatible with GARM
+        logger.info("Cleaning cloud-init state before snapshot.")
+        ssh_conn.run(
+            "sudo cloud-init clean --logs --machine-id --seed --configs all",
+            timeout=EXTERNAL_SCRIPT_GENERAL_TIMEOUT,
+        )
         _shutoff_server(conn=conn, server=builder)
         image = store.create_snapshot(
             cloud_name=cloud_config.cloud_name,
@@ -523,6 +547,10 @@ def _generate_cloud_init_script(
         image_config: The target image configuration values.
         proxy: The proxy to enable while setting up the VM.
 
+    Raises:
+        UnsupportedArchitectureError: If an armhf image is requested on a base image older than
+            the supported ARM base images (noble and newer).
+
     Returns:
         The cloud-init script to create snapshot image.
     """
@@ -535,6 +563,29 @@ def _generate_cloud_init_script(
     apt_packages = IMAGE_DEFAULT_APT_PACKAGES
     if image_config.arch in (Arch.S390X, Arch.PPC64LE):
         apt_packages = IMAGE_DEFAULT_APT_PACKAGES + S390X_PPC64LE_ADDITIONAL_APT_PACKAGES
+    elif image_config.arch == Arch.ARM:
+        # The armhf additional apt packages (rustup, docker-buildx, the armhf multiarch libs) and
+        # the release-specific libicu are only available from the noble (24.04) archive onwards,
+        # so fail fast on older bases rather than letting apt-get fail midway through the build.
+        if image_config.base not in ARM_SUPPORTED_BASE_IMAGES:
+            raise github_runner_image_builder.errors.UnsupportedArchitectureError(
+                f"armhf images require a base image of "
+                f"{[base.value for base in ARM_SUPPORTED_BASE_IMAGES]} or newer, "
+                f"got: {image_config.base.value}."
+            )
+        # rustup provides the armhf/armv7 Rust toolchain and conflicts with the distro cargo/rustc
+        # packages, so drop those from the default set. libicu's soname is release-specific, so
+        # add the armhf build matching the base image.
+        default_packages = [
+            package
+            for package in IMAGE_DEFAULT_APT_PACKAGES
+            if package not in ARM_EXCLUDED_DEFAULT_APT_PACKAGES
+        ]
+        apt_packages = (
+            default_packages
+            + ARM_ADDITIONAL_APT_PACKAGES
+            + [ARM_LIBICU_APT_PACKAGE_BY_BASE[image_config.base]]
+        )
     return template.render(
         PROXY=proxy,
         APT_PACKAGES=" ".join(apt_packages),
@@ -600,7 +651,9 @@ def _wait_for_cloud_init_complete(
 
 
 def _execute_external_script(
-    script_url: str, script_secrets: dict[str, str], ssh_conn: fabric.Connection
+    script_url: str,
+    script_secrets: dict[str, str],
+    ssh_conn: fabric.Connection,
 ) -> None:
     """Execute the external script on the OpenStack instance.
 
@@ -679,7 +732,7 @@ def _get_ssh_connection(
     """Get a valid SSH connection to OpenStack instance.
 
     Args:
-        conn: The Openstach connection instance.
+        conn: The OpenStack connection instance.
         server: The OpenStack server instance to check if cloud_init is complete.
         ssh_key: The key to SSH RSA key to connect to the OpenStack server instance.
 
@@ -710,6 +763,7 @@ def _get_ssh_connection(
                 user="ubuntu",
                 connect_kwargs={"key_filename": str(ssh_key)},
                 connect_timeout=SSH_CONNECT_TIMEOUT,
+                inline_ssh_env=True,
             )
             result: fabric.Result | None = connection.run(
                 "echo hello world", warn=True, timeout=SSH_TEST_COMMAND_TIMEOUT

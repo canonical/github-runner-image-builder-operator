@@ -27,5 +27,4 @@ def configure(log_level: str | int) -> None:
     logging.basicConfig(
         level=log_level_normalized,
         handlers=(log_handler,),
-        encoding="utf-8",
     )

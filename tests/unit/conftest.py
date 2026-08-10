@@ -3,7 +3,6 @@
 
 """Module for defining unit test fixtures."""
 
-import secrets
 from unittest.mock import MagicMock
 
 import pytest
@@ -31,7 +30,6 @@ def harness_fixture():
     harness.update_config(
         {
             state.OPENSTACK_AUTH_URL_CONFIG_NAME: "https://test-auth-url.com/",
-            state.OPENSTACK_PASSWORD_CONFIG_NAME: secrets.token_hex(16),
             state.OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test",
             state.OPENSTACK_PROJECT_CONFIG_NAME: "test",
             state.OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test",

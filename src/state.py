@@ -17,11 +17,17 @@ import pydantic
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
+ARCHITECTURES_ARM = {"armhf", "arm", "armv7l"}
 ARCHITECTURES_S390X = {"s390x"}
 ARCHITECTURES_PPC64LE = {"ppc64le", "ppc64el"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
 CLOUD_NAME = "builder"
-LTS_IMAGE_VERSION_TAG_MAP = {"20.04": "focal", "22.04": "jammy", "24.04": "noble"}
+LTS_IMAGE_VERSION_TAG_MAP = {
+    "20.04": "focal",
+    "22.04": "jammy",
+    "24.04": "noble",
+    "26.04": "resolute",
+}
 
 ARCHITECTURE_CONFIG_NAME = "architecture"
 BASE_IMAGE_CONFIG_NAME = "base-image"
@@ -30,7 +36,9 @@ EXTERNAL_BUILD_FLAVOR_CONFIG_NAME = "build-flavor"
 EXTERNAL_BUILD_NETWORK_CONFIG_NAME = "build-network"
 OPENSTACK_AUTH_URL_CONFIG_NAME = "openstack-auth-url"
 # Bandit thinks this is a hardcoded password
-OPENSTACK_PASSWORD_CONFIG_NAME = "openstack-password"  # nosec: B105
+OPENSTACK_PASSWORD_SECRET_CONFIG_NAME = (
+    "openstack-password-secret"  # nosec: hardcoded_password_string
+)
 OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME = "openstack-project-domain-name"
 OPENSTACK_PROJECT_CONFIG_NAME = "openstack-project-name"
 OPENSTACK_USER_DOMAIN_CONFIG_NAME = "openstack-user-domain-name"
@@ -39,8 +47,8 @@ REVISION_HISTORY_LIMIT_CONFIG_NAME = "revision-history-limit"
 RUNNER_VERSION_CONFIG_NAME = "runner-version"
 SCRIPT_URL_CONFIG_NAME = "script-url"
 # Bandit thinks this is a hardcoded password
-SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: B105
-SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: B105
+SCRIPT_SECRET_ID_CONFIG_NAME = "script-secret-id"  # nosec: hardcoded_password_string
+SCRIPT_SECRET_CONFIG_NAME = "script-secret"  # nosec: hardcoded_password_string
 
 IMAGE_RELATION = "image"
 
@@ -73,6 +81,7 @@ class Arch(str, Enum):
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
         PPC64LE: Represents an PPC64LE system architecture.
+        ARM: Represents an ARM (32-bit armhf) system architecture.
     """
 
     def __str__(self) -> str:
@@ -87,6 +96,7 @@ class Arch(str, Enum):
     X64 = "x64"
     S390X = "s390x"
     PPC64LE = "ppc64le"
+    ARM = "arm"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "Arch":
@@ -107,6 +117,8 @@ class Arch(str, Enum):
         match architecture:
             case arch if arch in ARCHITECTURES_ARM64:
                 return Arch.ARM64
+            case arch if arch in ARCHITECTURES_ARM:
+                return Arch.ARM
             case arch if arch in ARCHITECTURES_X86:
                 return Arch.X64
             case arch if arch in ARCHITECTURES_S390X:
@@ -132,11 +144,13 @@ class BaseImage(str, Enum):
         FOCAL: The focal ubuntu LTS image.
         JAMMY: The jammy ubuntu LTS image.
         NOBLE: The noble ubuntu LTS image.
+        RESOLUTE: The resolute ubuntu LTS image.
     """
 
     FOCAL = "focal"
     JAMMY = "jammy"
     NOBLE = "noble"
+    RESOLUTE = "resolute"
 
     def __str__(self) -> str:
         """Interpolate to string value.
@@ -621,13 +635,41 @@ def _parse_openstack_clouds_config(charm: ops.CharmBase) -> OpenstackCloudsConfi
         The openstack clouds yaml.
     """
     auth_url = typing.cast(str, charm.config.get(OPENSTACK_AUTH_URL_CONFIG_NAME))
-    password = typing.cast(str, charm.config.get(OPENSTACK_PASSWORD_CONFIG_NAME))
+    password_secret_id = typing.cast(str, charm.config.get(OPENSTACK_PASSWORD_SECRET_CONFIG_NAME))
     project_domain = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME))
     project = typing.cast(str, charm.config.get(OPENSTACK_PROJECT_CONFIG_NAME))
     user_domain = typing.cast(str, charm.config.get(OPENSTACK_USER_DOMAIN_CONFIG_NAME))
     user = typing.cast(str, charm.config.get(OPENSTACK_USER_CONFIG_NAME))
-    if not all((auth_url, password, project_domain, project, user_domain, user)):
+
+    if not all((auth_url, project_domain, project, user_domain, user)):
         raise InvalidCloudConfigError("Please supply all OpenStack configurations.")
+
+    if not password_secret_id:
+        raise InvalidCloudConfigError(
+            "Please supply OpenStack password via openstack-password-secret."
+        )
+    if not password_secret_id.startswith("secret:"):
+        raise InvalidCloudConfigError(
+            f"Invalid value '{password_secret_id}' for openstack-password-secret. "
+            "Expected a Juju secret ID in the format 'secret:<secret-id>'."
+        )
+    try:
+        secret = charm.model.get_secret(id=password_secret_id)
+    except ops.SecretNotFoundError as exc:
+        raise InvalidCloudConfigError(
+            f"OpenStack password secret not found: {password_secret_id}."
+        ) from exc
+    except ops.ModelError as exc:
+        raise InvalidCloudConfigError(
+            "Charm does not have access to the OpenStack password secret. "
+            "Please grant the charm read access to the secret."
+        ) from exc
+    secret_content = secret.get_content(refresh=True)
+    password = secret_content.get("password", "")
+    if not password:
+        raise InvalidCloudConfigError(
+            f"Secret {password_secret_id} does not contain a 'password' key."
+        )
 
     clouds_config = OpenstackCloudsConfig(
         clouds={

@@ -17,7 +17,7 @@ from state import (
     EXTERNAL_BUILD_FLAVOR_CONFIG_NAME,
     EXTERNAL_BUILD_NETWORK_CONFIG_NAME,
     OPENSTACK_AUTH_URL_CONFIG_NAME,
-    OPENSTACK_PASSWORD_CONFIG_NAME,
+    OPENSTACK_PASSWORD_SECRET_CONFIG_NAME,
     OPENSTACK_PROJECT_CONFIG_NAME,
     OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME,
     OPENSTACK_USER_CONFIG_NAME,
@@ -76,6 +76,7 @@ class MockCharmFactory(factory.Factory):
         """Configuration for factory."""  # noqa: DCO060
 
         model = MagicMock
+        exclude = ["_setup_mock_openstack_secret"]
 
     app = MockAppFactory()
     unit = MockUnitFactory()
@@ -86,7 +87,7 @@ class MockCharmFactory(factory.Factory):
             EXTERNAL_BUILD_FLAVOR_CONFIG_NAME: "test-flavor",
             EXTERNAL_BUILD_NETWORK_CONFIG_NAME: "test-network",
             OPENSTACK_AUTH_URL_CONFIG_NAME: "http://testing-auth/keystone",
-            OPENSTACK_PASSWORD_CONFIG_NAME: "test-password",
+            OPENSTACK_PASSWORD_SECRET_CONFIG_NAME: "secret:test-secret-id",
             OPENSTACK_PROJECT_DOMAIN_CONFIG_NAME: "test-project-domain",
             OPENSTACK_PROJECT_CONFIG_NAME: "test-project-name",
             OPENSTACK_USER_DOMAIN_CONFIG_NAME: "test-user-domain",
@@ -98,13 +99,23 @@ class MockCharmFactory(factory.Factory):
         }
     )
 
+    @factory.post_generation
+    def _setup_mock_openstack_secret(  # noqa: DCO020
+        obj: MagicMock, create: bool, extracted: typing.Any, **kwargs: typing.Any
+    ) -> None:
+        mock_secret = MagicMock()
+        mock_secret.get_content.return_value = {
+            "password": "test-password"  # nosec: hardcoded_password_string
+        }
+        obj.model.get_secret.return_value = mock_secret
+
 
 class CloudAuthFactory(factory.DictFactory):
     """Mock cloud auth dict object factory."""  # noqa: DCO060
 
     auth_url = "http://testing-auth/keystone"
     # We need to use known password for unit testing
-    password = "test-password"  # nosec: B105:hardcoded_password_string
+    password = "test-password"  # nosec: hardcoded_password_string
     project_domain_name = "test-project-domain"
     project_name = "test-project-name"
     user_domain_name = "test-user-domain"

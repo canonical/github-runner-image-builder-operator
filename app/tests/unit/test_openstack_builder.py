@@ -661,37 +661,56 @@ def test__determine_network(network_name: str | None):
     )
 
 
+_DEFAULT_APT_PACKAGES = (
+    "build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev "
+    "python3-pip rustc shellcheck socat tar time unzip wget"
+)
+# armhf drops the distro cargo/rustc (replaced by rustup) and adds the armhf multiarch runtime
+# libs, rustup, docker-buildx and the release-specific libicu (libicu74 on noble).
+_ARM_APT_PACKAGES = (
+    "build-essential docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip "
+    "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf rustup docker-buildx "
+    "libicu74:armhf"
+)
+
+
 @pytest.mark.parametrize(
-    "arch, additional_apt_packages",
+    "arch, expected_apt_packages",
     [
-        pytest.param(openstack_builder.Arch.X64, [], id="x64"),
-        pytest.param(openstack_builder.Arch.ARM64, [], id="arm64"),
+        pytest.param(openstack_builder.Arch.X64, _DEFAULT_APT_PACKAGES, id="x64"),
+        pytest.param(openstack_builder.Arch.ARM64, _DEFAULT_APT_PACKAGES, id="arm64"),
         pytest.param(
             openstack_builder.Arch.S390X,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="s390x",
         ),
         pytest.param(
             openstack_builder.Arch.PPC64LE,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="ppc64le",
         ),
+        pytest.param(openstack_builder.Arch.ARM, _ARM_APT_PACKAGES, id="arm"),
     ],
 )
 def test__generate_cloud_init_script(
     arch: openstack_builder.Arch,
-    additional_apt_packages: list[str],
+    expected_apt_packages: str,
 ):
     """
     arrange: A certain architecture.
     act: when _generate_cloud_init_script is run.
     assert: expected cloud init template is generated.
     """
+    base = (
+        openstack_builder.BaseImage.NOBLE
+        if arch == openstack_builder.Arch.ARM
+        else openstack_builder.BaseImage.JAMMY
+    )
     assert (
         openstack_builder._generate_cloud_init_script(
             image_config=openstack_builder.config.ImageConfig(
                 arch=arch,
-                base=openstack_builder.BaseImage.JAMMY,
+                base=base,
                 runner_version="",
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
@@ -761,6 +780,34 @@ EOF
     sleep 5
 }}
 
+function enable_armhf_multiarch() {{
+    echo "Enabling armhf multiarch"
+    native_arch=$(/usr/bin/dpkg --print-architecture)
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+    /usr/bin/dpkg --add-architecture armhf
+    # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
+    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
+    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
+    /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: $codename $codename-updates $codename-security
+Components: main restricted universe multiverse
+Architectures: armhf
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+    # The runner VM boots from a snapshot whose cloud-init state was cleared (see the
+    # "cloud-init clean" before snapshot), so cloud-init regenerates the stock apt sources on
+    # first boot and drops the architecture pin above while the armhf dpkg architecture persists,
+    # breaking "apt-get update". Tell cloud-init to preserve the pinned sources baked into the
+    # image so the 32-bit multiarch configuration survives on the runner VM.
+    /usr/bin/tee /etc/cloud/cloud.cfg.d/99-armhf-preserve-apt-sources.cfg >/dev/null <<EOF
+apt:
+  preserve_sources_list: true
+EOF
+}}
+
 function install_apt_packages() {{
     local packages="$1"
 
@@ -776,6 +823,10 @@ signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.co
 main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
+    if [ $RELEASE == "resolute" ]; then
+        echo "Adding dotnet backports PPA"
+        DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
+    fi
     echo "Updating apt packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y
     echo "Upgrading apt packages"
@@ -796,6 +847,7 @@ function disable_unattended_upgrades() {{
 function enable_network_fair_queuing_congestion() {{
     /usr/bin/cat <<EOF | /usr/bin/sudo /usr/bin/tee -a /etc/sysctl.conf
 net.core.default_qdisc=fq
+# 26.04 does not support bbr by default, this will have no effect on 26.04.
 net.ipv4.tcp_congestion_control=bbr
 EOF
     /usr/sbin/sysctl -p
@@ -826,6 +878,12 @@ function install_yq() {{
     /snap/bin/go build -C yq -o /usr/bin/yq
     /usr/bin/rm -rf yq
     /usr/bin/snap remove go
+}}
+
+function install_opentelemetry_collector_snap() {{
+    echo "Installing OpenTelemetry Collector snap"
+    /usr/bin/sudo snap install opentelemetry-collector --stable
+    /usr/bin/sudo snap disable opentelemetry-collector
 }}
 
 function install_github_runner() {{
@@ -861,16 +919,53 @@ function configure_system_users() {{
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+    # snapd creates an app's tracking cgroup through the per-user systemd manager, and logind
+    # removes /run/user/<uid> once the last session ends. A runner started as a system service
+    # has no login session, so linger is what keeps both alive.
+    /usr/bin/loginctl enable-linger ubuntu
+
+    # Create runner user as alias to ubuntu for GARM compatibility.
+    # GARM expects a runner user with /home/runner/actions-runner path.
+    echo "Configuring runner user alias for GARM compatibility"
+    UBUNTU_UID=$(/usr/bin/id -u ubuntu)
+    UBUNTU_GID=$(/usr/bin/id -g ubuntu)
+    # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
+    # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
+    # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    if /usr/bin/id -u runner >/dev/null 2>&1; then
+        echo "runner user already exists; ensuring UID/GID/home match ubuntu"
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+    else
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+    fi
+    /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
+    # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
+    # If /home/runner exists as a plain directory (not a symlink), remove it first; otherwise ln -sfnT cannot
+    # replace it. A non-empty directory is an unexpected state, so fail with a clear error instead of letting
+    # ln fail later with a less specific message.
+    # -T: treat destination as a file path, never as a directory target.
+    if [ -d /home/runner ] && ! [ -L /home/runner ]; then
+        if ! rmdir /home/runner 2>/dev/null; then
+            echo "ERROR: /home/runner exists and is not empty; cannot replace it with a symlink to /home/ubuntu" >&2
+            return 1
+        fi
+    fi
+    /usr/bin/ln -sfnT /home/ubuntu /home/runner
 }}
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
+apt_packages="{expected_apt_packages}"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
 
 configure_proxy "$proxy"
+# Enable armhf multiarch before installing packages so the 32-bit linux-arm runner agent and
+# its armhf runtime dependencies can be installed and executed via native AArch32.
+if [ "$github_runner_arch" == "arm" ]; then
+    enable_armhf_multiarch
+fi
 install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
@@ -880,12 +975,49 @@ if [ $RELEASE != "focal" ]; then
     install_yarn
 fi
 install_yq
+install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-configure_system_users\
+configure_system_users
+
+# Set the default Rust toolchain for the ubuntu user. rustup is only installed on
+# armhf images, so this block is a no-op on other architectures.
+if [ "$github_runner_arch" == "arm" ]; then
+    sudo -u ubuntu rustup default stable
+fi\
 """  # nosec # noqa: E501
     )
     # pylint: enable=R0801
+
+
+@pytest.mark.parametrize(
+    "base",
+    [
+        pytest.param(openstack_builder.BaseImage.FOCAL, id="focal"),
+        pytest.param(openstack_builder.BaseImage.JAMMY, id="jammy"),
+    ],
+)
+def test__generate_cloud_init_script_arm_unsupported_base(base: openstack_builder.BaseImage):
+    """
+    arrange: ARM architecture paired with a pre-noble base image.
+    act: when _generate_cloud_init_script is run.
+    assert: UnsupportedArchitectureError is raised because the armhf apt packages \
+        (e.g. libicu74, rustup, docker-buildx) are only available from noble onwards.
+    """
+    with pytest.raises(errors.UnsupportedArchitectureError):
+        openstack_builder._generate_cloud_init_script(
+            image_config=openstack_builder.config.ImageConfig(
+                arch=openstack_builder.Arch.ARM,
+                base=base,
+                runner_version="",
+                name="test-image",
+                script_config=openstack_builder.config.ScriptConfig(
+                    script_url=None,
+                    script_secrets={},
+                ),
+            ),
+            proxy="test.proxy.internal:3128",
+        )
 
 
 def test__wait_for_cloud_init_complete_fail():

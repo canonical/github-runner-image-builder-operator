@@ -1,3 +1,2 @@
 fabric
 types-paramiko
-nest_asyncio
