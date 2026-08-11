@@ -32,6 +32,10 @@
 
 - Update integration tests that were intentionally not done in #185.
 
+## [#196 fix: use default kernel instead of HWE kernel](https://github.com/canonical/github-runner-image-builder-operator/pull/196) (2026-02-12)
+
+* Use the default kernel instead of the HWE kernel in GitHub runner images.
+
 ## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
 
 - Remove `aproxy` snap installation in the charm and inject proxy values from the model config into the workload process.

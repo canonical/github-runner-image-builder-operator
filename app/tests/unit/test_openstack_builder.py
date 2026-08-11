@@ -706,7 +706,6 @@ def test__generate_cloud_init_script(
         if arch == openstack_builder.Arch.ARM
         else openstack_builder.BaseImage.JAMMY
     )
-    expected_hwe = openstack_builder.BaseImage.get_version(base)
     assert (
         openstack_builder._generate_cloud_init_script(
             image_config=openstack_builder.config.ImageConfig(
@@ -811,7 +810,6 @@ EOF
 
 function install_apt_packages() {{
     local packages="$1"
-    local hwe_version="$2"
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
@@ -835,11 +833,6 @@ main" > /etc/apt/sources.list.d/github-cli.list
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
-    if [ $RELEASE != "resolute" ]; then
-        echo "Installing linux-generic-hwe-${{hwe_version}}"
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
-    fi
 }}
 
 function disable_unattended_upgrades() {{
@@ -963,7 +956,6 @@ function configure_system_users() {{
 
 proxy="test.proxy.internal:3128"
 apt_packages="{expected_apt_packages}"
-hwe_version="{expected_hwe}"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
@@ -974,7 +966,7 @@ configure_proxy "$proxy"
 if [ "$github_runner_arch" == "arm" ]; then
     enable_armhf_multiarch
 fi
-install_apt_packages "$apt_packages" "$hwe_version"
+install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin

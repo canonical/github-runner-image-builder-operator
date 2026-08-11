@@ -83,7 +83,6 @@ EOF
 
 function install_apt_packages() {
     local packages="$1"
-    local hwe_version="$2"
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
@@ -104,11 +103,6 @@ function install_apt_packages() {
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${packages}
-    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
-    if [ $RELEASE != "resolute" ]; then
-        echo "Installing linux-generic-hwe-${hwe_version}"
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${hwe_version}
-    fi
 }
 
 function disable_unattended_upgrades() {
@@ -231,7 +225,6 @@ function configure_system_users() {
 
 proxy="{{ PROXY }}"
 apt_packages="{{ APT_PACKAGES }}"
-hwe_version="{{ HWE_VERSION }}"
 github_runner_version="{{ RUNNER_VERSION }}"
 github_runner_arch="{{ RUNNER_ARCH }}"
 runner_binary_repo="{{ RUNNER_BINARY_REPO }}"
@@ -242,7 +235,7 @@ configure_proxy "$proxy"
 if [ "$github_runner_arch" == "arm" ]; then
     enable_armhf_multiarch
 fi
-install_apt_packages "$apt_packages" "$hwe_version"
+install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
