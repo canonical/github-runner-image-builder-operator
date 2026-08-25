@@ -35,6 +35,14 @@ class MockOpenstackImageFactory(factory.Factory):
 
     id: str  # UUID
     created_at = Faker("date")  # Example format: 2024-04-16T04:31:12Z
+    status = "active"
+    checksum = "test-md5"
+    hash_algo = "sha256"
+    hash_value = "test-sha256"
+    properties = {
+        "owner_specified.openstack.md5": "test-md5",
+        "owner_specified.openstack.sha256": "test-sha256",
+    }
 
 
 class MockRequestsReponseFactory(factory.Factory):

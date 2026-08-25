@@ -85,6 +85,9 @@ MIN_CPU = 2
 MIN_RAM = 1024  # M
 MIN_DISK = 20  # G
 
+TMP_SNAPSHOT_SUFFIX = "-tmp"
+HASH_BLOCK_SIZE = 4 * 1024 * 1024  # 4MiB
+
 # We saw an issue with arm noble images with the latest release date, so we are using a fixed date.
 NOBLE_ARM64_RELEASE_DATE = date(2025, 11, 13)
 
@@ -837,6 +840,68 @@ class _UploadCloudConfig:
     keep_revisions: int
 
 
+def _validate_downloaded_snapshot(
+    conn: openstack.connection.Connection, image_id: str, file_path: pathlib.Path
+) -> None:
+    """Check that the snapshot was downloaded in full and without corruption.
+
+    The snapshot is streamed from Glance and openstacksdk does not verify what it wrote. Without
+    this check a truncated or corrupted download would be uploaded to the other clouds and
+    published as a seemingly valid image.
+
+    Args:
+        conn: The OpenStack connection instance.
+        image_id: The ID of the snapshot image that was downloaded.
+        file_path: The path the snapshot was downloaded to.
+
+    Raises:
+        DownloadImageError: if the downloaded snapshot does not match the snapshot image.
+    """
+    # The image is refetched since the size and the hashes are not populated on the image returned
+    # when the snapshot is requested.
+    snapshot = conn.get_image(name_or_id=image_id)
+    downloaded_size = file_path.stat().st_size
+    if snapshot.size and downloaded_size != snapshot.size:
+        raise github_runner_image_builder.errors.DownloadImageError(
+            f"Incomplete snapshot download, expected {snapshot.size} bytes, "
+            f"got {downloaded_size} bytes."
+        )
+    algorithm, expected_hash = (
+        (snapshot.hash_algo, snapshot.hash_value)
+        # The algorithm is chosen by the cloud, fall back to the md5 checksum if it is one this
+        # runtime cannot compute.
+        if snapshot.hash_value and snapshot.hash_algo in hashlib.algorithms_available
+        else ("md5", snapshot.checksum)
+    )
+    if not expected_hash:
+        logger.warning("Snapshot %s exposes no hash, skipping download hash check.", image_id)
+        return
+    downloaded_hash = _hash_file(file_path=file_path, algorithm=algorithm)
+    if downloaded_hash != expected_hash:
+        raise github_runner_image_builder.errors.DownloadImageError(
+            f"Corrupt snapshot download, expected {algorithm}: {expected_hash}, "
+            f"got {downloaded_hash}."
+        )
+
+
+def _hash_file(file_path: pathlib.Path, algorithm: str) -> str:
+    """Compute the hash of a file.
+
+    Args:
+        file_path: The path of the file to hash.
+        algorithm: The name of the hash algorithm to use.
+
+    Returns:
+        The hexadecimal digest of the file.
+    """
+    # The hash is only used to detect a corrupt transfer, not for security purposes.
+    digest = hashlib.new(algorithm, usedforsecurity=False)
+    with open(file_path, "rb") as file:
+        for block in iter(lambda: file.read(HASH_BLOCK_SIZE), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def _upload_to_clouds(
     conn: openstack.connection.Connection,
     image: openstack.image.v2.image.Image,
@@ -857,8 +922,16 @@ def _upload_to_clouds(
     if not upload_cloud_names:
         return (image,)
     file_path = pathlib.Path(f"{image.name}.snapshot")
-    logger.info("Downloading snapshot to %s.", file_path)
-    conn.download_image(name_or_id=image.id, output_file=file_path, stream=True)
+    # The snapshot is downloaded under a temporary name so that a partial download is never
+    # mistaken for a complete one, mirroring how the images themselves are uploaded.
+    tmp_file_path = file_path.with_name(f"{file_path.name}{TMP_SNAPSHOT_SUFFIX}")
+    try:
+        logger.info("Downloading snapshot to %s.", tmp_file_path)
+        conn.download_image(name_or_id=image.id, output_file=tmp_file_path, stream=True)
+        _validate_downloaded_snapshot(conn=conn, image_id=image.id, file_path=tmp_file_path)
+        tmp_file_path.replace(file_path)
+    finally:
+        tmp_file_path.unlink(missing_ok=True)
     images: list[openstack.image.v2.image.Image] = []
     for cloud_name in upload_cloud_names:
         logger.info("Uploading downloaded snapshot to %s.", cloud_name)

@@ -1,5 +1,12 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## Verify image checksums when uploading and downloading images
+
+- Verify the integrity of an image after uploading it to OpenStack Glance, so that a failed or truncated upload can no longer be published as a usable image.
+- Upload images under a temporary name and rename them only once verified, so consumers never see an image that is still uploading.
+- Verify the size and hash of a snapshot downloaded from the build cloud before uploading it to the other clouds.
+- Only report images that finished uploading when querying the latest image.
+
 ## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.

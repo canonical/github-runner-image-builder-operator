@@ -7,6 +7,7 @@
 # module.
 # pylint:disable=protected-access,too-many-lines
 
+import hashlib
 import pathlib
 import secrets
 import typing
@@ -23,6 +24,7 @@ from github_runner_image_builder import cloud_image, errors, openstack_builder, 
 from github_runner_image_builder.config import Arch
 from github_runner_image_builder.errors import ExternalScriptError
 from github_runner_image_builder.openstack_builder import EXTERNAL_SCRIPT_PATH
+from tests.unit.factories import MockOpenstackImageFactory
 
 
 def test_determine_cloud_no_clouds_yaml_error(monkeypatch: pytest.MonkeyPatch):
@@ -265,8 +267,9 @@ def test__create_security_group():
         ),
     ],
 )
-def test_run(
+def test_run(  # pylint: disable=too-many-locals
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
     cloud_config: openstack_builder.CloudConfig,
     with_external_script: bool,
 ):
@@ -275,6 +278,7 @@ def test_run(
     act: when run is called.
     assert: all subfunctions are called.
     """
+    monkeypatch.chdir(tmp_path)
     image_config = openstack_builder.config.ImageConfig(
         arch=openstack_builder.Arch.X64,
         base=openstack_builder.BaseImage.JAMMY,
@@ -307,6 +311,11 @@ def test_run(
     monkeypatch.setattr(store, "create_snapshot", create_image_snapshot := MagicMock())
     connection_enter_mock = MagicMock()
     connection_mock = MagicMock()
+    connection_mock.image.images.return_value = []
+    connection_mock.create_image.return_value = MockOpenstackImageFactory(id="test-image-id")
+    connection_mock.download_image.side_effect = lambda name_or_id, output_file, stream: (
+        pathlib.Path(output_file).write_bytes(b"snapshot")
+    )
     connection_enter_mock.__enter__.return_value = connection_mock
     monkeypatch.setattr(
         openstack_builder.openstack,
@@ -329,6 +338,7 @@ def test_run(
     monkeypatch.setattr(
         openstack_builder, "_wait_for_snapshot_complete", (wait_snapshot_mock := MagicMock())
     )
+    monkeypatch.setattr(openstack_builder, "_validate_downloaded_snapshot", MagicMock())
 
     openstack_builder.run(
         cloud_config=cloud_config,
@@ -1348,3 +1358,92 @@ def test__wait_for_snapshot_complete(monkeypatch: pytest.MonkeyPatch, num_not_ac
         openstack_builder._wait_for_snapshot_complete(conn=connection_mock, image=MagicMock())
         is None
     )
+
+
+SNAPSHOT_CONTENT = b"\x00" * 1024
+SNAPSHOT_MD5 = hashlib.md5(SNAPSHOT_CONTENT, usedforsecurity=False).hexdigest()
+SNAPSHOT_SHA256 = hashlib.sha256(SNAPSHOT_CONTENT).hexdigest()
+
+
+def _snapshot_file(tmp_path: pathlib.Path, content: bytes = SNAPSHOT_CONTENT) -> pathlib.Path:
+    """Write a snapshot file.
+
+    Args:
+        tmp_path: The temporary directory to write to.
+        content: The contents of the snapshot file.
+
+    Returns:
+        The path of the written snapshot file.
+    """
+    file_path = tmp_path / "test.snapshot"
+    file_path.write_bytes(content)
+    return file_path
+
+
+@pytest.mark.parametrize(
+    "hash_algo, hash_value, checksum",
+    [
+        pytest.param("sha256", SNAPSHOT_SHA256, "", id="sha256 hash"),
+        pytest.param("", "", SNAPSHOT_MD5, id="md5 checksum only"),
+        pytest.param("unknown-algo", "unusable", SNAPSHOT_MD5, id="unsupported hash algorithm"),
+        pytest.param("", "", "", id="no hash exposed"),
+    ],
+)
+def test__validate_downloaded_snapshot(
+    tmp_path: pathlib.Path, hash_algo: str, hash_value: str, checksum: str
+):
+    """
+    arrange: given a downloaded snapshot matching the snapshot image size and hash.
+    act: when _validate_downloaded_snapshot is called.
+    assert: no errors are raised.
+    """
+    file_path = _snapshot_file(tmp_path)
+    connection_mock = MagicMock()
+    connection_mock.get_image.return_value = MagicMock(
+        size=len(SNAPSHOT_CONTENT), hash_algo=hash_algo, hash_value=hash_value, checksum=checksum
+    )
+
+    assert (
+        openstack_builder._validate_downloaded_snapshot(
+            conn=connection_mock, image_id="test-id", file_path=file_path
+        )
+        is None
+    )
+
+
+def test__validate_downloaded_snapshot_truncated(tmp_path: pathlib.Path):
+    """
+    arrange: given a downloaded snapshot that is smaller than the snapshot image.
+    act: when _validate_downloaded_snapshot is called.
+    assert: DownloadImageError is raised.
+    """
+    file_path = _snapshot_file(tmp_path, content=b"\x00" * 512)
+    connection_mock = MagicMock()
+    connection_mock.get_image.return_value = MagicMock(size=1024)
+
+    with pytest.raises(errors.DownloadImageError) as exc:
+        openstack_builder._validate_downloaded_snapshot(
+            conn=connection_mock, image_id="test-id", file_path=file_path
+        )
+
+    assert "expected 1024 bytes, got 512 bytes" in str(exc.getrepr())
+
+
+def test__validate_downloaded_snapshot_corrupt(tmp_path: pathlib.Path):
+    """
+    arrange: given a downloaded snapshot whose hash differs from the snapshot image hash.
+    act: when _validate_downloaded_snapshot is called.
+    assert: DownloadImageError is raised.
+    """
+    file_path = _snapshot_file(tmp_path, content=b"\x01" * 1024)
+    connection_mock = MagicMock()
+    connection_mock.get_image.return_value = MagicMock(
+        size=1024, hash_algo="sha256", hash_value=SNAPSHOT_SHA256
+    )
+
+    with pytest.raises(errors.DownloadImageError) as exc:
+        openstack_builder._validate_downloaded_snapshot(
+            conn=connection_mock, image_id="test-id", file_path=file_path
+        )
+
+    assert "Corrupt snapshot download" in str(exc.getrepr())
