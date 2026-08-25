@@ -6,7 +6,7 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 from openstack.connection import Connection
@@ -71,7 +71,7 @@ def test__get_sorted_images_by_created_at_error(mock_connection: MagicMock):
     act: when _get_sorted_images_by_created_at is called.
     assert: the images are returned in sorted order by creation date.
     """
-    mock_connection.search_images.side_effect = openstack.exceptions.OpenStackCloudException(
+    mock_connection.image.images.side_effect = openstack.exceptions.OpenStackCloudException(
         "Network error"
     )
 
@@ -87,7 +87,7 @@ def test__get_sorted_images_by_created_at(mock_connection: MagicMock):
     act: when _get_sorted_images_by_created_at is called.
     assert: the images are returned in sorted order by creation date.
     """
-    mock_connection.search_images.return_value = [
+    mock_connection.image.images.return_value = [
         (first := MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")),
         (third := MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")),
         (second := MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")),
@@ -98,28 +98,50 @@ def test__get_sorted_images_by_created_at(mock_connection: MagicMock):
     ) == [third, second, first]
 
 
-def test__get_sorted_images_by_created_at_any_status(mock_connection: MagicMock):
+def test_get_latest_build_id_any_status(mock_connection: MagicMock):
     """
     arrange: given a mocked openstack connection returning images via image proxy.
-    act: when _get_sorted_images_by_created_at is called with active_only=False.
-    assert: connection.image.images is used (not search_images) and result is sorted.
+    act: when get_latest_build_id is called with active_only=False.
+    assert: images under both the final and the temporary name are considered.
     """
     mock_connection.image = MagicMock()
-    mock_connection.image.images.return_value = iter(
-        [
-            (first := MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")),
-            (third := MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")),
-            (second := MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")),
-        ]
+    first = MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")
+    third = MockOpenstackImageFactory(id="3", created_at="2024-03-03T00:00:00Z")
+    second = MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z")
+    in_progress = MockOpenstackImageFactory(
+        id="4", created_at="2024-04-04T00:00:00Z", status="saving"
+    )
+    mock_connection.image.images.side_effect = [
+        iter([first, third, second]),
+        iter([in_progress]),
+    ]
+
+    result = store.get_latest_build_id(
+        cloud_name=MagicMock(), image_name="test-image", active_only=False
     )
 
-    result = store._get_sorted_images_by_created_at(
-        connection=mock_connection, image_name="test-image", active_only=False
-    )
+    assert mock_connection.image.images.call_args_list == [
+        call(name="test-image"),
+        call(name=f"test-image{store.TMP_IMAGE_NAME_SUFFIX}"),
+    ]
+    assert result == "4"
 
-    mock_connection.image.images.assert_called_once_with(name="test-image")
-    mock_connection.search_images.assert_not_called()
-    assert result == [third, second, first]
+
+def test_get_latest_build_id_active_only_ignores_tmp(mock_connection: MagicMock):
+    """
+    arrange: given an in-progress upload that is newer than the latest active image.
+    act: when get_latest_build_id is called with the default active_only.
+    assert: only the active image is returned and the temporary name is not queried.
+    """
+    mock_connection.image = MagicMock()
+    active = MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z")
+    saving = MockOpenstackImageFactory(id="2", created_at="2024-04-04T00:00:00Z", status="saving")
+    mock_connection.image.images.side_effect = [iter([active, saving])]
+
+    result = store.get_latest_build_id(cloud_name=MagicMock(), image_name="test-image")
+
+    assert mock_connection.image.images.call_args_list == [call(name="test-image")]
+    assert result == "1"
 
 
 def test__get_sorted_images_by_created_at_any_status_error(mock_connection: MagicMock):
@@ -145,7 +167,7 @@ def test__prune_old_images_error(mock_connection: MagicMock):
     act: when _prune_old_images is called.
     assert: failure to delete is logged.
     """
-    mock_connection.search_images.return_value = [
+    mock_connection.image.images.return_value = [
         MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z"),
         MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z"),
     ]
@@ -165,7 +187,7 @@ def test__prune_old_images_fail(mock_connection: MagicMock):
     act: when _prune_old_images is called.
     assert: failure to delete is logged.
     """
-    mock_connection.search_images.return_value = [
+    mock_connection.image.images.return_value = [
         MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z"),
         MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z"),
     ]
@@ -183,7 +205,7 @@ def test__prune_old_images(mock_connection: MagicMock):
     act: when _prune_old_images is called.
     assert: delete mock is called.
     """
-    mock_connection.search_images.return_value = [
+    mock_connection.image.images.return_value = [
         MockOpenstackImageFactory(id="1", created_at="2024-01-01T00:00:00Z"),
         MockOpenstackImageFactory(id="2", created_at="2024-02-02T00:00:00Z"),
     ]
@@ -218,22 +240,175 @@ def test_upload_image_error(mock_connection: MagicMock):
 
 def test_upload_image(mock_connection: MagicMock):
     """
-    arrange: given a mocked openstack create_image function that raises an exception.
+    arrange: given a mocked openstack create_image function that uploads successfully.
     act: when upload_image is called.
-    assert: UploadImageError is raised.
+    assert: the image is uploaded under a temporary name and the renamed image is returned.
     """
-    mock_connection.create_image.return_value = (test_image := MockOpenstackImageFactory(id="1"))
+    mock_connection.image.images.return_value = []
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1")
+    mock_connection.image.update_image.return_value = (
+        renamed_image := MockOpenstackImageFactory(id="1")
+    )
 
     assert (
         store.upload_image(
             arch=MagicMock(),
             cloud_name=MagicMock(),
-            image_name=MagicMock(),
+            image_name="test-image",
             image_path=MagicMock(),
             keep_revisions=MagicMock(),
         )
-        == test_image
+        == renamed_image
     )
+    assert (
+        mock_connection.create_image.call_args.kwargs["name"]
+        == f"test-image{store.TMP_IMAGE_NAME_SUFFIX}"
+    )
+    assert mock_connection.create_image.call_args.kwargs["validate_checksum"] is True
+    assert mock_connection.image.update_image.call_args.kwargs["name"] == "test-image"
+
+
+def test_upload_image_deletes_leftover_tmp_image(mock_connection: MagicMock):
+    """
+    arrange: given a leftover temporary image from a previously interrupted upload.
+    act: when upload_image is called.
+    assert: the leftover image is deleted before the upload starts.
+    """
+    mock_connection.image.images.side_effect = [[MockOpenstackImageFactory(id="stale")], [], []]
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1")
+    mock_connection.image.update_image.return_value = MockOpenstackImageFactory(id="1")
+
+    store.upload_image(
+        arch=MagicMock(),
+        cloud_name=MagicMock(),
+        image_name="test-image",
+        image_path=MagicMock(),
+        keep_revisions=MagicMock(),
+    )
+
+    assert (
+        mock_connection.image.images.call_args_list[0].kwargs["name"]
+        == f"test-image{store.TMP_IMAGE_NAME_SUFFIX}"
+    )
+    mock_connection.delete_image.assert_any_call("stale", wait=True)
+
+
+def test_upload_image_non_sha256_multihash(mock_connection: MagicMock):
+    """
+    arrange: given a cloud whose Glance computes the multihash with an algorithm other than sha256.
+    act: when upload_image is called.
+    assert: the image is accepted based on the md5 checksum alone.
+    """
+    mock_connection.image.images.return_value = []
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(
+        id="1", hash_algo="sha512", hash_value="a-sha512-digest"
+    )
+    mock_connection.image.update_image.return_value = MockOpenstackImageFactory(id="1")
+
+    store.upload_image(
+        arch=MagicMock(),
+        cloud_name=MagicMock(),
+        image_name="test-image",
+        image_path=MagicMock(),
+        keep_revisions=MagicMock(),
+    )
+
+    mock_connection.image.update_image.assert_called_once()
+
+
+def test_upload_image_checksum_mismatch_error(mock_connection: MagicMock):
+    """
+    arrange: given an uploaded image whose Glance hashes differ from the local ones.
+    act: when upload_image is called.
+    assert: UploadImageError is raised and the image is not renamed.
+    """
+    mock_connection.image.images.return_value = []
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(
+        id="1", checksum="corrupted-md5"
+    )
+
+    with pytest.raises(UploadImageError) as exc:
+        store.upload_image(
+            arch=MagicMock(),
+            cloud_name=MagicMock(),
+            image_name="test-image",
+            image_path=MagicMock(),
+            keep_revisions=MagicMock(),
+        )
+
+    assert "Checksum mismatch" in str(exc.getrepr())
+    mock_connection.image.update_image.assert_not_called()
+
+
+def test_upload_image_missing_checksum_error(mock_connection: MagicMock):
+    """
+    arrange: given an uploaded image without the locally computed hashes.
+    act: when upload_image is called.
+    assert: UploadImageError is raised and the image is not renamed.
+    """
+    mock_connection.image.images.return_value = []
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1", properties={})
+
+    with pytest.raises(UploadImageError) as exc:
+        store.upload_image(
+            arch=MagicMock(),
+            cloud_name=MagicMock(),
+            image_name="test-image",
+            image_path=MagicMock(),
+            keep_revisions=MagicMock(),
+        )
+
+    assert "missing the locally computed hashes" in str(exc.getrepr())
+    mock_connection.image.update_image.assert_not_called()
+
+
+def test_upload_image_deletes_tmp_image_on_error(mock_connection: MagicMock):
+    """
+    arrange: given an uploaded image that fails the checksum validation.
+    act: when upload_image is called.
+    assert: the temporary image is deleted.
+    """
+    mock_connection.image.images.side_effect = [
+        [],
+        [MockOpenstackImageFactory(id="1", name="test-image-tmp")],
+    ]
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1", properties={})
+
+    with pytest.raises(UploadImageError):
+        store.upload_image(
+            arch=MagicMock(),
+            cloud_name=MagicMock(),
+            image_name="test-image",
+            image_path=MagicMock(),
+            keep_revisions=MagicMock(),
+        )
+
+    mock_connection.delete_image.assert_called_once_with("1", wait=True)
+
+
+def test_upload_image_tmp_image_cleanup_error(mock_connection: MagicMock):
+    """
+    arrange: given a failed upload whose temporary image cannot be deleted.
+    act: when upload_image is called.
+    assert: the original error is raised instead of the cleanup error.
+    """
+    mock_connection.image.images.side_effect = [
+        [],
+        [MockOpenstackImageFactory(id="1", name="test-image-tmp")],
+    ]
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(id="1", properties={})
+    mock_connection.delete_image.side_effect = openstack.exceptions.SDKException("delete failed")
+
+    with pytest.raises(UploadImageError) as exc:
+        store.upload_image(
+            arch=MagicMock(),
+            cloud_name=MagicMock(),
+            image_name="test-image",
+            image_path=MagicMock(),
+            keep_revisions=MagicMock(),
+        )
+
+    assert "missing the locally computed hashes" in str(exc.getrepr())
 
 
 @pytest.mark.usefixtures("mock_connection")

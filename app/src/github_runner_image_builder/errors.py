@@ -97,6 +97,10 @@ class UploadImageError(OpenstackBaseError):
     """Represents an error when uploading image to Openstack."""
 
 
+class DownloadImageError(OpenstackBaseError):
+    """Represents an error when downloading image from Openstack."""
+
+
 class OpenstackError(OpenstackBaseError):
     """Represents an error while communicating with Openstack."""
 
