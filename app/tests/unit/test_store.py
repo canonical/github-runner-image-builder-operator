@@ -340,6 +340,30 @@ def test_upload_image_checksum_mismatch_error(mock_connection: MagicMock):
     mock_connection.image.update_image.assert_not_called()
 
 
+def test_upload_image_sha256_mismatch_error(mock_connection: MagicMock):
+    """
+    arrange: given an uploaded image whose Glance sha256 differs from the local one.
+    act: when upload_image is called.
+    assert: UploadImageError is raised and the image is not renamed.
+    """
+    mock_connection.image.images.return_value = []
+    mock_connection.create_image.return_value = MockOpenstackImageFactory(
+        id="1", hash_algo="sha256", hash_value="corrupted-sha256"
+    )
+
+    with pytest.raises(UploadImageError) as exc:
+        store.upload_image(
+            arch=MagicMock(),
+            cloud_name=MagicMock(),
+            image_name="test-image",
+            image_path=MagicMock(),
+            keep_revisions=MagicMock(),
+        )
+
+    assert "sha256: corrupted-sha256 != test-sha256" in str(exc.getrepr())
+    mock_connection.image.update_image.assert_not_called()
+
+
 def test_upload_image_missing_checksum_error(mock_connection: MagicMock):
     """
     arrange: given an uploaded image without the locally computed hashes.
