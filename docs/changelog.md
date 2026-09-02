@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
+
+- Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
+
 ## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
