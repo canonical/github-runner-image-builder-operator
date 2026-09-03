@@ -12,7 +12,10 @@ set -euo pipefail
 
 # charmcraft pack runs inside the LXD container and needs to go through proxy so it 
 # will be done before modifying the nftables rules.
-/snap/bin/charmcraft pack -p tests/integration/data/charm
+# -o is pinned explicitly so the packed .charm always lands in the CWD (matching
+# tests/integration/conftest.py's TEST_CHARM_FILE), regardless of charmcraft's own
+# default pack-output behavior, which has changed between charmcraft versions.
+/snap/bin/charmcraft pack -p tests/integration/data/charm -o .
 
 IP=$(lxc list -c 4 --format csv | awk '{print $1}' | head -n 1)
 

@@ -3,6 +3,7 @@
 ## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
 
 - Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
+- Pin the `charmcraft pack` output directory (`-o .`) in the `test_charm` integration test's proxy workaround script, so the packed test fixture charm is always found at the path `tests/integration/conftest.py` expects, regardless of the installed charmcraft version's default pack-output behavior.
 
 ## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
