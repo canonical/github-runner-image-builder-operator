@@ -1022,14 +1022,14 @@ def test_install_apt_packages_dotnet_ppa_condition(
     release: str, packages: str, expect_ppa_added: bool
 ):
     """
-    arrange: render the cloud-init script and extract the exact bash conditional guarding the
-        dotnet backports PPA addition in install_apt_packages, then pair it with $RELEASE/
-        $packages values mirroring each real build scenario (s390x/ppc64le install dotnet on
+    arrange: render the cloud-init script and extract the exact bash conditional guarding the \
+        dotnet backports PPA addition in install_apt_packages, then pair it with $RELEASE/ \
+        $packages values mirroring each real build scenario (s390x/ppc64le install dotnet on \
         resolute; armhf, x64 and arm64 do not; non-resolute releases never add the PPA).
-    act: evaluate the extracted condition in a real bash subprocess with $RELEASE and $packages
+    act: evaluate the extracted condition in a real bash subprocess with $RELEASE and $packages \
         set accordingly.
-    assert: the condition is only true when $RELEASE is resolute and $packages contains
-        dotnet-runtime, exercising the actual rendered bash logic (operator precedence, glob,
+    assert: the condition is only true when $RELEASE is resolute and $packages contains \
+        dotnet-runtime, exercising the actual rendered bash logic (operator precedence, glob, \
         quoting) rather than only comparing against a golden-string literal.
     """
     script = openstack_builder._generate_cloud_init_script(
