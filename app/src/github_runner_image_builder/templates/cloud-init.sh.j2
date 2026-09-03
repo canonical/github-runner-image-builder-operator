@@ -93,7 +93,10 @@ function install_apt_packages() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
-    if [ $RELEASE == "resolute" ]; then
+    # Only add the dotnet backports PPA when a dotnet package is actually being installed
+    # (s390x/ppc64le). Resolving the PPA requires the Launchpad API, which is not reachable on
+    # every build network, so skipping it avoids failing builds for arches that do not use dotnet.
+    if [ $RELEASE == "resolute" ] && [[ "$packages" == *dotnet-runtime* ]]; then
         echo "Adding dotnet backports PPA"
         DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
     fi

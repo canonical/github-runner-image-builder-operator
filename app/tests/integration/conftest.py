@@ -25,9 +25,7 @@ from .naming import (
     generate_test_id,
 )
 from .naming import security_group_name as suite_security_group_name
-from .naming import (
-    ssh_key_name,
-)
+from .naming import ssh_key_name
 from .orphan_cleanup import cleanup_stale_openstack_resources
 
 logger = logging.getLogger(__name__)

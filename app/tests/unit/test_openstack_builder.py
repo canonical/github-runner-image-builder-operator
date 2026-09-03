@@ -8,7 +8,9 @@
 # pylint:disable=protected-access,too-many-lines
 
 import pathlib
+import re
 import secrets
+import subprocess  # nosec
 import typing
 import urllib.parse
 from unittest.mock import MagicMock
@@ -823,7 +825,10 @@ signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.co
 main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
-    if [ $RELEASE == "resolute" ]; then
+    # Only add the dotnet backports PPA when a dotnet package is actually being installed
+    # (s390x/ppc64le). Resolving the PPA requires the Launchpad API, which is not reachable on
+    # every build network, so skipping it avoids failing builds for arches that do not use dotnet.
+    if [ $RELEASE == "resolute" ] && [[ "$packages" == *dotnet-runtime* ]]; then
         echo "Adding dotnet backports PPA"
         DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
     fi
@@ -988,6 +993,73 @@ fi\
 """  # nosec # noqa: E501
     )
     # pylint: enable=R0801
+
+
+_DOTNET_PPA_CONDITION_PATTERN = re.compile(
+    r'if \[ \$RELEASE == "resolute" \] (?:&&|\|\|) '
+    r'\[\[ "\$packages" == \*dotnet-runtime\* \]\]; then'
+)
+
+
+@pytest.mark.parametrize(
+    "release, packages, expect_ppa_added",
+    [
+        pytest.param(
+            "resolute",
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
+            True,
+            id="resolute-s390x-ppc64le",
+        ),
+        pytest.param("resolute", _ARM_APT_PACKAGES, False, id="resolute-armhf"),
+        pytest.param("resolute", _DEFAULT_APT_PACKAGES, False, id="resolute-x64-arm64"),
+        pytest.param(
+            "noble", _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0", False, id="noble-with-dotnet"
+        ),
+        pytest.param("jammy", _ARM_APT_PACKAGES, False, id="jammy-armhf"),
+    ],
+)
+def test_install_apt_packages_dotnet_ppa_condition(
+    release: str, packages: str, expect_ppa_added: bool
+):
+    """
+    arrange: render the cloud-init script and extract the exact bash conditional guarding the \
+        dotnet backports PPA addition in install_apt_packages, then pair it with $RELEASE/ \
+        $packages values mirroring each real build scenario (s390x/ppc64le install dotnet on \
+        resolute; armhf, x64 and arm64 do not; non-resolute releases never add the PPA).
+    act: evaluate the extracted condition in a real bash subprocess with $RELEASE and $packages \
+        set accordingly.
+    assert: the condition is only true when $RELEASE is resolute and $packages contains \
+        dotnet-runtime, exercising the actual rendered bash logic (operator precedence, glob, \
+        quoting) rather than only comparing against a golden-string literal.
+    """
+    script = openstack_builder._generate_cloud_init_script(
+        image_config=openstack_builder.config.ImageConfig(
+            arch=openstack_builder.Arch.X64,
+            base=openstack_builder.BaseImage.JAMMY,
+            runner_version="",
+            name="test-image",
+            script_config=openstack_builder.config.ScriptConfig(
+                script_url=urllib.parse.urlparse("https://test-url.com/script.sh"),
+                script_secrets={},
+            ),
+        ),
+        proxy="",
+    )
+    match = _DOTNET_PPA_CONDITION_PATTERN.search(script)
+    assert match, "dotnet backports PPA condition not found in rendered cloud-init script"
+    condition = match.group(0)[len("if ") : -len("; then")]
+
+    result = subprocess.run(  # nosec
+        [
+            "bash",
+            "-c",
+            f'RELEASE={release}; packages="{packages}"; if {condition}; then echo PPA_ADDED; fi',
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert ("PPA_ADDED" in result.stdout) == expect_ppa_added
 
 
 @pytest.mark.parametrize(

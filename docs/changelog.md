@@ -1,5 +1,10 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
+
+- Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
+- Pin the `charmcraft pack` output directory (`-o .`) in the `test_charm` integration test's proxy workaround script, so the packed test fixture charm is always found at the path `tests/integration/conftest.py` expects, regardless of the installed charmcraft version's default pack-output behavior. Also explicitly locate and copy the packed `.charm` to that path afterwards, since charmcraft 4.4.1's own outer-instance move-to-output-dir logic silently no-ops for remote/managed builds when it can't read the artifact path from its internal state service, leaving the file in the project directory instead.
+
 ## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
