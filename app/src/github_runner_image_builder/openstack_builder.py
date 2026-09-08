@@ -43,6 +43,7 @@ from github_runner_image_builder.config import (
     ARM_ADDITIONAL_APT_PACKAGES,
     ARM_EXCLUDED_DEFAULT_APT_PACKAGES,
     ARM_LIBICU_APT_PACKAGE_BY_BASE,
+    ARM_LIBSSL_APT_PACKAGE_BY_BASE,
     FORK_RUNNER_BINARY_REPO,
     IMAGE_DEFAULT_APT_PACKAGES,
     S390X_PPC64LE_ADDITIONAL_APT_PACKAGES,
@@ -574,8 +575,8 @@ def _generate_cloud_init_script(
                 f"got: {image_config.base.value}."
             )
         # rustup provides the armhf/armv7 Rust toolchain and conflicts with the distro cargo/rustc
-        # packages, so drop those from the default set. libicu's soname is release-specific, so
-        # add the armhf build matching the base image.
+        # packages, so drop those from the default set. libicu's and libssl's sonames are
+        # release-specific, so add the armhf builds matching the base image.
         default_packages = [
             package
             for package in IMAGE_DEFAULT_APT_PACKAGES
@@ -584,7 +585,10 @@ def _generate_cloud_init_script(
         apt_packages = (
             default_packages
             + ARM_ADDITIONAL_APT_PACKAGES
-            + [ARM_LIBICU_APT_PACKAGE_BY_BASE[image_config.base]]
+            + [
+                ARM_LIBICU_APT_PACKAGE_BY_BASE[image_config.base],
+                ARM_LIBSSL_APT_PACKAGE_BY_BASE[image_config.base],
+            ]
         )
     return template.render(
         PROXY=proxy,

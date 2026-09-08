@@ -139,8 +139,9 @@ S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 # The 32-bit linux-arm runner agent runs via the host's native AArch32 support on the arm64
 # image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf build of
 # libatomic (a .NET runtime dependency). rustup provides the armhf/armv7 Rust toolchain and
-# docker-buildx enables arm32 container builds. libicu (the other .NET runtime dependency) is
-# release-specific and handled by ARM_LIBICU_APT_PACKAGE_BY_BASE below.
+# docker-buildx enables arm32 container builds. libicu and libssl (the other .NET runtime
+# dependencies) are release-specific and handled by ARM_LIBICU_APT_PACKAGE_BY_BASE and
+# ARM_LIBSSL_APT_PACKAGE_BY_BASE below.
 ARM_ADDITIONAL_APT_PACKAGES = [
     "libc6:armhf",
     "libatomic1:armhf",
@@ -155,6 +156,14 @@ ARM_EXCLUDED_DEFAULT_APT_PACKAGES = ("cargo", "rustc")
 ARM_LIBICU_APT_PACKAGE_BY_BASE = {
     BaseImage.NOBLE: "libicu74:armhf",
     BaseImage.RESOLUTE: "libicu78:armhf",
+}
+# The linux-arm runner's bundled .NET runtime also dlopens libssl/libcrypto for its OpenSSL-backed
+# crypto algorithms (e.g. RSAOpenSsl); without the armhf build, the runner listener crash-loops
+# with "OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded." Both
+# noble and resolute ship OpenSSL 3.x under the time64-transition package name libssl3t64.
+ARM_LIBSSL_APT_PACKAGE_BY_BASE = {
+    BaseImage.NOBLE: "libssl3t64:armhf",
+    BaseImage.RESOLUTE: "libssl3t64:armhf",
 }
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)

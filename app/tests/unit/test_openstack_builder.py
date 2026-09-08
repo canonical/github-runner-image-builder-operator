@@ -668,11 +668,12 @@ _DEFAULT_APT_PACKAGES = (
     "python3-pip rustc shellcheck socat tar time unzip wget"
 )
 # armhf drops the distro cargo/rustc (replaced by rustup) and adds the armhf multiarch runtime
-# libs, rustup, docker-buildx and the release-specific libicu (libicu74 on noble).
+# libs, rustup, docker-buildx and the release-specific libicu/libssl (libicu74/libssl3t64 on
+# noble).
 _ARM_APT_PACKAGES = (
     "build-essential docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip "
     "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf rustup docker-buildx "
-    "libicu74:armhf"
+    "libicu74:armhf libssl3t64:armhf"
 )
 
 
