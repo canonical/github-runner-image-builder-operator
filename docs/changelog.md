@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#242 Fix armhf multiarch apt source mirror](https://github.com/canonical/github-runner-image-builder-operator/pull/242) (2026-09-08)
+
+- Fix armhf multiarch apt source configuration on arm64 image builds: instead of hardcoding `ports.ubuntu.com` (unreachable, returns 403 Forbidden, on some build networks) for the armhf "ports" architecture packages, reuse the same mirror already configured for the image's native architecture, since that mirror already carries ports architectures and is known reachable. Verified against a real production armhf image build.
+
 ## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
 
 - Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
