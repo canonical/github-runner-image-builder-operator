@@ -59,12 +59,16 @@ function enable_armhf_multiarch() {
     codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
     /usr/bin/dpkg --add-architecture armhf
     # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
-    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
-    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    # architecture normally served from ports.ubuntu.com. That official ports mirror is not
+    # reachable on every build network (returns 403 Forbidden), while the image's own configured
+    # mirror already carries ports architectures (it serves this VM's own native arm64 packages),
+    # so reuse it for armhf instead of hardcoding ports.ubuntu.com.
+    native_mirror=$(/usr/bin/awk '/^URIs:/ {print $2; exit}' /etc/apt/sources.list.d/ubuntu.sources)
+    native_mirror="${native_mirror:-http://ports.ubuntu.com/ubuntu-ports}"
     /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
     /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
 Types: deb
-URIs: http://ports.ubuntu.com/ubuntu-ports
+URIs: $native_mirror
 Suites: $codename $codename-updates $codename-security
 Components: main restricted universe multiverse
 Architectures: armhf
