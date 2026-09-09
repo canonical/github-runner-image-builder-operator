@@ -672,8 +672,8 @@ _DEFAULT_APT_PACKAGES = (
 # noble).
 _ARM_APT_PACKAGES = (
     "build-essential docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip "
-    "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf rustup docker-buildx "
-    "libicu74:armhf libssl3t64:armhf"
+    "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf libstdc++6:armhf "
+    "zlib1g:armhf rustup docker-buildx libicu74:armhf libssl3t64:armhf"
 )
 
 
