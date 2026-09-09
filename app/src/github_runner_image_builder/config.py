@@ -137,13 +137,22 @@ IMAGE_DEFAULT_APT_PACKAGES = [
 ]
 S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
 # The 32-bit linux-arm runner agent runs via the host's native AArch32 support on the arm64
-# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf build of
-# libatomic (a .NET runtime dependency). rustup provides the armhf/armv7 Rust toolchain and
-# docker-buildx enables arm32 container builds. libicu (the other .NET runtime dependency) is
-# release-specific and handled by ARM_LIBICU_APT_PACKAGE_BY_BASE below.
+# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf builds of
+# libatomic, libstdc++ and zlib (all .NET runtime dependencies, confirmed via `readelf -d` against
+# the actions-runner-linux-arm release: libstdc++.so.6 is a hard NEEDED entry of Runner.Listener,
+# libcoreclr.so and createdump, while libz.so.1 is a hard NEEDED entry of
+# libSystem.IO.Compression.Native.so). Missing either causes the dynamic linker to refuse to start
+# the runner, or crash-loop as soon as a compression code path (e.g. tool cache/action downloads)
+# is exercised. libgcc_s.so.1 (also NEEDED) is already pulled in transitively via libc6:armhf's
+# apt Depends on libgcc-s1, so it does not need to be listed explicitly here. rustup provides the
+# armhf/armv7 Rust toolchain and docker-buildx enables arm32 container builds. libicu and libssl
+# (the other .NET runtime dependencies, dlopen'd rather than linked) are release-specific and
+# handled by ARM_LIBICU_APT_PACKAGE_BY_BASE and ARM_LIBSSL_APT_PACKAGE_BY_BASE below.
 ARM_ADDITIONAL_APT_PACKAGES = [
     "libc6:armhf",
     "libatomic1:armhf",
+    "libstdc++6:armhf",
+    "zlib1g:armhf",
     "rustup",
     "docker-buildx",
 ]
@@ -155,6 +164,14 @@ ARM_EXCLUDED_DEFAULT_APT_PACKAGES = ("cargo", "rustc")
 ARM_LIBICU_APT_PACKAGE_BY_BASE = {
     BaseImage.NOBLE: "libicu74:armhf",
     BaseImage.RESOLUTE: "libicu78:armhf",
+}
+# The linux-arm runner's bundled .NET runtime also dlopens libssl/libcrypto for its OpenSSL-backed
+# crypto algorithms (e.g. RSAOpenSsl); without the armhf build, the runner listener crash-loops
+# with "OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded." Both
+# noble and resolute ship OpenSSL 3.x under the time64-transition package name libssl3t64.
+ARM_LIBSSL_APT_PACKAGE_BY_BASE = {
+    BaseImage.NOBLE: "libssl3t64:armhf",
+    BaseImage.RESOLUTE: "libssl3t64:armhf",
 }
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)

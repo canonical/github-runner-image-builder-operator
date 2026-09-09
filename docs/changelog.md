@@ -1,5 +1,10 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#243 Fix armhf runner crash-loop due to missing `libssl`, `libstdc++`, and `zlib`](https://github.com/canonical/github-runner-image-builder-operator/pull/243) (2026-09-08)
+
+- Install the armhf build of `libssl3t64` (OpenSSL 3.x under Ubuntu's 64-bit time_t transition package name) on armhf images. Without it, the 32-bit linux-arm runner agent's bundled .NET runtime cannot `dlopen` the OpenSSL cryptography provider it needs for algorithms like `RSAOpenSsl`, causing the runner listener to crash-loop forever ("OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded.") and the runner to appear permanently `offline` in GitHub, never reaching `idle`.
+- Also install the armhf builds of `libstdc++6` and `zlib1g`, confirmed via `readelf -d` against the `actions-runner-linux-arm` release to be hard `NEEDED` dependencies of `Runner.Listener`/`libcoreclr.so`/`createdump` (`libstdc++`) and `libSystem.IO.Compression.Native.so` (`zlib`), meaning the dynamic linker requires them at load time rather than being lazily loaded via `dlopen` like `libssl`/`libicu`. Missing `libstdc++6:armhf` prevents the runner listener from starting at all; missing `zlib1g:armhf` would crash any code path exercising gzip/deflate, such as tool cache or action archive downloads.
+
 ## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
 
 - Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
