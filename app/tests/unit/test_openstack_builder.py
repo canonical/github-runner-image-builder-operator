@@ -938,6 +938,12 @@ function configure_system_users() {{
     # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
     # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
     # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    if /usr/bin/getent group runner >/dev/null 2>&1; then
+        echo "runner group already exists; ensuring GID matches ubuntu"
+        /usr/sbin/groupmod --non-unique --gid "$UBUNTU_GID" runner
+    else
+        /usr/sbin/groupadd --non-unique --gid "$UBUNTU_GID" runner
+    fi
     if /usr/bin/id -u runner >/dev/null 2>&1; then
         echo "runner user already exists; ensuring UID/GID/home match ubuntu"
         /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
