@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#244](https://github.com/canonical/github-runner-image-builder-operator/pull/244) (2026-09-23)
+
+- Ensure the `runner` group alongside the `runner` user.
+
 ## [#243 Fix armhf runner crash-loop due to missing `libssl`, `libstdc++`, and `zlib`](https://github.com/canonical/github-runner-image-builder-operator/pull/243) (2026-09-08)
 
 - Install the armhf build of `libssl3t64` (OpenSSL 3.x under Ubuntu's 64-bit time_t transition package name) on armhf images. Without it, the 32-bit linux-arm runner agent's bundled .NET runtime cannot `dlopen` the OpenSSL cryptography provider it needs for algorithms like `RSAOpenSsl`, causing the runner listener to crash-loop forever ("OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded.") and the runner to appear permanently `offline` in GitHub, never reaching `idle`.
