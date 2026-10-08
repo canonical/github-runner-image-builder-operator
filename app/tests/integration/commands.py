@@ -31,6 +31,11 @@ class Commands:
 TEST_RUNNER_COMMANDS = (
     Commands(name="simple hello world", command="echo hello world"),
     Commands(name="print groups", command="groups | grep sudo"),
+    Commands(
+        name="check garm-agent XDG_RUNTIME_DIR drop-in",
+        command='grep -x "Environment=XDG_RUNTIME_DIR=/run/user/$(id -u)" '
+        "/etc/systemd/system/garm-agent.service.d/xdg-runtime-dir.conf",
+    ),
     Commands(name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin"),
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
