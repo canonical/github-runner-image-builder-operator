@@ -1,8 +1,8 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
-## [#245 Set `XDG_RUNTIME_DIR` for the GARM agent](https://github.com/canonical/github-runner-image-builder-operator/pull/245) (2026-10-08)
+## [#245 Run the GARM agent in a login session](https://github.com/canonical/github-runner-image-builder-operator/pull/245) (2026-10-08)
 
-- Set `XDG_RUNTIME_DIR` for the runner started by the GARM agent. The agent runs as a system service without a login session, so jobs had no `XDG_RUNTIME_DIR` and tools that keep per-user state there, such as `skopeo login`, `podman` and `buildah`, failed with `mkdir /run/containers: permission denied`.
+- Run the runner started by the GARM agent in a PAM login session, as the previous runner manager did with `su -`. The agent runs as a system service, so jobs had no `XDG_RUNTIME_DIR` or user D-Bus bus, and tools that keep per-user state there, such as `skopeo login`, `podman` and `buildah`, failed with `mkdir /run/containers: permission denied`.
 
 ## [#244](https://github.com/canonical/github-runner-image-builder-operator/pull/244) (2026-09-23)
 
