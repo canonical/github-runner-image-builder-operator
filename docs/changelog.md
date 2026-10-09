@@ -1,5 +1,9 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [Restore the login-shell PATH and SHELL for GARM runner jobs](https://github.com/canonical/github-runner-image-builder-operator/pulls) (2026-10-09)
+
+- Put `/home/ubuntu/.local/bin` on `PATH` and set `SHELL=/bin/bash` for jobs started by the GARM agent, as on the previous runner manager. The agent's PAM session doesn't run a login shell, so commands installed with `pipx` or `pip install --user` failed with `command not found`, and `SHELL` was `/bin/sh`.
+
 ## [#245 Run the GARM agent in a login session](https://github.com/canonical/github-runner-image-builder-operator/pull/245) (2026-10-08)
 
 - Run the runner started by the GARM agent in a PAM login session, as the previous runner manager did with `su -`. The agent runs as a system service, so jobs had no `XDG_RUNTIME_DIR` or user D-Bus bus, and tools that keep per-user state there, such as `skopeo login`, `podman` and `buildah`, failed with `mkdir /run/containers: permission denied`.
