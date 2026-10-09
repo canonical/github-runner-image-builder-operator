@@ -204,6 +204,9 @@ function configure_system_users() {
 [Service]
 PAMName=su-l
 EOF
+    # That PAM session takes PATH from /etc/environment and runs no login shell, so ~/.profile
+    # never adds the user-local bin dir that pipx and `pip install --user` install into.
+    /usr/bin/sed -i 's|^PATH="|PATH="/home/ubuntu/.local/bin:|' /etc/environment
 
     # Create runner user as alias to ubuntu for GARM compatibility.
     # GARM expects a runner user with /home/runner/actions-runner path.
@@ -213,6 +216,7 @@ EOF
     # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
     # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
     # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    # --shell: jobs get SHELL from this account, and useradd defaults to /bin/sh.
     if /usr/bin/getent group runner >/dev/null 2>&1; then
         echo "runner group already exists; ensuring GID matches ubuntu"
         /usr/sbin/groupmod --non-unique --gid "$UBUNTU_GID" runner
@@ -221,9 +225,9 @@ EOF
     fi
     if /usr/bin/id -u runner >/dev/null 2>&1; then
         echo "runner user already exists; ensuring UID/GID/home match ubuntu"
-        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu --shell /bin/bash runner
     else
-        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu --shell /bin/bash runner
     fi
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
     # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
