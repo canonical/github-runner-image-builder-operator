@@ -929,6 +929,15 @@ function configure_system_users() {{
     # removes /run/user/<uid> once the last session ends. A runner started as a system service
     # has no login session, so linger is what keeps both alive.
     /usr/bin/loginctl enable-linger ubuntu
+    # The GARM agent runs the runner from that system service, so jobs lack what a login session
+    # provides (XDG_RUNTIME_DIR, the user D-Bus bus) and tools like skopeo and podman fall back to
+    # the root-owned /run/containers. A PAM session restores it, as `su -` did for the previous
+    # runner manager; systemd applies the drop-in once GARM installs garm-agent.service.
+    /usr/bin/mkdir -p /etc/systemd/system/garm-agent.service.d
+    /usr/bin/cat > /etc/systemd/system/garm-agent.service.d/login-session.conf <<EOF
+[Service]
+PAMName=su-l
+EOF
 
     # Create runner user as alias to ubuntu for GARM compatibility.
     # GARM expects a runner user with /home/runner/actions-runner path.
