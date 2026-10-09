@@ -1,6 +1,6 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
-## [Restore the login-shell PATH and SHELL for GARM runner jobs](https://github.com/canonical/github-runner-image-builder-operator/pulls) (2026-10-09)
+## [#246 Restore the login-shell PATH and SHELL for GARM runner jobs](https://github.com/canonical/github-runner-image-builder-operator/pull/246) (2026-10-09)
 
 - Put `/home/ubuntu/.local/bin` on `PATH` and set `SHELL=/bin/bash` for jobs started by the GARM agent, as on the previous runner manager. The agent's PAM session doesn't run a login shell, so commands installed with `pipx` or `pip install --user` failed with `command not found`, and `SHELL` was `/bin/sh`.
 
