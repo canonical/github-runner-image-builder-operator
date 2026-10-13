@@ -47,7 +47,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install pipx -y
-          pipx ensurepath
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           pipx install tox
       - name: Run integration tests (amd64)
         if: matrix.arch == 'amd64'
