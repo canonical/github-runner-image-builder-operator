@@ -35,6 +35,18 @@ TEST_RUNNER_COMMANDS = (
         name="check garm-agent login session drop-in",
         command="grep -x PAMName=su-l /etc/systemd/system/garm-agent.service.d/login-session.conf",
     ),
+    # garm-agent.service runs the runner as `runner` in a PAM session without a login shell;
+    # systemd-run reproduces that environment.
+    Commands(
+        name="check runner job PATH includes user-local bin",
+        command="sudo systemd-run --quiet --wait --pipe -p User=runner -p PAMName=su-l "
+        "printenv PATH | grep -q '^/home/ubuntu/.local/bin:'",
+    ),
+    Commands(
+        name="check runner job SHELL is bash",
+        command="sudo systemd-run --quiet --wait --pipe -p User=runner -p PAMName=su-l "
+        "printenv SHELL | grep -qx /bin/bash",
+    ),
     Commands(name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin"),
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
