@@ -38,11 +38,11 @@ jobs:
           - image: resolute
             arch: s390x
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.1.0
       - uses: canonical/setup-lxd@v1
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.15"
       - name: Install tox
         run: |
           sudo apt-get update
