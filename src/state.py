@@ -17,6 +17,7 @@ import pydantic
 logger = logging.getLogger(__name__)
 
 ARCHITECTURES_ARM64 = {"aarch64", "arm64"}
+ARCHITECTURES_ARM = {"armhf", "arm", "armv7l"}
 ARCHITECTURES_S390X = {"s390x"}
 ARCHITECTURES_PPC64LE = {"ppc64le", "ppc64el"}
 ARCHITECTURES_X86 = {"x86_64", "amd64", "x64"}
@@ -80,6 +81,7 @@ class Arch(str, Enum):
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
         PPC64LE: Represents an PPC64LE system architecture.
+        ARM: Represents an ARM (32-bit armhf) system architecture.
     """
 
     def __str__(self) -> str:
@@ -94,6 +96,7 @@ class Arch(str, Enum):
     X64 = "x64"
     S390X = "s390x"
     PPC64LE = "ppc64le"
+    ARM = "arm"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "Arch":
@@ -114,6 +117,8 @@ class Arch(str, Enum):
         match architecture:
             case arch if arch in ARCHITECTURES_ARM64:
                 return Arch.ARM64
+            case arch if arch in ARCHITECTURES_ARM:
+                return Arch.ARM
             case arch if arch in ARCHITECTURES_X86:
                 return Arch.X64
             case arch if arch in ARCHITECTURES_S390X:

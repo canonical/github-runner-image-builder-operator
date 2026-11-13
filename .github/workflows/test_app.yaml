@@ -9,5 +9,4 @@ jobs:
     secrets: inherit
     with:
       python-version: "3.10"
-      self-hosted-runner: true
       working-directory: ./app/
