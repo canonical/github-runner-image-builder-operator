@@ -23,7 +23,7 @@ errmsg = @printf '$(RED_COLOR)Error: $(1)$(NO_COLOR)\n' && exit 1
 
 include Makefile.docs
 
-.PHONY: help 
+.PHONY: halp 
 help: _list-targets ## Prints all available targets
 
 .PHONY: _list-targets
