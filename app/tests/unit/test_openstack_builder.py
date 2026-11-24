@@ -8,7 +8,9 @@
 # pylint:disable=protected-access,too-many-lines
 
 import pathlib
+import re
 import secrets
+import subprocess  # nosec
 import typing
 import urllib.parse
 from unittest.mock import MagicMock
@@ -661,37 +663,57 @@ def test__determine_network(network_name: str | None):
     )
 
 
+_DEFAULT_APT_PACKAGES = (
+    "build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev "
+    "python3-pip rustc shellcheck socat tar time unzip wget"
+)
+# armhf drops the distro cargo/rustc (replaced by rustup) and adds the armhf multiarch runtime
+# libs, rustup, docker-buildx and the release-specific libicu/libssl (libicu74/libssl3t64 on
+# noble).
+_ARM_APT_PACKAGES = (
+    "build-essential docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip "
+    "shellcheck socat tar time unzip wget libc6:armhf libatomic1:armhf libstdc++6:armhf "
+    "zlib1g:armhf rustup docker-buildx libicu74:armhf libssl3t64:armhf"
+)
+
+
 @pytest.mark.parametrize(
-    "arch, additional_apt_packages",
+    "arch, expected_apt_packages",
     [
-        pytest.param(openstack_builder.Arch.X64, [], id="x64"),
-        pytest.param(openstack_builder.Arch.ARM64, [], id="arm64"),
+        pytest.param(openstack_builder.Arch.X64, _DEFAULT_APT_PACKAGES, id="x64"),
+        pytest.param(openstack_builder.Arch.ARM64, _DEFAULT_APT_PACKAGES, id="arm64"),
         pytest.param(
             openstack_builder.Arch.S390X,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="s390x",
         ),
         pytest.param(
             openstack_builder.Arch.PPC64LE,
-            ["dotnet-runtime-8.0"],
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
             id="ppc64le",
         ),
+        pytest.param(openstack_builder.Arch.ARM, _ARM_APT_PACKAGES, id="arm"),
     ],
 )
 def test__generate_cloud_init_script(
     arch: openstack_builder.Arch,
-    additional_apt_packages: list[str],
+    expected_apt_packages: str,
 ):
     """
     arrange: A certain architecture.
     act: when _generate_cloud_init_script is run.
     assert: expected cloud init template is generated.
     """
+    base = (
+        openstack_builder.BaseImage.NOBLE
+        if arch == openstack_builder.Arch.ARM
+        else openstack_builder.BaseImage.JAMMY
+    )
     assert (
         openstack_builder._generate_cloud_init_script(
             image_config=openstack_builder.config.ImageConfig(
                 arch=arch,
-                base=openstack_builder.BaseImage.JAMMY,
+                base=base,
                 runner_version="",
                 name="test-image",
                 script_config=openstack_builder.config.ScriptConfig(
@@ -761,9 +783,36 @@ EOF
     sleep 5
 }}
 
+function enable_armhf_multiarch() {{
+    echo "Enabling armhf multiarch"
+    native_arch=$(/usr/bin/dpkg --print-architecture)
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+    /usr/bin/dpkg --add-architecture armhf
+    # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
+    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
+    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
+    /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: $codename $codename-updates $codename-security
+Components: main restricted universe multiverse
+Architectures: armhf
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+    # The runner VM boots from a snapshot whose cloud-init state was cleared (see the
+    # "cloud-init clean" before snapshot), so cloud-init regenerates the stock apt sources on
+    # first boot and drops the architecture pin above while the armhf dpkg architecture persists,
+    # breaking "apt-get update". Tell cloud-init to preserve the pinned sources baked into the
+    # image so the 32-bit multiarch configuration survives on the runner VM.
+    /usr/bin/tee /etc/cloud/cloud.cfg.d/99-armhf-preserve-apt-sources.cfg >/dev/null <<EOF
+apt:
+  preserve_sources_list: true
+EOF
+}}
+
 function install_apt_packages() {{
     local packages="$1"
-    local hwe_version="$2"
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
@@ -777,7 +826,10 @@ signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.co
 main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
-    if [ $RELEASE == "resolute" ]; then
+    # Only add the dotnet backports PPA when a dotnet package is actually being installed
+    # (s390x/ppc64le). Resolving the PPA requires the Launchpad API, which is not reachable on
+    # every build network, so skipping it avoids failing builds for arches that do not use dotnet.
+    if [ $RELEASE == "resolute" ] && [[ "$packages" == *dotnet-runtime* ]]; then
         echo "Adding dotnet backports PPA"
         DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
     fi
@@ -787,11 +839,6 @@ main" > /etc/apt/sources.list.d/github-cli.list
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${{packages}}
-    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
-    if [ $RELEASE != "resolute" ]; then
-        echo "Installing linux-generic-hwe-${{hwe_version}}"
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${{hwe_version}}
-    fi
 }}
 
 function disable_unattended_upgrades() {{
@@ -878,6 +925,22 @@ function configure_system_users() {{
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+    # snapd creates an app's tracking cgroup through the per-user systemd manager, and logind
+    # removes /run/user/<uid> once the last session ends. A runner started as a system service
+    # has no login session, so linger is what keeps both alive.
+    /usr/bin/loginctl enable-linger ubuntu
+    # The GARM agent runs the runner from that system service, so jobs lack what a login session
+    # provides (XDG_RUNTIME_DIR, the user D-Bus bus) and tools like skopeo and podman fall back to
+    # the root-owned /run/containers. A PAM session restores it, as `su -` did for the previous
+    # runner manager; systemd applies the drop-in once GARM installs garm-agent.service.
+    /usr/bin/mkdir -p /etc/systemd/system/garm-agent.service.d
+    /usr/bin/cat > /etc/systemd/system/garm-agent.service.d/login-session.conf <<EOF
+[Service]
+PAMName=su-l
+EOF
+    # That PAM session takes PATH from /etc/environment and runs no login shell, so ~/.profile
+    # never adds the user-local bin dir that pipx and `pip install --user` install into.
+    /usr/bin/sed -i 's|^PATH="|PATH="/home/ubuntu/.local/bin:|' /etc/environment
 
     # Create runner user as alias to ubuntu for GARM compatibility.
     # GARM expects a runner user with /home/runner/actions-runner path.
@@ -887,11 +950,18 @@ function configure_system_users() {{
     # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
     # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
     # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    # --shell: jobs get SHELL from this account, and useradd defaults to /bin/sh.
+    if /usr/bin/getent group runner >/dev/null 2>&1; then
+        echo "runner group already exists; ensuring GID matches ubuntu"
+        /usr/sbin/groupmod --non-unique --gid "$UBUNTU_GID" runner
+    else
+        /usr/sbin/groupadd --non-unique --gid "$UBUNTU_GID" runner
+    fi
     if /usr/bin/id -u runner >/dev/null 2>&1; then
         echo "runner user already exists; ensuring UID/GID/home match ubuntu"
-        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu --shell /bin/bash runner
     else
-        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu --shell /bin/bash runner
     fi
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
     # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
@@ -910,14 +980,18 @@ function configure_system_users() {{
 
 
 proxy="test.proxy.internal:3128"
-apt_packages="build-essential cargo docker.io gh jq npm pkg-config python-is-python3 python3-dev python3-pip rustc shellcheck socat tar time unzip wget{(' ' + ' '.join(additional_apt_packages)) if additional_apt_packages else ''}"
-hwe_version="22.04"
+apt_packages="{expected_apt_packages}"
 github_runner_version=""
 github_runner_arch="{arch.value}"
 runner_binary_repo="canonical/github-actions-runner"
 
 configure_proxy "$proxy"
-install_apt_packages "$apt_packages" "$hwe_version"
+# Enable armhf multiarch before installing packages so the 32-bit linux-arm runner agent and
+# its armhf runtime dependencies can be installed and executed via native AArch32.
+if [ "$github_runner_arch" == "arm" ]; then
+    enable_armhf_multiarch
+fi
+install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
@@ -929,10 +1003,113 @@ install_yq
 install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
-configure_system_users\
+configure_system_users
+
+# Set the default Rust toolchain for the ubuntu user. rustup is only installed on
+# armhf images, so this block is a no-op on other architectures.
+if [ "$github_runner_arch" == "arm" ]; then
+    sudo -u ubuntu rustup default stable
+fi\
 """  # nosec # noqa: E501
     )
     # pylint: enable=R0801
+
+
+_DOTNET_PPA_CONDITION_PATTERN = re.compile(
+    r'if \[ \$RELEASE == "resolute" \] (?:&&|\|\|) '
+    r'\[\[ "\$packages" == \*dotnet-runtime\* \]\]; then'
+)
+
+
+@pytest.mark.parametrize(
+    "release, packages, expect_ppa_added",
+    [
+        pytest.param(
+            "resolute",
+            _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0",
+            True,
+            id="resolute-s390x-ppc64le",
+        ),
+        pytest.param("resolute", _ARM_APT_PACKAGES, False, id="resolute-armhf"),
+        pytest.param("resolute", _DEFAULT_APT_PACKAGES, False, id="resolute-x64-arm64"),
+        pytest.param(
+            "noble", _DEFAULT_APT_PACKAGES + " dotnet-runtime-8.0", False, id="noble-with-dotnet"
+        ),
+        pytest.param("jammy", _ARM_APT_PACKAGES, False, id="jammy-armhf"),
+    ],
+)
+def test_install_apt_packages_dotnet_ppa_condition(
+    release: str, packages: str, expect_ppa_added: bool
+):
+    """
+    arrange: render the cloud-init script and extract the exact bash conditional guarding the \
+        dotnet backports PPA addition in install_apt_packages, then pair it with $RELEASE/ \
+        $packages values mirroring each real build scenario (s390x/ppc64le install dotnet on \
+        resolute; armhf, x64 and arm64 do not; non-resolute releases never add the PPA).
+    act: evaluate the extracted condition in a real bash subprocess with $RELEASE and $packages \
+        set accordingly.
+    assert: the condition is only true when $RELEASE is resolute and $packages contains \
+        dotnet-runtime, exercising the actual rendered bash logic (operator precedence, glob, \
+        quoting) rather than only comparing against a golden-string literal.
+    """
+    script = openstack_builder._generate_cloud_init_script(
+        image_config=openstack_builder.config.ImageConfig(
+            arch=openstack_builder.Arch.X64,
+            base=openstack_builder.BaseImage.JAMMY,
+            runner_version="",
+            name="test-image",
+            script_config=openstack_builder.config.ScriptConfig(
+                script_url=urllib.parse.urlparse("https://test-url.com/script.sh"),
+                script_secrets={},
+            ),
+        ),
+        proxy="",
+    )
+    match = _DOTNET_PPA_CONDITION_PATTERN.search(script)
+    assert match, "dotnet backports PPA condition not found in rendered cloud-init script"
+    condition = match.group(0)[len("if ") : -len("; then")]
+
+    result = subprocess.run(  # nosec
+        [
+            "bash",
+            "-c",
+            f'RELEASE={release}; packages="{packages}"; if {condition}; then echo PPA_ADDED; fi',
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert ("PPA_ADDED" in result.stdout) == expect_ppa_added
+
+
+@pytest.mark.parametrize(
+    "base",
+    [
+        pytest.param(openstack_builder.BaseImage.FOCAL, id="focal"),
+        pytest.param(openstack_builder.BaseImage.JAMMY, id="jammy"),
+    ],
+)
+def test__generate_cloud_init_script_arm_unsupported_base(base: openstack_builder.BaseImage):
+    """
+    arrange: ARM architecture paired with a pre-noble base image.
+    act: when _generate_cloud_init_script is run.
+    assert: UnsupportedArchitectureError is raised because the armhf apt packages \
+        (e.g. libicu74, rustup, docker-buildx) are only available from noble onwards.
+    """
+    with pytest.raises(errors.UnsupportedArchitectureError):
+        openstack_builder._generate_cloud_init_script(
+            image_config=openstack_builder.config.ImageConfig(
+                arch=openstack_builder.Arch.ARM,
+                base=base,
+                runner_version="",
+                name="test-image",
+                script_config=openstack_builder.config.ScriptConfig(
+                    script_url=None,
+                    script_secrets={},
+                ),
+            ),
+            proxy="test.proxy.internal:3128",
+        )
 
 
 def test__wait_for_cloud_init_complete_fail():

@@ -77,12 +77,13 @@ def upload_image(
     with openstack.connect(cloud=cloud_name) as connection:
         try:
             logger.info("Uploading image %s.", image_name)
+            image_properties = {"architecture": arch.to_openstack()}
             # ignore type since the library does not provide correct type hinting but the docstring
             # does define the return type.
             image: Image = connection.create_image(
                 name=image_name,
                 filename=str(image_path),
-                properties={"architecture": arch.to_openstack()},
+                properties=image_properties,
                 allow_duplicates=True,
                 wait=True,
             )  # type: ignore

@@ -12,7 +12,21 @@ set -euo pipefail
 
 # charmcraft pack runs inside the LXD container and needs to go through proxy so it 
 # will be done before modifying the nftables rules.
-/snap/bin/charmcraft pack -p tests/integration/data/charm
+# -o is pinned explicitly, but charmcraft's own outer-instance move-to-output-dir
+# logic is not reliable for remote/managed builds (as of charmcraft 4.4.1, it
+# silently skips the move if it can't read the artifact path from its internal
+# state service). So find the packed .charm ourselves and copy it to the CWD
+# (matching tests/integration/conftest.py's TEST_CHARM_FILE) regardless of where
+# charmcraft actually left it.
+/snap/bin/charmcraft pack -p tests/integration/data/charm -o .
+packed_charm="$(find . tests/integration/data/charm -maxdepth 1 -name '*.charm' -print -quit)"
+if [[ -z "${packed_charm:-}" ]]; then
+    echo "Error: no packed .charm file found after 'charmcraft pack'." >&2
+    exit 1
+fi
+if [[ "$packed_charm" != "./$(basename "$packed_charm")" ]]; then
+    cp "$packed_charm" "./$(basename "$packed_charm")"
+fi
 
 IP=$(lxc list -c 4 --format csv | awk '{print $1}' | head -n 1)
 

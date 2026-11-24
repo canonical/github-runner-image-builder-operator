@@ -1,5 +1,27 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 
+## [#246 Restore the login-shell PATH and SHELL for GARM runner jobs](https://github.com/canonical/github-runner-image-builder-operator/pull/246) (2026-10-09)
+
+- Put `/home/ubuntu/.local/bin` on `PATH` and set `SHELL=/bin/bash` for jobs started by the GARM agent, as on the previous runner manager. The agent's PAM session doesn't run a login shell, so commands installed with `pipx` or `pip install --user` failed with `command not found`, and `SHELL` was `/bin/sh`.
+
+## [#245 Run the GARM agent in a login session](https://github.com/canonical/github-runner-image-builder-operator/pull/245) (2026-10-08)
+
+- Run the runner started by the GARM agent in a PAM login session, as the previous runner manager did with `su -`. The agent runs as a system service, so jobs had no `XDG_RUNTIME_DIR` or user D-Bus bus, and tools that keep per-user state there, such as `skopeo login`, `podman` and `buildah`, failed with `mkdir /run/containers: permission denied`.
+
+## [#244](https://github.com/canonical/github-runner-image-builder-operator/pull/244) (2026-09-23)
+
+- Ensure the `runner` group alongside the `runner` user.
+
+## [#243 Fix armhf runner crash-loop due to missing `libssl`, `libstdc++`, and `zlib`](https://github.com/canonical/github-runner-image-builder-operator/pull/243) (2026-09-08)
+
+- Install the armhf build of `libssl3t64` (OpenSSL 3.x under Ubuntu's 64-bit time_t transition package name) on armhf images. Without it, the 32-bit linux-arm runner agent's bundled .NET runtime cannot `dlopen` the OpenSSL cryptography provider it needs for algorithms like `RSAOpenSsl`, causing the runner listener to crash-loop forever ("OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded.") and the runner to appear permanently `offline` in GitHub, never reaching `idle`.
+- Also install the armhf builds of `libstdc++6` and `zlib1g`, confirmed via `readelf -d` against the `actions-runner-linux-arm` release to be hard `NEEDED` dependencies of `Runner.Listener`/`libcoreclr.so`/`createdump` (`libstdc++`) and `libSystem.IO.Compression.Native.so` (`zlib`), meaning the dynamic linker requires them at load time rather than being lazily loaded via `dlopen` like `libssl`/`libicu`. Missing `libstdc++6:armhf` prevents the runner listener from starting at all; missing `zlib1g:armhf` would crash any code path exercising gzip/deflate, such as tool cache or action archive downloads.
+
+## [#240 Only add .NET backports PPA when installing .NET packages](https://github.com/canonical/github-runner-image-builder-operator/pull/240) (2026-09-02)
+
+- Only add the .NET backports PPA during image build when a .NET package is actually installed (s390x and ppc64le). This unblocks armhf, amd64, and arm64 resolute image builds on networks that cannot reach the Launchpad API used to resolve the PPA.
+- Pin the `charmcraft pack` output directory (`-o .`) in the `test_charm` integration test's proxy workaround script, so the packed test fixture charm is always found at the path `tests/integration/conftest.py` expects, regardless of the installed charmcraft version's default pack-output behavior. Also explicitly locate and copy the packed `.charm` to that path afterwards, since charmcraft 4.4.1's own outer-instance move-to-output-dir logic silently no-ops for remote/managed builds when it can't read the artifact path from its internal state service, leaving the file in the project directory instead.
+
 ## [#223 Fix GARM image incompatibility](https://github.com/canonical/github-runner-image-builder-operator/pull/223) (2026-05-27)
 
 - Add `runner` user as an alias to the `ubuntu` user (same UID/GID, same home directory) so GARM can boot runners from images produced by this charm.
@@ -31,6 +53,10 @@
 ## [#198 Update integration tests](https://github.com/canonical/github-runner-image-builder-operator/pull/198) (2026-02-17)
 
 - Update integration tests that were intentionally not done in #185.
+
+## [#196 fix: use default kernel instead of HWE kernel](https://github.com/canonical/github-runner-image-builder-operator/pull/196) (2026-02-12)
+
+* Use the default kernel instead of the HWE kernel in GitHub runner images.
 
 ## [#185 Remove aproxy installation and add proxy support in workload](https://github.com/canonical/github-runner-image-builder-operator/pull/185) (2026-01-20)
 

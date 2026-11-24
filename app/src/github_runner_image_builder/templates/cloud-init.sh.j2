@@ -53,9 +53,36 @@ EOF
     sleep 5
 }
 
+function enable_armhf_multiarch() {
+    echo "Enabling armhf multiarch"
+    native_arch=$(/usr/bin/dpkg --print-architecture)
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+    /usr/bin/dpkg --add-architecture armhf
+    # The arm64 cloud image's apt mirrors only carry the native architecture; armhf is a "ports"
+    # architecture served from ports.ubuntu.com. Pin the stock sources to the native architecture
+    # and add a ports.ubuntu.com source for armhf so the 32-bit runner's dependencies resolve.
+    /usr/bin/sed -i "/^Types: deb/a Architectures: $native_arch" /etc/apt/sources.list.d/ubuntu.sources
+    /usr/bin/tee /etc/apt/sources.list.d/armhf-ports.sources >/dev/null <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: $codename $codename-updates $codename-security
+Components: main restricted universe multiverse
+Architectures: armhf
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+    # The runner VM boots from a snapshot whose cloud-init state was cleared (see the
+    # "cloud-init clean" before snapshot), so cloud-init regenerates the stock apt sources on
+    # first boot and drops the architecture pin above while the armhf dpkg architecture persists,
+    # breaking "apt-get update". Tell cloud-init to preserve the pinned sources baked into the
+    # image so the 32-bit multiarch configuration survives on the runner VM.
+    /usr/bin/tee /etc/cloud/cloud.cfg.d/99-armhf-preserve-apt-sources.cfg >/dev/null <<EOF
+apt:
+  preserve_sources_list: true
+EOF
+}
+
 function install_apt_packages() {
     local packages="$1"
-    local hwe_version="$2"
 
     # The gh package (GitHub CLI application) is not in the APT repository for focal.
     # For focal, the apt repository of GitHub is added.
@@ -66,7 +93,10 @@ function install_apt_packages() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list
     fi
 
-    if [ $RELEASE == "resolute" ]; then
+    # Only add the dotnet backports PPA when a dotnet package is actually being installed
+    # (s390x/ppc64le). Resolving the PPA requires the Launchpad API, which is not reachable on
+    # every build network, so skipping it avoids failing builds for arches that do not use dotnet.
+    if [ $RELEASE == "resolute" ] && [[ "$packages" == *dotnet-runtime* ]]; then
         echo "Adding dotnet backports PPA"
         DEBIAN_FRONTEND=noninteractive /usr/bin/add-apt-repository -y ppa:dotnet/backports
     fi
@@ -76,11 +106,6 @@ function install_apt_packages() {
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get upgrade -y
     echo "Installing apt packages $packages"
     DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --no-install-recommends ${packages}
-    # Skip installing the HWE kernel package on resolute since there is no HWE kernel for it.
-    if [ $RELEASE != "resolute" ]; then
-        echo "Installing linux-generic-hwe-${hwe_version}"
-        DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y --install-recommends linux-generic-hwe-${hwe_version}
-    fi
 }
 
 function disable_unattended_upgrades() {
@@ -166,6 +191,22 @@ function configure_system_users() {
     /usr/sbin/groupadd -f microk8s
     /usr/sbin/groupadd -f docker
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo ubuntu
+    # snapd creates an app's tracking cgroup through the per-user systemd manager, and logind
+    # removes /run/user/<uid> once the last session ends. A runner started as a system service
+    # has no login session, so linger is what keeps both alive.
+    /usr/bin/loginctl enable-linger ubuntu
+    # The GARM agent runs the runner from that system service, so jobs lack what a login session
+    # provides (XDG_RUNTIME_DIR, the user D-Bus bus) and tools like skopeo and podman fall back to
+    # the root-owned /run/containers. A PAM session restores it, as `su -` did for the previous
+    # runner manager; systemd applies the drop-in once GARM installs garm-agent.service.
+    /usr/bin/mkdir -p /etc/systemd/system/garm-agent.service.d
+    /usr/bin/cat > /etc/systemd/system/garm-agent.service.d/login-session.conf <<EOF
+[Service]
+PAMName=su-l
+EOF
+    # That PAM session takes PATH from /etc/environment and runs no login shell, so ~/.profile
+    # never adds the user-local bin dir that pipx and `pip install --user` install into.
+    /usr/bin/sed -i 's|^PATH="|PATH="/home/ubuntu/.local/bin:|' /etc/environment
 
     # Create runner user as alias to ubuntu for GARM compatibility.
     # GARM expects a runner user with /home/runner/actions-runner path.
@@ -175,11 +216,18 @@ function configure_system_users() {
     # --non-unique: allow reusing ubuntu's UID (duplicate UIDs are rejected by default).
     # --uid/--gid: share ubuntu's UID/GID so both users have identical file permissions.
     # --no-create-home: skip creating /home/runner; runner's home is set to /home/ubuntu instead.
+    # --shell: jobs get SHELL from this account, and useradd defaults to /bin/sh.
+    if /usr/bin/getent group runner >/dev/null 2>&1; then
+        echo "runner group already exists; ensuring GID matches ubuntu"
+        /usr/sbin/groupmod --non-unique --gid "$UBUNTU_GID" runner
+    else
+        /usr/sbin/groupadd --non-unique --gid "$UBUNTU_GID" runner
+    fi
     if /usr/bin/id -u runner >/dev/null 2>&1; then
         echo "runner user already exists; ensuring UID/GID/home match ubuntu"
-        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu runner
+        /usr/sbin/usermod --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --home /home/ubuntu --shell /bin/bash runner
     else
-        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu runner
+        /usr/sbin/useradd --non-unique --uid "$UBUNTU_UID" --gid "$UBUNTU_GID" --no-create-home --home-dir /home/ubuntu --shell /bin/bash runner
     fi
     /usr/sbin/usermod --append --groups docker,microk8s,lxd,sudo runner
     # Symlink /home/runner -> /home/ubuntu so GARM's hardcoded /home/runner/actions-runner path resolves correctly.
@@ -199,13 +247,17 @@ function configure_system_users() {
 
 proxy="{{ PROXY }}"
 apt_packages="{{ APT_PACKAGES }}"
-hwe_version="{{ HWE_VERSION }}"
 github_runner_version="{{ RUNNER_VERSION }}"
 github_runner_arch="{{ RUNNER_ARCH }}"
 runner_binary_repo="{{ RUNNER_BINARY_REPO }}"
 
 configure_proxy "$proxy"
-install_apt_packages "$apt_packages" "$hwe_version"
+# Enable armhf multiarch before installing packages so the 32-bit linux-arm runner agent and
+# its armhf runtime dependencies can be installed and executed via native AArch32.
+if [ "$github_runner_arch" == "arm" ]; then
+    enable_armhf_multiarch
+fi
+install_apt_packages "$apt_packages"
 disable_unattended_upgrades
 enable_network_fair_queuing_congestion
 configure_usr_local_bin
@@ -218,3 +270,9 @@ install_opentelemetry_collector_snap
 install_github_runner "$github_runner_version" "$github_runner_arch"
 chown_home
 configure_system_users
+
+# Set the default Rust toolchain for the ubuntu user. rustup is only installed on
+# armhf images, so this block is a no-op on other architectures.
+if [ "$github_runner_arch" == "arm" ]; then
+    sudo -u ubuntu rustup default stable
+fi

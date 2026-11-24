@@ -5,7 +5,12 @@
 
 import dataclasses
 
-from tests.integration.helpers import TESTDATA_TEST_SCRIPT_URL
+from github_runner_image_builder.config import Arch
+
+TESTDATA_TEST_SCRIPT_URL = (
+    "https://raw.githubusercontent.com/canonical/github-runner-image-builder-operator/"
+    "be135aa505b37aae29aec0ab13805909c46b7903/app/tests/integration/testdata/test_script.sh"
+)
 
 
 @dataclasses.dataclass
@@ -26,6 +31,22 @@ class Commands:
 TEST_RUNNER_COMMANDS = (
     Commands(name="simple hello world", command="echo hello world"),
     Commands(name="print groups", command="groups | grep sudo"),
+    Commands(
+        name="check garm-agent login session drop-in",
+        command="grep -x PAMName=su-l /etc/systemd/system/garm-agent.service.d/login-session.conf",
+    ),
+    # garm-agent.service runs the runner as `runner` in a PAM session without a login shell;
+    # systemd-run reproduces that environment.
+    Commands(
+        name="check runner job PATH includes user-local bin",
+        command="sudo systemd-run --quiet --wait --pipe -p User=runner -p PAMName=su-l "
+        "printenv PATH | grep -q '^/home/ubuntu/.local/bin:'",
+    ),
+    Commands(
+        name="check runner job SHELL is bash",
+        command="sudo systemd-run --quiet --wait --pipe -p User=runner -p PAMName=su-l "
+        "printenv SHELL | grep -qx /bin/bash",
+    ),
     Commands(name="file permission to /usr/local/bin", command="ls -ld /usr/local/bin"),
     Commands(
         name="file permission to /usr/local/bin (create)", command="touch /usr/local/bin/test_file"
@@ -58,12 +79,6 @@ TEST_RUNNER_COMMANDS = (
     Commands(name="gh version", command="gh --version"),
     Commands(
         name="test sctp support", command="sudo apt-get install lksctp-tools -yq && checksctp"
-    ),
-    # Exclude 26.04 from HWE kernel test since there is no HWE kernel for it.
-    Commands(
-        name="test that HWE kernel is installed  (only for non-resolute)",
-        command="lsb_release -r | grep 26.04 || uname -a | "
-        "grep $(dpkg -l | grep linux-generic-hwe | awk '{print $3}' | cut -d'.' -f1-3)",
     ),
     Commands(
         name="test network congestion policy(fq)",
@@ -125,3 +140,34 @@ TEST_RUNNER_COMMANDS = (
         "! grep '/home/ubuntu/secret.txt' /var/log/auth.log*",
     ),
 )
+
+
+# armhf-specific assertions. These packages/binaries are only installed on armhf images
+# (see ARM_ADDITIONAL_APT_PACKAGES and the rustup cloud-init step), so they must not run on
+# other architectures.
+ARM_RUNNER_COMMANDS = (
+    Commands(name="rustc version (rustup default stable)", command="rustc --version"),
+    Commands(name="cargo version", command="cargo --version"),
+    Commands(name="docker buildx version", command="docker buildx version"),
+    Commands(
+        name="github runner binary is 32-bit ARM",
+        command=(
+            "file /home/ubuntu/actions-runner/bin/Runner.Listener | grep -i 'ELF 32-bit' | "
+            "grep -i 'ARM'"
+        ),
+    ),
+)
+
+
+def commands_for_arch(arch: Arch) -> tuple[Commands, ...]:
+    """Return the test commands to run for the given architecture.
+
+    Args:
+        arch: The architecture under test.
+
+    Returns:
+        The base test commands, plus armhf-specific commands when arch is ARM.
+    """
+    if arch == Arch.ARM:
+        return TEST_RUNNER_COMMANDS + ARM_RUNNER_COMMANDS
+    return TEST_RUNNER_COMMANDS

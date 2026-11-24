@@ -20,12 +20,14 @@ class Arch(str, Enum):
         X64: Represents an X64/AMD64 system architecture.
         S390X: Represents an S390X system architecture.
         PPC64LE: Represents a PPC64LE system architecture.
+        ARM: Represents an ARM (32-bit armhf) system architecture.
     """
 
     ARM64 = "arm64"
     X64 = "x64"
     S390X = "s390x"
     PPC64LE = "ppc64le"
+    ARM = "arm"
 
     def to_openstack(self) -> str:
         """Convert the architecture to OpenStack compatible arch string.
@@ -42,6 +44,13 @@ class Arch(str, Enum):
                 return "s390x"
             case Arch.PPC64LE:
                 return "ppc64le"
+            case Arch.ARM:
+                # The armhf runner image is an arm64 boot image (64-bit kernel) that carries a
+                # 32-bit linux-arm runner payload. Native armhf images (32-bit kernel) do not boot
+                # on the aarch64 "virt" machine, so the glance architecture is aarch64 so the base
+                # image and snapshot schedule and boot on arm64 hosts. The 32-bit runner is
+                # installed via multiarch (see cloud-init.sh.j2 and ARM_ADDITIONAL_APT_PACKAGES).
+                return "aarch64"
         raise ValueError  # pragma: nocover
 
 
@@ -127,6 +136,43 @@ IMAGE_DEFAULT_APT_PACKAGES = [
     "wget",
 ]
 S390X_PPC64LE_ADDITIONAL_APT_PACKAGES = ["dotnet-runtime-8.0"]
+# The 32-bit linux-arm runner agent runs via the host's native AArch32 support on the arm64
+# image. It needs the armhf loader (ld-linux-armhf.so.3 from libc6:armhf) and the armhf builds of
+# libatomic, libstdc++ and zlib (all .NET runtime dependencies, confirmed via `readelf -d` against
+# the actions-runner-linux-arm release: libstdc++.so.6 is a hard NEEDED entry of Runner.Listener,
+# libcoreclr.so and createdump, while libz.so.1 is a hard NEEDED entry of
+# libSystem.IO.Compression.Native.so). Missing either causes the dynamic linker to refuse to start
+# the runner, or crash-loop as soon as a compression code path (e.g. tool cache/action downloads)
+# is exercised. libgcc_s.so.1 (also NEEDED) is already pulled in transitively via libc6:armhf's
+# apt Depends on libgcc-s1, so it does not need to be listed explicitly here. rustup provides the
+# armhf/armv7 Rust toolchain and docker-buildx enables arm32 container builds. libicu and libssl
+# (the other .NET runtime dependencies, dlopen'd rather than linked) are release-specific and
+# handled by ARM_LIBICU_APT_PACKAGE_BY_BASE and ARM_LIBSSL_APT_PACKAGE_BY_BASE below.
+ARM_ADDITIONAL_APT_PACKAGES = [
+    "libc6:armhf",
+    "libatomic1:armhf",
+    "libstdc++6:armhf",
+    "zlib1g:armhf",
+    "rustup",
+    "docker-buildx",
+]
+# rustup (installed on armhf images) conflicts with the distro cargo and rustc packages, so these
+# are dropped from the default apt package set on armhf; rustup provides cargo and rustc instead.
+ARM_EXCLUDED_DEFAULT_APT_PACKAGES = ("cargo", "rustc")
+# The linux-arm runner's bundled .NET runtime dlopens libicu, whose soname is release-specific
+# (noble ships libicu74, resolute ships libicu78). Install the armhf build matching the base image.
+ARM_LIBICU_APT_PACKAGE_BY_BASE = {
+    BaseImage.NOBLE: "libicu74:armhf",
+    BaseImage.RESOLUTE: "libicu78:armhf",
+}
+# The linux-arm runner's bundled .NET runtime also dlopens libssl/libcrypto for its OpenSSL-backed
+# crypto algorithms (e.g. RSAOpenSsl); without the armhf build, the runner listener crash-loops
+# with "OpenSSL is required for algorithm 'RSAOpenSsl' but could not be found or loaded." Both
+# noble and resolute ship OpenSSL 3.x under the time64-transition package name libssl3t64.
+ARM_LIBSSL_APT_PACKAGE_BY_BASE = {
+    BaseImage.NOBLE: "libssl3t64:armhf",
+    BaseImage.RESOLUTE: "libssl3t64:armhf",
+}
 
 _LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR)
 LOG_LEVELS = tuple(
