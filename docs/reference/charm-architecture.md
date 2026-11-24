@@ -108,15 +108,15 @@ storing OpenStack credentials on disk and initializing the image-builder applica
 2. [config-changed](https://documentation.ubuntu.com/juju/3.6/reference/hook/#config-changed): The configuration of the charm has changed. The charm applies the configuration (e.g. changes to proxy or OpenStack credentials).
 3. `run`: This is a custom event that is periodically triggered by a cron job. It is used to call the image-builder application to build the image.
 4. `run-action`: This is an action event fired by the user to manually trigger the image-builder to build the image.
-5. `image-relation-changed`: This is a [relation event](https://juju.is/docs/sdk/relation-events) that fires when relation data changes. It also triggers the image-builder to build the image.
+5. `image-relation-changed`: This is a [relation event](https://documentation.ubuntu.com/juju/3.6/reference/hook/#relation-hooks) that fires when relation data changes. It also triggers the image-builder to build the image.
 Once the build is complete, the image-builder will upload the image taking into account the newly changed relation data (e.g. if the OpenStack project has changed).
 
-> See more about events in the Juju docs: [Event](https://juju.is/docs/sdk/event)
+> See more about events in the ops docs: [Event](https://documentation.ubuntu.com/juju/3.6/reference/hook/)
 
 ## Charm code overview
 
 The `src/charm.py` is the default entry point for a charm and has the GithubRunnerImageBuilderCharm Python class which inherits from CharmBase. CharmBase is the base class 
-from which all charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
+from which all charms are formed, defined by [Ops](https://documentation.ubuntu.com/ops/latest/) (Python framework for developing charms).
 
 > See more in the Juju docs: [Charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/)
 
